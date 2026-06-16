@@ -101,6 +101,9 @@ importers:
       '@types/react-dom':
         specifier: ^18.2.18
         version: 18.3.7(@types/react@18.3.31)
+      '@whocards/decks':
+        specifier: workspace:*
+        version: link:../../packages/decks
       astro:
         specifier: ^6.3.8
         version: 6.4.7(@netlify/blobs@10.7.9)(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.62.0)(yaml@2.9.0)

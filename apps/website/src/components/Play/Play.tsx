@@ -1,15 +1,9 @@
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
+import type {QuestionSet, TrackingConfig} from '@whocards/decks'
+import {getDirection, getInitialNav, navReducer} from '@whocards/decks/engine'
 import {cn} from '~utils'
 
-/** A map of question id -> { language code -> question text } */
-export type QuestionSet = Record<string, Record<string, string>>
-
-export type TrackingConfig = {
-  /** numeric event id sent with every tracking call */
-  eventId: number
-  /** endpoint that receives the question-tracking POST */
-  endpoint: string
-}
+export type {QuestionSet, TrackingConfig}
 
 export type PlayProps = {
   /** map of question id -> { lang: text } */
@@ -26,57 +20,6 @@ export type PlayProps = {
   questionClassName?: string
 }
 
-type NavState = {ids: string[]; idx: number}
-type NavAction = {type: 'next'} | {type: 'previous'}
-
-const shuffle = (input: string[]): string[] => {
-  const ids = [...input]
-  for (let i = ids.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[ids[i], ids[j]] = [ids[j], ids[i]]
-  }
-  return ids
-}
-
-const navReducer = (questionIds: string[]) => {
-  const getRandomIds = () => shuffle(questionIds)
-  return (state: NavState, action: NavAction): NavState => {
-    switch (action.type) {
-      case 'previous':
-        return state.idx === 0 ? state : {...state, idx: state.idx - 1}
-      case 'next': {
-        const ids =
-          state.idx >= state.ids.length - 1 ? [...state.ids, ...getRandomIds()] : state.ids
-        return {ids, idx: state.idx + 1}
-      }
-    }
-  }
-}
-
-const getInitialNav = (questionIds: string[]) => (): NavState => {
-  if (typeof window === 'undefined') return {ids: questionIds, idx: 0}
-  const q = new URLSearchParams(window.location.search).get('q') ?? undefined
-  if (!q || !questionIds.includes(q)) return {ids: shuffle(questionIds), idx: 0}
-  // start on the deep-linked question, keep the rest in natural order behind it
-  return {ids: questionIds, idx: questionIds.indexOf(q)}
-}
-
-/** Resolve a language's writing direction (handles RTL languages like `he`). */
-const getDirection = (language: string): 'ltr' | 'rtl' => {
-  if (typeof Intl === 'undefined' || !('Locale' in Intl)) return 'ltr'
-  try {
-    const locale = new Intl.Locale(language)
-    // getTextInfo is newer; textInfo is the older property name
-    const info =
-      typeof (locale as any).getTextInfo === 'function'
-        ? (locale as any).getTextInfo()
-        : (locale as any).textInfo
-    return info?.direction === 'rtl' ? 'rtl' : 'ltr'
-  } catch {
-    return 'ltr'
-  }
-}
-
 export const Play = ({
   questions,
   languages,
@@ -89,7 +32,14 @@ export const Play = ({
   const defaultLanguage = languages[0]
 
   const reducer = useMemo(() => navReducer(questionIds), [questionIds])
-  const [{ids, idx}, dispatch] = useReducer(reducer, undefined, getInitialNav(questionIds))
+  const [{ids, idx}, dispatch] = useReducer(reducer, undefined, () => {
+    // a `?q=` deep link wins (start there, keep the rest behind it); otherwise shuffle
+    const startId =
+      typeof window === 'undefined'
+        ? undefined
+        : (new URLSearchParams(window.location.search).get('q') ?? undefined)
+    return getInitialNav(questionIds, startId)
+  })
 
   const getStoredLanguage = useCallback((): string => {
     if (typeof window === 'undefined') return defaultLanguage

@@ -19,6 +19,11 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+    ssr: {
+      // @whocards/* workspace packages are exported as source (.ts), so Vite must
+      // transpile them for SSR/build rather than externalising them as node deps.
+      noExternal: [/^@whocards\//],
+    },
   },
   trailingSlash: 'never',
   integrations: [

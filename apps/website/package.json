@@ -16,6 +16,7 @@
     "db:studio": "dotenv drizzle-kit studio"
   },
   "dependencies": {
+    "@whocards/decks": "workspace:*",
     "@astrojs/mdx": "^5.0.6",
     "@astrojs/netlify": "^7.0.10",
     "@astrojs/react": "^5.0.5",
