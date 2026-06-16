@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+.pnp.*
+
+# build output
+dist/
+out/
+.astro/
+.next/
+.expo/
+.netlify/
+storybook-static/
+
+# turbo
+.turbo/
+.cache/
+
+# test
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# env
+.env
+.env.*
+!.env.sample
+!.env.example
+
+# editor / os
+.DS_Store
+*.log
+npm-debug.log*
+
+# misc
+*.tsbuildinfo

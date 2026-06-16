@@ -1,0 +1,62 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "no-console": "error",
+    "no-unused-vars": [
+      "error",
+      {"argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "ignoreRestSiblings": true}
+    ],
+    "typescript/consistent-type-definitions": ["error", "type"],
+    "typescript/consistent-type-imports": [
+      "warn",
+      {"prefer": "type-imports", "fixStyle": "separate-type-imports"}
+    ],
+    "typescript/no-non-null-assertion": "warn",
+    "import/no-default-export": "error",
+    "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
+    "import/no-unassigned-import": ["error", {"allow": ["**/*.css", "server-only"]}]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/scripts/**",
+        "**/*.config.*",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/e2e/**",
+        "**/tests/**"
+      ],
+      "rules": {
+        "no-console": "off",
+        "no-unsafe-finally": "off"
+      }
+    },
+    {
+      "files": ["**/*.config.*"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    },
+    {
+      "files": ["**/app/**/*.tsx", "**/app/**/*.ts", "**/pages/**/*.tsx", "**/pages/**/*.ts"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/.astro/**",
+    "**/.netlify/**",
+    "**/.expo/**",
+    "**/.turbo/**",
+    "**/drizzle/**",
+    "apps/website/**"
+  ]
+}

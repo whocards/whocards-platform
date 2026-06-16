@@ -1,0 +1,28 @@
+packages:
+  - apps/*
+  - packages/*
+  - tooling/*
+
+# Single source of truth for shared dependency versions.
+# Packages reference these with `"dep": "catalog:"` instead of pinning.
+catalog:
+  # language + build
+  typescript: ^5.9.3
+  vitest: ^4.0.15
+  tsup: ^8.5.1
+
+  # env validation (Standard Schema based — see each package's keys.ts)
+  '@t3-oss/env-core': ^0.13.8
+  zod: ^4.1.13
+
+  # tRPC (in-app router — see ADR-0002)
+  '@trpc/server': ^11.7.2
+  '@trpc/client': ^11.7.2
+  '@tanstack/react-query': ^5.90.12
+
+  # react (shared major across web React-DOM islands + React Native)
+  react: ^19.2.1
+  react-dom: ^19.2.1
+  '@types/react': ^19.2.7
+  '@types/react-dom': ^19.2.3
+  '@types/node': ^24.10.2
