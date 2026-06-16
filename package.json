@@ -26,10 +26,10 @@
   "lint-staged": {
     "{packages,tooling,apps/mobile}/**/*.{ts,tsx,js,jsx,mjs,cjs}": [
       "oxlint --fix",
-      "oxfmt"
+      "oxfmt --no-error-on-unmatched-pattern"
     ],
     "*.{json,md,yaml,yml}": [
-      "oxfmt"
+      "oxfmt --no-error-on-unmatched-pattern"
     ]
   },
   "devDependencies": {
