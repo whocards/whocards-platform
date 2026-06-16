@@ -1,0 +1,29 @@
+---
+import {Icon} from 'astro-icon/components'
+import questions from '~/data/questions.json'
+import type {Language, QuestionId} from '~types'
+
+export interface Props {
+  id: QuestionId
+  lang: Language
+  class?: string
+}
+
+const {id, lang, class: classes} = Astro.props
+const question = questions[id][lang]
+---
+
+<div
+  class='bg-gradient-to-br from-gray-light to-dark rounded-t-xl pt-[0.5px] pl-[0.5px] to-70% min-w-[165px] w-[165px] lg:min-w-[16.5rem] lg:w-[16.5rem] h-[225px] lg:h-[22.5rem] snap-start'
+  class:list={[classes]}
+>
+  <div class='rounded-t-xl bg-dark relative h-full w-full overflow-hidden'>
+    <Icon name='pattern-card' class='absolute right-0 -top-4 bottom-0' />
+    <p lang={lang} class='p-6 text-sm font-bold lg:text-xl whitespace-pre-line'>{question}</p>
+    <div
+      class='text-primary-dark font-title text-3xl absolute bottom-5 font-bold right-5 lg:right-6 lg:bottom-10 lg:text-5xl'
+    >
+      ?
+    </div>
+  </div>
+</div>

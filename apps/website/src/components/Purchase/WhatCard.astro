@@ -1,0 +1,18 @@
+---
+import {Icon} from 'astro-icon/components'
+import type {Icon as IconName} from 'virtual:astro-icon'
+export interface Props {
+  icon: string
+  title: string
+}
+
+const {icon, title} = Astro.props
+---
+
+<div class='flex flex-col gap-2.5 lg:gap-3'>
+  <Icon class='w-10 h-10 lg:w-12 lg:h-12 mb-1' name={icon as IconName} />
+  <h4 class='text-lg font-semibold leading-7.5 lg:text-2xl lg:tracking-tight'>{title}</h4>
+  <p class='text-sm text-gray-dark lg:text-base'>
+    <slot />
+  </p>
+</div>

@@ -1,0 +1,41 @@
+---
+import {Icon} from 'astro-icon/components'
+import Button from '~components/ui/Button.astro'
+
+export interface Props {
+  href: string
+  type: string
+  class?: string
+  title?: string
+  message?: string
+  buttonLabel?: string
+}
+
+const {
+  href,
+  type,
+  class: className,
+  title = `Your ${type} has been submitted successfully`,
+  message = `We will get back to you shortly.`,
+  buttonLabel = 'Submit another request',
+} = Astro.props
+---
+
+<div
+  class='flex flex-col justify-center text-center items-center rounded-2xl border border-dark w-full md:max-w-lg gap-4 py-[25%] md:py-0 px-4 max-h-[80vh]'
+  class:list={[className]}
+>
+  <Icon name='check-round' class='w-16 h-16 lg:w-20 lg:h-20 min-h-16 min-w-[4rem]' />
+  <h1 class='text-3xl font-title font-bold pt-2'>{title}</h1>
+  <p class='text-base text-gray-dark'>{message}</p>
+  <Button
+    variant='secondary'
+    hideIcon
+    class='text-white border-dark'
+    tag='a'
+    href={href}
+    full={false}
+  >
+    {buttonLabel}
+  </Button>
+</div>

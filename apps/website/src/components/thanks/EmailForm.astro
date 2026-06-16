@@ -1,0 +1,191 @@
+---
+import type {ZodIssue} from 'zod'
+import Button from '~components/ui/Button.astro'
+import Checkbox from '~components/ui/Checkbox.astro'
+import Input from '~components/ui/Input.astro'
+import type {UserSelect, getPurchaseById} from '~server/db'
+
+export interface Props {
+  data?: Pick<Awaited<ReturnType<typeof getPurchaseById>>, 'user'>
+  formData?: Record<string, any>
+  errors?: Record<string, ZodIssue>
+  submitted?: boolean
+  user?: UserSelect
+  mode?: 'newsletter' | 'request'
+}
+
+const {data, formData, errors, user, submitted = false, mode = 'newsletter'} = Astro.props
+const isRequest = mode === 'request'
+const heading = isRequest ? 'Request WhoCards' : 'Would you like to\nhear from us?'
+const subheading = isRequest ? 'Tell us how many decks you need and where to send them.' : undefined
+const newsletterChecked =
+  formData?.newsletter === 'on' ||
+  formData?.newsletter === true ||
+  data?.user.newsletter === true ||
+  user?.newsletter === true
+---
+
+<div class='flex flex-col items-center text-center md:text-start md:items-start gap-4 md:gap-5'>
+  <h2 class='text-3xl lg:text-5xl text-gradient font-bold font-title tracking-tight leading-tight'>
+    {
+      heading.split('\n').map((line, index) => (
+        <>
+          {line}
+          {index === 0 && !isRequest && <br class='hidden md:block' />}
+        </>
+      ))
+    }
+  </h2>
+  {subheading && <p class='lg:text-xl text-gray-dark font-semibold'>{subheading}</p>}
+  {
+    errors && (
+      <p class='lg:text-xl text-red-500'>
+        There were some errors with your submission. Please check the form and try again.
+      </p>
+    )
+  }
+  <form id='email-form' method='POST' class='flex flex-col w-full pb-14'>
+    <Input
+      name='name'
+      min={2}
+      autocomplete='name'
+      required
+      value={formData?.name ?? data?.user.name}
+      error={errors?.name}
+    />
+    <Input
+      name='email'
+      type='email'
+      autocomplete='email'
+      required
+      value={formData?.email ?? data?.user.email}
+      error={errors?.email}
+    />
+    {
+      isRequest && (
+        <>
+          <Input
+            name='quantity'
+            title='Number of decks'
+            type='number'
+            min={1}
+            required
+            value={formData?.quantity ?? ''}
+            error={errors?.quantity}
+          />
+          <Input
+            name='organization'
+            title='Organization (optional)'
+            autocomplete='organization'
+            value={formData?.organization ?? ''}
+            error={errors?.organization}
+          />
+          <Input
+            name='phone'
+            type='tel'
+            autocomplete='tel'
+            required
+            value={formData?.phone ?? ''}
+            error={errors?.phone}
+          />
+          <Input
+            name='address'
+            title='street 1'
+            autocomplete='address-line1'
+            required
+            value={formData?.address ?? ''}
+            error={errors?.address}
+          />
+          <Input
+            name='address2'
+            title='street 2'
+            autocomplete='address-line2'
+            value={formData?.address2 ?? ''}
+            error={errors?.address2}
+          />
+          <Input
+            name='zip'
+            title='zip code'
+            autocomplete='postal-code'
+            required
+            value={formData?.zip ?? ''}
+            error={errors?.zip}
+          />
+          <Input
+            name='city'
+            autocomplete='address-level2'
+            required
+            value={formData?.city ?? ''}
+            error={errors?.city}
+          />
+          <Input
+            name='region'
+            autocomplete='address-level1'
+            value={formData?.region ?? ''}
+            error={errors?.region}
+          />
+          <Input
+            name='country'
+            title='Country'
+            autocomplete='country'
+            required
+            value={formData?.country ?? ''}
+            error={errors?.country}
+          />
+          <label
+            for='request-message'
+            class='text-start text-base font-medium flex flex-col gap-2 pb-2.5'
+          >
+            <div>Message (optional)</div>
+            <textarea
+              id='request-message'
+              name='message'
+              rows={4}
+              class='w-full bg-transparent py-3 px-4.5 border placeholder:text-gray-dark rounded-xl'
+              class:list={[errors?.message ? 'border-red' : 'border-gray']}
+              placeholder='Share any delivery notes or details'
+              set:text={formData?.message ?? ''}
+            />
+            <p class='text-xs text-red'>{errors?.message?.message ?? <>&nbsp;</>}</p>
+          </label>
+        </>
+      )
+    }
+    <Checkbox name='privacy' required checked error={errors?.privacy}>
+      Yes, I have read and agree to WhoCards' <a
+        href='/legal/pp'
+        target='_blank'
+        class='underline text-primary-light'>Privacy Policy</a
+      >
+    </Checkbox>
+    <Checkbox name='newsletter' required={!isRequest} checked={newsletterChecked}>
+      Yes, I would like to sign up for occasional newsletters from WhoCards.
+    </Checkbox>
+
+    <!-- hidden inputs -->
+    <input type='hidden' name='thanks' autocomplete='off' value='youre-welcome' />
+    <input type='text' name='nobot' autocomplete='off' value='' class='hidden' />
+    <Button type='submit' class='mt-4 capitalize lg:max-w-xs' full>
+      {submitted ? 'update' : isRequest ? 'request cards' : 'submit'}
+    </Button>
+  </form>
+</div>
+
+<script>
+  const form = document.getElementById('email-form') as HTMLFormElement
+  const submit = form?.querySelector('button[type="submit"]')
+
+  const setIsValid = () => {
+    if (form?.checkValidity()) {
+      submit?.removeAttribute('disabled')
+    } else {
+      submit?.setAttribute('disabled', '')
+    }
+  }
+
+  setIsValid()
+
+  form?.addEventListener('change', (e) => {
+    setIsValid()
+  })
+</script>

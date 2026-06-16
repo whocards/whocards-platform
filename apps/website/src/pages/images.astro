@@ -1,0 +1,50 @@
+---
+import {Image} from 'astro:assets'
+import languages from '~data/languages.json'
+import Layout from '~layouts/Layout.astro'
+
+const images = [
+  {
+    src: '/icon.png',
+    alt: 'Logo',
+    width: 210,
+    height: 210,
+  },
+  {
+    src: '/pre-order.png',
+    alt: 'Pre-order',
+    width: 400,
+    height: 210,
+  },
+  {
+    src: '/social.png',
+    alt: 'Social',
+    width: 400,
+    height: 210,
+  },
+]
+
+const langs = languages
+---
+
+<Layout title='Images' class='pt-16 gap-12' links={[]}>
+  <h1 class='text-center font-title font-bold text-gradient text-4xl lg:text-7xl pb-2 xs:text-2xl'>
+    Images
+  </h1>
+  <div class='flex flex-wrap gap-5 p-5'>
+    {images.map((image) => <Image {...image} />)}
+  </div>
+  <h2 class='text-gradient text-2xl'>Questions</h2>
+  <div class='grid grid-cols-3 gap-x-4'>
+    {
+      Object.entries(langs).map(([key, name]) => (
+        <a
+          class='block text-xl border-b border-b-transparent text-white hover:border-b-white'
+          href={`/${key}/images`}
+        >
+          {name}
+        </a>
+      ))
+    }
+  </div>
+</Layout>

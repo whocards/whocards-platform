@@ -1,0 +1,35 @@
+---
+export interface Props {
+  title: string
+  subtitle: string
+  description?: string
+  class?: string
+}
+
+const {title, subtitle, description, class: classes} = Astro.props
+---
+
+<div
+  id={subtitle.replaceAll(' ', '-').replace('?', '')}
+  class='flex flex-col px-5 pt-16 pb-8 lg:pb-12 gap-4 lg:gap-5 lg:max-w-7xl xl:px-0 lg:w-full snap-start'
+  class:list={[classes]}
+>
+  <h3
+    class='text-sm font-semibold uppercase leading-snug tracking-wide text-primary-dark lg:text-base lg:tracking-normal lg:leading-7'
+  >
+    {subtitle}
+  </h3>
+  <h2
+    class='text-3xl font-medium font-title leading-10 lg:text-[54px] lg:leading-snug lg:tracking-tighter'
+    class:list={[!Astro.slots.has('outside') && 'lg:max-w-[50%]']}
+  >
+    {title}
+  </h2>
+  {
+    description && (
+      <p class='text-sm leading-snug text-gray-dark pb-2 lg:text-lg lg:max-w-3xl'>{description}</p>
+    )
+  }
+  <slot />
+</div>
+<slot name='outside' />

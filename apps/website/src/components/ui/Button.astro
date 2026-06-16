@@ -1,0 +1,77 @@
+---
+import {Icon} from 'astro-icon/components'
+import type {HTMLAttributes, HTMLTag} from 'astro/types'
+import {cn} from '~utils'
+
+// TODO Polymorphic component https://docs.astro.build/en/guides/typescript/#polymorphic-type
+
+export interface Props<T> extends HTMLAttributes<'button' | 'a'> {
+  size?: 'sm' | 'md' | 'lg'
+  type?: 'button' | 'submit'
+  variant?: 'primary' | 'secondary'
+  hideIcon?: boolean
+  light?: boolean
+  dark?: boolean
+  href?: string
+  tag?: HTMLTag
+  full?: boolean
+  disabled?: boolean
+  target?: string
+}
+
+const {
+  tag: Element = 'button',
+  size = 'lg',
+  type = 'button',
+  variant = 'primary',
+  hideIcon = false,
+  light = false,
+  dark = false,
+  class: classes,
+  full,
+  target,
+  ...props
+} = Astro.props
+---
+
+<Element
+  type={type}
+  class:list={cn([
+    'cursor-pointer text-center flex justify-center items-center transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed',
+    variant === 'primary' &&
+      !dark &&
+      'bg-primary-light hover:bg-yellow-500 active:bg-yellow-300 text-dark',
+    variant === 'primary' &&
+      dark &&
+      'bg-primary-dark hover:bg-opacity-50 active:bg-opacity-75 text-white',
+    variant === 'secondary' &&
+      'border rounded-[14px] hover:bg-gray-100 active:bg-gray-200 hover:bg-opacity-25 active:bg-opacity-10',
+    size === 'lg' &&
+      'py-2.5 px-5 rounded-xl md:py-3.5 md:px-8 md:rounded-2xl md:text-lg md:font-semibold',
+    size === 'md' && 'py-2.5 px-5 rounded-xl',
+    size === 'sm' && 'text-sm min-w-fit rounded-xl',
+    variant === 'secondary'
+      ? light
+        ? 'text-white border-white'
+        : 'text-primary-dark border-primary-dark'
+      : '',
+    full === undefined && 'w-full lg:w-fit',
+    full !== undefined && full && 'w-full',
+    classes,
+  ])}
+  {...props}
+  {...Element === 'a' && {target}}
+>
+  <span class='pointer-events-none'>
+    <slot />
+  </span>
+  {
+    !hideIcon && (
+      <Icon
+        class='inline-block ml-1.5'
+        class:list={target === '_blank' ? 'h-3 w-3' : 'mt-1 h-6 w-6'}
+        name={target === '_blank' ? 'fa-solid:external-link-alt' : 'chevron'}
+      />
+    )
+  }
+</Element>

@@ -1,0 +1,57 @@
+---
+import Button, {type Props as ButtonProps} from '~components/ui/Button.astro'
+import type {Link} from '~constants/navigation'
+
+export interface Props extends Omit<Link, 'href'>, Omit<ButtonProps<'a'>, 'title'> {
+  selected: boolean
+  hideIcon?: boolean
+}
+
+const {
+  href,
+  title,
+  button,
+  selected,
+  size = 'md',
+  play = false,
+  full = false,
+  external = false,
+  class: classes,
+  ...rest
+} = Astro.props
+---
+
+<li
+  class:list={{
+    'text-primary-light pointer-events-none': selected && !button,
+    'btn-ghost hover:text-primary-light hover:opacity-80 active:opacity-100 rounded-xl':
+      !selected && !button,
+    'text-white': !button,
+    contents: button,
+  }}
+>
+  {
+    button ? (
+      <Button
+        size={size}
+        target={external ? '_blank' : '_self'}
+        {...rest}
+        full={full}
+        tag='a'
+        href={href}
+        class:list={[classes]}
+      >
+        {title}
+      </Button>
+    ) : (
+      <a
+        href={href}
+        target={external ? '_blank' : '_self'}
+        class='text-lg font-bold rounded-xl hover:text-primary-light transition-colors duration-300'
+        class:list={[play && 'play', classes]}
+      >
+        {title}
+      </a>
+    )
+  }
+</li>

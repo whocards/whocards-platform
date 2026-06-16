@@ -1,0 +1,48 @@
+---
+export const prerender = false
+
+import {Play, type QuestionSet} from '~components/Play'
+import {DEFAULT_DECK_SLUG, getDeck} from '~data/decks'
+import {LANG_KEYS} from '~utils'
+import Layout from '~layouts/Layout.astro'
+
+// `/play/[deck]` — a deck served at its own stable, SEO-friendly path. SSR
+// (prerender=false) so crawlers still get per-question OG without running JS.
+const slug = Astro.params.deck!
+
+// the library deck lives at /play (back-compat); don't also serve it here.
+if (slug === DEFAULT_DECK_SLUG) {
+  return Astro.redirect(`/play${Astro.url.search}`, 301)
+}
+
+const deck = getDeck(slug)
+if (!deck) {
+  return Astro.redirect('/play', 302)
+}
+
+// resolve lang/id from the query params (same mechanism as /play) so the per-
+// question OG card resolves. lang defaults to the deck's first language.
+const langParam = Astro.url.searchParams.get('lang')
+const lang = langParam && LANG_KEYS.includes(langParam) ? langParam : deck.languages[0]
+const qParam = Astro.url.searchParams.get('q')
+const questionId = qParam && qParam in deck.questions ? qParam : undefined
+---
+
+<Layout
+  lang={lang}
+  oldBg={deck.oldBg}
+  noFooter
+  id={questionId}
+  title={deck.title}
+  description={deck.description}
+>
+  <Play
+    client:only='react'
+    questions={deck.questions as QuestionSet}
+    languages={deck.languages}
+    tracking={deck.tracking}
+    languageStorageKey={deck.languageStorageKey}
+    userIdStorageKey={deck.userIdStorageKey}
+    questionClassName={deck.questionClassName}
+  />
+</Layout>

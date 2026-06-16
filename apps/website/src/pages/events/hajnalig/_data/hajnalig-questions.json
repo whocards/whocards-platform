@@ -1,0 +1,654 @@
+{
+  "1": {
+    "en": "How do you handle conflict?",
+    "hu": "Hogyan kezeled a konfliktusokat?"
+  },
+  "2": {
+    "en": "If one song could be the background music of your life, what would it be?",
+    "hu": "Ha egy szám lehetne az életed háttérzenéje, mi lenne az?"
+  },
+  "3": {
+    "en": "When was the last time you thought, \"Oh no, not again\"?\nWhy?",
+    "hu": "Mikor gondoltad utoljára, \"Jaj ne, már megint\"?\nMiért?"
+  },
+  "4": {
+    "en": "Tell the story of your oldest friendship.",
+    "hu": "Meséld el a legrégebbi barátságod történetét."
+  },
+  "5": {
+    "en": "Are you being funny or sarcastic?",
+    "hu": "Vicces vagy, vagy szarkasztikus vagy?"
+  },
+  "6": {
+    "en": "How many times have you moved in your life?",
+    "hu": "Hányszor költöztél életedben?"
+  },
+  "7": {
+    "en": "If you cook, what is your specialty dish that you can't miss?",
+    "hu": "Ha főzöl, milyen étel a specialitásod, amivel nem tudsz mellé lőni?"
+  },
+  "8": {
+    "en": "What is something that really relaxes you?",
+    "hu": "Mi az, ami igazán kikapcsol?"
+  },
+  "9": {
+    "en": "If you could be invisible for a day, what would you do?",
+    "hu": "Ha egy napra láthatatlan lehetnél, mit csinálnál?"
+  },
+  "10": {
+    "en": "What did you want to be when you were a child?",
+    "hu": "Mi akartál lenni gyerekkorodban?"
+  },
+  "11": {
+    "en": "If you could live a day in someone else’s shoes, who would it be and why?",
+    "hu": "Kinek a bőrébe bújnál bele egy napra?"
+  },
+  "12": {
+    "en": "If you knew the earth would explode tomorrow, what would you do?",
+    "hu": "Ha tudnád, hogy a föld felrobban holnap, mit tennél?"
+  },
+  "13": {
+    "en": "Who was your best boss and what did you learn from them?",
+    "hu": "Ki volt a legjobb főnököd és mit tanultál tőle?"
+  },
+  "14": {
+    "en": "What turns you on?",
+    "hu": "Mi indít be?"
+  },
+  "15": {
+    "en": "How do you feel about the work you do?",
+    "hu": "Milyen a kapcsolatod a munkáddal?"
+  },
+  "16": {
+    "en": "What do many people think about you that isn't true?",
+    "hu": "Mi az, amit sokan gondolnak rólad, pedig nem is igaz?"
+  },
+  "17": {
+    "en": "How many really close friends do you have?",
+    "hu": "Hány legjobb igazán közeli barátod van?"
+  },
+  "18": {
+    "en": "If there was only one season from tomorrow, which would you choose and why?",
+    "hu": "Ha holnaptól csak egy évszak létezne, melyiket választanád és miért?"
+  },
+  "19": {
+    "en": "Who is one person in your circle of family/friends that you would like to get to know better?",
+    "hu": "Ki az az ember a családi / baráti körödben, akit szeretnél jobban megismerni?"
+  },
+  "20": {
+    "en": "What is your most important memory of Lake Balaton?",
+    "hu": "Mi a legfontosabb balatoni emléked?"
+  },
+  "21": {
+    "en": "If you could start a new hobby tomorrow, what would it be?",
+    "hu": "Ha holnaptól új hobbiba kezdhetnél mi lenne az?"
+  },
+  "22": {
+    "en": "What is one of your earliest memories?",
+    "hu": "Melyik az egyik legkorábbi emléked?"
+  },
+  "23": {
+    "en": "If you could be anywhere in the world right now, where would you teleport to?",
+    "hu": "Ha most bárhol lehetnél a világon, hova teleportálnál?"
+  },
+  "24": {
+    "en": "Are you a team player or a lone wolf?\nWhy?",
+    "hu": "Csapatjátékos vagy magányos farkas vagy?\nMiért?"
+  },
+  "25": {
+    "en": "What music gets you the most pumped up?",
+    "hu": "Milyen zene pörget fel a legjobban?"
+  },
+  "26": {
+    "en": "If a wine were your personality, what would it be?",
+    "hu": "Ha egy bor lenne a személyiséged, milyen lenne?"
+  },
+  "27": {
+    "en": "Which foreign cultures attract you?",
+    "hu": "Melyik külföldi kultúra vonz?"
+  },
+  "28": {
+    "en": "What is one thing that everyone takes for granted but should value?",
+    "hu": "Mi az a dolog, amit mindenki természetesnek vesz, pedig értékelni kéne?"
+  },
+  "29": {
+    "en": "If you were to make a wine, what would you name it and what would it have on the label?",
+    "hu": "Ha készítenél egy bort, mi lenne a neve és mi lenne a címkéjén?"
+  },
+  "30": {
+    "en": "What were the moments in your life when you were most afraid?",
+    "hu": "Mik voltak azok a pillanatok az életedben, amikor a leginkább féltél?"
+  },
+  "31": {
+    "en": "What gets you in the \"flow\"?",
+    "hu": "Mi az, amitől \"flow\"-ba kerülsz?"
+  },
+  "32": {
+    "en": "How easy (or hard) was it to make time and be fully present here today?",
+    "hu": "Mennyire volt egyszerű megszervezni azt, hogy ma teljesen szabad legyél és itt tudjál lenni?"
+  },
+  "33": {
+    "en": "What made you decide to come here today?\nHow?",
+    "hu": "Mikor határoztad el, hogy ma itt leszel?\nHogyan?"
+  },
+  "34": {
+    "en": "When did you feel the bravest?",
+    "hu": "Mikor érezted magad a legbátrabbnak?"
+  },
+  "35": {
+    "en": "Do you believe in astrology?\nWhy?",
+    "hu": "Hiszel az asztrológiában?\nMiért?"
+  },
+  "36": {
+    "en": "Where are you most yourself?",
+    "hu": "Hol vagy a leginkább önmagad?"
+  },
+  "37": {
+    "en": "What's one thing you'd like to learn if you had the time?",
+    "hu": "Mi az a dolog, amit szívesen megtanulnál, ha lenne rá időd?"
+  },
+  "38": {
+    "en": "Where or with whom do you really feel at home (apart from your current address)?",
+    "hu": "Hol, vagy kivel érzed igazán otthon magad (a jelenlegi lakcímedet kivéve)?"
+  },
+  "39": {
+    "en": "Do you prefer a quiet evening with a glass of wine or a party with lots of friends?",
+    "hu": "Inkább egy nyugodt estét választasz egy pohár borral, vagy egy bulit sok baráttal?"
+  },
+  "40": {
+    "en": "What has inspired you lately?",
+    "hu": "Mi az, ami mostanában inspirált?"
+  },
+  "41": {
+    "en": "When do you feel alone?",
+    "hu": "Mikor érzed magad egyedül?"
+  },
+  "42": {
+    "en": "What's something you're proud of?",
+    "hu": "Mondj valamit, amire büszke voltál / vagy."
+  },
+  "43": {
+    "en": "What season of the year are you and why?",
+    "hu": "Melyik évszak vagy te, és miért?"
+  },
+  "44": {
+    "en": "What is something you would like to let go of?",
+    "hu": "Mi az, amit szeretnél elengedni?"
+  },
+  "45": {
+    "en": "How many steps are on your step counter today?",
+    "hu": "Mennyi lépés van a mai napon a lépésszámlálódban?"
+  },
+  "46": {
+    "en": "Who would you take with you to a desert island?",
+    "hu": "Kit vinnél magadra egy lakatlan szigetre?"
+  },
+  "47": {
+    "en": "What's your favourite place in the world – whether it's a city, a cafe, or just a bench in the park?",
+    "hu": "Mi a kedvenc helyed a világon – akár egy város, egy kávézó, vagy csak egy pad a parkban?"
+  },
+  "48": {
+    "en": "Who do you look up to and why?",
+    "hu": "Ki az, akire felnézel, és miért?"
+  },
+  "49": {
+    "en": "If you could only eat one food for a week, what would it be?",
+    "hu": "Ha csak egy ételt ehetnél egy hétig, mi lenne az?"
+  },
+  "50": {
+    "en": "What was the biggest turning point in your life?",
+    "hu": "Mi volt életed legnagyobb fordulópontja?"
+  },
+  "51": {
+    "en": "What is the place (country, landscape) where you would most like to taste wine?",
+    "hu": "Melyik az a hely (ország, táj), ahol legszívesebben bort kóstolnál?"
+  },
+  "52": {
+    "en": "What is your favorite guilty pleasure?",
+    "hu": "Mi a kedvenc bűnös élvezeted?"
+  },
+  "53": {
+    "en": "What song lyric or chorus always gets stuck in your head?",
+    "hu": "Mi az a refrén, ami soha nem megy ki a fejedből?"
+  },
+  "54": {
+    "en": "What 3 things would you take with you to a desert island?",
+    "hu": "Milyen 3 dolgot vinnél magaddal egy lakatlan szigetre?"
+  },
+  "55": {
+    "en": "What was the most memorable concert or event you ever attended?",
+    "hu": "Mi volt a legemlékezetesebb koncert vagy esemény, amin részt vettél?"
+  },
+  "56": {
+    "en": "Who did you come here with today?",
+    "hu": "Kivel jöttél ma ide?"
+  },
+  "57": {
+    "en": "What is your relationship with nature?",
+    "hu": "Milyen kapcsolatban állsz a természettel?"
+  },
+  "58": {
+    "en": "Where would you hide if there was a zombie apocalypse?",
+    "hu": "Hova bújnál, ha zombi apokalipszis lenne?"
+  },
+  "59": {
+    "en": "What do you do on a daily basis to feel good?",
+    "hu": "Mit teszel napi szinten a jó közérzetért?"
+  },
+  "60": {
+    "en": "What kind of feedback do you often get, and how have you responded to it?",
+    "hu": "Milyen visszajelzést kaptál többször is, és mit kezdtél/kezdesz vele?"
+  },
+  "61": {
+    "en": "What makes you feel small?",
+    "hu": "Mi az, amitől kicsinek érzed magad?"
+  },
+  "62": {
+    "en": "Do you know your star sign and your rising sign too?\nWhat meaning do they carry for you?",
+    "hu": "Mi a horoszkópod?\nÉs az aszcendensed?"
+  },
+  "63": {
+    "en": "What is a secret desire?",
+    "hu": "Mi egy titkos vágyad?"
+  },
+  "64": {
+    "en": "What were you like as a teenager?",
+    "hu": "Milyen voltál tinédzserként?"
+  },
+  "65": {
+    "en": "If anything were possible, what one global problem would you solve?\nWhy?",
+    "hu": "Ha bármi lehetséges lenne, milyen világméretű problémát oldalnál meg?\nMiért?"
+  },
+  "66": {
+    "en": "If you could choose one superpower, what would it be and what would you use it for?",
+    "hu": "Ha egy szupererőt választhatnál, mi lenne az és mire használnád?"
+  },
+  "67": {
+    "en": "Thinking back to your childhood, what were your favourite things?\nWhat made you feel excited?",
+    "hu": "Ha visszagondolsz a gyerekkorodra, mik voltak a kedvenc dolgaid?\nMitől érezted magad izgatottnak?"
+  },
+  "68": {
+    "en": "What gets you out of bed and excited in the morning these days?",
+    "hu": "Mi az, ami miatt mostanában érdemes reggelente felkelni?"
+  },
+  "69": {
+    "en": "Do you have a weird hobby or habit?",
+    "hu": "Van valami furcsa hobbid vagy szokásod?"
+  },
+  "70": {
+    "en": "What do you think is the story that lives in other people's minds about you?",
+    "hu": "Mit gondolsz, mi az a történet, ami mások fejében él rólad?"
+  },
+  "71": {
+    "en": "Who is your greatest role model?",
+    "hu": "Ki a legnagyobb példaképed?"
+  },
+  "72": {
+    "en": "What's the one thing you've ever worked the hardest for and why?",
+    "hu": "Mi az, amiért valaha a legkeményebben dolgoztál, és miért?"
+  },
+  "73": {
+    "en": "Who would you invite to a wine night - anyone in the world?",
+    "hu": "Kit hívnál meg egy borozós estéhez - bárkit a világból?"
+  },
+  "74": {
+    "en": "If you won infinite money, what would you buy first?",
+    "hu": "Ha végtelen pénzt nyernél, mit vennél meg legelőször belőle?"
+  },
+  "75": {
+    "en": "If you could be anyone else in the world for a day, who would you be and what would you do?",
+    "hu": "Ha egy napra bárki más lehetnél a világon, ki lennél és mit csinálnál?"
+  },
+  "76": {
+    "en": "What are your two favourite dance moves?\nShow them to me!",
+    "hu": "Mi a két kedvenc tánc mozdulatod?\nMutasd meg őket!"
+  },
+  "77": {
+    "en": "How well can you be HERE today, in the present?",
+    "hu": "Mennyire tudsz ma ITT, a jelenben lenni?"
+  },
+  "78": {
+    "en": "What’s one thing that really surprised you?",
+    "hu": "Mi az, ami igazán meglepett?"
+  },
+  "79": {
+    "en": "Are you an extrovert or an introvert?",
+    "hu": "Extrovertált vagy introvertált vagy?"
+  },
+  "80": {
+    "en": "If you knew you were going to die suddenly in a year, what would you change about the way you live your life and why?",
+    "hu": "Ha tudnád, hogy egy év múlva egy év múlva hirtelen meghalsz, mit változtatnál azon, ahogyan éled az életed, és miért?"
+  },
+  "81": {
+    "en": "Which book has had the biggest impact on you recently?",
+    "hu": "Melyik könyv volt a rád legutóbb nagy hatással?"
+  },
+  "82": {
+    "en": "What was your first love story?",
+    "hu": "Mi volt az első szerelmi történeted?"
+  },
+  "83": {
+    "en": "What major thing was happening in the world when you were born?\nHow did it shape you?",
+    "hu": "Milyen nagy dolog történt a világban, amikor megszülettél?\nHogyan formált ez téged?"
+  },
+  "84": {
+    "en": "If someone covered your basic living expenses, how would you live your life?",
+    "hu": "Ha valaki fedezné az alapvető megélhetési költségeidet, hogyan élnéd az életed?"
+  },
+  "85": {
+    "en": "What was the last film or series that drew you in?",
+    "hu": "Melyik film vagy sorozat húzott be legutoljára?"
+  },
+  "86": {
+    "en": "If you could only drink 1 type of wine today, which would it be?",
+    "hu": "Ha csak 1 féle bort ihatnál ma, melyik lenne az?"
+  },
+  "87": {
+    "en": "What do you love most about yourself?",
+    "hu": "Mi az, amit a legjobban szeretsz magadban?"
+  },
+  "88": {
+    "en": "In what ways is nature part of your life?",
+    "hu": "Milyen módon része a természet az életednek?"
+  },
+  "89": {
+    "en": "What is your favourite Tankcsapda song?",
+    "hu": "Melyik a kedvenc Tankcsapda számod?"
+  },
+  "90": {
+    "en": "What was the most memorable trip of your life and why?",
+    "hu": "Melyik volt életed legemlékezetesebb utazása és miért?"
+  },
+  "91": {
+    "en": "What is the most interesting thing you have learned recently (about yourself or in general)?",
+    "hu": "Mi a legérdekesebb dolog, amit mostanában tanultál (magadról vagy általánosságban)?"
+  },
+  "92": {
+    "en": "People are often surprised to learn about me...\nWhy do you think that is?",
+    "hu": "Az emberek gyakran meglepődnek, amikor megtudják rólam...\nMit gondolsz, miért?"
+  },
+  "93": {
+    "en": "What is one thing you always take with you on a trip?",
+    "hu": "Mi az, amit mindig viszel magaddal egy utazásra?"
+  },
+  "94": {
+    "en": "What would you say to yourself 10 years younger?",
+    "hu": "Mit üzennél 10 évvel fiatalabb önmagadnak?"
+  },
+  "95": {
+    "en": "What do you do to forget your daily worries for a little while?",
+    "hu": "Mit teszel, hogy egy kis időre elfelejtsd a napi gondokat?"
+  },
+  "96": {
+    "en": "Would you prefer sunrise or sunset?",
+    "hu": "Inkább napfelkelte vagy naplemente?"
+  },
+  "97": {
+    "en": "What qualities or skills do you envy in others?",
+    "hu": "Milyen tulajdonságokat vagy képességeket irigyelsz másokban?"
+  },
+  "98": {
+    "en": "What is your most annoying quality?",
+    "hu": "Mi a legidegesítőbb tulajdonságod?"
+  },
+  "99": {
+    "en": "What has been your best wine experience so far?",
+    "hu": "Mi volt a legjobb boros élményed eddig?"
+  },
+  "100": {
+    "en": "What is one of your dreams for the future?",
+    "hu": "Mi egyik álmod a jövőre nézve?"
+  },
+  "101": {
+    "en": "How do you feel about religion?",
+    "hu": "Hogy állsz a valláshoz?"
+  },
+  "102": {
+    "en": "Which character from Friends are you?",
+    "hu": "Melyik szereplő vagy a Jóbarátokból?"
+  },
+  "103": {
+    "en": "Which celebrity would you date?\nWhy?",
+    "hu": "Melyik hírességgel randiznál?\nMiért?"
+  },
+  "104": {
+    "en": "What life experience or decision has had the greatest impact on your life?",
+    "hu": "Milyen élettapasztalat vagy döntés volt a legnagyobb hatással az életedre?"
+  },
+  "105": {
+    "en": "Is there something you have long dreamed of doing?\nIf so, why haven't you done it until now?",
+    "hu": "Van-e valami, amiről régóta álmodozol, hogy megteszed?\nHa igen, eddig miért nem tetted meg?"
+  },
+  "106": {
+    "en": "What was the last thing you laughed out loud about?",
+    "hu": "Mi volt az utolsó dolog, amin hangosan nevettél?"
+  },
+  "107": {
+    "en": "What is your favourite food that someone has cooked for you?",
+    "hu": "Mi a kedvenc ételed, amit valaki főzött neked?"
+  },
+  "108": {
+    "en": "If you could choose anyone in the world, who would you invite for a glass of wine and why?",
+    "hu": "Ha a világon bárkit választhatnál, kit hívnál el egy pohár borra és miért?"
+  },
+  "109": {
+    "en": "What's the top three items of your bucket list?",
+    "hu": "Mi van a bakancslistád első három helyén?"
+  },
+  "110": {
+    "en": "What is the one topic you can't be cool about at all?",
+    "hu": "Milyen téma az, amiben egyáltalán nem tudsz laza lenni?"
+  },
+  "111": {
+    "en": "Who would play you in the movie of your life?",
+    "hu": "Ki játszana téged életed filmjében?"
+  },
+  "112": {
+    "en": "What has been the highlight of your day so far?",
+    "hu": "Mi volt a napod fénypontja eddig?"
+  },
+  "113": {
+    "en": "What is your strangest habit?",
+    "hu": "Mi a legfurcsább szokásod?"
+  },
+  "114": {
+    "en": "What is one of the most difficult life experiences you have ever gone through?",
+    "hu": "Mi az egyik legnehezebb élettapasztalatod, amin valaha átmentél?"
+  },
+  "115": {
+    "en": "Name two people who've had a big impact on your life. How did they shape who you are?",
+    "hu": "Mondj két olyan embert, akik nagy hatással voltak az életedre. Hogyan hatottak rád?"
+  },
+  "116": {
+    "en": "How much would you have to win the lottery to do what you want for the rest of your life?",
+    "hu": "Mennyit kellene nyerned a lottón, hogy életed hátralévő részében azt csinálj, amit akarsz?"
+  },
+  "117": {
+    "en": "What is your most romantic memory of Lake Balaton?",
+    "hu": "Mi a legromantikusabb balatoni emléked?"
+  },
+  "118": {
+    "en": "How many times have you been to Mount St. George?\nWhen was the first time you went?",
+    "hu": "Hányadszor jársz a Szent György-hegyen?\nMikor voltál először?"
+  },
+  "119": {
+    "en": "What is one thing you've been wanting to try for a long time?",
+    "hu": "Mi az a dolog, amit már régóta szeretnél kipróbálni?"
+  },
+  "120": {
+    "en": "Hum your most annoying melody!",
+    "hu": "Dúdold el a legidegesítőbb dallamtapadásodat!"
+  },
+  "121": {
+    "en": "What was your last dejavu?",
+    "hu": "Mi volt az utolsó déjà vu-d?"
+  },
+  "122": {
+    "en": "What is your most endearing quality?",
+    "hu": "Mi a legszerethetőbb tulajdonságod?"
+  },
+  "123": {
+    "en": "If you were a plant, what would you be?",
+    "hu": "Ha növény lennél, mi lennél?"
+  },
+  "124": {
+    "en": "You're lost in the jungle with a trombone, an aluminium plate, a packet of chewing gum and a set of keys. How did you save the world?",
+    "hu": "Eltévedtél a dzsungelben egy harsonával, egy alumínium lappal, egy csomag rágógumival és egy kulcscsomóval. Hogyan mented meg a világot?"
+  },
+  "125": {
+    "en": "What's one piece of advice you often give to others but find hard to follow yourself?",
+    "hu": "Mi az a tanács, amit gyakran adsz másoknak, de neked is nehéz betartanod?"
+  },
+  "126": {
+    "en": "HELLO, how are you?\nBut really!",
+    "hu": "HELLO, hogy vagy?\nDe úgy igazán!"
+  },
+  "127": {
+    "en": "What crazy dream of yours do you remember?",
+    "hu": "Milyen őrült álmodra emlékszel?"
+  },
+  "128": {
+    "en": "When you're having a bad day, what cheers you up?",
+    "hu": "Ha rossz napod van, mi vidít fel?"
+  },
+  "129": {
+    "en": "What are you grateful for right now?",
+    "hu": "Mi az, amiért hálás vagy jelenleg?"
+  },
+  "130": {
+    "en": "If you could choose anyone in the world, who would you take out to dinner and why?",
+    "hu": "Ha a világon bárkit választhatnál, kit hívnál el vacsorázni, és miért?"
+  },
+  "131": {
+    "en": "What is your favourite place on Lake Balaton?",
+    "hu": "Mi a kedvenc balatoni helyed?"
+  },
+  "132": {
+    "en": "What makes you happy?",
+    "hu": "Mi tesz boldoggá?"
+  },
+  "133": {
+    "en": "When was the last time you said \"finally\"!\nWhy?",
+    "hu": "Mikor mondtad utoljára, hogy \"végre\"!\nMiért?"
+  },
+  "134": {
+    "en": "What wine do you remember drinking on a special occasion?",
+    "hu": "Milyen borra emlékszel vissza, amit egy különleges alkalomkor ittál?"
+  },
+  "135": {
+    "en": "What was the most unexpected thing you ever learned about someone in a conversation?",
+    "hu": "Mi volt a legváratlanabb dolog, amit valaha megtudtál valakiről egy beszélgetés során?"
+  },
+  "136": {
+    "en": "What is the best advice you have ever received?\nWho gave it to you?",
+    "hu": "Mi a legjobb tanács, amit valaha kaptál?\nKitől származott?"
+  },
+  "137": {
+    "en": "What would be the background music for your day?",
+    "hu": "Mi lenne a háttérzenéje a mai napodnak?"
+  },
+  "138": {
+    "en": "What important quality did you inherit from your parents?",
+    "hu": "Milyen fontos tulajdonságodat örökölted a szüleidtől?"
+  },
+  "139": {
+    "en": "White, red or rosé - Which do you choose and why?",
+    "hu": "Fehér, vörös vagy rozé - te melyiket választod, és miért?"
+  },
+  "140": {
+    "en": "When/where are you happiest or most content in your life?",
+    "hu": "Mikor/hol vagy a legboldogabb, vagy legelégedettebb az életedben?"
+  },
+  "141": {
+    "en": "If you could get a magical power-up at the festival, what would it be?",
+    "hu": "Ha a fesztiválon kapnál egy varázslatos power-upot, mi lenne az?"
+  },
+  "142": {
+    "en": "What is a question you would also ask a stranger over a glass of wine?",
+    "hu": "Mi az a kérdés, amit te is feltennél egy idegennek egy pohár bor mellett?"
+  },
+  "143": {
+    "en": "What would be the official slogan of the hill if you had to write it?",
+    "hu": "Mi lenne a hegy hivatalos szlogenje, ha neked kéne megírnod?"
+  },
+  "144": {
+    "en": "What's the best way to turn strangers into acquaintances in one evening?",
+    "hu": "Mi a legjobb módja annak, hogy ismeretlenekből egy este alatt ismerősök legyenek?"
+  },
+  "145": {
+    "en": "What's a small thing that instantly puts you in a summer mood?",
+    "hu": "Mi az az apróság, ami rögtön beindítja nálad a nyári hangulatot?"
+  },
+  "146": {
+    "en": "If you ran into your 10-years-younger self tonight, what would you say to them?",
+    "hu": "Ha ma este összefutnál a 10 évvel fiatalabb önmagaddal, mit mondanál neki?"
+  },
+  "147": {
+    "en": "If Mount St. George could send you a message, what would it say to you now?",
+    "hu": "Ha a Szent György-hegy tudna üzenni, mit mondana most neked?"
+  },
+  "148": {
+    "en": "What would your \"until dawn\" story be in one sentence?",
+    "hu": "Mi lenne a te „hajnalig\" sztorid egy mondatban?"
+  },
+  "149": {
+    "en": "If you had to describe tonight in three words, what would they be?",
+    "hu": "Ha a mai estét három szóval kellene leírni, mi lenne az?"
+  },
+  "150": {
+    "en": "What's the best thing that can happen during a spontaneous evening?",
+    "hu": "Mi a legjobb dolog, ami egy spontán este közben történhet?"
+  },
+  "151": {
+    "en": "What wine or festival habit do others find strange but you love?",
+    "hu": "Mi az a boros vagy fesztiválos szokásod, amit mások furcsának tartanak, de te imádod?"
+  },
+  "152": {
+    "en": "If this evening were a chapter in your life, what would it be called?",
+    "hu": "Ha ez az este egy fejezet lenne az életedben, mi lenne a címe?"
+  },
+  "153": {
+    "en": "What's a sentence you already know you'll definitely say tonight?",
+    "hu": "Mi az a mondat, amit már most tudsz, hogy ma este biztosan el fogsz mondani?"
+  },
+  "154": {
+    "en": "Which venue are you definitely going to today, and why?",
+    "hu": "Melyik helyszínre mész ma biztosan, és miért?"
+  },
+  "155": {
+    "en": "What is something you absolutely want to do today?",
+    "hu": "Mi az, amit ma még mindenképpen meg akarsz csinálni?"
+  },
+  "156": {
+    "en": "If tonight got a Tripadvisor review from you, what would you write?",
+    "hu": "Ha a mai este egy Tripadvisor-értékelést kapna tőled, mit írnál?"
+  },
+  "157": {
+    "en": "After how many glasses of wine do you become the one who chats up anyone?",
+    "hu": "Hány pohár bor után leszel te az, aki bárkivel összespanol?"
+  },
+  "158": {
+    "en": "Which are you: the \"one more round\" or the \"I'm heading out\" type?",
+    "hu": "Melyik vagy te: „még egy kört\" vagy „én már megyek\" típus?"
+  },
+  "159": {
+    "en": "Do you have a habit that only comes out at festivals?",
+    "hu": "Van egy szokásod, ami csak fesztiválon jön elő?"
+  },
+  "160": {
+    "en": "What's the last thing you said \"never again\" about, and then did anyway?",
+    "hu": "Mi az utolsó dolog, amire azt mondtad, hogy „soha többé\", és aztán mégis?"
+  },
+  "161": {
+    "en": "How many times have you been here? Has something changed in you since the first time?",
+    "hu": "Hányadszor vagy itt? Változott az első alkalom óta benned valami?"
+  },
+  "162": {
+    "en": "If Hajnalig had an unofficial anthem, what would it be?",
+    "hu": "Ha a Hajnalignak lenne egy nem hivatalos himnusza, mi lenne az?"
+  },
+  "163": {
+    "en": "What made you come to Hajnalig this year?",
+    "hu": "Mi az, ami miatt idén eljöttél a Hajnaligra?"
+  }
+}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  <rect width="13.339" height="17.15" x="5.199" y="3.38" stroke="url(#a)" stroke-linecap="round" stroke-linejoin="round"
+    stroke-width="1.429" rx="1.905" />
+  <path stroke="url(#b)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.429"
+    d="m12.675 9.48 1.496 1.902c.28.364.28.872 0 1.236l-1.496 1.903a.845.845 0 0 1-1.351 0l-1.496-1.903a1.014 1.014 0 0 1 0-1.236l1.496-1.903a.845.845 0 0 1 1.35 0Z"
+    clip-rule="evenodd" />
+  <defs>
+    <linearGradient id="a" x1="14.879" x2="5.678" y1="7.508" y2="18.478" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C058D2" />
+      <stop offset="1" stop-color="#F9D75F" />
+    </linearGradient>
+    <linearGradient id="b" x1="13.074" x2="10.051" y1="10.518" y2="14.38" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#C058D2" />
+      <stop offset="1" stop-color="#F9D75F" />
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,104 @@
+---
+export interface Props {
+  title?: string
+  description?: string
+  image?: string
+  // id/language let SSR pages (e.g. /play) supply the per-question metadata that
+  // static question pages used to get from route params.
+  id?: string
+  language?: string
+}
+
+const fonts = ['aptly_regular', 'aptly_medium', 'golos_text']
+
+const {id: paramId, language: paramLang} = Astro.params
+const {
+  title: propTitle,
+  description: propDesc,
+  image: img,
+  id: propId,
+  language: propLang,
+} = Astro.props
+const id = paramId ?? propId
+const language = paramLang ?? propLang
+const site = Astro.site
+
+const canonicalUrl = new URL(Astro.url.pathname, site)
+
+// non question pages
+const titles: string[] = ['WhoCards']
+let description =
+  propDesc ||
+  'WhoCards help us create conversations that encourage honest self-expression, active listening and deeper human connections.'
+let image = img || `social.png`
+
+if (propTitle) {
+  titles.push(propTitle)
+}
+
+// question pages
+if (id) {
+  titles.push(`Question #${id}`)
+  // Card image is generated programmatically from questions.json at build time
+  // (see src/pages/og/[language]/[id].png.ts) — no committed PNG required.
+  if (!img) image = `og/${language}/${id}.png`
+  description = 'Dare to be Curious?'
+}
+// complete image url
+image = `${site}${site?.toString().endsWith('/') ? '' : '/'}` + image
+
+const title = titles.join(' | ')
+---
+
+<!-- Global Metadata -->
+<meta charset='utf-8' />
+<meta name='viewport' content='width=device-width' />
+
+<!-- Primary Meta Tags -->
+<title>{title}</title>
+<meta name='title' content={title} />
+{description && <meta name='description' content={description} />}
+<link rel='canonical' href={canonicalUrl} />
+
+<!-- Favicon -->
+<link
+  rel='icon'
+  type='image/svg+xml'
+  href='/favicons/favicon-light.svg'
+  media='(prefers-color-scheme: light)'
+/>
+<link
+  rel='icon'
+  type='image/svg+xml'
+  href='/favicons/favicon-dark.svg'
+  media='(prefers-color-scheme: dark)'
+/>
+<link rel='apple-touch-icon' href='/apple-touch-icon.png' />
+<link rel='icon' href='/favicon.ico' sizes='any' />
+
+<!-- Open Graph -->
+<meta property='og:type' content='website' />
+<meta property='og:url' content={canonicalUrl} />
+<meta property='og:title' content={title} />
+<meta property='og:description' content={description} />
+<meta property='og:image' content={image} />
+<meta property='og:image:width' content='1200' />
+<meta property='og:image:height' content='630' />
+<meta property='og:locale' content={language} />
+
+<!-- Twitter -->
+<meta property='twitter:card' content='summary_large_image' />
+<meta property='twitter:url' content={canonicalUrl} />
+<meta property='twitter:title' content={title} />
+<meta property='twitter:description' content={description} />
+<meta property='twitter:image' content={image} />
+
+<!-- generator -->
+<meta name='generator' content={Astro.generator} />
+
+<!-- fonts -->
+{
+  fonts.map((font) => (
+    <link rel='preload' href={`/fonts/${font}.woff2`} as='font' type='font/woff2' crossorigin />
+  ))
+}

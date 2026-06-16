@@ -1,0 +1,80 @@
+---
+import {Icon} from 'astro-icon/components'
+import {preorderLinks, socialLinks, legalLinks} from '~constants/navigation'
+---
+
+<hr class='w-full border-dark' />
+<footer
+  class='flex flex-col gap-12 text-gray-dark w-full px-5 py-12 md:max-w-7xl md:mx-auto xl:px-0 md:w-full md:flex-row md:justify-between md:flex-wrap'
+>
+  <div class='flex flex-col gap-8 items-start'>
+    <Icon name='logo-plain' class='h-7 fill-white mr-auto' />
+    <div class='flex flex-row gap-2.5'>
+      {
+        socialLinks.map((link) => (
+          <a
+            href={link.href}
+            target='_blank'
+            class='bg-dark p-2 rounded-full flex items-center justify-center border border-transparent hover:border-primary-light active:border-primary-dark'
+          >
+            <Icon name={link.icon} class='h-5 w-5' />
+          </a>
+        ))
+      }
+      <button
+        id='share'
+        type='button'
+        class='hidden bg-dark p-2 rounded-full items-center justify-center'
+      >
+        <Icon name='ic:twotone-share' class='h-5 w-5' />
+      </button>
+    </div>
+    <p class='hidden md:block'>Copyright @ 2023<br />Alles ist Dialog</p>
+  </div>
+  <div class='flex justify-between'>
+    <div class='flex flex-col gap-4'>
+      {
+        preorderLinks
+          .filter((i) => !i.button)
+          .map((link) => (
+            <a
+              href={link.href}
+              class='text-sm font-semibold w-36 hover:text-primary-light active:underline'
+            >
+              {link.title}
+            </a>
+          ))
+      }
+    </div>
+    <div class='flex flex-col gap-4 text-end'>
+      {
+        legalLinks.map((link) => (
+          <a
+            href={link.href}
+            target='_blank'
+            class='text-sm font-semibold w-36 hover:text-primary-light active:underline'
+          >
+            {link.title}
+          </a>
+        ))
+      }
+    </div>
+  </div>
+  <p class='md:hidden'>Copyright @ 2023<br />Alles ist Dialog</p>
+</footer>
+
+<script>
+  if (!!navigator.share) {
+    const share = document.getElementById('share') as HTMLButtonElement
+    share.classList.remove('hidden')
+    share.classList.add('flex')
+    share.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      navigator.share({
+        title: 'WhoCards | Request Cards',
+        url: window.location.toString(),
+      })
+    })
+  }
+</script>

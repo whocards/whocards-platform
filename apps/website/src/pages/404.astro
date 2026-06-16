@@ -1,0 +1,23 @@
+---
+import {Icon} from 'astro-icon/components'
+import Layout from '~layouts/Layout.astro'
+---
+
+<Layout>
+  <div
+    class='flex w-full flex-col items-center gap-6 self-start px-4 pt-4 text-white md:gap-8 md:pt-12'
+  >
+    <Icon name='error' class='w-64 md:w-96 lg:w-[490px]' />
+    <h1 class='font-title text-4xl md:text-6xl'>404 Page not found</h1>
+    <p class='text-center md:text-2xl'>
+      This page doesn't exist or was removed. <br class='lg:hidden' />Perhaps you want to find your
+      way home?
+    </p>
+    <div class='flex w-full flex-col items-center gap-8 md:flex-row md:justify-center'>
+      <a class='btn-primary btn' href='/'>Go to homepage</a>
+      <button class='btn-secondary btn' onclick='window.history.go(-1); return false'
+        >Go Back</button
+      >
+    </div>
+  </div>
+</Layout>

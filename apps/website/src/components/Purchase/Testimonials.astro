@@ -1,0 +1,35 @@
+---
+import TestimonialCard from './TestimonialCard.astro'
+
+import benoit from '~assets/images/testimonials/benoit-brume.jpg'
+import diya from '~assets/images/testimonials/diya-deb.png'
+import gib from '~assets/images/testimonials/gib-bulloch.jpg'
+---
+
+<div
+  class='grid grid-flow-col gap-3 justify-start pl-4 lg:pl-0 overflow-y-hidden overflow-x-scroll w-[calc(100vw-17px)] lg:w-full scrollbar-hide lg:flex-row lg:justify-between lg:gap-6 lg:max-w-7xl'
+>
+  <TestimonialCard name='Diya Deb' title='Executive Director, Mindworks Lab' image={diya}>
+    "WhoCards has been a game-changer for our international team at Mindworks. Using them has
+    transformed our remote interactions; fostering authenticity, empathy, and trust among team
+    members; ultimately enhancing collaboration and productivity. WhoCards is more than just a card
+    game; it's a powerful tool for building genuine connections, reshaping perception of self and
+    others, and becoming better listeners and empathetic leaders."
+  </TestimonialCard>
+  <TestimonialCard name='Benoit Brume' title='Highline World Champion' image={benoit}>
+    “It's often easier to connect with individuals who share a common background, whether that's
+    related to your profession, hobbies, or sports. However, WhoCards offer a unique opportunity to
+    form deep connections with people on a fundamental human level. The questions they pose are so
+    essential that they resonate with every human being. This tool is invaluable for getting to know
+    people, whether they're your teammates on an outdoor mission or friends from your everyday
+    life.”
+  </TestimonialCard>
+  <TestimonialCard name='Gib Bulloch' title='Founder @ Craigberoch' image={gib}>
+    “So many business conversations are dominated by the question: What do you do for a living? This
+    labeling significantly limits our understanding of people and feeds our unconscious biases.
+    WhoCards is a simple yet effective tool to go deeper and understand the broader identities of
+    individuals beyond them being defined by their job titles. At the Craigberoch Business
+    Decelerator we use them extensively in all our workshops to help people slow down and connect to
+    each other with a new kind of quality.”
+  </TestimonialCard>
+</div>

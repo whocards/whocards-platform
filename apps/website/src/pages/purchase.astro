@@ -1,0 +1,26 @@
+---
+export const prerender = false
+import {loadStripe} from '@stripe/stripe-js'
+import {env} from '~env-secrets'
+import {createSession} from '~server/stripe'
+import {orderSchema} from '~utils/schemas'
+
+loadStripe(env.PUBLIC_STRIPE_PUBLIC_KEY)
+
+try {
+  const data = orderSchema.parse({
+    count: Astro.url.searchParams.get('count'),
+    priceId: Astro.url.searchParams.get('priceId'),
+    shippingId: Astro.url.searchParams.get('shippingId'),
+  })
+
+  const session = await createSession(data, Astro.url)
+  if (!session.url) throw new Error('No session URL')
+  return Astro.redirect(session.url, 303)
+} catch (error) {
+  console.error(error)
+  Astro.redirect('/')
+}
+---
+
+<h1>Redirecting...</h1>

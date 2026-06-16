@@ -1,0 +1,35 @@
+---
+import Button from '~components/ui/Button.astro'
+import Footer from './_components/footer.astro'
+import Layout from './_components/layout.astro'
+---
+
+<Layout showFooter>
+  <div class='text-center space-y-4 md:space-y-8 w-full'>
+    <h1 class='text-center font-title font-bold text-4xl md:text-7xl md:pb-8'>
+      Koccints. Kérdezz.<br />Kapcsolódj!
+    </h1>
+    <p
+      class='justify-self-center text-center text-sm md:text-lg font-semibold leading-4 md:leading-7 max-w-xl'
+    >
+      A kártya nálad van, és Te döntesz. Ha kíváncsi vagy kezdeményezz egy beszélgetést. A
+      kérdéseket pedig értelmezd szabadon.
+    </p>
+    <div
+      class='grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-4 md:gap-8 w-full md:max-w-xl py-2.5 md:py-5 lg:pt-8 mx-auto'
+    >
+      <Button tag='a' class='play' size='lg' full href='/events/hajnalig/play' class='py-2'
+        >Új kérdés</Button
+      >
+      <Button
+        tag='a'
+        href='/contact'
+        full
+        hideIcon
+        variant='secondary'
+        class='py-2 hover:bg-primary-dark/20 active:bg-primary-dark/40'>Kérj kártyát</Button
+      >
+    </div>
+    <Footer />
+  </div>
+</Layout>

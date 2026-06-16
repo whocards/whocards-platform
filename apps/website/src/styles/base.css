@@ -1,0 +1,198 @@
+@import 'tailwindcss';
+@plugin "daisyui" {
+  themes: false;
+  logs: false;
+}
+@plugin "@tailwindcss/typography";
+
+@theme {
+  /* Spacing */
+  --spacing-4\.5: 1.125rem;
+  --spacing-7\.5: 1.875rem;
+
+  /* Border radius */
+  --radius-2\.5xl: 1.25rem;
+
+  /* Colors */
+  --color-yellow-100: #7e7552;
+  --color-yellow-300: #ffe37e;
+  --color-yellow-400: #f9d75f;
+  --color-yellow-500: #f6c944;
+
+  --color-gray: #65636e;
+  --color-gray-lighter: #dcdee9;
+  --color-gray-light: #474a69;
+  --color-gray-dark: #9698af;
+
+  --color-dark: #262432;
+  --color-darker: #111516;
+  --color-darkest: #08001a;
+  --color-background: #0d051f;
+  --color-white: #f5f5f5;
+  --color-red: #ee1e23;
+
+  --color-primary-light: #f9d75f;
+  --color-primary-dark: #c058d2;
+
+  /* Background images */
+  --background-image-hero: url(/background.svg);
+  --background-image-gradient-primary: linear-gradient(to bottom left, #c058d2 25%, #f9d75f 92%);
+
+  /* Font families */
+  --font-sans: golos-text, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-title: aptly, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-chinese: noto-sans-chinese, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-hebrew: noto-sans-hebrew, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-japanese: noto-sans-japanese, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  /* Grid template rows */
+  --grid-template-rows-question: 1fr min-content;
+}
+
+/* Custom breakpoints with non-standard media queries (replacing raw: screens from Tailwind v3) */
+@custom-variant xs (@media (max-width: 400px));
+@custom-variant short (@media (max-height: 500px));
+@custom-variant phone-landscape (
+  @media only screen and (min-device-width: 480px) and (max-device-width: 960px) and (orientation: portrait)
+);
+
+/* scrollbar-hide utility (replaces tailwind-scrollbar-hide package) */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'kern' 1;
+  font-kerning: normal;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+#question:lang(zh) {
+  @apply font-chinese;
+}
+
+#question:lang(he) {
+  @apply font-hebrew;
+}
+
+#question:lang(jp) {
+  @apply font-japanese;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'aptly';
+  font-style: normal;
+  font-weight: normal;
+  src: url(/fonts/aptly_regular.woff2) format('woff2');
+}
+@font-face {
+  font-display: swap;
+  font-family: 'aptly';
+  font-style: normal;
+  font-weight: bold;
+  src: url(/fonts/aptly_medium.woff2) format('woff2');
+}
+@font-face {
+  font-display: swap;
+  font-family: 'golos-text';
+  font-style: normal;
+  src: url(/fonts/golos_text.woff2) format('woff2');
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'noto-sans-chinese';
+  font-style: normal;
+  font-weight: normal;
+  src: url(/fonts/noto-sans-chinese_regular.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'noto-sans-chinese';
+  src: url(/fonts/noto-sans-chinese_bold.woff2) format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-display: swap;
+  font-family: 'noto-sans-hebrew';
+  font-style: normal;
+  font-weight: normal;
+  src: url(/fonts/noto-sans-hebrew_regular.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'noto-sans-hebrew';
+  src: url(/fonts/noto-sans-hebrew_bold.woff2) format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-display: swap;
+  font-family: 'noto-sans-japanese';
+  font-style: normal;
+  font-weight: normal;
+  src: url(/fonts/noto-sans-japanese_regular.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'noto-sans-japanese';
+  src: url(/fonts/noto-sans-japanese_bold.woff2) format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+.btn {
+  @apply rounded-full border-none font-sans text-xl;
+}
+
+.btn-square {
+  @apply rounded-none;
+}
+
+.btn-primary,
+.btn-secondary {
+  @apply h-14 w-full md:w-64 sm:landscape:w-64;
+  text-transform: none;
+}
+
+.btn-primary {
+  @apply text-darker bg-yellow-400 hover:bg-yellow-500;
+}
+
+.btn-secondary {
+  @apply bg-gray hover:bg-gray active:bg-gray text-white hover:text-yellow-500 md:w-64 sm:landscape:w-64;
+}
+
+.btn-game {
+  @apply btn btn-circle btn-ghost transition-all duration-300 ease-in-out hover:text-yellow-500;
+}
+
+.text-gradient {
+  @apply from-primary-light to-primary-dark bg-gradient-to-r bg-clip-text pb-2 text-transparent;
+}

@@ -1,0 +1,12 @@
+---
+import {LANGUAGES} from '~/utils'
+
+export async function getStaticPaths() {
+  return Object.entries(LANGUAGES).map(([language, name]) => ({
+    params: {language},
+    props: {name},
+  }))
+}
+
+return Astro.redirect('/', 301)
+---

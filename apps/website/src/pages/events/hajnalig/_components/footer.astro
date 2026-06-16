@@ -1,0 +1,10 @@
+---
+import {Image} from 'astro:assets'
+import Logo1 from './hajnalig-logo.png'
+import Logo2 from './hello_parks-logo.png'
+---
+
+<div class='flex gap-4 w-full items-center justify-center flex-1'>
+  <Image src={Logo1} alt='Hajnalig' class='w-1/4 md:w-32' sizes='300px' />
+  <Image src={Logo2} alt='Hello Parks' class='w-1/4 md:w-24' sizes='300px' />
+</div>

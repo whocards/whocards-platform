@@ -1,0 +1,25 @@
+---
+import {Image} from 'astro:assets'
+
+import bgLeftImage from '~assets/images/bg-left-large.svg'
+import bgRightImage from '~assets/images/bg-right-large.svg'
+import bgSmall from '~assets/images/bg-small.svg'
+
+export interface Props {
+  class?: string
+}
+---
+
+<span class='absolute top-0 left-0 right-0 bottom-0 z-0'>
+  <Image src={bgSmall} class='absolute top-0 left-0 w-screen -z-10 lg:hidden' alt='background' />
+  <Image
+    src={bgRightImage}
+    class='absolute top-0 right-0 bottom-10 -z-10 hidden lg:block'
+    alt='background'
+  />
+  <Image
+    src={bgLeftImage}
+    class='absolute top-0 left-0 bottom-10 -z-10 hidden lg:block'
+    alt='background'
+  />
+</span>

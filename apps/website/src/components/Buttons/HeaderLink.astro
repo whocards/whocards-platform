@@ -1,0 +1,20 @@
+---
+const {href, noBorder} = Astro.props
+---
+
+<div class='box-content flex items-center justify-center'>
+  <a
+    href={href}
+    class='group relative mx-4 transition-all md:hover:mt-6 md:hover:text-4xl md:hover:font-bold md:hover:text-primary-light'
+  >
+    <span
+      class='absolute top-0 hidden w-full text-left text-4xl font-bold text-primary-light opacity-0 transition-all group-hover:-top-10 group-hover:opacity-100 md:block'
+      >Our<br />
+    </span>
+    <span
+      class='absolute bottom-5 ml-px hidden border-x-8 border-t-8 border-b-0 border-solid border-x-transparent border-t-primary-light opacity-0 transition-all group-hover:-bottom-4 group-hover:opacity-100 md:block'
+    ></span>
+    <slot />
+  </a>
+</div>
+{!noBorder && <div class='hidden h-8 w-px justify-self-center bg-white md:block' />}

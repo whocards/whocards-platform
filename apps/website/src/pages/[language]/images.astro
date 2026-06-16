@@ -1,0 +1,45 @@
+---
+import languages from '~data/languages.json'
+import questions from '~data/questions.json'
+import Layout from '~layouts/Layout.astro'
+
+export async function getStaticPaths() {
+  return Object.entries(languages).map(([language, name]) => ({
+    params: {language},
+    props: {name},
+  }))
+}
+
+const {language} = Astro.params
+const {name} = Astro.props
+
+// Only preview cards for questions that have text in this language — each card
+// is generated on the fly from questions.json (see /og/[language]/[id].png.ts).
+const ids = Object.entries(questions)
+  .filter(([, translations]) => language! in translations)
+  .map(([id]) => id)
+
+const links = [{title: 'Images', href: '/images'}]
+---
+
+<Layout title='Images' links={links}>
+  <h1 class='text-center font-title font-bold text-gradient text-4xl lg:text-7xl pb-2 xs:text-2xl'>
+    {name}
+  </h1>
+  <div class='flex flex-wrap gap-5 p-5'>
+    {
+      ids.map((qid) => (
+        <div class='flex flex-col gap-3'>
+          <p>{qid}</p>
+          <img
+            src={`/og/${language}/${qid}.png`}
+            alt={`question ${qid}`}
+            width={270}
+            height={142}
+            loading='lazy'
+          />
+        </div>
+      ))
+    }
+  </div>
+</Layout>

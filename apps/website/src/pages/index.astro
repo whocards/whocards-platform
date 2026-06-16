@@ -1,0 +1,244 @@
+---
+import {Icon} from 'astro-icon/components'
+import cardsImage from '~assets/images/cards.png'
+import humanityImage from '~assets/images/humanity.png'
+import teamImage from '~assets/images/team.png'
+import PreorderSection from '~components/Purchase/PreorderSection.astro'
+import PreorderSectionImage from '~components/Purchase/PreorderSectionImage.astro'
+import Testimonials from '~components/Purchase/Testimonials.astro'
+import Usage from '~components/Purchase/Usage.astro'
+import WhatCard from '~components/Purchase/WhatCard.astro'
+import Accordion from '~components/ui/Accordion.astro'
+import Button from '~components/ui/Button.astro'
+import RoundedImage from '~components/ui/RoundedImage.astro'
+import WhoCard from '~components/ui/WhoCard.astro'
+import {faqs} from '~constants/faqs'
+import Layout from '~layouts/Layout.astro'
+import {Image} from 'astro:assets'
+import bgRightImage from '~assets/images/bg-right-large.svg'
+import bgLeftImage from '~assets/images/bg-left-large.svg'
+---
+
+<Layout
+  description='Request a WhoCards deck by reaching out through our contact form.'
+  class='scrollbar-hide'
+>
+  <div
+    class='flex flex-col gap-4 lg:gap-5 px-8 md:pb-16 max-w-5xl lg:items-center h-[calc(100vh-4rem)] justify-center relative'
+  >
+    <h1
+      class='text-center font-title font-bold text-white text-4xl lg:text-7xl leading-10 lg:leading-20 xs:text-3xl'
+    >
+      Change Your World,<br />One <span class='text-gradient'>Conversation</span> at a Time.
+    </h1>
+    <p
+      class='text-center text-sm lg:text-lg font-semibold xs:leading-normal leading-7 pb-2 lg:px-10'
+    >
+      Join us in spreading openness, vulnerability, and authenticity by gifting WhoCards for
+      yourself or someone who'll treasure them.
+    </p>
+    <div
+      class='grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-8 w-full md:max-w-xl py-5 lg:pt-8 mx-auto'
+    >
+      <Button tag='a' class='play' size='lg' full>Play Online</Button>
+      <Button tag='a' href='/contact' full hideIcon variant='secondary'>Request Cards</Button>
+    </div>
+    <div class='absolute bottom-5 left-0 right-0 grid place-items-center'>
+      <a
+        href='#what-is-whocards'
+        class='border-solid scale-150 border-t-primary-light border-t-8 border-x-transparent border-x-8 border-b-0 hover:scale-[2] transition-transform'
+      >
+      </a>
+    </div>
+  </div>
+  <PreorderSection
+    subtitle='what is whocards?'
+    title='Unlock Deep Conversations and Meaningful Connections'
+    description='WhoCards offers 66 carefully curated questions, empowering you to transform your interactions with people from social gatherings to professional settings. The courageous questions and playful guidelines of WhoCards create an atmosphere where you can relax, open up and get to know each other better.'
+  >
+    <div class='grid lg:grid-flow-col gap-4 lg:gap-8 lg:grid-cols-4'>
+      <WhatCard icon='cards' title='Play with Anyone'>
+        Establish new connections or uncover deeper aspects of those you believe you already know,
+        all by asking one of the "Who Are You" questions.
+      </WhatCard>
+      <WhatCard icon='group-chat' title='Courageous Conversations'>
+        Practice speaking what's true to you and actively listen to others as they do the same.
+        Enter the warm hum of mutuality and experience belonging like never before.
+      </WhatCard>
+      <WhatCard icon='group' title='Multiple Ways'>
+        WhoCards easily finds its place among friends and family, social gatherings or workshops,
+        team meetings and coaching conversations.
+      </WhatCard>
+      <WhatCard icon='star-circle' title='Take the Lead'>
+        Most people enjoy the experience facilitated by WhoCards, and it only requires you to draw a
+        card and initiate the game.
+      </WhatCard>
+    </div>
+  </PreorderSection>
+
+  <PreorderSectionImage
+    subtitle='why?'
+    title='Humanity needs more authentic connections'
+    description='We strongly believe that in this age of disruption and complexity, when our differences are used to keep us separate, one of the most courageous things we can do is show up for others with authenticity, vulnerability, and openness.'
+  >
+    <RoundedImage alt='people stacking their hands' src={humanityImage} />
+    <Button tag='a' href='/contact' slot='button' light variant='secondary'
+      >Register for our email list</Button
+    >
+    <p
+      class='leading-snug text-gray-dark pb-2 lg:text-lg lg:max-w-3xl lg:tracking-tight'
+      slot='image-description'
+    >
+      Whether or not we recognize it on a daily basis, we are all deeply interconnected. WhoCards'
+      mission is to strengthen the authenticity of that interconnectedness, because we believe that
+      a sense of honest homecoming to ourselves and each other has the power to spark a light strong
+      enough to lead us out from anxiety and loneliness towards belonging and love.
+    </p>
+  </PreorderSectionImage>
+
+  <PreorderSectionImage
+    subtitle='Our story'
+    title='The power of human connections'
+    description={`In 2016, a dynamic, self-organized laboratory called Amanitas was born in order to explore radical collaboration and emergence for our future humanity. Amanitas was inspired by the superpowers and patterns of the natural world. Throughout a series of retreats, a community house and co-created events, we learnt, played and experimented around a core belief: That positive change does not originate from any single individual, rather it ebbs and flows as a force which guides a living system.`}
+    reverse
+  >
+    <RoundedImage alt='a team of people' src={teamImage} />
+
+    <div id='description-extra' slot='image-description' class='flex flex-col gap-4 lg:gap5 hidden'>
+      <p class='leading-snug text-gray-dark pb-2 lg:text-lg lg:max-w-3xl lg:tracking-tight'>
+        WhoCards were born as part of this experiment, as a helper to go beyond starting
+        conversations with questions related to our job titles, identities and social status.
+        Instead of leaning on socially acceptable questions like, “What do you do?” or “Where are
+        you from?,” we focused on “Who are you?” and a myriad of subsequent questions like “What
+        does happiness mean to you?”, “How do you want to grow old?” or “What was the last thing you
+        cried about?”
+      </p>
+      <p class='leading-snug text-gray-dark pb-2 lg:text-lg lg:max-w-3xl lg:tracking-tight'>
+        Since then, countless people have found delight in using our carefully curated questions
+        across the planet amongst a manifold of different contexts. From garden parties with family
+        or friends to strategic and innovation workshops, from orthodox jewish matchmaking dates to
+        political negotiations; WhoCards have helped us to move beyond social anxiety, disconnection
+        and loneliness.
+      </p>
+      <p class='leading-snug text-gray-dark pb-2 lg:text-lg lg:max-w-3xl lg:tracking-tight'>
+        As a result we, humans, were able to playfully find commonalities with others while holding
+        completely different beliefs, norms and ideas about what it means to be alive today.
+      </p>
+    </div>
+
+    <Button slot='button' variant='secondary' id='read-more' light hideIcon>Read more</Button>
+  </PreorderSectionImage>
+
+  <PreorderSectionImage subtitle='how to play?' title='Different ways to engage' forceReverse>
+    <RoundedImage src={cardsImage} alt='a set of whocards' class='mt-6' full />
+    <Usage slot='end' />
+  </PreorderSectionImage>
+
+  <PreorderSection
+    subtitle='testimonials'
+    title='Why do people love to play WhoCards?'
+    class='lg:pb-10 pb-4'
+  >
+    <Testimonials slot='outside' />
+  </PreorderSection>
+
+  <PreorderSection
+    title='Request Your Deck!'
+    subtitle='request cards'
+    description='Cards are available by request. Tell us how many you need and we will follow up.'
+  >
+    <Button tag='a' href='/contact' variant='secondary' hideIcon class='lg:max-w-xs'>
+      Request via Contact Form
+    </Button>
+  </PreorderSection>
+
+  <PreorderSectionImage
+    title='Questions? Answers.'
+    subtitle='faqs'
+    description='Do you have other questions?'
+    class='pb-12 lg:pt-0'
+  >
+    <Accordion name='faqs' contents={faqs} slot='end' />
+    <Button
+      slot='button'
+      target='_blank'
+      href='mailto:hello@whocards.cc'
+      variant='secondary'
+      light
+      size='md'
+      tag='a'
+      hideIcon
+    >
+      Email us
+    </Button>
+  </PreorderSectionImage>
+
+  <div class='px-5 pb-12 w-full lg:max-w-7xl xl:px-0 lg:min-h-[80vh]'>
+    <div
+      class='rounded-3xl flex items-center border border-gray-dark pt-16 relative overflow-hidden bg-background'
+    >
+      <Icon name='pattern-mobile' class='absolute top-0 left-0 right-0 lg:hidden' />
+      <Image
+        src={bgRightImage}
+        class='absolute top-0 right-0 h-[110%] -mr-[10%] hidden lg:block'
+        alt='background'
+      />
+      <Image
+        src={bgLeftImage}
+        class='absolute top-0 left-0 h-[110%] -ml-[10%] hidden lg:block'
+        alt='background'
+      />
+      <div class='flex flex-col h-full flex-1 lg:items-center lg:gap-5'>
+        <h3
+          class='px-5 text-gradient text-center font-title text-4xl lg:text-[54px] lg:leading-normal font-extrabold leading-10 text-white'
+        >
+          Request Your Deck!
+        </h3>
+        <p
+          class='px-5 text-center pt-5 text-sm lg:text-lg lg:leading-normal leading-snug pb-10 max-w-xl lg:max-w-3xl'
+        >
+          WhoCards is on a mission to transform social interactions to become more open, vulnerable,
+          and authentic. Reach out through our contact form to request cards for yourself or someone
+          who'll treasure them.
+        </p>
+        <span class='px-5'>
+          <Button tag='a' href='/contact'>Request Cards</Button>
+        </span>
+        <div
+          class='w-full h-60 lg:h-96 overflow-hidden mt-auto mx-auto flex items-end justify-center'
+        >
+          <div class='relative w-[165px] lg:w-[16.5rem]'>
+            <WhoCard
+              lang='en'
+              id='66'
+              class='absolute -bottom-8 mx-auto left-0 right-0 z-10 shadow-xl shadow-darker'
+            />
+            <WhoCard
+              lang='en'
+              id='65'
+              class='absolute -bottom-16 lg:-bottom-24 -left-36 lg:-left-60 -rotate-12'
+            />
+            <WhoCard
+              lang='en'
+              id='64'
+              class='absolute -bottom-16 lg:-bottom-24 -right-36 lg:-right-60 rotate-12'
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const button = document.getElementById('read-more') as HTMLButtonElement
+  if (button) {
+    button.addEventListener('click', () => {
+      document.getElementById('description-extra')?.classList.toggle('hidden')
+      console.log(document.getElementById('description-extra')?.classList.contains('hidden'))
+      button.innerHTML = document.getElementById('description-extra')?.classList.contains('hidden')
+        ? 'Read more'
+        : 'Read less'
+    })
+  }
+</script>

@@ -1,0 +1,30 @@
+---
+// import {donationUrl} from '~constants/urls'
+
+export interface Props {
+  name: string
+  contents: Array<{
+    title: string
+    content: string
+  }>
+  class?: string
+}
+
+const {name, contents, class: classes} = Astro.props
+---
+
+<div class:list={['flex flex-col gap-3 lg:gap-5', classes]}>
+  {
+    contents?.map(({title, content}) => (
+      <div class='collapse collapse-arrow border border-gray-dark'>
+        <input type='radio' name={name} class='peer' />
+        <div class='collapse-title font-medium lg:text-lg leading-relaxed p-4 lg:p-5 peer-checked:border-gray-dark peer-checked:border-b  pr-8'>
+          {title}
+        </div>
+        <div class='collapse-content text-sm lg:text-base leading-snug lg:leading-normal text-gray-dark peer-checked:pt-4 lg:peer-checked:p-5'>
+          <p>{content}</p>
+        </div>
+      </div>
+    ))
+  }
+</div>

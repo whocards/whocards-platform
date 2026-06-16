@@ -1,0 +1,35 @@
+---
+export const prerender = false
+
+import {Play, type QuestionSet} from '~components/Play'
+import {DEFAULT_DECK_SLUG, getDeck} from '~data/decks'
+import {LANG_KEYS} from '~utils'
+import Layout from '~layouts/Layout.astro'
+
+// the default /play screen is the full library deck. Everything (questions,
+// languages, presentation) now resolves through the deck registry rather than
+// importing questions.json directly. getDeck(DEFAULT_DECK_SLUG) is always defined.
+const deck = getDeck(DEFAULT_DECK_SLUG)!
+
+// SSR (prerender=false) so social crawlers — which don't run JS and never see the
+// client-side ?q=/?lang= — still get the per-question metadata. Resolve lang/id from
+// the query params and hand them to <Head> (via Layout), which then derives the
+// title, og:locale, and og:image (/og/{lang}/{id}.png). With no valid question it
+// falls back to the generic title + social image.
+const langParam = Astro.url.searchParams.get('lang')
+const lang = langParam && LANG_KEYS.includes(langParam) ? langParam : deck.languages[0]
+const qParam = Astro.url.searchParams.get('q')
+const questionId = qParam && qParam in deck.questions ? qParam : undefined
+---
+
+<Layout lang={lang} oldBg={deck.oldBg} noFooter id={questionId}>
+  <Play
+    client:only='react'
+    questions={deck.questions as QuestionSet}
+    languages={deck.languages}
+    tracking={deck.tracking}
+    languageStorageKey={deck.languageStorageKey}
+    userIdStorageKey={deck.userIdStorageKey}
+    questionClassName={deck.questionClassName}
+  />
+</Layout>

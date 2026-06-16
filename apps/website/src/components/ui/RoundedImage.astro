@@ -1,0 +1,20 @@
+---
+import {Image} from 'astro:assets'
+
+export interface Props {
+  src: ImageMetadata
+  alt: string
+  class?: string
+  full?: boolean
+}
+
+const {src, alt, full = false, class: classes} = Astro.props
+---
+
+<div class:list={[full && 'w-full h-full']}>
+  <Image
+    src={src}
+    alt={alt}
+    class:list={['rounded-[1.25rem] aspect-auto object-cover w-full lg:h-full lg:w-auto', classes]}
+  />
+</div>

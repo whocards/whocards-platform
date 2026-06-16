@@ -3,6 +3,12 @@ packages:
   - packages/*
   - tooling/*
 
+allowBuilds:
+  '@parcel/watcher': true
+  core-js: false
+  esbuild: true
+  sharp: false
+
 # Single source of truth for shared dependency versions.
 # Packages reference these with `"dep": "catalog:"` instead of pinning.
 catalog:
