@@ -1,4 +1,5 @@
 export * from './types'
+export * from './engine'
 
 export {
   pool,
@@ -9,3 +10,9 @@ export {
   isLanguageCode,
   getLanguageName,
 } from './pool'
+
+export {libraryDeck} from './decks/library'
+export {aiAtWorkDeck} from './decks/ai-at-work'
+export {hajnaligDeck} from './decks/hajnalig'
+export {DEFAULT_DECK_SLUG, getDeck, getAllDecks, isDeckSlug, resolveDeck} from './decks/registry'
+export type {DeckSlug} from './decks/registry'
