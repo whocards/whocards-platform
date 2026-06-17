@@ -44,15 +44,15 @@ tooling/typescript shared tsconfig bases
 
 ## Outstanding / follow-ups
 
-1. **Mobile runtime verification (the main open item).** Could not run a simulator/Metro
-   bundle in the build sandbox — only `tsc`/lint are verified. Next: `pnpm -F mobile start`,
-   confirm (a) Metro resolves the `@whocards/*` source packages
-   (`resolver.unstable_enablePackageExports` is set), (b) NativeWind loads
-   `tailwind.config.ts` (jiti transpiles it + the imported `@whocards/tokens` preset) and
-   classes render, (c) the tRPC client reaches the site — run the website on :4321 or set
-   `EXPO_PUBLIC_API_URL`. A Maestro E2E starter flow + research/recommendation is ready in
-   `apps/mobile/.maestro/library.yml` + `apps/mobile/docs/e2e-testing.md` (run it on a
-   simulator as part of this verification).
+1. **Mobile runtime verification.** The Metro bundle is now verified green —
+   `pnpm -F mobile exec expo export --platform ios` bundles 1501 modules, proving Metro
+   resolves the `@whocards/*` source packages, NativeWind (`react-native-css-interop`) + the
+   jiti-loaded `@whocards/tokens` tailwind preset, and `@expo/metro-runtime`. pnpm needed two
+   transitive peers declared as direct deps (`@expo/metro-runtime`, `react-native-css-interop`)
+   and `disableHierarchicalLookup` removed from `metro.config.js`. **Still to do on a real
+   device/simulator:** visual rendering + the tRPC client reaching the site (run the website
+   on :4321 or set `EXPO_PUBLIC_API_URL`), via `pnpm dev:mobile`. A Maestro E2E starter flow
+   is ready in `apps/mobile/.maestro/library.yml` (+ `apps/mobile/docs/e2e-testing.md`).
 2. **Website Pool-data dedup.** The rewire deduped the play engine + deck registry only.
    `questions.json` / `languages.json` are still local copies in `apps/website`; repoint the
    direct consumers to `@whocards/decks` pool: `WhoCard.astro`, `pages/[language]/images.astro`,

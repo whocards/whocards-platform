@@ -10,12 +10,13 @@ const config = getDefaultConfig(projectRoot)
 
 // 1. Watch the whole monorepo so changes in packages/* hot-reload.
 config.watchFolders = [workspaceRoot]
-// 2. Resolve modules from the app first, then the workspace root.
+// 2. Resolve modules from the app first, then the workspace root. Hierarchical
+//    lookup stays ON: pnpm nests transitive deps (e.g. @expo/metro-runtime), so
+//    disabling it would break their resolution.
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
 ]
-config.resolver.disableHierarchicalLookup = true
 // 3. Honour the "exports" field so @whocards/* resolve to their src entry points.
 config.resolver.unstable_enablePackageExports = true
 
