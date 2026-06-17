@@ -13,8 +13,10 @@
     "test:e2e:ssr": "playwright test -c playwright.ssr.config.ts",
     "pretty": "prettier --write . --plugin=prettier-plugin-astro",
     "analyze": "pnpx unlighthouse --site https://calmly.whocards.cc",
-    "db:push": "dotenv drizzle-kit push",
-    "db:studio": "dotenv drizzle-kit studio"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@whocards/api": "workspace:*",
