@@ -1,18 +1,19 @@
+import {Ionicons} from '@expo/vector-icons'
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {LayoutChangeEvent} from 'react-native'
-import {Animated, Text, useWindowDimensions, View} from 'react-native'
+import {Animated, Pressable, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import type {QuestionSet} from '@whocards/decks'
 import {getDeck, getDirection, getInitialNav, navReducer} from '@whocards/decks'
+import {colors} from '@whocards/tokens'
 
 import {LanguageModal} from '@/components/language-modal'
-import {PlayerControls} from '@/components/player-controls'
 import {ScreenBackground} from '@/components/screen-background'
 
 const SWIPE_THRESHOLD = 60
-const CONTROLS_HIDE_MS = 3000
+const HINT_HIDE_MS = 4500
 
 // --- dynamic question sizing: grow the text to fill its box, recomputed on rotation ---
 const LINE_HEIGHT_RATIO = 1.15
@@ -83,6 +84,8 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
   const questionId = ids[idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''
   const direction = getDirection(language)
+  const total = ids.length
+  const position = idx + 1
 
   // --- measure the card's box so the question can grow to fill it (landscape included) ---
   const {width: winWidth, height: winHeight} = useWindowDimensions()
@@ -92,37 +95,22 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
     setBox((prev) => (prev?.width === width && prev?.height === height ? prev : {width, height}))
   }, [])
   // window-derived fallback for the first paint, before onLayout reports the real box
-  const measured = box ?? {width: winWidth - 48, height: winHeight - 180}
+  const measured = box ?? {width: winWidth - 64, height: winHeight - 220}
   const fontSize = useMemo(
     () => fitFontSize(text, measured.width, measured.height),
     [text, measured.width, measured.height]
   )
 
-  // --- auto-hiding controls: hide after inactivity, reveal on any touch (mirrors web) ---
-  const controlsOpacity = useRef(new Animated.Value(1)).current
-  const [controlsShown, setControlsShown] = useState(true)
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const fade = useCallback(
-    (to: number) => {
-      setControlsShown(to === 1)
-      Animated.timing(controlsOpacity, {toValue: to, duration: 300, useNativeDriver: true}).start()
-    },
-    [controlsOpacity]
-  )
-
-  const revealControls = useCallback(() => {
-    fade(1)
-    if (hideTimer.current) clearTimeout(hideTimer.current)
-    hideTimer.current = setTimeout(() => fade(0), CONTROLS_HIDE_MS)
-  }, [fade])
+  // --- the swipe hint fades out once you start playing (or after a few idle seconds) ---
+  const hintOpacity = useRef(new Animated.Value(1)).current
+  const hideHint = useCallback(() => {
+    Animated.timing(hintOpacity, {toValue: 0, duration: 400, useNativeDriver: true}).start()
+  }, [hintOpacity])
 
   useEffect(() => {
-    revealControls()
-    return () => {
-      if (hideTimer.current) clearTimeout(hideTimer.current)
-    }
-  }, [revealControls])
+    const timer = setTimeout(hideHint, HINT_HIDE_MS)
+    return () => clearTimeout(timer)
+  }, [hideHint])
 
   // --- subtle slide+fade as the question changes (direction follows next/prev) ---
   const enter = useRef(new Animated.Value(0)).current
@@ -142,46 +130,69 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
 
   const goNext = useCallback(() => {
     navDir.current = 1
-    revealControls()
+    hideHint()
     dispatch({type: 'next'})
-  }, [revealControls])
+  }, [hideHint])
 
   // the reducer clamps `previous` at the first card, so no idx guard is needed here
   const goPrevious = useCallback(() => {
     navDir.current = -1
-    revealControls()
+    hideHint()
     dispatch({type: 'previous'})
-  }, [revealControls])
+  }, [hideHint])
 
-  // leave the player — back to wherever we came from, falling back to the library
+  // leave the player — back to wherever we came from, falling back to the landing
   const handleExit = useCallback(() => {
     if (router.canGoBack()) router.back()
     else router.replace('/')
   }, [router])
 
-  const openLanguage = useCallback(() => {
-    revealControls()
-    setLangModalOpen(true)
-  }, [revealControls])
-
   // --- swipe to navigate (runs on the JS thread so it can dispatch directly) ---
-  const gesture = useMemo(() => {
-    const pan = Gesture.Pan()
-      .runOnJS(true)
-      .onBegin(revealControls)
-      .onEnd((event) => {
-        if (event.translationX <= -SWIPE_THRESHOLD) goNext()
-        else if (event.translationX >= SWIPE_THRESHOLD) goPrevious()
-      })
-    const tap = Gesture.Tap().runOnJS(true).onStart(revealControls)
-    return Gesture.Race(tap, pan)
-  }, [revealControls, goNext, goPrevious])
+  const gesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .onBegin(hideHint)
+        .onEnd((event) => {
+          if (event.translationX <= -SWIPE_THRESHOLD) goNext()
+          else if (event.translationX >= SWIPE_THRESHOLD) goPrevious()
+        }),
+    [hideHint, goNext, goPrevious]
+  )
 
   return (
     <ScreenBackground>
       <View className="flex-1">
+        {/* slim top bar: exit · progress · language */}
+        <SafeAreaView edges={['top', 'left', 'right']}>
+          <View className="flex-row items-center gap-4 px-5 pb-1 pt-2">
+            <Pressable onPress={handleExit} hitSlop={10} accessibilityLabel="exit deck">
+              <Ionicons name="close" size={26} color={colors.white} />
+            </Pressable>
+            <View className="h-1 flex-1 overflow-hidden rounded-full bg-white/15">
+              <View
+                className="bg-primary-light h-1 rounded-full"
+                style={{width: `${(position / total) * 100}%`}}
+              />
+            </View>
+            <Text className="text-gray-dark text-sm tabular-nums">
+              {position}/{total}
+            </Text>
+            {languages.length > 1 ? (
+              <Pressable
+                onPress={() => setLangModalOpen(true)}
+                hitSlop={10}
+                accessibilityLabel="change language"
+              >
+                <Ionicons name="language" size={22} color={colors.white} />
+              </Pressable>
+            ) : null}
+          </View>
+        </SafeAreaView>
+
+        {/* the question — swipe anywhere to navigate */}
         <GestureDetector gesture={gesture}>
-          <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 px-8 py-6">
+          <View className="flex-1 px-8 py-2">
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
               <Animated.View style={cardStyle}>
                 <Text
@@ -196,23 +207,19 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
                 </Text>
               </Animated.View>
             </View>
-          </SafeAreaView>
+          </View>
         </GestureDetector>
 
-        {/* Animated.View carries only the opacity; PlayerControls owns the bar layout */}
-        <Animated.View
-          style={{opacity: controlsOpacity, pointerEvents: controlsShown ? 'auto' : 'none'}}
-        >
-          <PlayerControls
-            language={language}
-            showLanguage={languages.length > 1}
-            canPrevious={idx > 0}
-            onPrevious={goPrevious}
-            onNext={goNext}
-            onLanguage={openLanguage}
-            onExit={handleExit}
-          />
-        </Animated.View>
+        {/* fading swipe hint — Animated.View carries only opacity; inner View holds layout */}
+        <SafeAreaView edges={['bottom', 'left', 'right']}>
+          <Animated.View style={{opacity: hintOpacity}}>
+            <View className="flex-row items-center justify-center gap-2 pb-4 pt-1">
+              <Ionicons name="chevron-back" size={16} color={colors.gray.dark} />
+              <Text className="text-gray-dark text-xs uppercase tracking-widest">Swipe</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.gray.dark} />
+            </View>
+          </Animated.View>
+        </SafeAreaView>
 
         <LanguageModal
           visible={langModalOpen}
@@ -221,7 +228,6 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
           onSelect={(next) => {
             setLanguage(next)
             setLangModalOpen(false)
-            revealControls()
           }}
           onClose={() => setLangModalOpen(false)}
         />

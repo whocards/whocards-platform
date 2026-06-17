@@ -1,54 +1,65 @@
+import {Ionicons} from '@expo/vector-icons'
 import {Link} from 'expo-router'
 import {useEffect, useState} from 'react'
-import {FlatList, Pressable, Text, View} from 'react-native'
+import {Image, Pressable, Text, View} from 'react-native'
 import {SafeAreaView} from 'react-native-safe-area-context'
-import {getAllDecks} from '@whocards/decks'
+import {DEFAULT_DECK_SLUG, libraryDeck, resolveDeck} from '@whocards/decks'
+import {colors} from '@whocards/tokens'
 
 import {ScreenBackground} from '@/components/screen-background'
 import {trpc} from '@/lib/trpc'
 
-// Content ships in-app for offline play; the server is consulted to revalidate.
-const decks = getAllDecks()
+// We launch with the original WhoCards deck; its content ships in-app for offline play.
+const deck = resolveDeck(libraryDeck)
+const logo = require('../../assets/images/logo.png')
 
-export default function LibraryScreen() {
-  const [serverDeckCount, setServerDeckCount] = useState<number | null>(null)
+export default function LandingScreen() {
+  const [serverMeta, setServerMeta] = useState<{cards: number; languages: number} | null>(null)
 
   useEffect(() => {
-    // consume the shared tRPC API (ADR-0002); silently stay offline-first
+    // offline-first: render the bundled numbers, silently reconcile with the API (ADR-0002)
     trpc.decks.manifest
       .query()
-      .then((manifest) => setServerDeckCount(manifest.length))
-      .catch(() => setServerDeckCount(null))
+      .then((decks) => {
+        const live = decks.find((entry) => entry.slug === DEFAULT_DECK_SLUG)
+        if (live) setServerMeta({cards: live.questionCount, languages: live.languages.length})
+      })
+      .catch(() => undefined)
   }, [])
+
+  const cards = serverMeta?.cards ?? deck.questionIds.length
+  const languages = serverMeta?.languages ?? deck.languages.length
 
   return (
     <ScreenBackground>
-      <SafeAreaView className="flex-1">
-        <View className="px-6 pb-4 pt-2">
-          <Text className="font-title text-4xl font-semibold text-white">WhoCards</Text>
-          <Text className="text-gray-dark mt-1 text-base">
-            Your library
-            {serverDeckCount === null ? '' : ` · ${serverDeckCount} decks online`}
+      <SafeAreaView className="flex-1 items-center justify-between px-8 pb-8 pt-16">
+        <View className="flex-1 items-center justify-center">
+          <Image
+            source={logo}
+            resizeMode="contain"
+            accessibilityLabel="WhoCards"
+            style={{width: 280, aspectRatio: 1200 / 226}}
+          />
+          <Text className="mt-7 text-center text-xl font-semibold leading-8 text-white/80">
+            Change your world,{'\n'}one conversation at a time.
           </Text>
         </View>
-        <FlatList
-          data={decks}
-          keyExtractor={(deck) => deck.slug}
-          contentContainerStyle={{paddingHorizontal: 24, paddingBottom: 40, gap: 12}}
-          renderItem={({item}) => (
-            <Link href={`/play/${item.slug}`} asChild>
-              <Pressable className="bg-dark active:bg-darker rounded-2.5xl p-5">
-                <Text className="text-xl font-semibold text-white">{item.title}</Text>
-                <Text className="text-gray-dark mt-1" numberOfLines={2}>
-                  {item.description}
-                </Text>
-                <Text className="text-primary-light mt-3 text-sm uppercase">
-                  {item.questionIds.length} cards · {item.languages.length} languages
-                </Text>
-              </Pressable>
-            </Link>
-          )}
-        />
+
+        <View className="w-full items-center gap-5">
+          <Text className="text-gray-dark text-sm">
+            {cards} cards · {languages} languages
+          </Text>
+          <Link href={`/play/${DEFAULT_DECK_SLUG}`} asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Play"
+              className="active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
+            >
+              <Ionicons name="play" size={18} color={colors.darker} style={{marginRight: 8}} />
+              <Text className="text-darker text-base font-bold">Play</Text>
+            </Pressable>
+          </Link>
+        </View>
       </SafeAreaView>
     </ScreenBackground>
   )
