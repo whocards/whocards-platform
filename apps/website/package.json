@@ -10,6 +10,7 @@
     "preview": "astro preview",
     "typecheck": "astro check",
     "test:e2e": "playwright test",
+    "test:e2e:ssr": "playwright test -c playwright.ssr.config.ts",
     "pretty": "prettier --write . --plugin=prettier-plugin-astro",
     "analyze": "pnpx unlighthouse --site https://calmly.whocards.cc",
     "db:push": "dotenv drizzle-kit push",
