@@ -1,6 +1,7 @@
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
-import {Animated, Text, View} from 'react-native'
+import type {LayoutChangeEvent} from 'react-native'
+import {Animated, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import type {QuestionSet} from '@whocards/decks'
@@ -12,6 +13,31 @@ import {ScreenBackground} from '@/components/screen-background'
 
 const SWIPE_THRESHOLD = 60
 const CONTROLS_HIDE_MS = 3000
+
+// --- dynamic question sizing: grow the text to fill its box, recomputed on rotation ---
+const LINE_HEIGHT_RATIO = 1.15
+// average glyph advance / line height as fractions of the font size (semibold sans)
+const CHAR_WIDTH_RATIO = 0.54
+// fraction of the box the text aims to cover — ragged wrapping never tiles it fully
+const FILL = 0.62
+const MIN_FONT = 22
+const MAX_FONT = 96
+
+/**
+ * Largest font that lets `text` fill — without overflowing — a `width`×`height` box.
+ * Derived from area (chars × glyph area ≈ filled area, so font ∝ √(area / chars)), then
+ * capped so the longest single word still fits on one line. Orientation falls out for
+ * free: rotating swaps width/height, the box changes, and the size is recomputed.
+ */
+const fitFontSize = (text: string, width: number, height: number) => {
+  if (width <= 0 || height <= 0) return MIN_FONT
+  const trimmed = text.trim()
+  const chars = Math.max(trimmed.length, 1)
+  const raw = Math.sqrt((FILL * width * height) / (chars * CHAR_WIDTH_RATIO * LINE_HEIGHT_RATIO))
+  const longestWord = trimmed.split(/\s+/).reduce((max, word) => Math.max(max, word.length), 1)
+  const widthCap = width / (longestWord * CHAR_WIDTH_RATIO)
+  return Math.round(Math.max(MIN_FONT, Math.min(MAX_FONT, raw, widthCap)))
+}
 
 export default function PlayScreen() {
   const {deck: slug} = useLocalSearchParams<{deck: string}>()
@@ -55,6 +81,20 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
   const questionId = ids[idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''
   const direction = getDirection(language)
+
+  // --- measure the card's box so the question can grow to fill it (landscape included) ---
+  const {width: winWidth, height: winHeight} = useWindowDimensions()
+  const [box, setBox] = useState<{width: number; height: number} | null>(null)
+  const onBoxLayout = useCallback((event: LayoutChangeEvent) => {
+    const {width, height} = event.nativeEvent.layout
+    setBox((prev) => (prev?.width === width && prev?.height === height ? prev : {width, height}))
+  }, [])
+  // window-derived fallback for the first paint, before onLayout reports the real box
+  const measured = box ?? {width: winWidth - 48, height: winHeight - 180}
+  const fontSize = useMemo(
+    () => fitFontSize(text, measured.width, measured.height),
+    [text, measured.width, measured.height]
+  )
 
   // --- auto-hiding controls: hide after inactivity, reveal on any touch (mirrors web) ---
   const controlsOpacity = useRef(new Animated.Value(1)).current
@@ -139,15 +179,21 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
     <ScreenBackground>
       <View className="flex-1">
         <GestureDetector gesture={gesture}>
-          <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 justify-center px-6">
-            <Animated.View style={cardStyle}>
-              <Text
-                className="text-3xl font-semibold leading-snug text-white"
-                style={{writingDirection: direction}}
-              >
-                {text}
-              </Text>
-            </Animated.View>
+          <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 px-6">
+            <View className="flex-1 justify-center" onLayout={onBoxLayout}>
+              <Animated.View style={cardStyle}>
+                <Text
+                  className="font-semibold text-white"
+                  style={{
+                    fontSize,
+                    lineHeight: fontSize * LINE_HEIGHT_RATIO,
+                    writingDirection: direction,
+                  }}
+                >
+                  {text}
+                </Text>
+              </Animated.View>
+            </View>
           </SafeAreaView>
         </GestureDetector>
 
