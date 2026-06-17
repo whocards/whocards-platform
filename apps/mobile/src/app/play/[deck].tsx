@@ -169,10 +169,11 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
             <Pressable onPress={handleExit} hitSlop={10} accessibilityLabel="exit deck">
               <Ionicons name="close" size={26} color={colors.white} />
             </Pressable>
-            <View className="h-1 flex-1 overflow-hidden rounded-full bg-white/15">
+            <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/20">
               <View
-                className="bg-primary-light h-1 rounded-full"
-                style={{width: `${(position / total) * 100}%`}}
+                className="bg-primary-light h-1.5 rounded-full"
+                // min width so the fill always reads as a bar, even on the first card
+                style={{width: `${Math.max((position / total) * 100, 4)}%`}}
               />
             </View>
             <Text className="text-gray-dark text-sm tabular-nums">
