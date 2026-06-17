@@ -7,6 +7,7 @@ import type {QuestionSet} from '@whocards/decks'
 import {getDeck, getDirection, getInitialNav, navReducer} from '@whocards/decks'
 
 import {LanguageModal} from '@/components/language-modal'
+import {ScreenBackground} from '@/components/screen-background'
 
 const SWIPE_THRESHOLD = 60
 const CONTROLS_HIDE_MS = 3000
@@ -17,9 +18,11 @@ export default function PlayScreen() {
 
   if (!deck) {
     return (
-      <SafeAreaView className="bg-darkest flex-1 items-center justify-center">
-        <Text className="text-white">Deck not found.</Text>
-      </SafeAreaView>
+      <ScreenBackground>
+        <SafeAreaView className="flex-1 items-center justify-center">
+          <Text className="text-white">Deck not found.</Text>
+        </SafeAreaView>
+      </ScreenBackground>
     )
   }
 
@@ -76,13 +79,31 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
     }
   }, [revealControls])
 
+  // --- subtle slide+fade as the question changes (direction follows next/prev) ---
+  const enter = useRef(new Animated.Value(0)).current
+  const navDir = useRef(1)
+
+  useEffect(() => {
+    enter.setValue(navDir.current)
+    Animated.timing(enter, {toValue: 0, duration: 260, useNativeDriver: true}).start()
+  }, [questionId, enter])
+
+  const cardStyle = {
+    opacity: enter.interpolate({inputRange: [-1, 0, 1], outputRange: [0, 1, 0]}),
+    transform: [
+      {translateX: enter.interpolate({inputRange: [-1, 0, 1], outputRange: [-28, 0, 28]})},
+    ],
+  }
+
   const goNext = useCallback(() => {
+    navDir.current = 1
     revealControls()
     dispatch({type: 'next'})
   }, [revealControls])
 
   // the reducer clamps `previous` at the first card, so no idx guard is needed here
   const goPrevious = useCallback(() => {
+    navDir.current = -1
     revealControls()
     dispatch({type: 'previous'})
   }, [revealControls])
@@ -101,64 +122,67 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
   }, [revealControls, goNext, goPrevious])
 
   return (
-    <SafeAreaView className="bg-darkest flex-1">
-      <GestureDetector gesture={gesture}>
-        <View className="flex-1 justify-center px-6">
-          <Text
-            className="text-3xl font-semibold leading-snug text-white"
-            style={{writingDirection: direction}}
-          >
-            {text}
-          </Text>
-        </View>
-      </GestureDetector>
+    <ScreenBackground>
+      <SafeAreaView className="flex-1">
+        <GestureDetector gesture={gesture}>
+          <View className="flex-1 justify-center px-6">
+            <Animated.View style={cardStyle}>
+              <Text
+                className="text-3xl font-semibold leading-snug text-white"
+                style={{writingDirection: direction}}
+              >
+                {text}
+              </Text>
+            </Animated.View>
+          </View>
+        </GestureDetector>
 
-      {/* Animated.View carries only the opacity; the inner View holds the NativeWind layout */}
-      <Animated.View
-        style={{opacity: controlsOpacity}}
-        pointerEvents={controlsShown ? 'auto' : 'none'}
-      >
-        <View className="flex-row items-center justify-between px-6 pb-4">
-          <Pressable
-            onPress={goPrevious}
-            disabled={idx === 0}
-            accessibilityLabel="previous question"
-          >
-            <Text className={`text-primary-light text-lg ${idx === 0 ? 'opacity-40' : ''}`}>
-              ‹ Prev
-            </Text>
-          </Pressable>
-
-          {languages.length > 1 ? (
+        {/* Animated.View carries only the opacity; the inner View holds the NativeWind layout */}
+        <Animated.View
+          style={{opacity: controlsOpacity, pointerEvents: controlsShown ? 'auto' : 'none'}}
+        >
+          <View className="flex-row items-center justify-between px-6 pb-4">
             <Pressable
-              onPress={() => {
-                revealControls()
-                setLangModalOpen(true)
-              }}
-              className="bg-gray rounded-full px-4 py-2"
-              accessibilityLabel="change language"
+              onPress={goPrevious}
+              disabled={idx === 0}
+              accessibilityLabel="previous question"
             >
-              <Text className="uppercase text-white">{language}</Text>
+              <Text className={`text-primary-light text-lg ${idx === 0 ? 'opacity-40' : ''}`}>
+                ‹ Prev
+              </Text>
             </Pressable>
-          ) : null}
 
-          <Pressable onPress={goNext} accessibilityLabel="next question">
-            <Text className="text-primary-light text-lg">Next ›</Text>
-          </Pressable>
-        </View>
-      </Animated.View>
+            {languages.length > 1 ? (
+              <Pressable
+                onPress={() => {
+                  revealControls()
+                  setLangModalOpen(true)
+                }}
+                className="bg-gray rounded-full px-4 py-2"
+                accessibilityLabel="change language"
+              >
+                <Text className="uppercase text-white">{language}</Text>
+              </Pressable>
+            ) : null}
 
-      <LanguageModal
-        visible={langModalOpen}
-        languages={languages}
-        current={language}
-        onSelect={(next) => {
-          setLanguage(next)
-          setLangModalOpen(false)
-          revealControls()
-        }}
-        onClose={() => setLangModalOpen(false)}
-      />
-    </SafeAreaView>
+            <Pressable onPress={goNext} accessibilityLabel="next question">
+              <Text className="text-primary-light text-lg">Next ›</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        <LanguageModal
+          visible={langModalOpen}
+          languages={languages}
+          current={language}
+          onSelect={(next) => {
+            setLanguage(next)
+            setLangModalOpen(false)
+            revealControls()
+          }}
+          onClose={() => setLangModalOpen(false)}
+        />
+      </SafeAreaView>
+    </ScreenBackground>
   )
 }
