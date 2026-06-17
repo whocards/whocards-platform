@@ -13,7 +13,7 @@ import {LanguageModal} from '@/components/language-modal'
 import {ScreenBackground} from '@/components/screen-background'
 
 const SWIPE_THRESHOLD = 60
-const HINT_HIDE_MS = 4500
+const CHROME_HIDE_MS = 3000
 
 // --- dynamic question sizing: grow the text to fill its box, recomputed on rotation ---
 const LINE_HEIGHT_RATIO = 1.15
@@ -101,16 +101,31 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
     [text, measured.width, measured.height]
   )
 
-  // --- the swipe hint fades out once you start playing (or after a few idle seconds) ---
-  const hintOpacity = useRef(new Animated.Value(1)).current
-  const hideHint = useCallback(() => {
-    Animated.timing(hintOpacity, {toValue: 0, duration: 400, useNativeDriver: true}).start()
-  }, [hintOpacity])
+  // --- auto-hiding chrome: the top bar + swipe hint hide when idle, reappear on touch ---
+  const chromeOpacity = useRef(new Animated.Value(1)).current
+  const [chromeShown, setChromeShown] = useState(true)
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const fadeChrome = useCallback(
+    (to: number) => {
+      setChromeShown(to === 1)
+      Animated.timing(chromeOpacity, {toValue: to, duration: 300, useNativeDriver: true}).start()
+    },
+    [chromeOpacity]
+  )
+
+  const revealChrome = useCallback(() => {
+    fadeChrome(1)
+    if (hideTimer.current) clearTimeout(hideTimer.current)
+    hideTimer.current = setTimeout(() => fadeChrome(0), CHROME_HIDE_MS)
+  }, [fadeChrome])
 
   useEffect(() => {
-    const timer = setTimeout(hideHint, HINT_HIDE_MS)
-    return () => clearTimeout(timer)
-  }, [hideHint])
+    revealChrome()
+    return () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current)
+    }
+  }, [revealChrome])
 
   // --- subtle slide+fade as the question changes (direction follows next/prev) ---
   const enter = useRef(new Animated.Value(0)).current
@@ -130,16 +145,16 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
 
   const goNext = useCallback(() => {
     navDir.current = 1
-    hideHint()
+    revealChrome()
     dispatch({type: 'next'})
-  }, [hideHint])
+  }, [revealChrome])
 
   // the reducer clamps `previous` at the first card, so no idx guard is needed here
   const goPrevious = useCallback(() => {
     navDir.current = -1
-    hideHint()
+    revealChrome()
     dispatch({type: 'previous'})
-  }, [hideHint])
+  }, [revealChrome])
 
   // leave the player — back to wherever we came from, falling back to the landing
   const handleExit = useCallback(() => {
@@ -147,51 +162,55 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
     else router.replace('/')
   }, [router])
 
-  // --- swipe to navigate (runs on the JS thread so it can dispatch directly) ---
-  const gesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .runOnJS(true)
-        .onBegin(hideHint)
-        .onEnd((event) => {
-          if (event.translationX <= -SWIPE_THRESHOLD) goNext()
-          else if (event.translationX >= SWIPE_THRESHOLD) goPrevious()
-        }),
-    [hideHint, goNext, goPrevious]
-  )
+  // --- tap reveals the chrome; swipe navigates (both run on the JS thread) ---
+  const gesture = useMemo(() => {
+    const pan = Gesture.Pan()
+      .runOnJS(true)
+      .onBegin(revealChrome)
+      .onEnd((event) => {
+        if (event.translationX <= -SWIPE_THRESHOLD) goNext()
+        else if (event.translationX >= SWIPE_THRESHOLD) goPrevious()
+      })
+    const tap = Gesture.Tap().runOnJS(true).onStart(revealChrome)
+    return Gesture.Race(tap, pan)
+  }, [revealChrome, goNext, goPrevious])
 
   return (
     <ScreenBackground>
       <View className="flex-1">
-        {/* slim top bar: exit · progress · language */}
-        <SafeAreaView edges={['top', 'left', 'right']}>
-          <View className="flex-row items-center gap-4 px-5 pb-1 pt-2">
-            <Pressable onPress={handleExit} hitSlop={10} accessibilityLabel="exit deck">
-              <Ionicons name="close" size={26} color={colors.white} />
-            </Pressable>
-            <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/20">
-              <View
-                className="bg-primary-light h-1.5 rounded-full"
-                // min width so the fill always reads as a bar, even on the first card
-                style={{width: `${Math.max((position / total) * 100, 4)}%`}}
-              />
-            </View>
-            <Text className="text-gray-dark text-sm tabular-nums">
-              {position}/{total}
-            </Text>
-            {languages.length > 1 ? (
-              <Pressable
-                onPress={() => setLangModalOpen(true)}
-                hitSlop={10}
-                accessibilityLabel="change language"
-              >
-                <Ionicons name="language" size={22} color={colors.white} />
+        {/* slim top bar (auto-hides; tap to reveal): exit · progress · language */}
+        <Animated.View
+          style={{opacity: chromeOpacity, pointerEvents: chromeShown ? 'auto' : 'none'}}
+        >
+          <SafeAreaView edges={['top', 'left', 'right']}>
+            <View className="flex-row items-center gap-4 px-5 pb-1 pt-2">
+              <Pressable onPress={handleExit} hitSlop={10} accessibilityLabel="exit deck">
+                <Ionicons name="close" size={26} color={colors.white} />
               </Pressable>
-            ) : null}
-          </View>
-        </SafeAreaView>
+              <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/20">
+                <View
+                  className="bg-primary-light h-1.5 rounded-full"
+                  // min width so the fill always reads as a bar, even on the first card
+                  style={{width: `${Math.max((position / total) * 100, 4)}%`}}
+                />
+              </View>
+              <Text className="text-gray-dark text-sm tabular-nums">
+                {position}/{total}
+              </Text>
+              {languages.length > 1 ? (
+                <Pressable
+                  onPress={() => setLangModalOpen(true)}
+                  hitSlop={10}
+                  accessibilityLabel="change language"
+                >
+                  <Ionicons name="language" size={22} color={colors.white} />
+                </Pressable>
+              ) : null}
+            </View>
+          </SafeAreaView>
+        </Animated.View>
 
-        {/* the question — swipe anywhere to navigate */}
+        {/* the question — tap reveals the chrome, swipe navigates */}
         <GestureDetector gesture={gesture}>
           <View className="flex-1 px-8 py-2">
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
@@ -211,16 +230,18 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
           </View>
         </GestureDetector>
 
-        {/* fading swipe hint — Animated.View carries only opacity; inner View holds layout */}
-        <SafeAreaView edges={['bottom', 'left', 'right']}>
-          <Animated.View style={{opacity: hintOpacity}}>
+        {/* swipe hint — shares the chrome's fade; Animated.View carries only opacity */}
+        <Animated.View
+          style={{opacity: chromeOpacity, pointerEvents: chromeShown ? 'auto' : 'none'}}
+        >
+          <SafeAreaView edges={['bottom', 'left', 'right']}>
             <View className="flex-row items-center justify-center gap-2 pb-4 pt-1">
               <Ionicons name="chevron-back" size={16} color={colors.gray.dark} />
               <Text className="text-gray-dark text-xs uppercase tracking-widest">Swipe</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.gray.dark} />
             </View>
-          </Animated.View>
-        </SafeAreaView>
+          </SafeAreaView>
+        </Animated.View>
 
         <LanguageModal
           visible={langModalOpen}
@@ -229,8 +250,12 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
           onSelect={(next) => {
             setLanguage(next)
             setLangModalOpen(false)
+            revealChrome()
           }}
-          onClose={() => setLangModalOpen(false)}
+          onClose={() => {
+            setLangModalOpen(false)
+            revealChrome()
+          }}
         />
       </View>
     </ScreenBackground>
