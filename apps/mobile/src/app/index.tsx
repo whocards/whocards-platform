@@ -38,7 +38,9 @@ export default function LandingScreen() {
             source={logo}
             resizeMode="contain"
             accessibilityLabel="WhoCards"
-            style={{width: 280, aspectRatio: 1200 / 226}}
+            // explicit width AND height — native sizes a required image to its
+            // intrinsic pixels otherwise (aspectRatio alone only works on web)
+            style={{width: 280, height: Math.round((280 * 226) / 1200)}}
           />
           <Text className="mt-7 text-center text-xl font-semibold leading-8 text-white/80">
             Change your world,{'\n'}one conversation at a time.
