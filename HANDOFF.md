@@ -50,7 +50,9 @@ tooling/typescript shared tsconfig bases
    (`resolver.unstable_enablePackageExports` is set), (b) NativeWind loads
    `tailwind.config.ts` (jiti transpiles it + the imported `@whocards/tokens` preset) and
    classes render, (c) the tRPC client reaches the site — run the website on :4321 or set
-   `EXPO_PUBLIC_API_URL`.
+   `EXPO_PUBLIC_API_URL`. A Maestro E2E starter flow + research/recommendation is ready in
+   `apps/mobile/.maestro/library.yml` + `apps/mobile/docs/e2e-testing.md` (run it on a
+   simulator as part of this verification).
 2. **Website Pool-data dedup.** The rewire deduped the play engine + deck registry only.
    `questions.json` / `languages.json` are still local copies in `apps/website`; repoint the
    direct consumers to `@whocards/decks` pool: `WhoCard.astro`, `pages/[language]/images.astro`,
