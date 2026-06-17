@@ -18,8 +18,9 @@ const CONTROLS_HIDE_MS = 3000
 const LINE_HEIGHT_RATIO = 1.15
 // average glyph advance / line height as fractions of the font size (semibold sans)
 const CHAR_WIDTH_RATIO = 0.54
-// fraction of the box the text aims to cover — ragged wrapping never tiles it fully
-const FILL = 0.62
+// fraction of the box the text aims to cover — kept well under 1 so ragged wrapping
+// and real-device font metrics (taller than this estimate) still leave breathing room
+const FILL = 0.5
 const MIN_FONT = 22
 const MAX_FONT = 96
 
@@ -34,8 +35,9 @@ const fitFontSize = (text: string, width: number, height: number) => {
   const trimmed = text.trim()
   const chars = Math.max(trimmed.length, 1)
   const raw = Math.sqrt((FILL * width * height) / (chars * CHAR_WIDTH_RATIO * LINE_HEIGHT_RATIO))
+  // cap so the longest word fills ~90% of the width — a margin on the widest lines too
   const longestWord = trimmed.split(/\s+/).reduce((max, word) => Math.max(max, word.length), 1)
-  const widthCap = width / (longestWord * CHAR_WIDTH_RATIO)
+  const widthCap = (width * 0.9) / (longestWord * CHAR_WIDTH_RATIO)
   return Math.round(Math.max(MIN_FONT, Math.min(MAX_FONT, raw, widthCap)))
 }
 
@@ -179,7 +181,7 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
     <ScreenBackground>
       <View className="flex-1">
         <GestureDetector gesture={gesture}>
-          <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 px-6">
+          <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 px-8 py-6">
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
               <Animated.View style={cardStyle}>
                 <Text
