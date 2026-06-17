@@ -12,12 +12,13 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~56.0.15",
+    "@expo/vector-icons": "^15.1.1",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
     "@whocards/api": "workspace:*",
     "@whocards/decks": "workspace:*",
     "@whocards/tokens": "workspace:*",
-    "@trpc/client": "catalog:",
-    "@trpc/server": "catalog:",
-    "@expo/metro-runtime": "~56.0.15",
     "expo": "~56.0.12",
     "expo-constants": "~56.0.18",
     "expo-font": "~56.0.7",

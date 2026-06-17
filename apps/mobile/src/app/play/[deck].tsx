@@ -1,12 +1,13 @@
-import {useLocalSearchParams} from 'expo-router'
+import {useLocalSearchParams, useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
-import {Animated, Pressable, Text, View} from 'react-native'
+import {Animated, Text, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import type {QuestionSet} from '@whocards/decks'
 import {getDeck, getDirection, getInitialNav, navReducer} from '@whocards/decks'
 
 import {LanguageModal} from '@/components/language-modal'
+import {PlayerControls} from '@/components/player-controls'
 import {ScreenBackground} from '@/components/screen-background'
 
 const SWIPE_THRESHOLD = 60
@@ -42,6 +43,8 @@ type DeckPlayerProps = {
 }
 
 const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
+  const router = useRouter()
+
   // the shared headless engine — identical behaviour to the web <Play> (ADR-0003)
   const reducer = useMemo(() => navReducer(questionIds), [questionIds])
   const [{ids, idx}, dispatch] = useReducer(reducer, undefined, () => getInitialNav(questionIds))
@@ -108,6 +111,17 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
     dispatch({type: 'previous'})
   }, [revealControls])
 
+  // leave the player — back to wherever we came from, falling back to the library
+  const handleExit = useCallback(() => {
+    if (router.canGoBack()) router.back()
+    else router.replace('/')
+  }, [router])
+
+  const openLanguage = useCallback(() => {
+    revealControls()
+    setLangModalOpen(true)
+  }, [revealControls])
+
   // --- swipe to navigate (runs on the JS thread so it can dispatch directly) ---
   const gesture = useMemo(() => {
     const pan = Gesture.Pan()
@@ -123,9 +137,9 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
 
   return (
     <ScreenBackground>
-      <SafeAreaView className="flex-1">
+      <View className="flex-1">
         <GestureDetector gesture={gesture}>
-          <View className="flex-1 justify-center px-6">
+          <SafeAreaView edges={['top', 'left', 'right']} className="flex-1 justify-center px-6">
             <Animated.View style={cardStyle}>
               <Text
                 className="text-3xl font-semibold leading-snug text-white"
@@ -134,41 +148,22 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
                 {text}
               </Text>
             </Animated.View>
-          </View>
+          </SafeAreaView>
         </GestureDetector>
 
-        {/* Animated.View carries only the opacity; the inner View holds the NativeWind layout */}
+        {/* Animated.View carries only the opacity; PlayerControls owns the bar layout */}
         <Animated.View
           style={{opacity: controlsOpacity, pointerEvents: controlsShown ? 'auto' : 'none'}}
         >
-          <View className="flex-row items-center justify-between px-6 pb-4">
-            <Pressable
-              onPress={goPrevious}
-              disabled={idx === 0}
-              accessibilityLabel="previous question"
-            >
-              <Text className={`text-primary-light text-lg ${idx === 0 ? 'opacity-40' : ''}`}>
-                ‹ Prev
-              </Text>
-            </Pressable>
-
-            {languages.length > 1 ? (
-              <Pressable
-                onPress={() => {
-                  revealControls()
-                  setLangModalOpen(true)
-                }}
-                className="bg-gray rounded-full px-4 py-2"
-                accessibilityLabel="change language"
-              >
-                <Text className="uppercase text-white">{language}</Text>
-              </Pressable>
-            ) : null}
-
-            <Pressable onPress={goNext} accessibilityLabel="next question">
-              <Text className="text-primary-light text-lg">Next ›</Text>
-            </Pressable>
-          </View>
+          <PlayerControls
+            language={language}
+            showLanguage={languages.length > 1}
+            canPrevious={idx > 0}
+            onPrevious={goPrevious}
+            onNext={goNext}
+            onLanguage={openLanguage}
+            onExit={handleExit}
+          />
         </Animated.View>
 
         <LanguageModal
@@ -182,7 +177,7 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
           }}
           onClose={() => setLangModalOpen(false)}
         />
-      </SafeAreaView>
+      </View>
     </ScreenBackground>
   )
 }
