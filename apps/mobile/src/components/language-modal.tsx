@@ -1,0 +1,58 @@
+import {Modal, Pressable, ScrollView, Text, View} from 'react-native'
+import {getLanguageName} from '@whocards/decks'
+
+type LanguageModalProps = {
+  visible: boolean
+  languages: string[]
+  current: string
+  onSelect: (language: string) => void
+  onClose: () => void
+}
+
+/**
+ * Native language picker — the OS sheet (`presentationStyle="pageSheet"`): an iOS
+ * card sheet with swipe-to-dismiss, a full native modal on Android. Mirrors the
+ * web's "Choose your language" modal. `onDismiss` keeps `visible` in sync when the
+ * sheet is swiped away.
+ */
+export const LanguageModal = ({
+  visible,
+  languages,
+  current,
+  onSelect,
+  onClose,
+}: LanguageModalProps) => (
+  <Modal
+    visible={visible}
+    animationType="slide"
+    presentationStyle="pageSheet"
+    onRequestClose={onClose}
+    onDismiss={onClose}
+  >
+    <View className="flex-1 bg-white">
+      <View className="border-gray-lighter flex-row items-center justify-between border-b px-5 py-4">
+        <Text className="text-darker text-2xl font-bold">Choose your language</Text>
+        <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
+          <Text className="text-darker text-2xl">✕</Text>
+        </Pressable>
+      </View>
+      <ScrollView contentContainerStyle={{paddingBottom: 24}}>
+        {languages.map((code) => {
+          const selected = code === current
+          return (
+            <Pressable
+              key={code}
+              onPress={() => onSelect(code)}
+              className={`flex-row items-center justify-between px-5 py-4 ${
+                selected ? 'bg-yellow-300/40' : ''
+              }`}
+            >
+              <Text className="text-darker text-lg">{getLanguageName(code) ?? code}</Text>
+              {selected ? <Text className="text-primary-dark text-lg font-bold">✓</Text> : null}
+            </Pressable>
+          )
+        })}
+      </ScrollView>
+    </View>
+  </Modal>
+)

@@ -21,7 +21,7 @@ export default function LibraryScreen() {
   }, [])
 
   return (
-    <SafeAreaView className="bg-background flex-1">
+    <SafeAreaView className="bg-darkest flex-1">
       <View className="px-6 pb-4 pt-2">
         <Text className="font-title text-4xl font-semibold text-white">WhoCards</Text>
         <Text className="text-gray-dark mt-1 text-base">
