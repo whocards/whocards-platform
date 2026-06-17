@@ -1,7 +1,7 @@
-# Mobile: brand-faithful fonts for CJK + Hebrew questions
+# Mobile: brand-faithful fonts for CJK questions
 
 **Tags:** mobile, languages
-**Status:** open (decide later)
+**Status:** open for CJK (Hebrew done — Noto Sans Hebrew bundled, ~33 KB)
 
 ## Context
 
@@ -10,19 +10,18 @@ The mobile app loads the brand faces via `expo-font` — `golos-text` (body) and
 `634fd9f`). `golos-text` covers Latin + Cyrillic, so it serves all languages
 except the non-Latin scripts.
 
-For **`zh` (Mandarin), `jp` (Japanese), `he` (Hebrew)** the question falls back to
-the **device system font** (see `SYSTEM_FONT_LANGUAGES` in
-`apps/mobile/src/app/play/[deck].tsx`). That renders correctly — full glyph
-coverage, no tofu — but it is **not the website's typeface**. The web uses Noto
-faces for these scripts (`noto-sans-chinese` / `noto-sans-japanese` /
-`noto-sans-hebrew`, defined in `apps/website/src/styles/base.css` and the
-`@whocards/tokens` font tokens). So on those three languages mobile and web diverge,
-and the CJK rendering varies by device (iOS PingFang/Hiragino vs Android Noto).
+**Hebrew (`he`) is now matched** — `noto-sans-hebrew` (≈ 33 KB) is bundled and applied
+to Hebrew questions (`SCRIPT_FONTS` in `apps/mobile/src/app/play/[deck].tsx`). That was
+option 3 below; it was cheap enough to just do.
+
+The remaining gap is **`zh` (Mandarin)** and **`jp` (Japanese)**, which fall back to the
+**device system font** (see `SYSTEM_FONT_LANGUAGES`). That renders correctly — full
+glyph coverage, no tofu — but it is **not the website's Noto typeface**, and CJK
+rendering varies by device (iOS PingFang/Hiragino vs Android Noto).
 
 The blocker to just bundling them: the Noto CJK `.ttf`s are **huge** —
-`noto-sans-chinese` ≈ 2.0 MB, `noto-sans-japanese` ≈ 2.6 MB (Hebrew is tiny,
-≈ 33 KB). Adding ~4.6 MB to every install for a feature most users never hit is the
-trade-off we deferred.
+`noto-sans-chinese` ≈ 2.0 MB, `noto-sans-japanese` ≈ 2.6 MB. Adding ~4.6 MB to every
+install for a feature most users never hit is the trade-off we deferred.
 
 Source `.woff2` files already live in `apps/website/public/fonts/`; converting to
 `.ttf` for RN is a one-liner with `fontTools` (as done for the brand faces).
@@ -37,9 +36,9 @@ Source `.woff2` files already live in `apps/website/public/fonts/`; converting t
    Exact web match, offline, trivial (`useFonts` + a per-language family map).
    Downside: **+~4.6 MB** in every build for 3 of 14 languages.
 
-3. **Bundle Hebrew only; system fallback for CJK.**
-   Hebrew is ~33 KB, so we get an exact match for `he` essentially for free and leave
-   the heavy CJK on system. Cheap, partial parity. Downside: still no parity for zh/jp.
+3. **Bundle Hebrew only; system fallback for CJK.** ✅ **Done.**
+   Hebrew is ~33 KB, so we got an exact match for `he` essentially for free and left the
+   heavy CJK on system. Remaining decision is purely about zh/jp.
 
 4. **Subset the Noto faces to the glyphs the decks actually use.**
    Run `fontTools` subsetting against the real `zh`/`jp`/`he` question text → likely
@@ -55,9 +54,9 @@ Source `.woff2` files already live in `apps/website/public/fonts/`; converting t
 
 ## Lean (not decided)
 
-- If we want web parity: **option 4 (subset)** — tiny and exact — or **option 2** if we
-  want it dead-simple and don't mind the size.
-- **Option 3** is a near-free immediate win for Hebrew regardless of what we pick for CJK.
+- Hebrew is handled (option 3). The open question is **zh/jp only**.
+- If we want web parity for CJK: **option 4 (subset)** — tiny and exact — or **option 2**
+  if we want it dead-simple and don't mind the ~4.6 MB.
 - **Option 1** is a fine no-op if "correct but system-rendered CJK" is acceptable.
 
 ## References

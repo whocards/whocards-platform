@@ -17,6 +17,7 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     'golos-text': require('../../assets/fonts/golos-text.ttf'),
     aptly: require('../../assets/fonts/aptly.ttf'),
+    'noto-sans-hebrew': require('../../assets/fonts/noto-sans-hebrew.ttf'),
   })
 
   useEffect(() => {

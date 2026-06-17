@@ -15,9 +15,18 @@ import {ScreenBackground} from '@/components/screen-background'
 const SWIPE_THRESHOLD = 60
 const CHROME_HIDE_MS = 3000
 
-// golos-text (the brand body face) covers Latin + Cyrillic; these scripts have no
-// brand face, so they fall back to the system font (full glyph coverage on device).
-const SYSTEM_FONT_LANGUAGES = new Set(['he', 'zh', 'jp'])
+// Per-script question face. golos-text (the brand body face) covers Latin + Cyrillic;
+// Hebrew gets its bundled Noto face; CJK (zh/jp) falls back to the system font — full
+// glyph coverage on device, and the Noto CJK faces are too heavy to bundle (see
+// docs/tickets/0001-mobile-cjk-hebrew-question-fonts.md).
+const SYSTEM_FONT_LANGUAGES = new Set(['zh', 'jp'])
+const SCRIPT_FONTS: Record<string, string> = {he: 'noto-sans-hebrew'}
+
+/** The font family for a question in `language`, or `undefined` for the system font. */
+const questionFontFamily = (language: string): string | undefined => {
+  if (language in SCRIPT_FONTS) return SCRIPT_FONTS[language]
+  return SYSTEM_FONT_LANGUAGES.has(language) ? undefined : 'golos-text'
+}
 
 // --- dynamic question sizing: grow the text to fill its box, recomputed on rotation ---
 const LINE_HEIGHT_RATIO = 1.15
@@ -90,8 +99,8 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
   const direction = getDirection(language)
   const total = ids.length
   const position = idx + 1
-  // brand face where it has glyphs; system font (with a weight) otherwise
-  const brandFont = !SYSTEM_FONT_LANGUAGES.has(language)
+  // brand/script face where one exists; system font (with a weight) otherwise
+  const questionFont = questionFontFamily(language)
 
   // --- measure the card's box so the question can grow to fill it (landscape included) ---
   const {width: winWidth, height: winHeight} = useWindowDimensions()
@@ -227,7 +236,7 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
                     fontSize,
                     lineHeight: fontSize * LINE_HEIGHT_RATIO,
                     writingDirection: direction,
-                    ...(brandFont ? {fontFamily: 'golos-text'} : {fontWeight: '600'}),
+                    ...(questionFont ? {fontFamily: questionFont} : {fontWeight: '600'}),
                   }}
                 >
                   {text}
