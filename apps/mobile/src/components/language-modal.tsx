@@ -31,7 +31,7 @@ export const LanguageModal = ({
   >
     <View className="flex-1 bg-white">
       <View className="border-gray-lighter flex-row items-center justify-between border-b px-5 py-4">
-        <Text className="text-darker text-2xl font-bold">Choose your language</Text>
+        <Text className="text-darker font-title text-2xl">Choose your language</Text>
         <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
           <Text className="text-darker text-2xl">✕</Text>
         </Pressable>
@@ -47,7 +47,7 @@ export const LanguageModal = ({
                 selected ? 'bg-yellow-300/40' : ''
               }`}
             >
-              <Text className="text-darker text-lg">{getLanguageName(code) ?? code}</Text>
+              <Text className="text-darker font-sans text-lg">{getLanguageName(code) ?? code}</Text>
               {selected ? <Text className="text-primary-dark text-lg font-bold">✓</Text> : null}
             </Pressable>
           )

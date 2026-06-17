@@ -42,13 +42,13 @@ export default function LandingScreen() {
             // intrinsic pixels otherwise (aspectRatio alone only works on web)
             style={{width: 280, height: Math.round((280 * 226) / 1200)}}
           />
-          <Text className="mt-7 text-center text-xl font-semibold leading-8 text-white/80">
+          <Text className="mt-7 text-center font-sans text-xl font-semibold leading-8 text-white/80">
             Change your world,{'\n'}one conversation at a time.
           </Text>
         </View>
 
         <View className="w-full items-center gap-5">
-          <Text className="text-gray-dark text-sm">
+          <Text className="text-gray-dark font-sans text-sm">
             {cards} cards · {languages} languages
           </Text>
           <Link href={`/play/${DEFAULT_DECK_SLUG}`} asChild>
@@ -58,7 +58,7 @@ export default function LandingScreen() {
               className="active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
             >
               <Ionicons name="play" size={18} color={colors.darker} style={{marginRight: 8}} />
-              <Text className="text-darker text-base font-bold">Play</Text>
+              <Text className="text-darker font-sans text-base font-bold">Play</Text>
             </Pressable>
           </Link>
         </View>

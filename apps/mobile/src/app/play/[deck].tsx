@@ -15,6 +15,10 @@ import {ScreenBackground} from '@/components/screen-background'
 const SWIPE_THRESHOLD = 60
 const CHROME_HIDE_MS = 3000
 
+// golos-text (the brand body face) covers Latin + Cyrillic; these scripts have no
+// brand face, so they fall back to the system font (full glyph coverage on device).
+const SYSTEM_FONT_LANGUAGES = new Set(['he', 'zh', 'jp'])
+
 // --- dynamic question sizing: grow the text to fill its box, recomputed on rotation ---
 const LINE_HEIGHT_RATIO = 1.15
 // average glyph advance / line height as fractions of the font size (semibold sans)
@@ -50,7 +54,7 @@ export default function PlayScreen() {
     return (
       <ScreenBackground>
         <SafeAreaView className="flex-1 items-center justify-center">
-          <Text className="text-white">Deck not found.</Text>
+          <Text className="font-sans text-white">Deck not found.</Text>
         </SafeAreaView>
       </ScreenBackground>
     )
@@ -86,6 +90,8 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
   const direction = getDirection(language)
   const total = ids.length
   const position = idx + 1
+  // brand face where it has glyphs; system font (with a weight) otherwise
+  const brandFont = !SYSTEM_FONT_LANGUAGES.has(language)
 
   // --- measure the card's box so the question can grow to fill it (landscape included) ---
   const {width: winWidth, height: winHeight} = useWindowDimensions()
@@ -194,7 +200,7 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
                   style={{width: `${Math.max((position / total) * 100, 4)}%`}}
                 />
               </View>
-              <Text className="text-gray-dark text-sm tabular-nums">
+              <Text className="text-gray-dark font-sans text-sm tabular-nums">
                 {position}/{total}
               </Text>
               {languages.length > 1 ? (
@@ -216,11 +222,12 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
               <Animated.View style={cardStyle}>
                 <Text
-                  className="font-semibold text-white"
+                  className="text-white"
                   style={{
                     fontSize,
                     lineHeight: fontSize * LINE_HEIGHT_RATIO,
                     writingDirection: direction,
+                    ...(brandFont ? {fontFamily: 'golos-text'} : {fontWeight: '600'}),
                   }}
                 >
                   {text}
@@ -237,7 +244,9 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
           <SafeAreaView edges={['bottom', 'left', 'right']}>
             <View className="flex-row items-center justify-center gap-2 pb-4 pt-1">
               <Ionicons name="chevron-back" size={16} color={colors.gray.dark} />
-              <Text className="text-gray-dark text-xs uppercase tracking-widest">Swipe</Text>
+              <Text className="text-gray-dark font-sans text-xs uppercase tracking-widest">
+                Swipe
+              </Text>
               <Ionicons name="chevron-forward" size={16} color={colors.gray.dark} />
             </View>
           </SafeAreaView>
