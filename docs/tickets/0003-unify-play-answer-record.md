@@ -2,7 +2,8 @@
 
 **Tags:** mobile, website, api, data
 **Surfaces:** backend · web · mobile
-**Status:** ready to build
+**Status:** branches built + reviewed; ⚠️ **migration apply BLOCKED by ticket 0005** (DB
+reconciliation) — do not run `db:migrate` against prod until the baseline is reconciled.
 
 ## Goal
 
