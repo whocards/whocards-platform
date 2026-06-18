@@ -10,8 +10,8 @@ export const SimplePlay = () => (
   <Play
     questions={deck.questions as QuestionSet}
     languages={deck.languages}
+    deckSlug={deck.slug}
     languageStorageKey={deck.languageStorageKey}
-    userIdStorageKey={deck.userIdStorageKey}
     tracking={deck.tracking}
     questionClassName={deck.questionClassName}
   />

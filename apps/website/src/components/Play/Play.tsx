@@ -1,6 +1,9 @@
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {QuestionSet, TrackingConfig} from '@whocards/decks'
 import {getDirection, getInitialNav, navReducer} from '@whocards/decks/engine'
+import {getDeviceId} from '~lib/device-id'
+import {createOfflineQueue} from '~lib/offline-queue'
+import {sendAnswer} from '~lib/answer-transport'
 import {cn} from '~utils'
 
 export type {QuestionSet, TrackingConfig}
@@ -10,22 +13,25 @@ export type PlayProps = {
   questions: QuestionSet
   /** ordered list of available language codes (e.g. ['hu', 'en']) */
   languages: string[]
+  /** slug of the deck being played, recorded with every Answer */
+  deckSlug?: string
   /** optional analytics / db tracking. When omitted, no tracking happens. */
   tracking?: TrackingConfig
   /** localStorage key used to persist the chosen language */
   languageStorageKey?: string
-  /** localStorage key used to persist an anonymous user id (tracking only) */
-  userIdStorageKey?: string
   /** text colour utility for the question, so the deck adapts to its background */
   questionClassName?: string
 }
 
+/** One queue per island, recording each serve to the Answer record via tRPC. */
+const answerQueue = createOfflineQueue(sendAnswer)
+
 export const Play = ({
   questions,
   languages,
+  deckSlug,
   tracking,
   languageStorageKey = 'play-language',
-  userIdStorageKey = 'play-user-id',
   questionClassName = 'text-darkest',
 }: PlayProps) => {
   const questionIds = useMemo(() => Object.keys(questions), [questions])
@@ -62,7 +68,6 @@ export const Play = ({
 
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const controlsRef = useRef<HTMLDivElement>(null)
-  const userIdRef = useRef<string>('')
 
   const setLanguage = useCallback(
     (next: string) => {
@@ -74,18 +79,6 @@ export const Play = ({
 
   // ---- tracking helpers (no-ops when tracking is undefined) ----
 
-  const getUserId = useCallback((): string => {
-    if (typeof window === 'undefined') return ''
-    if (userIdRef.current) return userIdRef.current
-    let userId = localStorage.getItem(userIdStorageKey)
-    if (!userId) {
-      userId = crypto.randomUUID()
-      localStorage.setItem(userIdStorageKey, userId)
-    }
-    userIdRef.current = userId
-    return userId
-  }, [userIdStorageKey])
-
   const createQuestionTracking = useCallback(
     (questionId: string, type: string, lang: string) => {
       if (!tracking) return
@@ -93,14 +86,14 @@ export const Play = ({
         method: 'POST',
         body: JSON.stringify({
           eventId: tracking.eventId,
-          userId: getUserId(),
+          userId: getDeviceId(),
           questionId,
           type,
           language: lang,
         }),
       })
     },
-    [tracking, getUserId]
+    [tracking]
   )
 
   const capture = useCallback(
@@ -163,10 +156,27 @@ export const Play = ({
     }
   }, [isControlsHovered, showControls, setHideTimeout, clearHideTimeout])
 
+  // ---- flush any queued Answers on load and when the network returns ----
+  useEffect(() => answerQueue.start(), [])
+
   // ---- track every question view ----
   useEffect(() => {
-    createQuestionTracking(ids[idx], trackingSource, language)
-    capture('event_question_seen', ids[idx], {language, source: trackingSource})
+    const questionId = ids[idx]
+    // legacy, event-scoped conference tracking (kept until it folds in, 0003)
+    createQuestionTracking(questionId, trackingSource, language)
+    capture('event_question_seen', questionId, {language, source: trackingSource})
+    // durable Answer record: enqueue every serve, flushed via the offline queue.
+    // TODO(answered=served): `language` in the deps re-records when language is
+    // switched on the same card (an over-count vs "answered = served"); revisit
+    // when "answered" gains a dwell timer.
+    if (deckSlug && questionId) {
+      void answerQueue.enqueue({
+        deviceId: getDeviceId(),
+        deckSlug,
+        questionId,
+        language,
+      })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, ids, language, trackingSource])
 

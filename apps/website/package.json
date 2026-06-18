@@ -21,6 +21,7 @@
   "dependencies": {
     "@whocards/api": "workspace:*",
     "@whocards/decks": "workspace:*",
+    "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "@astrojs/mdx": "^5.0.6",
     "@astrojs/netlify": "^7.0.10",

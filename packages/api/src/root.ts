@@ -1,3 +1,4 @@
+import {answersRouter} from './routers/answers'
 import {decksRouter} from './routers/decks'
 import {poolRouter} from './routers/pool'
 import {createTRPCRouter} from './trpc'
@@ -10,6 +11,7 @@ import {createTRPCRouter} from './trpc'
 export const appRouter = createTRPCRouter({
   decks: decksRouter,
   pool: poolRouter,
+  answers: answersRouter,
 })
 
 export type AppRouter = typeof appRouter

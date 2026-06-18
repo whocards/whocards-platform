@@ -94,7 +94,6 @@ export const conference = pgTable('conference', {
     startWith: 1,
     increment: 1,
     minValue: 1,
-    maxValue: 9223372036854775807,
     cache: 1,
   }),
   createdAt: timestamp('created_at', {withTimezone: true, mode: 'string'}).defaultNow().notNull(),
@@ -112,7 +111,6 @@ export const conferenceQuestionTracking = pgTable(
       startWith: 1,
       increment: 1,
       minValue: 1,
-      maxValue: 9223372036854775807,
       cache: 1,
     }),
     createdAt: timestamp('created_at', {withTimezone: true, mode: 'string'}).defaultNow().notNull(),
@@ -389,6 +387,40 @@ export const whocardsShipping = pgTable(
       whocardsShippingPurchaseIdUnique: unique('whocards_shipping_purchaseId_unique').on(
         table.purchaseId
       ),
+    }
+  }
+)
+
+/**
+ * The Answer record (ticket 0003): the permanent, append-only history of Answers
+ * — one row each time a Device answers a Question (CONTEXT.md → Answer record).
+ * The single source of truth from which counts and the Global cycle derive.
+ * Pool ids are STRINGS, so `question_id` is `text`.
+ */
+export const answer = pgTable(
+  'answer',
+  {
+    id: bigint('id', {mode: 'number'}).primaryKey().generatedByDefaultAsIdentity({
+      name: 'answer_id_seq',
+      startWith: 1,
+      increment: 1,
+      minValue: 1,
+      cache: 1,
+    }),
+    createdAt: timestamp('created_at', {withTimezone: true, mode: 'string'}).defaultNow().notNull(),
+    deviceId: text('device_id').notNull(),
+    deckSlug: text('deck_slug').notNull(),
+    questionId: text('question_id').notNull(),
+    language: text('language'),
+    type: text('type').notNull().default('answered'),
+  },
+  (table) => {
+    return {
+      answerDeckSlugQuestionIdIdx: index('answer_deck_slug_question_id_idx').on(
+        table.deckSlug,
+        table.questionId
+      ),
+      answerDeviceIdIdx: index('answer_device_id_idx').on(table.deviceId),
     }
   }
 )

@@ -40,9 +40,9 @@ const questionId = qParam && qParam in deck.questions ? qParam : undefined
     client:only='react'
     questions={deck.questions as QuestionSet}
     languages={deck.languages}
+    deckSlug={deck.slug}
     tracking={deck.tracking}
     languageStorageKey={deck.languageStorageKey}
-    userIdStorageKey={deck.userIdStorageKey}
     questionClassName={deck.questionClassName}
   />
 </Layout>

@@ -1,5 +1,5 @@
 {
-  "id": "04ec1f77-7fa2-4dcd-b7b7-2cd931f550c9",
+  "id": "3934f188-9f1f-49c3-8983-76345e76920d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -233,6 +233,108 @@
           ]
         }
       },
+      "uniqueConstraints": {}
+    },
+    "public.answer": {
+      "name": "answer",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigint",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "byDefault",
+            "name": "answer_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "device_id": {
+          "name": "device_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deck_slug": {
+          "name": "deck_slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "question_id": {
+          "name": "question_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'answered'"
+        }
+      },
+      "indexes": {
+        "answer_deck_slug_question_id_idx": {
+          "name": "answer_deck_slug_question_id_idx",
+          "columns": [
+            {
+              "expression": "deck_slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "question_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "answer_device_id_idx": {
+          "name": "answer_device_id_idx",
+          "columns": [
+            {
+              "expression": "device_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
     "public.auth_account": {
@@ -567,7 +669,7 @@
             "increment": "1",
             "startWith": "1",
             "minValue": "1",
-            "maxValue": "9223372036854776000",
+            "maxValue": "9223372036854775807",
             "cache": "1",
             "cycle": false
           }
@@ -621,7 +723,7 @@
             "increment": "1",
             "startWith": "1",
             "minValue": "1",
-            "maxValue": "9223372036854776000",
+            "maxValue": "9223372036854775807",
             "cache": "1",
             "cycle": false
           }

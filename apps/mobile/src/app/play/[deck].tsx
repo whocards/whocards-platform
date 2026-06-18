@@ -1,8 +1,8 @@
 import {Ionicons} from '@expo/vector-icons'
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
-import type {LayoutChangeEvent} from 'react-native'
-import {Animated, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
+import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
+import {AppState, Animated, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import type {QuestionSet} from '@whocards/decks'
@@ -12,6 +12,9 @@ import {colors} from '@whocards/tokens'
 import {LanguageModal} from '@/components/language-modal'
 import {PlayerBar} from '@/components/player-bar'
 import {ScreenBackground} from '@/components/screen-background'
+import {enqueue, flush} from '@/lib/answer-queue'
+import {send} from '@/lib/answer-transport'
+import {getDeviceId} from '@/lib/device-id'
 
 const SWIPE_THRESHOLD = 60
 const CHROME_HIDE_MS = 3000
@@ -72,6 +75,7 @@ export default function PlayScreen() {
 
   return (
     <DeckPlayer
+      deckSlug={deck.slug}
       questionIds={deck.questionIds}
       questions={deck.questions}
       languages={deck.languages}
@@ -80,12 +84,13 @@ export default function PlayScreen() {
 }
 
 type DeckPlayerProps = {
+  deckSlug: string
   questionIds: string[]
   questions: QuestionSet
   languages: string[]
 }
 
-const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
+const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerProps) => {
   const router = useRouter()
 
   // the shared headless engine — identical behaviour to the web <Play> (ADR-0003)
@@ -100,6 +105,37 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
   const direction = getDirection(language)
   // brand/script face where one exists; system font (with a weight) otherwise
   const questionFont = questionFontFamily(language)
+
+  // --- Answer record: every serve enqueues an Answer; the queue sends it (or
+  // retries offline). Recording is wired here, not in the engine, so the shared
+  // headless engine stays pure (ADR-0003). ---
+
+  // flush leftovers on app-start and whenever the app returns to the foreground,
+  // so a queue that built up offline drains as soon as the network is back
+  useEffect(() => {
+    void flush(send)
+    const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state === 'active') void flush(send)
+    })
+    return () => sub.remove()
+  }, [])
+
+  // one Answer per Question served (keyed on questionId, so re-renders don't
+  // double-record); also a flush trigger via enqueue's opportunistic send.
+  // TODO(answered=served): `language` in the deps re-records when the language is
+  // switched on the same card (an over-count vs "answered = served"); revisit when
+  // the "answered" definition gains a dwell timer.
+  useEffect(() => {
+    if (!questionId) return
+    let cancelled = false
+    void getDeviceId().then((deviceId) => {
+      if (cancelled) return
+      void enqueue({deviceId, deckSlug, questionId, language}, send)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [questionId, deckSlug, language])
 
   // --- measure the card's box so the question can grow to fill it (landscape included) ---
   const {width: winWidth, height: winHeight} = useWindowDimensions()
