@@ -1,123 +1,109 @@
-# Handoff — Unified play + permanent Answer record
+# Handoff — Answer record + DB takeover (shipped); auth cleanup next
 
-Branch **`main`** at `/Users/avi/code/whocards/app` (monorepo already merged; the old
-`feat/monorepo` handoff this replaces is summarized under "Pre-existing follow-ups" below).
+Branch **`main`** at `/Users/avi/code/whocards/app`, clean at `29194a7`. The unified-play +
+Answer-record work and the monorepo DB-migration takeover are **done, merged, and applied to
+prod**. What remains is deliberate cleanup (auth) and a few tickets.
 
 ## Goal
 
-Ship **one unified Global Game** across web (`apps/website`) + mobile (`apps/mobile`) on the
-shared headless engine, and add two durable primitives:
+One unified play experience across web (`apps/website`, Astro) + mobile (`apps/mobile`, Expo)
+on the shared engine, with a **permanent Answer record** (every served Question logged per
+Device) as the foundation for future global/personal game features. Along the way the monorepo
+**took over DB migration ownership** from `website-next-15` (a parked Next.js rewrite).
 
-1. **Answer record** — a permanent, append-only history of every Question a Device answers.
-2. **Device id** — a stable anonymous per-install/browser UUID, designed so a Device's history
-   can later be **claimed/merged into an account**.
+## Current Progress (DONE — on `main`)
 
-No auth, no monetization, no cycle math in this release — those all _derive_ from the Answer
-record later. Full design in `CONTEXT.md` + `docs/adr/0004` + ticket `docs/tickets/0003`.
+- **Answer record (ticket 0003)** — merged `00820e8`. `answer` table; `answers.record` tRPC
+  mutation via a **port/adapter** (`Context = { recordAnswer }`, Drizzle adapter in the
+  website's `[trpc].ts createContext`); per-Device anonymous id; an offline queue (persist-first,
+  drains the whole backlog, logs failures); record-on-serve wired in **both** clients. Engine
+  stays pure (ADR-0003); shared `AnswerEvent`/`RecordAnswer` types in `@whocards/decks`.
+- **DB baseline / takeover (ticket 0005)** — merged `00820e8`, **applied to Supabase prod**.
+  `apps/website/src/server/db/schema.ts` now models **all 16 prod tables**; one idempotent
+  baseline migration `0000_full_baseline.sql` (every stmt `IF NOT EXISTS`/guarded, **zero
+  DROP/ALTER**) that also creates `answer`. Verified in prod: public tables **16 → 17**, nothing
+  dropped, drizzle migration tracking initialized.
+- **Tickets** (`docs/tickets/`): `0001` CJK fonts (mobile, open), `0002` Postgres→Convex
+  (parked), `0003` ✅ done, `0004` logging→PostHog (open), `0005` ✅ baseline applied / cleanup
+  pending. ADR `0004` = Global Game progress-overlay (model B; authoritative draw A deferred).
+- **Project agents** added to `.claude/agents/` (architect, coder, researcher, reviewer — stack
+  -adapted; triager excluded). They register only at **session start** (see gotchas).
+- **`CONTEXT.md`** glossary covers Game/Global/Personal/Offline play/Answered/Device/Answer
+  record, etc.
 
-## Current Progress
+## Key facts the next agent needs
 
-**Design is settled and written down** (this session was a grill-with-docs interview, not code):
-
-- **`CONTEXT.md`** (glossary) — added: Game, Global Game, Personal Game, Offline play,
-  Answered, Skipped, Facilitation Mode, Device, Answer record.
-- **`docs/adr/0004-global-game-progress-overlay.md`** — Global Game is a **shared-progress
-  overlay (model B)**, not a server-authoritative draw (model A, deferred). Per-Deck scope;
-  "a game played" = one completed cycle of a Deck.
-- **`docs/tickets/0003-unify-play-answer-record.md`** — the build plan, **scoped by surface**
-  (Backend / Shared / Web / Mobile), commit-sized tasks, verification per task.
-- **`docs/tickets/0002-postgres-to-convex-migration.md`** — parked (future, backend).
-- **`docs/tickets/0001`** — annotated with surface scope (mobile).
-
-⚠️ **All of the above are UNCOMMITTED** (`git status`: `CONTEXT.md` modified; ADR-0004 + tickets
-0002/0003 untracked). First action: commit them as a docs commit.
-
-**Also shipped earlier this session (committed):** mobile player-bar UI — close ✕ as a
-`bg-darker/80` chip top-right, bottom action bar (Back · Share · Language · Next), latest
-commit `d79686e`.
-
-## Key design decisions (so they aren't re-litigated)
-
-- **"Game" = a draw policy over a Deck**, content-blind. Games differ only by the _scope_ of
-  the "already answered" set. Two on the horizon: **Global** (default, free, always recording)
-  and **Personal** (later, paid). "Classic/offline as a no-recording mode" was **rejected**.
-- **"Answered" = served** for now (every serve records); a dwell-timer refinement and
-  Facilitation Mode's Skip are future. Never an explicit tap.
-- **Recording is ALWAYS on**, including offline — offline just **queues on-device and flushes on
-  reconnect**. "Offline" is a connectivity state, not a separate Game.
-- **Engine stays pure; the answer-recorder is injected per client** (ADR-0003, no shared UI).
-  The draw itself does **not** change — today's `nav.ts` non-repeating pass already _is_ the
-  Global draw. The release is plumbing (record + device id), not new gameplay.
-- **Write path = one tRPC `answers.record` mutation** both clients call (unify app + website),
-  not another REST endpoint.
+- **Prod DB = Supabase** (eu-central-1 transaction pooler, port 6543). Creds live in
+  `website-next-15/.env.prod` as `DATABASE_URL`. `apps/website` reads `DB_URL` (no local `.env`),
+  so to run drizzle against prod: `export DB_URL="$(grep ^DATABASE_URL= ../../website-next-15/.env.prod | sed -E 's/^DATABASE_URL=//; s/\"//g')"` then `pnpm -F website exec drizzle-kit <cmd>`.
+  Both `drizzle-kit pull` (introspect) and `migrate` work over the pooler.
+- **Connecting to prod needs EXPLICIT user authorization** naming the target — the safety
+  classifier blocks otherwise. Read-only introspect snapshot was saved at `/tmp/wc-prod-introspect/`.
+- **Prod schema = 16 tables across 3 eras:** core (`user`+`oc_slug`, `purchase`, `shipping`,
+  `card`, `conference`, `conference_question_tracking`), **two** overlapping auth sets (`auth_*`
+  NextAuth + older `account_*`), and legacy `whocards_*`. The unprefixed names are current; the
+  `whocards_` prefix is dead-legacy.
+- Lint/format = **oxlint + oxfmt** (never eslint/prettier) for packages + mobile; the **website
+  has no eslint** and uses its own **prettier + `astro check`** (excluded from oxlint/oxfmt).
+- Never commit `.env*`, real order data, or secrets. Mobile native deps (expo-crypto, async
+  -storage) need a dev-client rebuild, not just a Metro reload.
 
 ## What Worked
 
-- **Grill-with-docs**: walking the design tree one decision at a time, recording each resolved
-  term in `CONTEXT.md` inline and the one hard-to-reverse trade-off as ADR-0004.
-- **Grounding every recommendation in the actual code** before asserting (found: web already
-  mints a device id via `crypto.randomUUID()`+localStorage `play-user-id`; web `Play.tsx`
-  already fires a serve-effect on `idx`; tRPC `Context` is empty; both clients already share
-  `@whocards/decks/engine`). This shrank the perceived scope a lot.
-- Mobile visual verification via **Expo web + Playwright screenshots** (390×844 / 844×390),
-  scripts placed in `apps/website` where `@playwright/test` resolves, deleted after use.
+- **Read-only `drizzle-kit pull`** (with explicit auth) to get ground-truth prod schema — the
+  Nov-2024 `db_dump.sql` was stale and misleading; introspection revealed the real 16 tables.
+- **Idempotent baseline pattern**: `drizzle-kit generate` from a schema that mirrors prod →
+  all-`IF NOT EXISTS`/guarded SQL, so `migrate` no-ops existing tables and only creates `answer`.
+  Zero data-loss risk, confirmed by grepping for DROP/TRUNCATE/DELETE + a post-migrate count.
+- **Augment, don't adopt** the introspected schema: kept the hand-written tables (names,
+  relations, consumers intact) and _added_ the 11 missing tables — the raw `drizzle pull` output
+  uses generic names and has artifacts.
+- Salvaging errored background agents by reviewing + finishing their worktrees directly.
+- Verifying integration composes via `tsc` (mobile typecheck proves the un-cast
+  `trpc.answers.record` resolves against `AppRouter`).
 
 ## What Didn't Work / Gotchas
 
-- **`@whocards/api` cannot import `apps/website`** (packages don't import apps). So the router
-  can't type `ctx.db` directly → use the **port/adapter** (`Context = { recordAnswer }`, host
-  supplies the Drizzle adapter in `[trpc].ts createContext`). The `@whocards/database` package
-  extraction is the long-term fix but is **out of scope** here (ties into the Convex ticket).
-- **Pool `questionId` is a string** (`QuestionId = string`), but the existing
-  `conference_question_tracking.question_id` is `smallint`. The new `answer.question_id` must be
-  **text**. Don't copy the smallint.
-- **Mobile has no crypto/storage libs** — `expo-crypto` + `@react-native-async-storage/async-storage`
-  are net-new deps for the device id + offline queue.
-- **The web Play island has no tRPC client** (it POSTs to the REST conference tracker today);
-  unifying on `answers.record` means giving it a small `@trpc/client`.
-- Tooling: **oxlint + oxfmt only** (never eslint/prettier). Never commit `.env*`, real order
-  data, or literal secrets. `app.json` orientation/font changes need a native rebuild, not a JS
-  reload.
+- **bigint identity `maxValue: 9223372036854775807` (2^63-1) overflows** — JS `Number` rounds it
+  to `...776000` > bigint max, and Postgres rejects at parse (`22003`). **Fix: omit `maxValue`**;
+  drizzle then emits the correct `MAXVALUE`. (Still present as `ts80008` warnings on the
+  `conference*` tables in `schema.ts` — harmless now but the same trap.)
+- **First `drizzle-kit migrate` failed and rolled back** (it runs in a transaction) — prod was
+  unchanged. Migrations being transactional is the safety net.
+- **`drizzle pull` mangles some output**: a `'''next''` default, generic table names — don't adopt
+  it wholesale.
+- **`SendMessage` (resume agent) is not available** in this toolset; errored background agents
+  can't be resumed — salvage their worktrees manually.
+- **Custom `.claude/agents/*.md` load only at session start** — can't be used as `subagent_type`
+  mid-session after adding them. Use general-purpose carrying the agent's instructions until a
+  restart.
 
-## Next Steps (ordered — pick up here)
+## Next Steps (ordered)
 
-1. **Commit the docs** (`CONTEXT.md`, `docs/adr/0004`, `docs/tickets/0002`, `0003`) — one docs commit.
-2. **Backend B1** — add the `answer` table to `apps/website/src/server/db/schema.ts`,
-   `db:generate`, **stop and have the generated SQL reviewed**, then `db:migrate`.
-3. **Backend B2–B4** — `answers.record` mutation (`packages/api/src/routers/answers.ts`),
-   widen `Context` to the `recordAnswer` port, wire the Drizzle adapter in `[trpc].ts`, add a
-   unit test. (Server ships behind nothing — safe to land first.)
-4. **Shared S1** — export the `AnswerEvent` / `RecordAnswer` contract from `@whocards/decks`.
-5. **Web W1–W4** then **Mobile M1–M3** — device id, offline queue, record-on-serve. Both go
-   through the queue so recording is always-on. Verify with the Playwright network/offline
-   check (web) and `expo export` + a kill/relaunch-while-offline check (mobile).
+1. **Auth decision → cleanup migrations (ticket 0005).** Decide which auth set survives — `auth_*`
+   (NextAuth) vs `account_*` (older) — or drop both until the monorepo builds auth (ADR-0002).
+   Then write deliberate, reviewed migrations: consolidate auth, `DROP` legacy `whocards_*`, `DROP
+user.oc_slug` (all user-approved retirements). Flagged in `schema.ts` + ticket 0005.
+2. **Logging wrapper package (ticket 0004).** `@whocards/logger` — console in dev, PostHog in prod;
+   replaces the `console.warn`s in both offline queues (mobile needs `posthog-react-native`, net-new).
+3. **CJK question fonts (ticket 0001)** — mobile only; options written up (subset vs bundle vs system).
+4. **Future Answer-record-derived work** (ADR-0004): `games_played`/cycle counters, Personal Game
+   (needs auth + IAP), favorite/thumbs-down buttons, the deferred server-authoritative draw (A).
+5. **Mobile device verification** — the Answer-record code is bundle-verified (`expo export`) but
+   not run on a device/simulator; confirm recording + offline flush on a rebuilt dev client.
 
-Each numbered task in ticket 0003 has its own verification block; keep diffs ≤1500 lines and
-commit per task.
+## Pre-existing follow-ups (from the monorepo migration — still open, unrelated)
 
----
-
-## Pre-existing follow-ups (from the monorepo migration — unrelated, still open)
-
-These survive from the prior handoff; not blockers for the work above:
-
-1. **Website Pool-data dedup** — `questions.json`/`languages.json` are still local copies in
-   `apps/website`; repoint consumers (`WhoCard.astro`, `pages/[language]/images.astro`,
-   `pages/images.astro`, `pages/og/[language]/[id].png.ts`, `server/card-image.ts`,
-   `types/index.ts`, `utils/gameplay.ts`, `utils/language.ts`) to `@whocards/decks` pool.
-2. **Web tokens consumption** — regenerate `apps/website/src/styles/base.css` `@theme` from
-   `@whocards/tokens` (only mobile consumes tokens today).
-3. **Website type debt** — `astro check` reports ~9 pre-existing errors; website is excluded
-   from oxlint/oxfmt + `turbo typecheck`. Fix, then fold the site into oxlint/oxfmt.
-4. **tRPC ETag** — mount sets `Cache-Control` only; add `ETag` if wanted (ADR-0002).
-5. **Excluded printable PDFs** — `apps/website/public/cards/*.pdf` (~147 MB) left out; see that
-   dir's README to restore via LFS/external.
+- Website Pool-data dedup (`questions.json`/`languages.json` still local copies) → point at
+  `@whocards/decks`. Web tokens: regenerate `base.css @theme` from `@whocards/tokens`. Website
+  type debt (~13 pre-existing `astro check` errors; fold site into oxlint/oxfmt after). tRPC ETag.
+- `website-next-15` retirement — **parked** (per user); it still holds the prod creds + dump.
 
 ## Run it
 
 ```bash
 pnpm install
-pnpm -F website dev      # needs apps/website/.env (placeholders present locally)
+pnpm -F website dev      # needs apps/website/.env for full run (placeholders ok for build)
 pnpm -F mobile start     # Expo
 pnpm check               # oxfmt --check && oxlint && turbo typecheck test
 ```
