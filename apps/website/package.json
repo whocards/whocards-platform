@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ssr": "playwright test -c playwright.ssr.config.ts",
     "test:parity": "playwright test -c playwright.parity.config.ts",
+    "test:parity:ssr": "playwright test -c playwright.parity.ssr.config.ts",
     "pretty": "prettier --write . --plugin=prettier-plugin-astro",
     "analyze": "pnpx unlighthouse --site https://calmly.whocards.cc",
     "db:generate": "drizzle-kit generate",

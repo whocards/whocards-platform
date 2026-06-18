@@ -30,6 +30,7 @@ mocks
 # playwright
 /test-results/
 /playwright-report/
+/playwright-report-ssr/
 /blob-report/
 /playwright/.cache/
 

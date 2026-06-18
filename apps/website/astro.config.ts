@@ -14,6 +14,12 @@ export default defineConfig({
   build: {
     format: 'file',
   },
+  // Disable the dev toolbar only when explicitly requested (the visual-parity SSR
+  // harness sets this so `astro dev` screenshots don't capture the toolbar). Normal
+  // `pnpm dev` keeps it. https://docs.astro.build/en/guides/dev-toolbar/#per-project
+  devToolbar: {
+    enabled: process.env.DISABLE_DEV_TOOLBAR !== 'true',
+  },
   image: {
     service: passthroughImageService(),
   },
