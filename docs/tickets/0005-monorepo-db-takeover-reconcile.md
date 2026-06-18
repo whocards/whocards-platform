@@ -36,25 +36,48 @@ Next.js rewrite, a temp test being retired) currently owns the **deployed Supaba
 - **`drizzle-kit migrate`** with the stale `whocards_`-prefixed `0000` chain conflicts with the
   real (unprefixed) prod and would try to recreate existing tables.
 
+## Ground truth — introspected prod (2026-06-18)
+
+`drizzle-kit pull` (read-only) returned **16 tables / 121 columns / 1 enum**. Prod has
+accumulated **three eras**; snapshot saved at `/tmp/wc-prod-introspect/` (schema.ts + full DDL):
+
+**Core (keep — actively used):** `user` (incl. `oc_slug`), `purchase`, `shipping`, `card`,
+`conference`, `conference_question_tracking`.
+
+**Auth — TWO overlapping sets (only one should survive):**
+
+- `auth_user` / `auth_account` / `auth_session` / `auth_verification_token` + `user_role` enum
+  (next-15 NextAuth)
+- `account_user` / `account_account` / `account_verificationToken` (an older auth attempt)
+
+**Legacy `whocards_`-prefixed (retire candidates):** `whocards_purchase` / `whocards_session` /
+`whocards_shipping` — duplicates of `purchase`/`shipping` from the old prefixed era. (So the
+`whocards_` tables really do exist in prod, not just in the stale migration.)
+
+The monorepo `schema.ts` models only **6** of the 16 (`user`, `purchase`, `shipping`,
+`conference`, `conference_question_tracking`, + new `answer`). The other **10** are unmodelled —
+exactly why a `push`/`migrate` from the current schema would try to DROP them.
+
 ## Plan (safe takeover)
 
-1. **Introspect** the live prod DB read-only (`drizzle-kit pull`) → authoritative current
-   schema. Requires explicit prod-access approval (or run by a human).
-2. **Reconcile** `apps/website/src/server/db/schema.ts` to match actual prod: add `card`, the
-   `auth_*` tables + `user_role` enum. **`oc_slug` is approved for retirement** — drop it
-   intentionally (a deliberate, user-approved column drop), so the reconciled schema omits it.
-   Confirm whether `conference*` exist in this DB and keep/relocate accordingly.
-3. **Baseline migration**: regenerate history so `0000` reflects _current prod_ (drop the stale
-   `whocards_` migration) and mark it applied (a baseline / `--custom`) so `migrate` never
-   recreates existing tables.
+1. ~~Introspect~~ **DONE** (2026-06-18) — 16-table snapshot in `/tmp/wc-prod-introspect/`.
+2. **Baseline = current prod, exactly.** Adopt the introspected schema as the monorepo's
+   `apps/website/src/server/db/schema.ts` (all 16 tables) and generate a baseline `0000` that
+   matches prod, marked applied (`--custom` / baseline) so `migrate` never recreates **or drops**
+   anything. Delete the stale `whocards_`-prefixed migration.
+3. **Deliberate cleanup migrations** (each reviewed, one decision) AFTER the baseline so nothing
+   is lost by accident: drop `oc_slug` (approved); drop the legacy `whocards_*`; consolidate the
+   two auth sets (keep one, drop the other).
 4. **Retire** website-next-15's migration ownership — single source of truth = the monorepo.
 5. **Then** apply the ticket 0003 `answer` table migration on top.
 
-## Open questions (introspect answers these)
+## Open decisions (for cleanup, step 3)
 
-- Are the `conference*` tables actually in this Supabase DB, or in a different/older DB?
-- Do `apps/website` (Netlify) and `website-next-15` (Vercel) both point at this Supabase DB at
-  runtime today?
+- **Auth:** which set survives — `auth_*` (next-15) or `account_*` (older)? Or drop both until the
+  monorepo builds auth (ADR-0002 lists auth as later)?
+- Confirm the legacy `whocards_*` tables are abandoned (safe to drop).
+- Do `apps/website` (Netlify) and `website-next-15` (Vercel) both point at this one Supabase DB at
+  runtime today? (Affects cutover sequencing.)
 
 ## References
 
