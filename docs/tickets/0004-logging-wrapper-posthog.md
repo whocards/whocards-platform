@@ -2,7 +2,19 @@
 
 **Tags:** tooling, observability
 **Surfaces:** shared (package) · web · mobile
-**Status:** open
+**Status:** shared + web + mobile-console-swap **DONE** (merged to `main`, commit `f3ec037`) ·
+mobile PostHog transport **deferred**
+
+> **Shipped (f3ec037):** `@whocards/logger` package (dev→console / prod→injected sink, never
+> throws, PII-safe); web sink wired to `window.posthog?.captureException` (Error) /
+> `capture('app_log', …)` (no Error) at `PostHog.astro` init, plus the two `offline-queue.ts`
+> `console.warn`→`logError`/`logWarn` swaps; mobile `answer-queue.ts` `console.warn`→`logWarn` with
+> the `eslint-disable no-console` dropped, and `configureLogger({dev: __DEV__})` at app root
+> (console-in-dev / no-op-in-prod).
+>
+> **Deferred remainder:** the mobile PostHog **transport** — add `posthog-react-native` + a provider
+> and inject a real sink so mobile errors reach PostHog in prod. Needs a dev-client rebuild
+> (native dep) = user/device. Package API is unchanged when this lands.
 
 ## Context
 
