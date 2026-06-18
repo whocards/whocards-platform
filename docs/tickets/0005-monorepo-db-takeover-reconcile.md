@@ -2,7 +2,10 @@
 
 **Tags:** backend, data, migration
 **Surfaces:** backend
-**Status:** open — **blocks the ticket 0003 migration apply**
+**Status:** ✅ baseline applied to Supabase prod (2026-06-18, `00820e8`) — monorepo now owns
+migrations; `answer` created, 16 existing tables untouched (public tables 16→17, no drops).
+**Remaining:** deliberate cleanup migrations — consolidate the two auth sets (**auth decision
+pending**), drop legacy `whocards_*`, drop `user.oc_slug`.
 
 ## Context
 

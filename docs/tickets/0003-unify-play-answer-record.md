@@ -2,8 +2,9 @@
 
 **Tags:** mobile, website, api, data
 **Surfaces:** backend · web · mobile
-**Status:** branches built + reviewed; ⚠️ **migration apply BLOCKED by ticket 0005** (DB
-reconciliation) — do not run `db:migrate` against prod until the baseline is reconciled.
+**Status:** ✅ DONE — merged to `main` (`00820e8`); the `answer` table is applied to Supabase
+prod (via the 0005 baseline), both clients record on serve. Share/favorite-thumbs and the
+`games_played`/cycle counters remain future work derived from the Answer record.
 
 ## Goal
 
