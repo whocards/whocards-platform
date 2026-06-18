@@ -2,7 +2,22 @@
 
 **Tags:** testing, web, migration
 **Surfaces:** web
-**Status:** open
+**Status:** v1 **DONE** (merged to `main`, commit `38df274`) — static routes only ·
+SSR/play parity **deferred to v2**
+
+> **Shipped (38df274):** `apps/website/playwright.parity.config.ts` + `tests/parity/`
+> (`routes.ts` manifest, `parity.spec.ts` dual-capture + pixelmatch diff, `README.md`) +
+> `test:parity` script. `DEPLOYED_URL` defaults to `https://whocards.cc` (overridable; explicit-empty
+> → skip). Two viewports (1280×800, 390×844). Stabilisation: block PostHog/consent, freeze CSS
+> motion, **mask the GSAP-driven `.rotate` hero words** (JS-animated via rAF — immune to
+> `animation:none`), wait `fonts.ready` + `networkidle`, dismiss banners. Validated by the hermetic
+> self-diff smoke test (local vs local): **24/24 green**. The real deployed-vs-repo run is on-demand
+> and was **not** executed here (needs outbound network to the deployed site).
+>
+> **Deferred to v2:** SSR routes (`/play`, `/[lang]/play`, `/contact`, `/purchase`, `/thanks`) and
+> the statically-served-but-client-shuffled `/events/hajnalig/play`. They need an `astro dev`
+> harness (per `playwright.ssr.config.ts`) + a **seeded/forced deck** so the shuffled Question order
+> is deterministic across both origins. See `apps/website/tests/parity/README.md`.
 
 ## Context
 

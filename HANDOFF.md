@@ -1,11 +1,11 @@
-# Handoff — ticket 0004 (logger) SHIPPED; remaining work is mostly user-gated
+# Handoff — 0004 (logger) + 0006 (visual-parity v1) SHIPPED; remaining work mostly user-gated
 
-Branch **`main`** at `/Users/avi/code/whocards/app`, clean at **`f3ec037`**. The unified-play +
-Answer-record work (0003), the monorepo DB-migration takeover (0005 baseline), and now the
-**`@whocards/logger`** package (0004 — shared + web + mobile-console-swap) are all **done and
-merged**. This session shipped 0004 end-to-end via the `coder` → `reviewer` → orchestrator-merge
-workflow. The next no-input-friendly candidate is **ticket 0006** (deployed-vs-repo visual-parity
-suite); most other open work needs a user decision or a device (see Next Steps).
+Branch **`main`** at `/Users/avi/code/whocards/app`, clean at **`38df274`**. Done & merged: the
+unified-play + Answer-record work (0003), the monorepo DB-migration takeover (0005 baseline), the
+**`@whocards/logger`** package (0004 — shared + web + mobile-console-swap), and the **visual-parity
+suite v1** (0006 — static routes). All shipped via the `coder` → `reviewer` → orchestrator-merge
+workflow. Most remaining open work needs a user decision or a device; the lone no-input-friendly
+candidate left is the **0006 v2 follow-up** (SSR/play parity) — see Next Steps.
 
 ## Goal
 
@@ -31,6 +31,15 @@ from the currently-deployed site to this repo.
 
 ## Current Progress (DONE — on `main`)
 
+- **Visual-parity suite v1 (0006)** — merged **`38df274`**. `apps/website/playwright.parity.config.ts`
+  - `tests/parity/` (route manifest, dual-capture pixelmatch-diff spec, README) + a `test:parity`
+    script. Screenshots each **static** route on the deployed site (`DEPLOYED_URL`, default
+    `https://whocards.cc`) vs the local build and pixel-diffs into an HTML report — a cutover **triage
+    tool**, not a CI gate. Stabilises by blocking PostHog/consent, freezing CSS motion, and **masking
+    the GSAP-driven `.rotate` hero words** (JS/rAF-driven → immune to `animation:none`). Validated by a
+    hermetic self-diff smoke test (24/24 green). **v2 deferred:** SSR + `/play` routes (need an
+    `astro dev` harness + a seeded deck). The **real** deployed-vs-repo run is on-demand + needs
+    outbound network — **not run yet**.
 - **Logger (0004)** — merged **`f3ec037`**. `@whocards/logger` (TS-source package, no build):
   `logWarn`/`logError`, dev→`console` / prod→injected `LogSink`, `try/catch` so it never throws,
   PII-safe (`Record<string, unknown>` — ids + messages only). **Web** wires a sink to
@@ -51,16 +60,18 @@ from the currently-deployed site to this repo.
 - **Project agents** in `.claude/agents/` (architect, coder, researcher, reviewer).
 - **Tickets** (`docs/tickets/`): `0001` CJK fonts (open), `0002` Convex (parked), `0003` ✅,
   `0004` ✅ shared+web+mobile-console (mobile PostHog transport deferred), `0005` ✅ baseline /
-  auth-cleanup pending, `0006` deployed-vs-repo visual-parity suite for cutover (open).
+  auth-cleanup pending, `0006` ✅ visual-parity v1 (static routes; SSR/play parity = v2).
 
 ## Next Steps (ordered)
 
-1. **Ticket 0006 — deployed-vs-repo visual-parity suite** (`docs/tickets/0006-deployed-vs-repo-visual-parity.md`).
-   **Best no-input candidate:** web-only, reuses the existing Playwright setup in `apps/website`
-   (`playwright.config.ts`, `tests/static-server.mjs` on **port 4321**, specs in `tests/e2e/`).
-   Dual-target capture (deployed origin vs locally-built `dist/`) + pixel-diff into a reviewable
-   HTML report — a triage tool, not a pass/fail gate. Worth confirming the deployed origin URL with
-   the user before building. Run it through the coder → reviewer → merge workflow.
+1. **0006 v2 — SSR/play visual parity** (the remaining no-input web work). Add an `astro dev`-based
+   parity harness (base it on `playwright.ssr.config.ts`) covering the deferred routes: `/play`,
+   `/[lang]/play`, `/contact`, `/purchase`, `/thanks`, and the client-shuffled
+   `/events/hajnalig/play`. Prerequisite: a **seeded/forced deck** so the engine's Question shuffle
+   is deterministic across both origins (add a `?seed=`/`?deck=` hook). See
+   `apps/website/tests/parity/README.md`. Separately: do the first **real** v1 run against
+   `https://whocards.cc` once outbound network is available, then fill in the README's
+   known-acceptable-diffs table.
 2. **Mobile PostHog transport (0004 remainder).** Add `posthog-react-native` + provider, inject a
    real sink. Native dep → **needs a dev-client rebuild = user/device.**
 3. **Auth decision → cleanup migrations (0005).** Blocked: needs the user's auth choice
@@ -89,9 +100,10 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
 - Lint/format = **oxlint + oxfmt** (never eslint/prettier) for packages + mobile; **website excluded
   from both** (prettier + `astro check`). `no-console: error` only bites packages/mobile.
 - **`pnpm check`** = `oxfmt --check && oxlint --deny-warnings && turbo typecheck test`. It exits
-  non-zero **only** on `website#typecheck`, which carries **~13 PRE-EXISTING `astro check` errors**
-  (missing `wawoff2`/`bidi-js` decls, etc.) — website type debt unrelated to recent work. Capture
-  the baseline and prove **zero new** errors; everything else (9/10 turbo tasks) is green.
+  non-zero **only** on `website#typecheck`, which carries **12 PRE-EXISTING `astro check` errors**
+  (measured on `main`: missing `wawoff2`/`bidi-js` decls, `Icon` types, etc.) — website type debt
+  unrelated to recent work. Capture the baseline and prove **zero new** errors; everything else
+  (9/10 turbo tasks) is green.
 - `window.posthog?: import('posthog-js').PostHog` is declared in `apps/website/src/env.d.ts`;
   `Play.tsx` and now `src/lib/logger.ts` use `window.posthog?.capture(...)`. PostHog inits in
   `apps/website/src/components/PostHog.astro` (mounted in `apps/website/src/layouts/Layout.astro`).
@@ -108,6 +120,10 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
   fixed in a small follow-up pass and amended into a single clean commit.
 - Surfacing the one outward-facing, brief-contradicting decision (the PostHog event name) to the
   user via a quick question rather than silently overriding the written brief.
+- For 0006, the **hermetic self-diff smoke test** (point `DEPLOYED_URL` at the local server) paid off
+  twice: it runs with no network, and it **caught non-determinism** — flagged the shuffled
+  `/events/hajnalig/play` at ~4% (dropped from v1). The `reviewer` then caught that the GSAP hero
+  animation is immune to `animation:none` (JS/rAF-driven) → fixed by masking `.rotate`.
 
 ## What Didn't Work / Gotchas
 
@@ -118,10 +134,14 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
 - Custom `.claude/agents/*.md` register **only at session start** — restart if `coder`/`reviewer`
   aren't selectable.
 - **No git remote** — the agent defs assume `gh`/PRs; always adapt prompts to local branch + merge.
+- **A `coder` subagent can die mid-run** — the 0006 coder crashed after ~13 min (`API Error:
+ConnectionRefused`; safety classifier also down) with **no report**, leaving uncommitted files on
+  its branch. Recovery: inspect `git status` + the branch, then run the verification the coder
+  skipped and commit the output yourself — don't assume a silent/dead agent finished cleanly.
 
 ## Pre-existing follow-ups (still open, unrelated)
 
-- Web tokens: regenerate `base.css @theme` from `@whocards/tokens`. **Website type debt** (~13
+- Web tokens: regenerate `base.css @theme` from `@whocards/tokens`. **Website type debt** (12
   pre-existing `astro check` errors; fold the site into oxlint/oxfmt after). tRPC ETag.
   `website-next-15` retirement (**parked** — holds prod creds + dump).
 
@@ -132,5 +152,6 @@ pnpm install
 pnpm -F website dev      # needs apps/website/.env for full run (placeholders ok for build)
 pnpm -F mobile start     # Expo
 pnpm check               # oxfmt --check && oxlint --deny-warnings && turbo typecheck test
-pnpm -F @whocards/logger test   # 12 tests, the new logger package
+pnpm -F @whocards/logger test   # 12 tests, the logger package
+DEPLOYED_URL=http://localhost:4321 pnpm -F website test:parity   # 0006 self-diff smoke (no network)
 ```
