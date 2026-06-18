@@ -1,11 +1,12 @@
-# Handoff — 0004 (logger) + 0006 (visual-parity v1) SHIPPED; remaining work mostly user-gated
+# Handoff — 0004 (logger) + 0006 (visual-parity v1+v2) SHIPPED; remaining work mostly user-gated
 
-Branch **`main`** at `/Users/avi/code/whocards/app`, clean at **`38df274`**. Done & merged: the
+Branch **`main`** at `/Users/avi/code/whocards/app`, clean at **`d4a6aaf`**. Done & merged: the
 unified-play + Answer-record work (0003), the monorepo DB-migration takeover (0005 baseline), the
 **`@whocards/logger`** package (0004 — shared + web + mobile-console-swap), and the **visual-parity
-suite v1** (0006 — static routes). All shipped via the `coder` → `reviewer` → orchestrator-merge
-workflow. Most remaining open work needs a user decision or a device; the lone no-input-friendly
-candidate left is the **0006 v2 follow-up** (SSR/play parity) — see Next Steps.
+suite** (0006 — v1 static routes + v2 SSR/play). All shipped via the `coder` → `reviewer` →
+orchestrator-merge workflow. The parity run was executed against the live site and
+**the repo is at-or-ahead of the deployed site** (see the 0006 progress note). Remaining open work
+now needs a user decision or a device — see Next Steps.
 
 ## Goal
 
@@ -31,15 +32,19 @@ from the currently-deployed site to this repo.
 
 ## Current Progress (DONE — on `main`)
 
-- **Visual-parity suite v1 (0006)** — merged **`38df274`**. `apps/website/playwright.parity.config.ts`
-  - `tests/parity/` (route manifest, dual-capture pixelmatch-diff spec, README) + a `test:parity`
-    script. Screenshots each **static** route on the deployed site (`DEPLOYED_URL`, default
-    `https://whocards.cc`) vs the local build and pixel-diffs into an HTML report — a cutover **triage
-    tool**, not a CI gate. Stabilises by blocking PostHog/consent, freezing CSS motion, and **masking
-    the GSAP-driven `.rotate` hero words** (JS/rAF-driven → immune to `animation:none`). Validated by a
-    hermetic self-diff smoke test (24/24 green). **v2 deferred:** SSR + `/play` routes (need an
-    `astro dev` harness + a seeded deck). The **real** deployed-vs-repo run is on-demand + needs
-    outbound network — **not run yet**.
+- **Visual-parity suite (0006)** — v1 `38df274`, v2 `d4a6aaf`. Screenshots each route on the deployed
+  site (`DEPLOYED_URL`, default `https://whocards.cc`) vs a local build and pixel-diffs into an HTML
+  report — a cutover **triage tool**, not a CI gate. **v1** (`test:parity`): static routes via
+  `tests/static-server.mjs`. **v2** (`test:parity:ssr`): SSR/play routes via `astro dev`, with
+  deterministic `?lang=&q=` deep links (`Play.tsx` honours `?q=` → no shuffle); shared capture/diff in
+  `tests/parity/_capture.ts`; dev toolbar disabled via `astro.config devToolbar` (gated on
+  `DISABLE_DEV_TOOLBAR`). Stabilises by blocking PostHog/consent, freezing CSS motion, masking the
+  GSAP `.rotate` hero. **Run findings vs the live site:** marketing already matches (5 routes
+  pixel-perfect; `/` + `/images` diffs were image-capture artifacts — **no images were deleted in the
+  migration**, byte-identical to the old `website` repo); **`ai-at-work` the repo is AHEAD** (deployed
+  still shows `TODO(copy)` placeholders); SSR/play **10/10 <2%**. **Still deferred:** `/purchase` +
+  `/thanks` (Stripe state), `/events/hajnalig/play` (shuffle masking), and hardening v1's lazy-image
+  capture.
 - **Logger (0004)** — merged **`f3ec037`**. `@whocards/logger` (TS-source package, no build):
   `logWarn`/`logError`, dev→`console` / prod→injected `LogSink`, `try/catch` so it never throws,
   PII-safe (`Record<string, unknown>` — ids + messages only). **Web** wires a sink to
@@ -60,18 +65,15 @@ from the currently-deployed site to this repo.
 - **Project agents** in `.claude/agents/` (architect, coder, researcher, reviewer).
 - **Tickets** (`docs/tickets/`): `0001` CJK fonts (open), `0002` Convex (parked), `0003` ✅,
   `0004` ✅ shared+web+mobile-console (mobile PostHog transport deferred), `0005` ✅ baseline /
-  auth-cleanup pending, `0006` ✅ visual-parity v1 (static routes; SSR/play parity = v2).
+  auth-cleanup pending, `0006` ✅ visual-parity v1+v2 (few routes deferred: Stripe state / shuffle).
 
 ## Next Steps (ordered)
 
-1. **0006 v2 — SSR/play visual parity** (the remaining no-input web work). Add an `astro dev`-based
-   parity harness (base it on `playwright.ssr.config.ts`) covering the deferred routes: `/play`,
-   `/[lang]/play`, `/contact`, `/purchase`, `/thanks`, and the client-shuffled
-   `/events/hajnalig/play`. Prerequisite: a **seeded/forced deck** so the engine's Question shuffle
-   is deterministic across both origins (add a `?seed=`/`?deck=` hook). See
-   `apps/website/tests/parity/README.md`. Separately: do the first **real** v1 run against
-   `https://whocards.cc` once outbound network is available, then fill in the README's
-   known-acceptable-diffs table.
+1. **0006 leftovers (optional polish, low priority — the meaty work is done).** `/purchase` +
+   `/thanks` parity (needs real Stripe session/keys), `/events/hajnalig/play` (client shuffle — mask
+   the question region or add `?q=` to the event deck), and hardening v1's lazy-image capture
+   (scroll-to-load before the fullPage screenshot) so image-heavy-page numbers are trustworthy.
+   Populate the README's known-acceptable-diffs table from a real run (e.g. `ai-at-work` = repo-ahead).
 2. **Mobile PostHog transport (0004 remainder).** Add `posthog-react-native` + provider, inject a
    real sink. Native dep → **needs a dev-client rebuild = user/device.**
 3. **Auth decision → cleanup migrations (0005).** Blocked: needs the user's auth choice
@@ -124,6 +126,12 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
   twice: it runs with no network, and it **caught non-determinism** — flagged the shuffled
   `/events/hajnalig/play` at ~4% (dropped from v1). The `reviewer` then caught that the GSAP hero
   animation is immune to `animation:none` (JS/rAF-driven) → fixed by masking `.rotate`.
+- The real parity run answered the cutover question directly: most pages already match, and the
+  exceptions were diagnosable — `ai-at-work` is the **repo improving on** deployed (`TODO(copy)`
+  placeholders still live there), and the home/`images` "missing images" were a **capture artifact**,
+  not deleted assets (proven by a byte-identical old-vs-new file comparison: counts 12/12 + 37/37,
+  same sizes). Checking the user's "deleted in migration" hunch against the actual files prevented a
+  pointless copy.
 
 ## What Didn't Work / Gotchas
 

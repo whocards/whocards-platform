@@ -2,22 +2,32 @@
 
 **Tags:** testing, web, migration
 **Surfaces:** web
-**Status:** v1 **DONE** (merged to `main`, commit `38df274`) — static routes only ·
-SSR/play parity **deferred to v2**
+**Status:** v1 + v2 **DONE** (v1 static routes `38df274`; v2 SSR/play `d4a6aaf`) · a few routes
+still deferred (Stripe state / client shuffle)
 
-> **Shipped (38df274):** `apps/website/playwright.parity.config.ts` + `tests/parity/`
-> (`routes.ts` manifest, `parity.spec.ts` dual-capture + pixelmatch diff, `README.md`) +
-> `test:parity` script. `DEPLOYED_URL` defaults to `https://whocards.cc` (overridable; explicit-empty
-> → skip). Two viewports (1280×800, 390×844). Stabilisation: block PostHog/consent, freeze CSS
-> motion, **mask the GSAP-driven `.rotate` hero words** (JS-animated via rAF — immune to
-> `animation:none`), wait `fonts.ready` + `networkidle`, dismiss banners. Validated by the hermetic
-> self-diff smoke test (local vs local): **24/24 green**. The real deployed-vs-repo run is on-demand
-> and was **not** executed here (needs outbound network to the deployed site).
+> **v1 — static routes (38df274):** `playwright.parity.config.ts` + `tests/parity/` (manifest,
+> `parity.spec.ts` dual-capture + pixelmatch diff) + `test:parity`. Static build served by
+> `tests/static-server.mjs`. Stabilisation: block PostHog/consent, freeze CSS motion, mask the
+> GSAP `.rotate` hero words, `fonts.ready` + `networkidle`. Two viewports (1280×800, 390×844).
 >
-> **Deferred to v2:** SSR routes (`/play`, `/[lang]/play`, `/contact`, `/purchase`, `/thanks`) and
-> the statically-served-but-client-shuffled `/events/hajnalig/play`. They need an `astro dev`
-> harness (per `playwright.ssr.config.ts`) + a **seeded/forced deck** so the shuffled Question order
-> is deterministic across both origins. See `apps/website/tests/parity/README.md`.
+> **v2 — SSR/play (d4a6aaf):** `playwright.parity.ssr.config.ts` + `tests/parity-ssr/` + shared
+> `tests/parity/_capture.ts` (capture/diff/stabilisation extracted; v1 refactored to a thin loop,
+> behaviour unchanged). Local target = `astro dev`. Deterministic `?lang=&q=` deep links
+> (`Play.tsx` honours `?q=` → no shuffle): `/play?lang={en,he,zh}&q=1`, `/play?lang=en&q=5`,
+> `/contact`. Dev toolbar disabled at source (`astro.config` `devToolbar.enabled`, gated on
+> `DISABLE_DEV_TOOLBAR`) + CSS fallback. Separate report folder (`playwright-report-ssr/`).
+>
+> **Shared:** `DEPLOYED_URL` defaults to `https://whocards.cc` (overridable; explicit-empty → skip).
+> Triage tool, not a CI gate.
+>
+> **Real run findings (vs `https://whocards.cc`):** marketing pages already match (5 pixel-perfect;
+> `/` + `/images` diffs were image-capture harness artifacts — files byte-identical to the old repo,
+> nothing deleted in the migration); **`ai-at-work` the repo is AHEAD** (deployed still shows
+> `TODO(copy)` placeholders); SSR/play **10/10 <2%**. Net: the repo is at-or-ahead of deployed.
+>
+> **Still deferred:** `/purchase` + `/thanks` (need real Stripe session/keys — throw/redirect under
+> placeholder `.env`); `/events/hajnalig/play` (client shuffle — needs masking/seeding). Also a
+> known follow-up: harden the v1 image-capture (lazy-load) so image-heavy-page numbers are trustworthy.
 
 ## Context
 
