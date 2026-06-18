@@ -1,6 +1,7 @@
 # Mobile: brand-faithful fonts for CJK questions
 
 **Tags:** mobile, languages
+**Surfaces:** mobile (web already serves the Noto faces via `@font-face`; see references)
 **Status:** open for CJK (Hebrew done — Noto Sans Hebrew bundled, ~33 KB)
 
 ## Context

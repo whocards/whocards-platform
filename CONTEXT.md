@@ -31,3 +31,39 @@ _Avoid_: my deck, user deck, personal pack
 **Access tier**:
 The entitlement a Deck (or a language, or a feature) sits behind: `free`, `unlock` (one-time purchase), or `subscription`. The play engine is access-blind; a separate entitlement layer decides what a given player may open.
 _Avoid_: plan, paywall, tier (unqualified)
+
+**Game**:
+A way of playing a Deck — the policy that decides how the next Card is drawn and whose progress is remembered. Content-blind: the Deck supplies the Questions, the Game supplies the rules. Every Game draws Cards **without repeating until the Deck is exhausted, then starts over**; the Games differ only in the _scope_ of the "already answered" set they draw against.
+_Avoid_: mode (unqualified), session, round, match
+
+**Global Game**:
+The default Game. One **shared** answered-set for everyone: a Question stays in circulation until _some_ player answers it, and the Deck starts over only once every Question has been answered across all players combined.
+_Avoid_: public game, shared deck, world game
+
+**Personal Game**:
+A **paid** Game scoped to one player: it draws against _that player's own_ answered-set, so each player exhausts the whole Deck once before it starts over for them. Progress is saved to the account, not the device.
+_Avoid_: my game, private game, solo game
+
+**Offline play**:
+Playing the Global Game without a live network — a _connectivity state_, not a separate Game. Recording is **never** off: Answers are queued on the Device and flushed to the Answer record when the network returns, so offline play still feeds the shared progress once it syncs. (A fully isolated, never-syncing local mode — the old "classic" idea — is not part of the current plan; it may return later.)
+_Avoid_: classic game, offline game (it is not a separate Game), local-only mode
+
+**Answered**:
+What becomes of a Card once a player has been shown it and stayed on it. Today simply being served the Card counts as answered; a planned refinement requires a minimum time on screen first. An answered Question leaves the unanswered set the current Game draws against. Always automatic — never an explicit tap (that is a reaction, or a Skip). Distinct from Skipped.
+_Avoid_: seen, viewed (too weak — they don't carry the dwell that makes it "answered"), drawn (a player draws a Card; answering is what follows)
+
+**Skipped**:
+A Question deliberately passed over in Facilitation Mode without being answered: it is neither added to the answered set nor counted as answered, so it comes round again. (Not yet built.)
+_Avoid_: dismissed, rejected, thumbs-down (a reaction to a Card, not a Skip)
+
+**Facilitation Mode**:
+A planned hosted way of running a Game for a group, adding a host-controlled per-Question timer and an explicit Skip. Its relationship to the three Games (whether it overlays any of them or is its own) is not yet decided. (Not yet built.)
+_Avoid_: host mode, presenter mode, party mode
+
+**Device**:
+A single app install or browser, identified by a stable anonymous id minted once on first run and attached to every Answer. The only identity that exists pre-accounts; deliberately designed so a Device's history can later be **claimed** into an account and merged with other Devices. Not a person — one person may own several Devices.
+_Avoid_: user, account (neither exists yet), session (a Device persists across sessions), anonymous user
+
+**Answer record**:
+The permanent, append-only history of Answers — one entry each time a Device answers a Question (which Deck, which Question, which language, when). The single source of truth from which the `questions_answered` and `games_played` counts, the Global cycle, and any future per-player coverage are all derived. The existing **conference question tracking** is this same concept in its first, event-scoped form (keyed by a conference); the Answer record generalizes it across the whole app (keyed by Device + Deck), and the conference tracker is expected to fold into it.
+_Avoid_: analytics (this is durable product state and the source of truth, not an aggregate metrics pipeline)
