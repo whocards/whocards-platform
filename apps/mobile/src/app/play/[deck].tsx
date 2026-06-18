@@ -208,7 +208,7 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
                 onPress={handleExit}
                 hitSlop={8}
                 accessibilityLabel="exit deck"
-                className="h-10 w-10 items-center justify-center rounded-full bg-black/40 active:bg-black/60"
+                className="h-10 w-10 items-center justify-center rounded-full bg-darker/80 active:bg-darker"
               >
                 <Ionicons name="close" size={22} color={colors.white} />
               </Pressable>
@@ -243,6 +243,8 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
         >
           <PlayerBar
             showLanguage={languages.length > 1}
+            onPrevious={goPrevious}
+            onNext={goNext}
             onShare={handleShare}
             onLanguage={openLanguage}
           />
