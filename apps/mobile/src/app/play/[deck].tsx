@@ -2,7 +2,7 @@ import {Ionicons} from '@expo/vector-icons'
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {LayoutChangeEvent} from 'react-native'
-import {Animated, Pressable, Text, useWindowDimensions, View} from 'react-native'
+import {Animated, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import type {QuestionSet} from '@whocards/decks'
@@ -10,6 +10,7 @@ import {getDeck, getDirection, getInitialNav, navReducer} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
 
 import {LanguageModal} from '@/components/language-modal'
+import {PlayerBar} from '@/components/player-bar'
 import {ScreenBackground} from '@/components/screen-background'
 
 const SWIPE_THRESHOLD = 60
@@ -97,8 +98,6 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
   const questionId = ids[idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''
   const direction = getDirection(language)
-  const total = ids.length
-  const position = idx + 1
   // brand/script face where one exists; system font (with a weight) otherwise
   const questionFont = questionFontFamily(language)
 
@@ -116,7 +115,7 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
     [text, measured.width, measured.height]
   )
 
-  // --- auto-hiding chrome: the top bar + swipe hint hide when idle, reappear on touch ---
+  // --- auto-hiding chrome: the close button + bottom bar hide when idle, reappear on touch ---
   const chromeOpacity = useRef(new Animated.Value(1)).current
   const [chromeShown, setChromeShown] = useState(true)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -177,6 +176,12 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
     else router.replace('/')
   }, [router])
 
+  const handleShare = useCallback(() => {
+    if (text) void Share.share({message: `${text}\n\n— WhoCards`})
+  }, [text])
+
+  const openLanguage = useCallback(() => setLangModalOpen(true), [])
+
   // --- tap reveals the chrome; swipe navigates (both run on the JS thread) ---
   const gesture = useMemo(() => {
     const pan = Gesture.Pan()
@@ -193,34 +198,20 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
   return (
     <ScreenBackground>
       <View className="flex-1">
-        {/* slim top bar (auto-hides; tap to reveal): exit · progress · language */}
+        {/* close — top-right, on a chip so it reads over any content (auto-hides) */}
         <Animated.View
           style={{opacity: chromeOpacity, pointerEvents: chromeShown ? 'auto' : 'none'}}
         >
           <SafeAreaView edges={['top', 'left', 'right']}>
-            <View className="flex-row items-center gap-4 px-5 pb-1 pt-2">
-              <Pressable onPress={handleExit} hitSlop={10} accessibilityLabel="exit deck">
-                <Ionicons name="close" size={26} color={colors.white} />
+            <View className="items-end px-4 pt-2">
+              <Pressable
+                onPress={handleExit}
+                hitSlop={8}
+                accessibilityLabel="exit deck"
+                className="h-10 w-10 items-center justify-center rounded-full bg-black/40 active:bg-black/60"
+              >
+                <Ionicons name="close" size={22} color={colors.white} />
               </Pressable>
-              <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/20">
-                <View
-                  className="bg-primary-light h-1.5 rounded-full"
-                  // min width so the fill always reads as a bar, even on the first card
-                  style={{width: `${Math.max((position / total) * 100, 4)}%`}}
-                />
-              </View>
-              <Text className="text-gray-dark font-sans text-sm tabular-nums">
-                {position}/{total}
-              </Text>
-              {languages.length > 1 ? (
-                <Pressable
-                  onPress={() => setLangModalOpen(true)}
-                  hitSlop={10}
-                  accessibilityLabel="change language"
-                >
-                  <Ionicons name="language" size={22} color={colors.white} />
-                </Pressable>
-              ) : null}
             </View>
           </SafeAreaView>
         </Animated.View>
@@ -246,19 +237,15 @@ const DeckPlayer = ({questionIds, questions, languages}: DeckPlayerProps) => {
           </View>
         </GestureDetector>
 
-        {/* swipe hint — shares the chrome's fade; Animated.View carries only opacity */}
+        {/* bottom action bar — shares the chrome's fade */}
         <Animated.View
           style={{opacity: chromeOpacity, pointerEvents: chromeShown ? 'auto' : 'none'}}
         >
-          <SafeAreaView edges={['bottom', 'left', 'right']}>
-            <View className="flex-row items-center justify-center gap-2 pb-4 pt-1">
-              <Ionicons name="chevron-back" size={16} color={colors.gray.dark} />
-              <Text className="text-gray-dark font-sans text-xs uppercase tracking-widest">
-                Swipe
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.gray.dark} />
-            </View>
-          </SafeAreaView>
+          <PlayerBar
+            showLanguage={languages.length > 1}
+            onShare={handleShare}
+            onLanguage={openLanguage}
+          />
         </Animated.View>
 
         <LanguageModal
