@@ -1,3 +1,4 @@
+import {logError, logWarn} from '@whocards/logger'
 import type {AnswerEvent} from './answer-event'
 
 /**
@@ -90,12 +91,12 @@ export const createOfflineQueue = (send: Send) => {
         } catch (error) {
           if (head._attempts + 1 >= MAX_RETRIES) {
             // give up on this poison event, log it, and keep the rest moving
-            console.warn('[answer-queue] dropping Answer after repeated failures', error)
+            logError('[answer-queue] dropping Answer after repeated failures', error, {attempts: head._attempts + 1})
             pending = rest
             write(pending)
           } else {
             // keep it, bump its count, log, and stop this flush (network is down)
-            console.warn('[answer-queue] flush failed; keeping backlog', error)
+            logWarn('[answer-queue] flush failed; keeping backlog', error)
             pending = [{...head, _attempts: head._attempts + 1}, ...rest]
             write(pending)
             break

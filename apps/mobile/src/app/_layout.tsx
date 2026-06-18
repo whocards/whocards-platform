@@ -4,7 +4,11 @@ import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {useEffect} from 'react'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
+import {configureLogger} from '@whocards/logger'
 import {colors} from '@whocards/tokens'
+
+// console-in-dev / no-op-in-prod; mobile PostHog transport deferred (ticket 0004)
+configureLogger({dev: __DEV__})
 
 import '../global.css'
 

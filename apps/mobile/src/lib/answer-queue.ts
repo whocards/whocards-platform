@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import {logWarn} from '@whocards/logger'
 
 /**
  * One queued Answer — a Device answered a Question in some Deck and language.
@@ -77,8 +78,7 @@ export const flush = async (send: SendAnswer): Promise<void> =>
       } catch (error) {
         // network/server still unhappy — log it and keep the backlog for the
         // next trigger (foreground / app-start / next serve)
-        // eslint-disable-next-line no-console -- surface send failures (0003, requested)
-        console.warn('[answer-queue] flush failed; keeping backlog', error)
+        logWarn('[answer-queue] flush failed; keeping backlog', error)
         break
       }
     }

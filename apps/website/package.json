@@ -21,6 +21,7 @@
   "dependencies": {
     "@whocards/api": "workspace:*",
     "@whocards/decks": "workspace:*",
+    "@whocards/logger": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "@astrojs/mdx": "^5.0.6",
