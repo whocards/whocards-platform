@@ -25,6 +25,7 @@ import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
+import {getStoredLanguage, setStoredLanguage} from '@/lib/language-store'
 
 const SWIPE_THRESHOLD = 60
 const CHROME_HIDE_MS = 3000
@@ -113,7 +114,23 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
   const [{ids, idx}, dispatch] = useReducer(reducer, undefined, () => getInitialNav(questionIds))
   const defaultLanguage = languages[0]
   const [language, setLanguage] = useState(defaultLanguage)
+  // true once the AsyncStorage read has settled — gates the first card paint so
+  // the player never shows a visible language flip on launch. The read is a single
+  // fast local hit (~1-5 ms); holding the card behind it is the right trade-off
+  // (ticket 0009 first-paint decision).
+  const [languageReady, setLanguageReady] = useState(false)
   const [langModalOpen, setLangModalOpen] = useState(false)
+
+  // Seed language from storage on mount. Only apply a stored value if it is still
+  // present in this deck's languages list (guard against decks dropping a language).
+  useEffect(() => {
+    void getStoredLanguage(deckSlug).then((stored) => {
+      if (stored && languages.includes(stored)) {
+        setLanguage(stored)
+      }
+      setLanguageReady(true)
+    })
+  }, [deckSlug, languages])
 
   const questionId = ids[idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''
@@ -368,23 +385,27 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
           </SafeAreaView>
         </Animated.View>
 
-        {/* the question — tap reveals the chrome, swipe navigates */}
+        {/* the question — tap reveals the chrome, swipe navigates.
+            Hidden until languageReady so the card never flips language mid-paint
+            (ticket 0009 first-paint decision: gate on the single AsyncStorage read). */}
         <GestureDetector gesture={gesture}>
           <View className="flex-1 px-8 py-2">
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
-              <Animated.View style={cardStyle}>
-                <Text
-                  className="text-white"
-                  style={{
-                    fontSize,
-                    lineHeight: fontSize * LINE_HEIGHT_RATIO,
-                    writingDirection: direction,
-                    ...(questionFont ? {fontFamily: questionFont} : {fontWeight: '600'}),
-                  }}
-                >
-                  {text}
-                </Text>
-              </Animated.View>
+              {languageReady ? (
+                <Animated.View style={cardStyle}>
+                  <Text
+                    className="text-white"
+                    style={{
+                      fontSize,
+                      lineHeight: fontSize * LINE_HEIGHT_RATIO,
+                      writingDirection: direction,
+                      ...(questionFont ? {fontFamily: questionFont} : {fontWeight: '600'}),
+                    }}
+                  >
+                    {text}
+                  </Text>
+                </Animated.View>
+              ) : null}
             </View>
           </View>
         </GestureDetector>
@@ -407,6 +428,7 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
           onSelect={(next) => {
             selection()
             setLanguage(next)
+            void setStoredLanguage(deckSlug, next)
             setLangModalOpen(false)
             revealChrome()
           }}
