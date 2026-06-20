@@ -2,7 +2,10 @@
 
 **Tags:** mobile, ux, platform
 **Surfaces:** mobile (`apps/mobile`)
-**Status:** open
+**Status:** **DONE** (`0ce688e`; merged to `main`). Reviewer APPROVED (no changes requested); `pnpm check`
+green modulo the 12 known `website#typecheck` errors. Predictive back was a flag-only change (no
+native-stack v5 needed); iOS sheet grabber/detents deferred (`pageSheet` already gives native
+swipe-to-dismiss). On-device pass still needed — predictive-back peek, status-bar contrast, splash fade.
 
 ## Context
 

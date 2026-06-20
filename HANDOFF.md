@@ -1,12 +1,15 @@
-# Handoff — 0004 (logger) + 0006 (visual-parity v1+v2) SHIPPED; remaining work mostly user-gated
+# Handoff — 0004 (logger) + 0006 (parity) + 0007/0008 (mobile native-feel) SHIPPED; remaining work mostly user-gated
 
-Branch **`main`** at `/Users/avi/code/whocards/app`, clean at **`d4a6aaf`**. Done & merged: the
+Branch **`main`** at `/Users/avi/code/whocards/app`, clean at **`0ce688e`**. Done & merged: the
 unified-play + Answer-record work (0003), the monorepo DB-migration takeover (0005 baseline), the
-**`@whocards/logger`** package (0004 — shared + web + mobile-console-swap), and the **visual-parity
-suite** (0006 — v1 static routes + v2 SSR/play). All shipped via the `coder` → `reviewer` →
+**`@whocards/logger`** package (0004 — shared + web + mobile-console-swap), the **visual-parity
+suite** (0006 — v1 static routes + v2 SSR/play), and the **mobile native-feel** pair (**0007**
+interactive Reanimated swipe + haptics + press-springs + Reduce-Motion; **0008** Android predictive
+back + per-surface status bar + sheet/splash polish). All shipped via the `coder` → `reviewer` →
 orchestrator-merge workflow. The parity run was executed against the live site and
 **the repo is at-or-ahead of the deployed site** (see the 0006 progress note). Remaining open work
-now needs a user decision or a device — see Next Steps.
+now needs a user decision or a device — see Next Steps. **0007/0008 still need an on-device pass**
+(haptics, 60/120fps swipe feel, predictive-back peek, status-bar contrast, splash fade).
 
 ## Goal
 
@@ -32,6 +35,20 @@ from the currently-deployed site to this repo.
 
 ## Current Progress (DONE — on `main`)
 
+- **Mobile native-feel (0007 + 0008)** — researched current RN/Expo native-feel best practices, then
+  split into two disjoint-file tickets and shipped both. **0007** (`2597ce1` + review-fix `d667531`):
+  the play screen's swipe is now an interactive, finger-tracking `Gesture.Pan()` **worklet on the UI
+  thread** (was `runOnJS(true)` + legacy `Animated`) — velocity/threshold commit, rubber-band at the
+  first card, all motion on Reanimated; new web-safe never-throwing `src/lib/haptics.ts` (selection on
+  card change/lang-select, light impact on buttons, medium on swipe-commit); new
+  `src/components/pressable-scale.tsx` (press-spring to 0.96); `useReducedMotion()` gate. **0008**
+  (`0ce688e`): `predictiveBackGestureEnabled: true` (flag-only — SDK 56 + expo-router needs no
+  native-stack v5), per-surface status bar (`StatusBar style="dark"` mounted inside the white language
+  `Modal`, light elsewhere), language-modal close `✕`→`Ionicons name="close"`, and a 300 ms `FadeIn`
+  splash→landing transition (gated after `hideAsync()`, fonts-hold preserved). Both reviewer-APPROVED;
+  `pnpm check` green modulo the 12 known website errors. **Engine untouched (ADR-0003).** iOS sheet
+  grabber/detents deferred (`pageSheet` already gives native swipe-to-dismiss). **On-device pass still
+  owed** — see Next Steps.
 - **Visual-parity suite (0006)** — v1 `38df274`, v2 `d4a6aaf`. Screenshots each route on the deployed
   site (`DEPLOYED_URL`, default `https://whocards.cc`) vs a local build and pixel-diffs into an HTML
   report — a cutover **triage tool**, not a CI gate. **v1** (`test:parity`): static routes via
@@ -65,7 +82,8 @@ from the currently-deployed site to this repo.
 - **Project agents** in `.claude/agents/` (architect, coder, researcher, reviewer).
 - **Tickets** (`docs/tickets/`): `0001` CJK fonts (open), `0002` Convex (parked), `0003` ✅,
   `0004` ✅ shared+web+mobile-console (mobile PostHog transport deferred), `0005` ✅ baseline /
-  auth-cleanup pending, `0006` ✅ visual-parity v1+v2 (few routes deferred: Stripe state / shuffle).
+  auth-cleanup pending, `0006` ✅ visual-parity v1+v2 (few routes deferred: Stripe state / shuffle),
+  `0007` ✅ mobile native touch & motion, `0008` ✅ mobile platform conventions & chrome.
 
 ## Next Steps (ordered)
 
@@ -80,7 +98,10 @@ from the currently-deployed site to this repo.
    (`auth_*` vs `account_*` vs drop) **and** explicit authorization to touch prod.
 4. **CJK question fonts (0001)** — mobile; needs the user's subset/bundle/system choice.
 5. **Pool-data dedup** — surface the type-widening tradeoff (below) to the user first.
-6. **Mobile device verification** — run Answer-record + offline flush on a rebuilt dev client.
+6. **Mobile device verification** — run Answer-record + offline flush on a rebuilt dev client, and do
+   the **0007/0008 on-device pass**: haptics firing at the right moments, the finger-tracking swipe at
+   60/120fps + rubber-band feel, Android predictive-back peek, status-bar contrast over the white
+   language sheet, and the 300 ms splash fade. (None of these are statically verifiable.)
 
 ## Other no-input work considered (NOT chosen — context for later)
 
@@ -146,6 +167,12 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
 ConnectionRefused`; safety classifier also down) with **no report**, leaving uncommitted files on
   its branch. Recovery: inspect `git status` + the branch, then run the verification the coder
   skipped and commit the output yourself — don't assume a silent/dead agent finished cleanly.
+- **`expo lint` / `pnpm -F mobile lint` is a footgun here** — it auto-installs `eslint` +
+  `eslint-config-expo` and rewrites `package.json` / `pnpm-lock.yaml` (+~1300 lines) / `pnpm-workspace.yaml`
+  (an `unrs-resolver: set this to true or false` placeholder). This repo lints mobile with **oxlint**,
+  not eslint, and `expo lint` is **not** part of `pnpm check`. The 0007 reviewer ran it and left that
+  churn in the worktree; I had to `git checkout --` those three files before merging. **Tell mobile
+  coders/reviewers to verify with `oxlint`/`oxfmt` directly and never run `expo lint`.**
 
 ## Pre-existing follow-ups (still open, unrelated)
 
