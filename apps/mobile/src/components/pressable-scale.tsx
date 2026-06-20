@@ -30,7 +30,13 @@ type PressableScaleProps = Pick<
  * Uses Reanimated so the spring runs on the UI thread. All standard Pressable
  * accessibility props are forwarded.
  */
-export const PressableScale = ({onPress, onPressIn, onPressOut, ...rest}: PressableScaleProps) => {
+export const PressableScale = ({
+  onPress,
+  onPressIn,
+  onPressOut,
+  style,
+  ...rest
+}: PressableScaleProps) => {
   const scale = useSharedValue(1)
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -52,8 +58,9 @@ export const PressableScale = ({onPress, onPressIn, onPressOut, ...rest}: Pressa
       onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={animatedStyle}
       {...rest}
+      // animatedStyle last so a caller-supplied `style` can't clobber the scale spring
+      style={[style, animatedStyle]}
     />
   )
 }
