@@ -1,10 +1,9 @@
-import {useFonts} from 'expo-font'
 import {Stack} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
-import {useEffect, useState} from 'react'
-import Animated, {FadeIn} from 'react-native-reanimated'
+import {useEffect} from 'react'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
+import Animated, {FadeIn} from 'react-native-reanimated'
 import {configureLogger} from '@whocards/logger'
 import {colors} from '@whocards/tokens'
 
@@ -13,9 +12,10 @@ configureLogger({dev: __DEV__})
 
 import '../global.css'
 
-// Hold the native splash until the brand faces are ready, so text never flashes
-// in a fallback font. Keys match the @whocards/tokens families (golos-text / aptly),
-// which is what NativeWind's `font-sans` / `font-title` resolve to.
+// Brand faces (golos-text / aptly / noto-sans-hebrew) are embedded natively via the
+// expo-font config plugin (app.json), so they're available at launch — no async font
+// loading and no flash of fallback. We only hold the splash until the first frame is
+// ready, then fade it out.
 void SplashScreen.preventAutoHideAsync()
 
 // Fade duration for the splash → landing handoff (ms). Long enough to feel polished,
@@ -23,24 +23,9 @@ void SplashScreen.preventAutoHideAsync()
 const SPLASH_FADE_MS = 300
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    'golos-text': require('../../assets/fonts/golos-text.ttf'),
-    aptly: require('../../assets/fonts/aptly.ttf'),
-    'noto-sans-hebrew': require('../../assets/fonts/noto-sans-hebrew.ttf'),
-  })
-  // Tracks whether the splash has been hidden so we render only after the fade
-  // would have started, avoiding a flash on the first frame.
-  const [splashHidden, setSplashHidden] = useState(false)
-
   useEffect(() => {
-    if (fontsLoaded) {
-      void SplashScreen.hideAsync().then(() => {
-        setSplashHidden(true)
-      })
-    }
-  }, [fontsLoaded])
-
-  if (!fontsLoaded || !splashHidden) return null
+    void SplashScreen.hideAsync()
+  }, [])
 
   return (
     <GestureHandlerRootView style={{flex: 1}}>

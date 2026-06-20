@@ -36,11 +36,22 @@
             "imageWidth": 76
           }
         }
+      ],
+      "expo-image",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/golos-text.ttf",
+            "./assets/fonts/aptly.ttf",
+            "./assets/fonts/noto-sans-hebrew.ttf"
+          ]
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": false
+      "reactCompiler": true
     }
   }
 }

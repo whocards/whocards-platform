@@ -1,7 +1,8 @@
 import {Ionicons} from '@expo/vector-icons'
+import {Image} from 'expo-image'
 import {Link} from 'expo-router'
 import {useEffect, useState} from 'react'
-import {Image, Text, View} from 'react-native'
+import {Text, View} from 'react-native'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import {DEFAULT_DECK_SLUG, libraryDeck, resolveDeck} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
@@ -38,7 +39,7 @@ export default function LandingScreen() {
         <View className="flex-1 items-center justify-center">
           <Image
             source={logo}
-            resizeMode="contain"
+            contentFit="contain"
             accessibilityLabel="WhoCards"
             // explicit width AND height — native sizes a required image to its
             // intrinsic pixels otherwise (aspectRatio alone only works on web)

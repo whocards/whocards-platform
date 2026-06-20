@@ -174,7 +174,7 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
   const fadeChrome = useCallback(
     (to: number) => {
       setChromeShown(to === 1)
-      chromeOpacity.value = withTiming(to, {duration: reduceMotion ? 0 : 300})
+      chromeOpacity.set(withTiming(to, {duration: reduceMotion ? 0 : 300}))
     },
     [chromeOpacity, reduceMotion]
   )
@@ -193,7 +193,7 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
   }, [revealChrome])
 
   const chromeStyle = useAnimatedStyle(() => ({
-    opacity: chromeOpacity.value,
+    opacity: chromeOpacity.get(),
   }))
 
   // --- Reanimated card enter/exit: translateX shared value ---
@@ -209,21 +209,21 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
   // the appropriate edge. navDir is set by goNext/goPrevious before dispatch.
   useEffect(() => {
     const travel = reduceMotion ? 0 : 28
-    translateX.value = navDir.current * travel
-    translateX.value = withTiming(0, {duration: reduceMotion ? 0 : 260})
+    translateX.set(navDir.current * travel)
+    translateX.set(withTiming(0, {duration: reduceMotion ? 0 : 260}))
   }, [questionId, translateX, reduceMotion])
 
   const cardStyle = useAnimatedStyle(() => {
     // opacity fades slightly as the card is dragged off screen
     const opacity = interpolate(
-      translateX.value,
+      translateX.get(),
       [-SWIPE_OFF_SCREEN, 0, SWIPE_OFF_SCREEN],
       [0, 1, 0],
       'clamp'
     )
     return {
       opacity,
-      transform: [{translateX: translateX.value}],
+      transform: [{translateX: translateX.get()}],
     }
   })
 
@@ -270,13 +270,13 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
   // isAtFirst ref is read on the UI thread via a shared value to avoid closure stale issues
   const isAtFirstSV = useSharedValue(isAtFirst)
   useEffect(() => {
-    isAtFirstSV.value = isAtFirst
+    isAtFirstSV.set(isAtFirst)
   }, [isAtFirst, isAtFirstSV])
 
   // reduceMotion ref for worklet access
   const reduceMotionSV = useSharedValue(reduceMotion)
   useEffect(() => {
-    reduceMotionSV.value = reduceMotion
+    reduceMotionSV.set(reduceMotion)
   }, [reduceMotion, reduceMotionSV])
 
   // stable JS callbacks for worklet → JS bridge
@@ -294,39 +294,43 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
         const tx = event.translationX
         // Rubber-band at the left boundary: if there's nowhere to go "previous",
         // resist the right-swipe so the card doesn't slide freely
-        if (tx > 0 && isAtFirstSV.value) {
-          translateX.value = tx * RUBBER_BAND
+        if (tx > 0 && isAtFirstSV.get()) {
+          translateX.set(tx * RUBBER_BAND)
         } else {
-          translateX.value = tx
+          translateX.set(tx)
         }
       })
       .onEnd((event) => {
         'worklet'
         const tx = event.translationX
         const vx = event.velocityX
-        const travel = reduceMotionSV.value ? 0 : SWIPE_OFF_SCREEN
+        const travel = reduceMotionSV.get() ? 0 : SWIPE_OFF_SCREEN
 
         // commit next: swipe left past threshold or fast leftward fling
         if (tx <= -SWIPE_THRESHOLD || vx < -500) {
           runOnJS(impactMediumOnJS)()
-          translateX.value = withTiming(-travel, {duration: reduceMotionSV.value ? 0 : 260}, () => {
-            'worklet'
-            runOnJS(dispatchNext)()
-          })
+          translateX.set(
+            withTiming(-travel, {duration: reduceMotionSV.get() ? 0 : 260}, () => {
+              'worklet'
+              runOnJS(dispatchNext)()
+            })
+          )
           return
         }
         // commit previous: swipe right past threshold or fast rightward fling
         // (but not if rubber-banded at the start)
-        if ((tx >= SWIPE_THRESHOLD || vx > 500) && !isAtFirstSV.value) {
+        if ((tx >= SWIPE_THRESHOLD || vx > 500) && !isAtFirstSV.get()) {
           runOnJS(impactMediumOnJS)()
-          translateX.value = withTiming(travel, {duration: reduceMotionSV.value ? 0 : 260}, () => {
-            'worklet'
-            runOnJS(dispatchPrevious)()
-          })
+          translateX.set(
+            withTiming(travel, {duration: reduceMotionSV.get() ? 0 : 260}, () => {
+              'worklet'
+              runOnJS(dispatchPrevious)()
+            })
+          )
           return
         }
         // spring back to rest
-        translateX.value = withSpring(0, {damping: 20, stiffness: 300})
+        translateX.set(withSpring(0, {damping: 20, stiffness: 300}))
       })
 
     const tap = Gesture.Tap().onStart(() => {
