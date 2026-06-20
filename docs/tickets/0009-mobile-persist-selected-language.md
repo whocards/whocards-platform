@@ -2,7 +2,11 @@
 
 **Tags:** mobile, ux, persistence
 **Surfaces:** mobile (`apps/mobile`)
-**Status:** open (not started). Raised 2026-06-21.
+**Status:** **DONE** (`c96c716`; merged to `main`). Reviewer APPROVED (no changes requested);
+mobile `typecheck` + `lint` + `format` clean. Implemented as `src/lib/language-store.ts`
+(AsyncStorage, per-deck key `whocards-language:${deckSlug}`) + load-on-mount/persist-on-select in
+`play/[deck].tsx`, with the first card gated on the read to avoid a flash-of-wrong-language. Not
+yet device-verified (no simulator) — the load/persist round-trip wants an on-device smoke test.
 
 ## Context
 
