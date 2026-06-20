@@ -1,7 +1,10 @@
 import {Ionicons} from '@expo/vector-icons'
-import {Pressable, Text, View} from 'react-native'
+import {Text, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {colors} from '@whocards/tokens'
+
+import {PressableScale} from '@/components/pressable-scale'
+import {impact} from '@/lib/haptics'
 
 type IconName = keyof typeof Ionicons.glyphMap
 
@@ -13,18 +16,25 @@ type BarButtonProps = {
 }
 
 /** One bottom-bar action: icon over a small label, sharing equal width with its peers. */
-const BarButton = ({icon, label, onPress, accessibilityLabel}: BarButtonProps) => (
-  <Pressable
-    onPress={onPress}
-    accessibilityRole="button"
-    accessibilityLabel={accessibilityLabel ?? label}
-    hitSlop={6}
-    className="flex-1 items-center gap-1 py-1 active:opacity-60"
-  >
-    <Ionicons name={icon} size={24} color={colors.white} />
-    <Text className="text-gray-dark font-sans text-xs">{label}</Text>
-  </Pressable>
-)
+const BarButton = ({icon, label, onPress, accessibilityLabel}: BarButtonProps) => {
+  const handlePress = () => {
+    impact('light')
+    onPress()
+  }
+
+  return (
+    <PressableScale
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      hitSlop={6}
+      className="flex-1 items-center gap-1 py-1"
+    >
+      <Ionicons name={icon} size={24} color={colors.white} />
+      <Text className="text-gray-dark font-sans text-xs">{label}</Text>
+    </PressableScale>
+  )
+}
 
 type PlayerBarProps = {
   showLanguage: boolean

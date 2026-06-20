@@ -1,12 +1,14 @@
 import {Ionicons} from '@expo/vector-icons'
 import {Link} from 'expo-router'
 import {useEffect, useState} from 'react'
-import {Image, Pressable, Text, View} from 'react-native'
+import {Image, Text, View} from 'react-native'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import {DEFAULT_DECK_SLUG, libraryDeck, resolveDeck} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
 
+import {PressableScale} from '@/components/pressable-scale'
 import {ScreenBackground} from '@/components/screen-background'
+import {impact} from '@/lib/haptics'
 import {trpc} from '@/lib/trpc'
 
 // We launch with the original WhoCards deck; its content ships in-app for offline play.
@@ -52,14 +54,15 @@ export default function LandingScreen() {
             {cards} cards · {languages} languages
           </Text>
           <Link href={`/play/${DEFAULT_DECK_SLUG}`} asChild>
-            <Pressable
+            <PressableScale
               accessibilityRole="button"
               accessibilityLabel="Play"
+              onPress={() => impact('light')}
               className="active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
             >
               <Ionicons name="play" size={18} color={colors.darker} style={{marginRight: 8}} />
               <Text className="text-darker font-sans text-base font-bold">Play</Text>
-            </Pressable>
+            </PressableScale>
           </Link>
         </View>
       </SafeAreaView>

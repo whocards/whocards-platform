@@ -2,8 +2,17 @@ import {Ionicons} from '@expo/vector-icons'
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Animated, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
+import Animated, {
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import type {QuestionSet} from '@whocards/decks'
 import {getDeck, getDirection, getInitialNav, navReducer} from '@whocards/decks'
@@ -15,9 +24,14 @@ import {ScreenBackground} from '@/components/screen-background'
 import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
 import {getDeviceId} from '@/lib/device-id'
+import {impact, selection} from '@/lib/haptics'
 
 const SWIPE_THRESHOLD = 60
 const CHROME_HIDE_MS = 3000
+// How far off-screen the card travels when a swipe commits (points)
+const SWIPE_OFF_SCREEN = 400
+// Rubber-band resistance factor when swiping at a boundary (0–1, lower = more resistance)
+const RUBBER_BAND = 0.3
 
 // Per-script question face. golos-text (the brand body face) covers Latin + Cyrillic;
 // Hebrew gets its bundled Noto face; CJK (zh/jp) falls back to the system font — full
@@ -92,6 +106,7 @@ type DeckPlayerProps = {
 
 const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerProps) => {
   const router = useRouter()
+  const reduceMotion = useReducedMotion()
 
   // the shared headless engine — identical behaviour to the web <Play> (ADR-0003)
   const reducer = useMemo(() => navReducer(questionIds), [questionIds])
@@ -151,17 +166,17 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
     [text, measured.width, measured.height]
   )
 
-  // --- auto-hiding chrome: the close button + bottom bar hide when idle, reappear on touch ---
-  const chromeOpacity = useRef(new Animated.Value(1)).current
+  // --- auto-hiding chrome: Reanimated shared value drives opacity ---
+  const chromeOpacity = useSharedValue(1)
   const [chromeShown, setChromeShown] = useState(true)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const fadeChrome = useCallback(
     (to: number) => {
       setChromeShown(to === 1)
-      Animated.timing(chromeOpacity, {toValue: to, duration: 300, useNativeDriver: true}).start()
+      chromeOpacity.value = withTiming(to, {duration: reduceMotion ? 0 : 300})
     },
-    [chromeOpacity]
+    [chromeOpacity, reduceMotion]
   )
 
   const revealChrome = useCallback(() => {
@@ -177,21 +192,54 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
     }
   }, [revealChrome])
 
-  // --- subtle slide+fade as the question changes (direction follows next/prev) ---
-  const enter = useRef(new Animated.Value(0)).current
+  const chromeStyle = useAnimatedStyle(() => ({
+    opacity: chromeOpacity.value,
+  }))
+
+  // --- Reanimated card enter/exit: translateX shared value ---
+  // Positive = entering from the right (going "next"), negative = entering from left (going "prev")
+  // During a swipe: translateX tracks the finger directly.
+  const translateX = useSharedValue(0)
+  // navDir: +1 = next (slide left), -1 = previous (slide right)
   const navDir = useRef(1)
+  // Whether we're at the first card — used in gesture rubber-band check
+  const isAtFirst = idx === 0
 
+  // card-enter animation: when questionId changes, the new card flies in from
+  // the appropriate edge. navDir is set by goNext/goPrevious before dispatch.
   useEffect(() => {
-    enter.setValue(navDir.current)
-    Animated.timing(enter, {toValue: 0, duration: 260, useNativeDriver: true}).start()
-  }, [questionId, enter])
+    const travel = reduceMotion ? 0 : 28
+    translateX.value = navDir.current * travel
+    translateX.value = withTiming(0, {duration: reduceMotion ? 0 : 260})
+  }, [questionId, translateX, reduceMotion])
 
-  const cardStyle = {
-    opacity: enter.interpolate({inputRange: [-1, 0, 1], outputRange: [0, 1, 0]}),
-    transform: [
-      {translateX: enter.interpolate({inputRange: [-1, 0, 1], outputRange: [-28, 0, 28]})},
-    ],
-  }
+  const cardStyle = useAnimatedStyle(() => {
+    // opacity fades slightly as the card is dragged off screen
+    const opacity = interpolate(
+      translateX.value,
+      [-SWIPE_OFF_SCREEN, 0, SWIPE_OFF_SCREEN],
+      [0, 1, 0],
+      'clamp'
+    )
+    return {
+      opacity,
+      transform: [{translateX: translateX.value}],
+    }
+  })
+
+  // JS-thread callbacks for dispatching navigation after a committed swipe.
+  // navDir is set here so the card-enter effect knows which edge to enter from.
+  const dispatchNext = useCallback(() => {
+    navDir.current = 1
+    selection()
+    dispatch({type: 'next'})
+  }, [])
+
+  const dispatchPrevious = useCallback(() => {
+    navDir.current = -1
+    selection()
+    dispatch({type: 'previous'})
+  }, [])
 
   const goNext = useCallback(() => {
     navDir.current = 1
@@ -218,26 +266,90 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
 
   const openLanguage = useCallback(() => setLangModalOpen(true), [])
 
-  // --- tap reveals the chrome; swipe navigates (both run on the JS thread) ---
+  // --- UI-thread gesture: pan tracks finger; tap reveals chrome ---
+  // isAtFirst ref is read on the UI thread via a shared value to avoid closure stale issues
+  const isAtFirstSV = useSharedValue(isAtFirst)
+  useEffect(() => {
+    isAtFirstSV.value = isAtFirst
+  }, [isAtFirst, isAtFirstSV])
+
+  // reduceMotion ref for worklet access
+  const reduceMotionSV = useSharedValue(reduceMotion)
+  useEffect(() => {
+    reduceMotionSV.value = reduceMotion
+  }, [reduceMotion, reduceMotionSV])
+
+  // stable JS callbacks for worklet → JS bridge
+  const revealChromeStable = useCallback(() => revealChrome(), [revealChrome])
+  const impactMediumOnJS = useCallback(() => impact('medium'), [])
+
   const gesture = useMemo(() => {
     const pan = Gesture.Pan()
-      .runOnJS(true)
-      .onBegin(revealChrome)
-      .onEnd((event) => {
-        if (event.translationX <= -SWIPE_THRESHOLD) goNext()
-        else if (event.translationX >= SWIPE_THRESHOLD) goPrevious()
+      .onBegin(() => {
+        'worklet'
+        runOnJS(revealChromeStable)()
       })
-    const tap = Gesture.Tap().runOnJS(true).onStart(revealChrome)
+      .onUpdate((event) => {
+        'worklet'
+        const tx = event.translationX
+        // Rubber-band at the left boundary: if there's nowhere to go "previous",
+        // resist the right-swipe so the card doesn't slide freely
+        if (tx > 0 && isAtFirstSV.value) {
+          translateX.value = tx * RUBBER_BAND
+        } else {
+          translateX.value = tx
+        }
+      })
+      .onEnd((event) => {
+        'worklet'
+        const tx = event.translationX
+        const vx = event.velocityX
+        const travel = reduceMotionSV.value ? 0 : SWIPE_OFF_SCREEN
+
+        // commit next: swipe left past threshold or fast leftward fling
+        if (tx <= -SWIPE_THRESHOLD || vx < -500) {
+          runOnJS(impactMediumOnJS)()
+          translateX.value = withTiming(-travel, {duration: reduceMotionSV.value ? 0 : 260}, () => {
+            'worklet'
+            runOnJS(dispatchNext)()
+          })
+          return
+        }
+        // commit previous: swipe right past threshold or fast rightward fling
+        // (but not if rubber-banded at the start)
+        if ((tx >= SWIPE_THRESHOLD || vx > 500) && !isAtFirstSV.value) {
+          runOnJS(impactMediumOnJS)()
+          translateX.value = withTiming(travel, {duration: reduceMotionSV.value ? 0 : 260}, () => {
+            'worklet'
+            runOnJS(dispatchPrevious)()
+          })
+          return
+        }
+        // spring back to rest
+        translateX.value = withSpring(0, {damping: 20, stiffness: 300})
+      })
+
+    const tap = Gesture.Tap().onStart(() => {
+      'worklet'
+      runOnJS(revealChromeStable)()
+    })
+
     return Gesture.Race(tap, pan)
-  }, [revealChrome, goNext, goPrevious])
+  }, [
+    revealChromeStable,
+    dispatchNext,
+    dispatchPrevious,
+    impactMediumOnJS,
+    translateX,
+    isAtFirstSV,
+    reduceMotionSV,
+  ])
 
   return (
     <ScreenBackground>
       <View className="flex-1">
         {/* close — top-right, on a chip so it reads over any content (auto-hides) */}
-        <Animated.View
-          style={{opacity: chromeOpacity, pointerEvents: chromeShown ? 'auto' : 'none'}}
-        >
+        <Animated.View style={[{pointerEvents: chromeShown ? 'auto' : 'none'}, chromeStyle]}>
           <SafeAreaView edges={['top', 'left', 'right']}>
             <View className="items-end px-4 pt-2">
               <Pressable
@@ -274,9 +386,7 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
         </GestureDetector>
 
         {/* bottom action bar — shares the chrome's fade */}
-        <Animated.View
-          style={{opacity: chromeOpacity, pointerEvents: chromeShown ? 'auto' : 'none'}}
-        >
+        <Animated.View style={[{pointerEvents: chromeShown ? 'auto' : 'none'}, chromeStyle]}>
           <PlayerBar
             showLanguage={languages.length > 1}
             onPrevious={goPrevious}
@@ -291,6 +401,7 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
           languages={languages}
           current={language}
           onSelect={(next) => {
+            selection()
             setLanguage(next)
             setLangModalOpen(false)
             revealChrome()
