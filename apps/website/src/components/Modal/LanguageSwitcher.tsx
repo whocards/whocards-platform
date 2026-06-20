@@ -13,21 +13,19 @@ export const LanguageSwitcher = () => {
   const store = useStore($langStore)
   const ref = useRef<HTMLDialogElement>(null)
 
-  const handleClose = (event: MouseEvent) => {
-    if (ref && ref.current === event.target) {
-      window.langsModal.close()
-    }
-  }
-
   useEffect(() => {
-    if (!ref.current) return
-    ref.current.addEventListener('click', handleClose)
+    // capture the node so the cleanup removes the listener from the same element
+    // (not a possibly-changed ref.current), with a stable handler and a one-shot mount
+    const dialog = ref.current
+    if (!dialog) return
 
-    return () => {
-      if (!ref.current) return
-      ref.current.removeEventListener('click', handleClose)
+    const handleBackdropClick = (event: MouseEvent) => {
+      if (dialog === event.target) window.langsModal.close()
     }
-  }, [ref])
+
+    dialog.addEventListener('click', handleBackdropClick)
+    return () => dialog.removeEventListener('click', handleBackdropClick)
+  }, [])
 
   useEffect(() => {
     setLang(getCurrentLanguage(window.location.pathname))

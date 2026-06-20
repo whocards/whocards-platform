@@ -26,6 +26,18 @@ export type PlayProps = {
 /** One queue per island, recording each serve to the Answer record via tRPC. */
 const answerQueue = createOfflineQueue(sendAnswer)
 
+// Static nav glyphs — hoisted so they aren't re-created on every render (rendering-hoist-jsx)
+const PrevArrowIcon = (
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' className='h-10 w-10'>
+    <path fill='currentColor' d='M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20z' />
+  </svg>
+)
+const NextArrowIcon = (
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' className='h-10 w-10'>
+    <path fill='currentColor' d='m12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z' />
+  </svg>
+)
+
 export const Play = ({
   questions,
   languages,
@@ -61,13 +73,19 @@ export const Play = ({
     return defaultLanguage
   }, [defaultLanguage, languageStorageKey, languages])
 
-  const [language, setLanguageState] = useState<string>(getStoredLanguage())
+  // lazy init: getStoredLanguage touches localStorage (read AND write) — pass the
+  // function so it runs once on mount, not on every render (rerender-lazy-state-init)
+  const [language, setLanguageState] = useState<string>(getStoredLanguage)
   const [trackingSource, setTrackingSource] = useState('initial')
   const [showControls, setShowControls] = useState(true)
-  const [isControlsHovered, setIsControlsHovered] = useState(false)
 
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const controlsRef = useRef<HTMLDivElement>(null)
+  // transient values driven by per-frame mousemove / hover — kept in refs so they
+  // don't trigger re-renders (rerender-use-ref-transient-values). `showControls`
+  // stays state because the JSX reads it; its ref mirror just gates the setState.
+  const showControlsRef = useRef(true)
+  const isHoveredRef = useRef(false)
 
   const setLanguage = useCallback(
     (next: string) => {
@@ -119,23 +137,32 @@ export const Play = ({
 
   const setHideTimeout = useCallback(() => {
     clearHideTimeout()
-    if (!isControlsHovered) {
-      hideTimeoutRef.current = setTimeout(() => setShowControls(false), 3000)
-    }
-  }, [isControlsHovered, clearHideTimeout])
+    // read the live hover state from a ref so this callback stays stable and never
+    // arms the timer while the pointer rests on the controls
+    if (isHoveredRef.current) return
+    hideTimeoutRef.current = setTimeout(() => {
+      showControlsRef.current = false
+      setShowControls(false)
+    }, 3000)
+  }, [clearHideTimeout])
 
+  // mousemove fires ~once per frame: only touch state on the hidden→shown edge,
+  // then (re)arm the idle-hide timer. The ref guard keeps no-op moves render-free.
   const handleMouseMove = useCallback(() => {
-    setShowControls(true)
+    if (!showControlsRef.current) {
+      showControlsRef.current = true
+      setShowControls(true)
+    }
     setHideTimeout()
   }, [setHideTimeout])
 
   const handleControlsMouseEnter = useCallback(() => {
-    setIsControlsHovered(true)
+    isHoveredRef.current = true
     clearHideTimeout()
   }, [clearHideTimeout])
 
   const handleControlsMouseLeave = useCallback(() => {
-    setIsControlsHovered(false)
+    isHoveredRef.current = false
     setHideTimeout()
   }, [setHideTimeout])
 
@@ -147,14 +174,6 @@ export const Play = ({
       clearHideTimeout()
     }
   }, [handleMouseMove, setHideTimeout, clearHideTimeout])
-
-  useEffect(() => {
-    if (showControls && !isControlsHovered) {
-      setHideTimeout()
-    } else if (isControlsHovered) {
-      clearHideTimeout()
-    }
-  }, [isControlsHovered, showControls, setHideTimeout, clearHideTimeout])
 
   // ---- flush any queued Answers on load and when the network returns ----
   useEffect(() => answerQueue.start(), [])
@@ -266,12 +285,7 @@ export const Play = ({
             disabled={idx === 0}
             className={cn(idx === 0 && 'pointer-events-none opacity-50', 'hover:text-primary-dark')}
           >
-            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' className='h-10 w-10'>
-              <path
-                fill='currentColor'
-                d='M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20z'
-              />
-            </svg>
+            {PrevArrowIcon}
           </button>
 
           {isToggle ? (
@@ -313,12 +327,7 @@ export const Play = ({
             onClick={handleNext}
             className='hover:text-primary-dark'
           >
-            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' className='h-10 w-10'>
-              <path
-                fill='currentColor'
-                d='m12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'
-              />
-            </svg>
+            {NextArrowIcon}
           </button>
         </div>
       </div>
