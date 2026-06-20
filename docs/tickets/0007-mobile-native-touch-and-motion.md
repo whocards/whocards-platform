@@ -2,7 +2,9 @@
 
 **Tags:** mobile, ux, performance
 **Surfaces:** mobile (`apps/mobile`)
-**Status:** open
+**Status:** **DONE** (`2597ce1` impl + `d667531` review-fix; merged to `main`). Reviewer APPROVED;
+`pnpm check` green modulo the 12 known `website#typecheck` errors. On-device feel (haptics, 60/120fps
+swipe, Reduce-Motion, web no-op) still needs a real device/simulator pass — see Acceptance.
 
 ## Context
 
