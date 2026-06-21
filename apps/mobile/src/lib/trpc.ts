@@ -10,8 +10,11 @@ const PROD_API_URL = 'https://whocards.cc'
  * Override with EXPO_PUBLIC_API_URL; a release build with no env falls back to
  * production (never a dev host); in dev it defaults to the LAN host Expo reports,
  * on the website's default Astro port.
+ *
+ * Exported so the jest unit test can exercise each branch by toggling
+ * `process.env.EXPO_PUBLIC_API_URL`, `__DEV__`, and `Constants.expoConfig`.
  */
-const getBaseUrl = (): string => {
+export const getBaseUrl = (): string => {
   const fromEnv = process.env.EXPO_PUBLIC_API_URL
   if (fromEnv) return fromEnv
   if (!__DEV__) return PROD_API_URL
