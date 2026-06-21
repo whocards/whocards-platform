@@ -38,7 +38,7 @@ const {links} = Astro.props
                 {...link}
                 selected={
                   link.play
-                    ? Astro.url.pathname.startsWith('/play')
+                    ? Astro.url.pathname === '/play' || Astro.url.pathname.startsWith('/play/')
                     : Astro.url.pathname === link.href
                 }
                 class='menu-title text-white'
@@ -64,7 +64,9 @@ const {links} = Astro.props
           <NavLink
             {...link}
             selected={
-              link.play ? Astro.url.pathname.startsWith('/play') : Astro.url.pathname === link.href
+              link.play
+                ? Astro.url.pathname === '/play' || Astro.url.pathname.startsWith('/play/')
+                : Astro.url.pathname === link.href
             }
             size='lg'
             button
