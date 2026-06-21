@@ -2,7 +2,7 @@
 
 **Tags:** web, cleanup, removal, env
 **Surfaces:** web (`apps/website`)
-**Status:** open (not started). Raised 2026-06-21.
+**Status:** **DONE** (`8dc97eb`; merged to `main`). Reviewer APPROVED. Raised 2026-06-21.
 
 ## Context
 
