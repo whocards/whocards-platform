@@ -52,7 +52,7 @@ Each time a Device answers a Question, the app records one Answer entry containi
 - Which Deck the Question belongs to.
 - Which Question was answered (by identifier).
 - Which language was active at the time.
-- When the answer occurred (timestamp).
+- The time we received the answer (recorded on our server, not sent by the app).
 
 This Answer record is the single source of truth for the shared Global Game: it tracks which Questions have been answered across all Devices and determines what the next Question will be. It does not contain the content of any conversation.
 
@@ -109,7 +109,7 @@ You also possess the right to object to the processing of your personal data at 
 
 We will retain the data collected for as long as it is required for the execution of the contracts we have entered into, or until you choose to exercise your right to erasure or your right to transfer data to another company.
 
-Answer records tied to an anonymous Device id are retained for the purpose of maintaining the shared Global Game state. Because there is no account system, erasure requests for Answer records are processed by Device id — contact us at the address below with your Device id (visible in the app settings) and we will delete the associated records.
+Answer records tied to an anonymous Device id are retained for the purpose of maintaining the shared Global Game state. Because there is no account system, erasure requests for Answer records are processed by Device id — contact us at the address below and we will help you identify and delete the records associated with your Device.
 
 ## 5. External Application Integrated into our Website
 

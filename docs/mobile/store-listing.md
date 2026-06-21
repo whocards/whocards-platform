@@ -99,7 +99,7 @@ https://whocards.cc/legal/pp
 ### Copyright
 
 ```
-© 2025 Alles ist Dialog - Verein für Kulturentwicklung
+© 2025–2026 Alles ist Dialog - Verein für Kulturentwicklung
 ```
 
 ### Age Rating
