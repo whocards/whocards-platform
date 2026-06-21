@@ -7,6 +7,12 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/70c97b4d-b05c-4839-a6a3-054bb0625e1f"
+    },
     "ios": {
       "bundleIdentifier": "cc.whocards.mobile"
     },
@@ -45,11 +51,17 @@
             "./assets/fonts/noto-sans-hebrew.ttf"
           ]
         }
-      ]
+      ],
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "70c97b4d-b05c-4839-a6a3-054bb0625e1f"
+      }
     }
   }
 }

@@ -1,0 +1,137 @@
+name: Mobile release
+
+# Triggers on version tags (e.g. v1.0.0, v1.2.3).
+# This workflow is intentionally inert until the following one-time setup is complete (#11/#12):
+#
+#   Required secrets (Settings → Secrets → Actions):
+#     EXPO_TOKEN          — Expo account token (`eas whoami` must return the project owner)
+#     APP_STORE_KEY_ID    — App Store Connect API key ID      (iOS submit, #12)
+#     APP_STORE_ISSUER_ID — App Store Connect API issuer ID   (iOS submit, #12)
+#     APP_STORE_KEY_P8    — App Store Connect API key (.p8)   (iOS submit, #12)
+#     PLAY_SERVICE_ACCOUNT_JSON — Play Store service-account JSON (Android submit, #12)
+#
+#   One-time EAS setup (#11):
+#     1. Run `eas init` in apps/mobile to obtain a projectId.
+#     2. Commit the projectId to apps/mobile/app.json extra.eas.projectId.
+#     3. Replace the TODO-RUN-eas-init placeholder in apps/mobile/app.json and
+#        apps/mobile/eas.json with the real values.
+#
+# Until those steps are done, the eas build / eas submit / eas update steps
+# will fail fast with an auth or config error — they will NOT deploy anything silently.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  gate:
+    name: Quality gate
+    uses: ./.github/workflows/mobile-gate.yml
+
+  build:
+    name: EAS Build (iOS + Android)
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS (production)
+        working-directory: apps/mobile
+        run: eas build --platform ios --profile production --non-interactive
+
+      - name: Build Android (production)
+        working-directory: apps/mobile
+        run: eas build --platform android --profile production --non-interactive
+
+  submit:
+    name: EAS Submit (TestFlight + Play Internal)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # TODO(#12): store-submit secrets must be added before this step is functional.
+      # iOS: APP_STORE_KEY_ID, APP_STORE_ISSUER_ID, APP_STORE_KEY_P8 → TestFlight beta.
+      # Android: PLAY_SERVICE_ACCOUNT_JSON → Play Internal Testing track.
+      - name: Submit iOS (TestFlight)
+        working-directory: apps/mobile
+        env:
+          EXPO_APPLE_API_KEY_ID: ${{ secrets.APP_STORE_KEY_ID }}
+          EXPO_APPLE_API_ISSUER_ID: ${{ secrets.APP_STORE_ISSUER_ID }}
+          EXPO_APPLE_API_KEY: ${{ secrets.APP_STORE_KEY_P8 }}
+        run: eas submit --platform ios --profile production --latest --non-interactive
+
+      - name: Submit Android (Play Internal Testing)
+        working-directory: apps/mobile
+        env:
+          EXPO_GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: eas submit --platform android --profile production --latest --non-interactive
+
+  ota-update:
+    name: EAS Update (OTA → production channel)
+    needs: submit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish OTA update
+        working-directory: apps/mobile
+        run: eas update --channel production --message "${{ github.ref_name }}" --non-interactive
