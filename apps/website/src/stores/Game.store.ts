@@ -1,7 +1,8 @@
 import {persistentAtom} from '@nanostores/persistent'
 import {action, computed} from 'nanostores'
 import type {QuestionId, QuestionIds} from '~types'
-import {generateGame, getCurrentQuestionUrl} from '~utils'
+import {generateGame} from '~utils'
+import {getCurrentQuestionUrl} from '~utils/urls'
 
 interface Game {
   ids: QuestionIds
@@ -30,7 +31,7 @@ export const initGame = action(gameStore, 'initGame', () => {
   gameStore.set({ids: generateGame(), idx: -1})
 
   for (const button of document.getElementsByClassName('play')) {
-    button.setAttribute('href', getCurrentQuestionUrl())
+    button.setAttribute('href', getCurrentQuestionUrl(undefined, idsStore.get().current))
   }
 })
 

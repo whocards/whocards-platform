@@ -1,4 +1,3 @@
-import {idsStore} from '~stores/Game.store'
 import type {QuestionId} from '~types'
 // import directly from the defining module, not the `~utils` barrel: the barrel
 // re-exports this file, so importing it back through `~utils` formed an
@@ -18,7 +17,7 @@ export const getCurrentQuestionId = (): QuestionId => {
  * Build a link into the play screen, deep-linked to the current question via `?q=`.
  * defaultLang in case we want to start from different language in the future
  */
-export const getCurrentQuestionUrl = (lang?: string) => {
+export const getCurrentQuestionUrl = (lang: string | undefined, currentId: QuestionId) => {
   // derive the language from the current page path (e.g. `/en`) when not given
   let pathLang = getTrimmedPath().replace(/^\//, '') || DEFAULT_LANGUAGE
 
@@ -26,7 +25,7 @@ export const getCurrentQuestionUrl = (lang?: string) => {
     pathLang = DEFAULT_LANGUAGE
   }
   // language is now a query param, not a url path: /play?lang=<lang>&q=<id>
-  return `${window.location.origin}/play?lang=${lang || pathLang}&q=${idsStore.get().current}`
+  return `${window.location.origin}/play?lang=${lang || pathLang}&q=${currentId}`
 }
 
 /**

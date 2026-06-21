@@ -1,9 +1,11 @@
 import {Icon} from '@iconify-icon/react'
 import {useStore} from '@nanostores/react'
 import {useEffect, useRef, type PropsWithChildren} from 'react'
+import {idsStore} from '~stores/Game.store'
 import {$langStore, setLang} from '~stores/Language.store'
 import type {Language} from '~types'
-import {LANGUAGES, cn, getCurrentLanguage, getCurrentQuestionUrl, isPrintPage} from '~utils'
+import {LANGUAGES, cn, getCurrentLanguage, isPrintPage} from '~utils'
+import {getCurrentQuestionUrl} from '~utils/urls'
 
 const comingSoon: string[] = []
 
@@ -102,7 +104,7 @@ const QuestionLink = (props: QuestionLinkProps) => {
 
   return (
     <a
-      href={getCurrentQuestionUrl(props.lang)}
+      href={getCurrentQuestionUrl(props.lang, idsStore.get().current)}
       className={cn('who-modal btn-ghost flex h-16 w-full items-center px-4', {
         'active-language text-primary-dark': props.selected,
       })}
