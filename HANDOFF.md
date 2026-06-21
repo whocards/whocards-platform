@@ -24,12 +24,14 @@ from the currently-deployed site to this repo.
   write feature code yourself — orchestrate the agents.
 - These custom agents load **only at session start** — if they aren't available as
   `subagent_type: "coder"` / `"reviewer"`, restart before starting ticket work.
-- **Repo has NO git remote** (`git remote -v` is empty); tickets are local markdown in
-  `docs/tickets/`, **not** GitHub issues. So the coder/reviewer flow is **local-only**: coder works
-  on a **local branch** and commits — **no push, no `gh`, no PR, no self-merge**; reviewer reviews
-  `git diff main...HEAD`; the **orchestrator merges to `main`** (local fast-forward) after review
-  passes + `pnpm check` is green-modulo-the-known-website-type-debt. **Tell each subagent this in
-  its prompt** (their defs assume a `gh`/PR flow).
+- **Remote: `whocards/whocards-platform` (GitHub, PUBLIC).** Tickets were migrated to **GitHub
+  Issues** on 2026-06-21 — **issue `#N` == old ticket `000N`** (1:1), labelled by area/type;
+  `docs/tickets/` was removed. The coder/reviewer flow stays **branch-local**: coder works on a
+  **local branch** and commits (no push/PR from the subagent); reviewer reviews
+  `git diff main...<branch>`; the **orchestrator merges to `main`** after review passes + `pnpm check`
+  is green-modulo-the-known-website-type-debt. **Pushing to the public remote / opening PRs: only
+  with explicit user OK.** Repo is **public** — never commit the gitignored root `.env` (prod
+  `DB_URL`). **Tell each subagent the branch-local flow in its prompt** (their defs assume a `gh`/PR flow).
 - **`SendMessage` is not available in this environment** — you cannot resume a finished subagent's
   context. For follow-up fixes, spawn a **fresh** `coder` with precise, file-specific instructions.
 
@@ -80,10 +82,11 @@ from the currently-deployed site to this repo.
   idempotent `0000_full_baseline.sql`; verified 16→17 tables, nothing dropped. (The old bigint
   `maxValue`/`ts80008` trap is resolved — there is **no `maxValue` left in `schema.ts`**.)
 - **Project agents** in `.claude/agents/` (architect, coder, researcher, reviewer).
-- **Tickets** (`docs/tickets/`): `0001` CJK fonts (open), `0002` Convex (parked), `0003` ✅,
-  `0004` ✅ shared+web+mobile-console (mobile PostHog transport deferred), `0005` ✅ baseline /
-  auth-cleanup pending, `0006` ✅ visual-parity v1+v2 (few routes deferred: Stripe state / shuffle),
-  `0007` ✅ mobile native touch & motion, `0008` ✅ mobile platform conventions & chrome.
+- **Tickets → GitHub Issues** (`whocards/whocards-platform`, **`#N` == old `000N`**); `docs/tickets/`
+  removed in the 2026-06-21 migration. **Closed:** #3, #7, #8, #9, #10, #13, #14, #21, #22, #23.
+  **Open:** #1 CJK fonts, #2 Convex (backlog/parked), #4 mobile PostHog transport, #5 DB
+  reconcile/drops, #6 parity leftovers, #11/#12/#16/#17 release + store/Expo accounts (blocked),
+  #15 Maestro expansion + device matrix, #18/#19 web (need-decision), #20 GitHub+Netlify deploy.
 
 ## Next Steps (ordered)
 

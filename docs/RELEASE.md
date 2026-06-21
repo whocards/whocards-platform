@@ -51,7 +51,7 @@ These make the binary correct; the app is broken or unshippable without them.
 
 ## Phase 3 — Before promoting to public
 
-- [ ] **Observability live** — finish ticket 0004 (`posthog-react-native` sink + product events); confirm events + JS errors arrive in PostHog
+- [ ] **Observability live** — finish #4 (`posthog-react-native` sink + product events); confirm events + JS errors arrive in PostHog
 - [ ] **Privacy Policy** — `whocards.cc/legal/pp` updated to disclose the app's data: Device id, the Answer record, PostHog analytics
 - [ ] **App Privacy (Apple) + Data Safety (Play)** forms filled to match (device id, usage/analytics; no tracking SDK unless added)
 - [ ] **Store assets** — name, subtitle, description, keywords, category, screenshots per device size, support URL
