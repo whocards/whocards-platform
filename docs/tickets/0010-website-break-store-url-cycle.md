@@ -2,7 +2,11 @@
 
 **Tags:** web, architecture, refactor
 **Surfaces:** web (`apps/website`)
-**Status:** open (not started). Raised 2026-06-21 from a `fallow dead-code` finding.
+**Status:** **DONE** (`3c4c8f6`; merged to `main`). Reviewer APPROVED (no changes requested).
+Parameterized the current question id out of `getCurrentQuestionUrl` so `urls.ts` no longer
+imports `idsStore`; call sites pass `idsStore.get().current`. `fallow dead-code` circular
+dependencies 1 → 0; website typecheck unchanged (12 pre-existing, 0 new); URLs byte-identical.
+Raised 2026-06-21 from a `fallow dead-code` finding.
 
 ## Context
 
