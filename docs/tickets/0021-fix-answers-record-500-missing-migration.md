@@ -1,50 +1,43 @@
-# Fix: `answers.record` 500 — the `answer` table has no committed migration
+# Fix: `answers.record` 500 — local DB hasn't had migrations applied
 
-**Tags:** backend, data, migration, bug
-**Surfaces:** backend (`apps/website` db), affects web + mobile
-**Status:** open (not started). Raised 2026-06-21.
+**Tags:** backend, data, dev-setup, bug
+**Surfaces:** backend (`apps/website` db)
+**Status:** open — fix is a one-liner (run `db:migrate` against the dev DB); see below. Raised 2026-06-21.
 
 ## Context
 
-`POST /api/trpc/answers.record` returns **500**. The mutation code is fine — the router validates
-input and calls the Drizzle `recordAnswer` port, which inserts into the `answer` table
-(`apps/website/src/pages/api/trpc/[trpc].ts`). The problem is DB state:
+`POST /api/trpc/answers.record` returns **500** when running the site locally.
 
-- `answer` is defined in `schema.ts` but is **absent from the committed migrations** — `drizzle/`
-  has only `0000_full_baseline.sql` (the 16 pre-existing tables) and `grep answer drizzle/`
-  (incl. `drizzle/meta/`) returns nothing.
-- Per ticket 0005 the table was applied to **Supabase prod out-of-band** (baseline), so prod has it
-  but the migration history doesn't. Any DB that lacks the table — or has a drifted shape — 500s on
-  insert (`relation "answer" does not exist` or a column error).
+**Corrected diagnosis** (an earlier note wrongly claimed the `answer` table had no migration — that
+grep hit a non-existent `drizzle/` dir instead of the configured `out` dir):
 
-This breaks the Answer record on **both** web and mobile (mobile's offline queue posts the same
-mutation), so it's also a release blocker (ADR-0005).
+- The `answer` table **is** in the committed baseline `src/server/db/migrations/0000_full_baseline.sql`
+  (`CREATE TABLE IF NOT EXISTS "answer" (...)`, columns matching `schema.ts`), and
+  `drizzle-kit generate` reports **"No schema changes"** — schema and migrations are in sync.
+- `DB_URL` points at **`localhost:5432/whocards`** (a local Postgres).
+- The mutation is the only path that writes to the DB (the deck/manifest queries are static, from
+  `packages/decks`), so it's the only thing that fails — because the **baseline migration was never
+  applied to the local `whocards` database** (`relation "answer" does not exist`).
 
-## Goal
+So this is a **dev-environment** gap, not a code/migration bug.
 
-`answers.record` succeeds against every environment, with the `answer` table captured in a
-committed migration and the migration history reconciled with prod.
+## Fix
 
-## Approach
+```bash
+pnpm --filter website db:migrate   # applies the baseline (IF NOT EXISTS) to localhost:5432/whocards
+```
 
-1. Get the exact server error + which DB the failing site connects to (local vs Supabase prod) —
-   distinguishes "table missing" from "schema drift".
-2. `pnpm db:generate` to emit the `answer` migration from the schema/meta diff; review it.
-3. **Reconcile prod** (which already has the table, per 0005): mark the migration as applied / make
-   it idempotent (`CREATE TABLE IF NOT EXISTS`) so `db:migrate` doesn't fail on prod — coordinate
-   with ticket 0005 (monorepo takes over migrations).
-4. Apply to dev (and any env missing it); verify an insert round-trips.
+That creates `answer` (and the other 17 tables) on the local DB; `answers.record` then succeeds.
+(If the local Postgres isn't running, start it first; the connection string is in `apps/website/.env`.)
 
-## Acceptance
+## Follow-ups (small)
 
-- A recorded Answer persists from web and mobile; no 500.
-- The `answer` table exists in a committed migration; `db:migrate` is clean on dev and prod.
-
-## Notes / out of scope
-
-- Immediate local unblock (if the failing site is on a dev DB): `pnpm --filter website db:push` syncs
-  `schema.ts` to that DB — do NOT push against prod.
+- Add a dev-setup note (website/root README): after `pnpm install`, run `db:migrate` (and how to get a
+  local Postgres) so a fresh checkout doesn't hit this.
+- Prod already has `answer` (applied out-of-band, ticket 0005); the broader migration-history
+  reconcile remains ticket 0005's scope.
 
 ## References
 
-- `apps/website/src/pages/api/trpc/[trpc].ts`, `src/server/db/schema.ts` (`answer`), `packages/api/src/routers/answers.ts`, tickets 0003 + 0005, ADR-0005
+- `src/server/db/migrations/0000_full_baseline.sql` (`answer`), `drizzle.config.ts` (`out`),
+  `apps/website/src/pages/api/trpc/[trpc].ts`, `.env` (`DB_URL`), tickets 0003 + 0005
