@@ -33,7 +33,14 @@
       ],
       "rules": {
         "no-console": "off",
-        "no-unsafe-finally": "off"
+        "no-unsafe-finally": "off",
+        "import/no-unassigned-import": "off"
+      }
+    },
+    {
+      "files": ["**/jest.setup.*"],
+      "rules": {
+        "import/no-unassigned-import": "off"
       }
     },
     {

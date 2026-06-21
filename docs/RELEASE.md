@@ -68,10 +68,23 @@ These make the binary correct; the app is broken or unshippable without them.
 
 ## Quality gate (build **and** OTA)
 
-- [ ] `pnpm check` green (tsc + oxlint + oxfmt + `decks`/`api` unit tests)
-- [ ] **Mobile screen tests** — jest + RN Testing Library (net-new; mobile has no jest today)
-- [ ] **Maestro suite** — expand from the RTL flow to the happy paths: launch→play→swipe→language→share, deep-link/back, offline-record
-- [ ] Manual smoke on the device matrix (native builds)
+- [ ] `pnpm check` green (tsc + oxlint + oxfmt + `decks`/`api` unit tests + **mobile jest suite**)
+- [ ] **Mobile unit/component tests** — `pnpm --filter mobile test` (jest + RN Testing Library; covers language-store, answer-queue, device-id, getBaseUrl, ErrorBoundary)
+- [ ] **Maestro suite** — expand from the RTL flow to the happy paths: launch→play→swipe→language→share, deep-link/back, offline-record (see `.maestro/` — expansion is DEFERRED pending a simulator session)
+- [ ] Manual smoke on the **device matrix** (native builds — see below)
+
+## Device matrix
+
+Manual smoke checklist for every native build (not required for OTA-only pushes).
+Scenarios: launch→play→swipe, language switch + RTL (Hebrew), language persists across relaunch,
+share, offline→reconnect Answer queue drain, deep-link/back.
+
+| Platform | OS version | Notes                                  |
+| -------- | ---------- | -------------------------------------- |
+| iOS      | iOS 17     | Latest stable; Simulator + real device |
+| iOS      | iOS 16     | One major back; Simulator is fine      |
+| Android  | Android 14 | API 34; emulator or real device        |
+| Android  | Android 12 | API 31; covers ~50% of active installs |
 
 ## Hotfix & rollback
 
