@@ -78,9 +78,6 @@ export default function LandingScreen() {
     contentOpacity.set(withDelay(LOGO_MS, withTiming(1, {duration: FADE_MS})))
   }, [reduceMotion, logoShift, contentOpacity, bgOpacity])
 
-  // Measure the logo's resting position and lift it to the screen centre (matching the
-  // splash) before revealing. requestAnimationFrame ensures the shift is applied for a
-  // frame before the splash hides, so there's no jump.
   // Keep the logo pinned to screen-centre (matching the splash) using the LATEST layout.
   // Re-measure on every onLayout until the entrance runs, so a late safe-area inset / font
   // metric / reflow can't strand the lift and snap the logo when the animation starts.
