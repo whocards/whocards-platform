@@ -11,7 +11,7 @@
       "policy": "fingerprint"
     },
     "updates": {
-      "url": "https://u.expo.dev/TODO-RUN-eas-init"
+      "url": "https://u.expo.dev/70c97b4d-b05c-4839-a6a3-054bb0625e1f"
     },
     "ios": {
       "bundleIdentifier": "cc.whocards.mobile"
@@ -60,7 +60,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "TODO-RUN-eas-init"
+        "projectId": "70c97b4d-b05c-4839-a6a3-054bb0625e1f"
       }
     }
   }
