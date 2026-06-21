@@ -64,8 +64,30 @@ describe('getDirection', () => {
     expect(getDirection('he')).toBe('rtl')
   })
 
+  it('detects RTL via the explicit set, incl. region variants', () => {
+    expect(getDirection('he-IL')).toBe('rtl')
+    expect(getDirection('ar')).toBe('rtl')
+    expect(getDirection('fa')).toBe('rtl')
+  })
+
   it('treats LTR languages (and junk) as ltr', () => {
     expect(getDirection('en')).toBe('ltr')
     expect(getDirection('zz-not-a-locale')).toBe('ltr')
+  })
+
+  it('still resolves RTL when Intl.Locale lacks textInfo (Hermes/React Native)', () => {
+    // Hermes ships Intl.Locale but not textInfo/getTextInfo, so the Intl branch can't
+    // detect direction — the explicit RTL set must carry it. Simulate that engine.
+    const RealLocale = Intl.Locale
+    // @ts-expect-error — replace with a stub that omits textInfo/getTextInfo
+    Intl.Locale = class {
+      constructor(public baseName: string) {}
+    }
+    try {
+      expect(getDirection('he')).toBe('rtl')
+      expect(getDirection('en')).toBe('ltr')
+    } finally {
+      Intl.Locale = RealLocale
+    }
   })
 })

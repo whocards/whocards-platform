@@ -1,0 +1,31 @@
+# Verifies RTL/LTR question alignment on device (ticket: Hebrew not right-aligned).
+# Alignment is a pure function of writing direction, so en (LTR) + he (RTL) exercise
+# both branches; every other shipped language is LTR and behaves like en.
+#
+# Run: pnpm --filter mobile e2e   (needs a Release build installed on a booted sim)
+appId: cc.whocards.mobile
+---
+- launchApp:
+    clearState: true # reset persisted language so we always start from the default
+
+# Landing → player
+- tapOn: 'Play'
+
+# Reveal chrome and capture the default (English, LTR — should read left-aligned)
+- tapOn:
+    point: '50%,45%'
+- takeScreenshot: .maestro/artifacts/en-ltr
+
+# Re-reveal chrome (fresh 3s window) immediately before tapping — it auto-hides.
+# The bar button is accessible with label "change language" (the inner "Language"
+# Text is collapsed into it), so match the accessibility label.
+- tapOn:
+    point: '50%,45%'
+- tapOn: 'change language'
+- tapOn: 'Hebrew'
+- waitForAnimationToEnd # let the language sheet finish dismissing before capturing
+
+# Back on the card in Hebrew — should now read RIGHT-aligned
+- tapOn:
+    point: '50%,45%'
+- takeScreenshot: .maestro/artifacts/he-rtl

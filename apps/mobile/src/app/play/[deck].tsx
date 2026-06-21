@@ -399,6 +399,9 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
                       fontSize,
                       lineHeight: fontSize * LINE_HEIGHT_RATIO,
                       writingDirection: direction,
+                      // writingDirection sets the bidi base direction but not paragraph
+                      // alignment in RN — RTL (Hebrew) needs textAlign to right-align
+                      textAlign: direction === 'rtl' ? 'right' : 'left',
                       ...(questionFont ? {fontFamily: questionFont} : {fontWeight: '600'}),
                     }}
                   >
