@@ -7,13 +7,13 @@ In alignment with Article 13 of the Swiss Federal Constitution, as well as the d
 
 We appreciate your visit to our website and your interest in our offerings. Regarding external links to third-party content, we must emphasize that, despite our diligent content oversight, we bear no liability. This is because we did not initiate the transmission of this information, nor did we select or modify the recipient of the transmitted information, or the content itself.
 
-Safeguarding your personal data throughout its collection, processing, and utilization during your visit to our website is of paramount importance to us. This protection is conducted in accordance with legal regulations, which you can find detailed information about by following the link provided at the end of this Privacy Policy.
+Safeguarding your personal data throughout its collection, processing, and utilization during your visit to our website and use of our mobile application is of paramount importance to us. This protection is conducted in accordance with legal regulations, which you can find detailed information about by following the link provided at the end of this Privacy Policy.
 
-In most cases, you can use our website without the necessity of sharing personal data. When we do collect personal data on our website, such as names, addresses, or email addresses, we always aim to do so on a voluntary basis whenever possible. Rest assured, without your explicit consent, we will not share these data with third parties.
+In most cases, you can use our website without the necessity of sharing personal data. When we do collect personal data, such as names, addresses, or email addresses, we always aim to do so on a voluntary basis whenever possible. Rest assured, without your explicit consent, we will not share these data with third parties.
 
-It's important to note that while we take stringent measures to protect your data, the transmission of information over the internet, such as in email communication, may have inherent security vulnerabilities. Unfortunately, achieving absolute data protection against access by third parties under such circumstances is not feasible.
+It's important to note that while we take stringent measures to protect your data, the transmission of information over the internet may have inherent security vulnerabilities. Unfortunately, achieving absolute data protection against access by third parties under such circumstances is not feasible.
 
-Next, we will outline the information we gather during your visit to our website and clarify how we utilize this information:
+Next, we will outline the information we gather during your visit to our website and use of our mobile application, and clarify how we utilize this information:
 
 ## 1. Collection and Storage of Personal Data and the Nature and Purpose of Their Use:
 
@@ -32,7 +32,52 @@ Our lawful interest, as per Art. 6 para. 1 sentence 1 lit. f DSGVO, underpins th
 
 It's important to emphasize that under no circumstances do we employ the gathered data to draw conclusions about you.
 
-### b. When establishing any form of contractual relationship or donating to our project, we will request the following personal information from you:
+### b. When using the WhoCards mobile application
+
+The WhoCards mobile app collects a minimal set of data required to operate the shared game experience. No account is needed to play.
+
+**Device id**
+
+On first launch, the app generates a stable, anonymous identifier for the install ("Device id"). This id is:
+
+- Randomly generated and not derived from any hardware identifier, advertising identifier, or personal data.
+- Stored locally on the device and sent with each Answer record to identify which install a given Answer came from.
+- Not a person — one person may own several Devices, and a Device carries no name, email, or any other attribute that identifies a natural person.
+- Not used for advertising or cross-app tracking. We do not use IDFA, GAID, or any advertising SDK.
+
+**Answer record**
+
+Each time a Device answers a Question, the app records one Answer entry containing:
+
+- Which Deck the Question belongs to.
+- Which Question was answered (by identifier).
+- Which language was active at the time.
+- The time we received the answer (recorded on our server, not sent by the app).
+
+This Answer record is the single source of truth for the shared Global Game: it tracks which Questions have been answered across all Devices and determines what the next Question will be. It does not contain the content of any conversation.
+
+Answers are queued on the device when there is no network connection and flushed to the server once connectivity is restored (offline play). The Answer record is durable and append-only.
+
+**Analytics and product usage (PostHog)**
+
+The app is planned to send product usage events to PostHog, a privacy-conscious product analytics service. When active, this may include:
+
+- Feature interactions (e.g. language changes, share actions, screen navigation).
+- Technical events (e.g. app start, question swipe, error occurrence).
+- Approximate device and OS information for debugging.
+
+PostHog analytics data is used solely for product improvement. It is not linked to advertising profiles, and we do not enable session recording, user identification by personal data, or cross-app tracking in PostHog.
+
+**What we do not collect in the mobile app**
+
+- No name, email address, phone number, or any other directly identifying personal data.
+- No advertising identifiers (IDFA/GAID).
+- No precise geolocation.
+- No payment data.
+- No microphone or camera access.
+- No cross-app tracking of any kind. If a tracking SDK is ever added in the future, this policy will be updated and the required platform disclosures (Apple ATT, Google Play Data Safety) will be filed before the relevant build ships.
+
+### c. When establishing any form of contractual relationship or donating to our project, we will request the following personal information from you:
 
 - Personally identifiable data, such as your legal name, email address and physical address.
 - Other personal information that we are legally obliged or authorized to gather and process, which is essential for your authentication, identification, or validation of the collected data.
@@ -63,6 +108,8 @@ You also possess the right to object to the processing of your personal data at 
 ## 4. Duration of data storage
 
 We will retain the data collected for as long as it is required for the execution of the contracts we have entered into, or until you choose to exercise your right to erasure or your right to transfer data to another company.
+
+Answer records tied to an anonymous Device id are retained for the purpose of maintaining the shared Global Game state. Because there is no account system, erasure requests for Answer records are processed by Device id — contact us at the address below and we will help you identify and delete the records associated with your Device.
 
 ## 5. External Application Integrated into our Website
 
