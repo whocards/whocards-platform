@@ -1,6 +1,6 @@
 ---
 import {Icon} from 'astro-icon/components'
-import {preorderLinks, socialLinks, legalLinks} from '~constants/navigation'
+import {mainLinks, socialLinks, legalLinks} from '~constants/navigation'
 ---
 
 <hr class='w-full border-dark' />
@@ -34,7 +34,7 @@ import {preorderLinks, socialLinks, legalLinks} from '~constants/navigation'
   <div class='flex justify-between'>
     <div class='flex flex-col gap-4'>
       {
-        preorderLinks
+        mainLinks
           .filter((i) => !i.button)
           .map((link) => (
             <a

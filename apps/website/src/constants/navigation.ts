@@ -24,14 +24,6 @@ export const eventMainLinks: Link[] = [
   {href: '/contact', title: 'Request Cards', button: true},
 ]
 
-export const preorderLinks: Link[] = [
-  {href: '/#what-is-whocards', title: 'About'},
-  {href: '/#how-to-play', title: 'How to Play'},
-  {href: '/contact', title: 'Contact'},
-  {href: '/#faqs', title: 'FAQs'},
-  {href: '/contact', title: 'Request Cards', button: true},
-]
-
 export const socialLinks: Link[] = [
   {icon: 'mdi:linkedin', title: 'Linkedin', href: 'https://www.linkedin.com/company/whocards'},
   // { icon: 'mdi:twitter', href: 'https://twitter.com/whocards' },

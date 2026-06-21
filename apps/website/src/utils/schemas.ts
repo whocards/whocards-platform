@@ -36,11 +36,3 @@ export const cardRequestSchema = thankYouFormSchema.extend({
   country: countryString,
   message: z.string().optional().default(''),
 })
-
-export const orderSchema = z.object({
-  count: z.coerce.number().int(),
-  priceId: z.string(),
-  shippingId: z.string(),
-})
-
-export type Order = z.infer<typeof orderSchema>

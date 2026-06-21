@@ -3,10 +3,9 @@ import type {ZodIssue} from 'zod'
 import Button from '~components/ui/Button.astro'
 import Checkbox from '~components/ui/Checkbox.astro'
 import Input from '~components/ui/Input.astro'
-import type {UserSelect, getPurchaseById} from '~server/db'
+import type {UserSelect} from '~server/db'
 
 export interface Props {
-  data?: Pick<Awaited<ReturnType<typeof getPurchaseById>>, 'user'>
   formData?: Record<string, any>
   errors?: Record<string, ZodIssue>
   submitted?: boolean
@@ -14,14 +13,13 @@ export interface Props {
   mode?: 'newsletter' | 'request'
 }
 
-const {data, formData, errors, user, submitted = false, mode = 'newsletter'} = Astro.props
+const {formData, errors, user, submitted = false, mode = 'newsletter'} = Astro.props
 const isRequest = mode === 'request'
 const heading = isRequest ? 'Request WhoCards' : 'Would you like to\nhear from us?'
 const subheading = isRequest ? 'Tell us how many decks you need and where to send them.' : undefined
 const newsletterChecked =
   formData?.newsletter === 'on' ||
   formData?.newsletter === true ||
-  data?.user.newsletter === true ||
   user?.newsletter === true
 ---
 
@@ -50,7 +48,7 @@ const newsletterChecked =
       min={2}
       autocomplete='name'
       required
-      value={formData?.name ?? data?.user.name}
+      value={formData?.name ?? user?.name}
       error={errors?.name}
     />
     <Input
@@ -58,7 +56,7 @@ const newsletterChecked =
       type='email'
       autocomplete='email'
       required
-      value={formData?.email ?? data?.user.email}
+      value={formData?.email ?? user?.email}
       error={errors?.email}
     />
     {
