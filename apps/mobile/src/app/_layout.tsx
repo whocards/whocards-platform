@@ -6,6 +6,8 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler'
 import {configureLogger} from '@whocards/logger'
 import {colors} from '@whocards/tokens'
 
+import {ErrorBoundary} from '@/components/error-boundary'
+
 // console-in-dev / no-op-in-prod; mobile PostHog transport deferred (ticket 0004)
 configureLogger({dev: __DEV__})
 
@@ -29,9 +31,11 @@ export default function RootLayout() {
       {/* Default bar: light (white icons) over the dark landing and player screens.
           The language modal overrides this to dark while the white sheet is visible. */}
       <StatusBar style="light" />
-      <Stack
-        screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}}
-      />
+      <ErrorBoundary>
+        <Stack
+          screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}}
+        />
+      </ErrorBoundary>
     </GestureHandlerRootView>
   )
 }

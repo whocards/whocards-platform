@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "WhoCards",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "default",
@@ -8,7 +8,6 @@
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "cc.whocards.mobile"
     },
     "android": {
