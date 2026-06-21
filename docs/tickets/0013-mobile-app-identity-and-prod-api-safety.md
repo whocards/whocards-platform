@@ -2,7 +2,7 @@
 
 **Tags:** mobile, release, config
 **Surfaces:** mobile (`apps/mobile`)
-**Status:** open (not started). Raised 2026-06-21. Per [ADR-0005](../adr/0005-mobile-release-pipeline.md) · runbook [docs/RELEASE.md](../RELEASE.md).
+**Status:** **DONE** (`827427b`; merged to `main`). Raised 2026-06-21. Per [ADR-0005](../adr/0005-mobile-release-pipeline.md) · runbook [docs/RELEASE.md](../RELEASE.md).
 
 ## Context
 
