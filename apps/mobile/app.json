@@ -32,7 +32,7 @@
         {
           "backgroundColor": "#08001a",
           "image": "./assets/images/logo.png",
-          "imageWidth": 240,
+          "imageWidth": 280,
           "resizeMode": "contain"
         }
       ],

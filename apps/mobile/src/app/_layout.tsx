@@ -3,7 +3,6 @@ import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {useEffect} from 'react'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
-import Animated, {FadeIn} from 'react-native-reanimated'
 import {configureLogger} from '@whocards/logger'
 import {colors} from '@whocards/tokens'
 
@@ -13,18 +12,16 @@ configureLogger({dev: __DEV__})
 import '../global.css'
 
 // Brand faces (golos-text / aptly / noto-sans-hebrew) are embedded natively via the
-// expo-font config plugin (app.json), so they're available at launch — no async font
-// loading and no flash of fallback. We only hold the splash until the first frame is
-// ready, then fade it out.
+// expo-font config plugin (app.json), so they're available at launch. The landing
+// screen runs the splash → content handoff (the logo animates from the splash's
+// centre into place) and hides the splash itself; this is only a backstop so a deep
+// link straight to the player can't get stuck on the splash if the landing never mounts.
 void SplashScreen.preventAutoHideAsync()
-
-// Fade duration for the splash → landing handoff (ms). Long enough to feel polished,
-// short enough not to feel sluggish.
-const SPLASH_FADE_MS = 300
 
 export default function RootLayout() {
   useEffect(() => {
-    void SplashScreen.hideAsync()
+    const fallback = setTimeout(() => void SplashScreen.hideAsync(), 1500)
+    return () => clearTimeout(fallback)
   }, [])
 
   return (
@@ -32,11 +29,9 @@ export default function RootLayout() {
       {/* Default bar: light (white icons) over the dark landing and player screens.
           The language modal overrides this to dark while the white sheet is visible. */}
       <StatusBar style="light" />
-      <Animated.View style={{flex: 1}} entering={FadeIn.duration(SPLASH_FADE_MS)}>
-        <Stack
-          screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}}
-        />
-      </Animated.View>
+      <Stack
+        screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}}
+      />
     </GestureHandlerRootView>
   )
 }
