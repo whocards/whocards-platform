@@ -4,10 +4,11 @@
   "version": "1.4.1",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
+    "with-env": "dotenv -e ../../.env${ENV:+.${ENV}} --",
+    "dev": "pnpm with-env astro dev",
+    "start": "pnpm with-env astro dev",
+    "build": "pnpm with-env astro build",
+    "preview": "pnpm with-env astro preview",
     "typecheck": "astro check",
     "test:e2e": "playwright test",
     "test:e2e:ssr": "playwright test -c playwright.ssr.config.ts",
@@ -15,10 +16,10 @@
     "test:parity:ssr": "playwright test -c playwright.parity.ssr.config.ts",
     "pretty": "prettier --write . --plugin=prettier-plugin-astro",
     "analyze": "pnpx unlighthouse --site https://calmly.whocards.cc",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:generate": "pnpm with-env drizzle-kit generate",
+    "db:migrate": "pnpm with-env drizzle-kit migrate",
+    "db:push": "pnpm with-env drizzle-kit push",
+    "db:studio": "pnpm with-env drizzle-kit studio"
   },
   "dependencies": {
     "@whocards/api": "workspace:*",

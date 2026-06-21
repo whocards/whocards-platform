@@ -1,7 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
-  "globalDependencies": ["**/.env.*local", "tsconfig.json"],
+  "globalDependencies": [".env", "**/.env.*local", "tsconfig.json"],
   "envMode": "loose",
   "tasks": {
     "topo": {

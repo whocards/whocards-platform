@@ -4,10 +4,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
+    "with-env": "dotenv -e ../../.env${ENV:+.${ENV}} --",
+    "start": "pnpm with-env expo start",
+    "android": "pnpm with-env expo start --android",
+    "ios": "pnpm with-env expo start --ios",
+    "web": "pnpm with-env expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "e2e": "maestro test .maestro"

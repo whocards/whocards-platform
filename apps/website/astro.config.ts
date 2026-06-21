@@ -24,6 +24,10 @@ export default defineConfig({
     service: passthroughImageService(),
   },
   vite: {
+    // Single source of truth: load env from the monorepo root .env (relative to this
+    // project root) so import.meta.env / @t3-oss reads the same root .env as the
+    // dotenv-cli `with-env` scripts. See docs/RELEASE.md / the env-consolidation work.
+    envDir: '../../',
     plugins: [tailwindcss()],
     ssr: {
       // @whocards/* workspace packages are exported as source (.ts), so Vite must
