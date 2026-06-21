@@ -1,4 +1,5 @@
-import {readFile} from 'node:fs/promises'
+import {createHash, randomBytes} from 'node:crypto'
+import {mkdir, readdir, readFile, rename, rm, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 import process from 'node:process'
 
@@ -316,12 +317,58 @@ const buildTree = (rawText: string, language: string, mazeUri: string) => {
   }
 }
 
+// Bump when the card *design* changes (layout, fonts, colours, sizing logic, the
+// maze/background, or anything else that alters pixels) so the persisted build
+// cache is invalidated. Content changes (question text / new languages) already
+// bust the cache on their own via the per-card hash below.
+const RENDERER_VERSION = '1'
+
+// Persisted, content-addressed render cache. A card is a pure function of its
+// (text, language, RENDERER_VERSION), so we cache the rendered PNG under a
+// per-version dir keyed by a hash of (text, language) and reuse it across builds.
+// Netlify restores/saves .cache/og between deploys (see netlify/plugins/og-cache),
+// so a deploy that doesn't touch questions.json renders zero PNGs. Resolves from
+// cwd (the website project root at build time), matching publicDir above.
+const cacheRoot = join(process.cwd(), '.cache', 'og')
+const cacheDir = join(cacheRoot, `v${RENDERER_VERSION}`)
+let cacheDirReady: Promise<unknown> | undefined
+const ensureCacheDir = (): Promise<unknown> => {
+  if (!cacheDirReady) {
+    cacheDirReady = (async () => {
+      await mkdir(cacheDir, {recursive: true}).catch(() => {})
+      // Drop other-version dirs so a RENDERER_VERSION bump can't accumulate stale
+      // renders in the persisted cache. Best-effort; only runs on a cache miss.
+      const siblings = await readdir(cacheRoot).catch(() => [] as string[])
+      await Promise.all(
+        siblings
+          .filter((name) => name !== `v${RENDERER_VERSION}`)
+          .map((name) => rm(join(cacheRoot, name), {recursive: true, force: true}).catch(() => {})),
+      )
+    })()
+  }
+  return cacheDirReady
+}
+
+// Version lives in the dir (not the hash), so a bump lands in a fresh dir (all
+// misses) and the old dir is pruned in ensureCacheDir. NUL-separated so no field
+// value can collide with the next.
+const cacheKey = (text: string, language: string): string =>
+  createHash('sha256').update(`${language} ${text}`).digest('hex')
+
 /** Render the OG/social card PNG for a given language + question id. */
 export const renderCardPng = async (language: string, id: string): Promise<Buffer> => {
   const entry = allQuestions[id]
   if (!entry) throw new Error(`Unknown question id: ${id}`)
   const text = entry[language]
   if (text == null) throw new Error(`Question ${id} has no text for language ${language}`)
+
+  const cacheFile = join(cacheDir, `${cacheKey(text, language)}.png`)
+  try {
+    // Cache hit: a previous build already rendered this exact card.
+    return await readFile(cacheFile)
+  } catch {
+    // Cache miss (or unreadable) — render it below and populate the cache.
+  }
 
   const [fonts, mazeUri] = await Promise.all([fontsFor(language), buildMazeDataUri()])
 
@@ -336,7 +383,21 @@ export const renderCardPng = async (language: string, id: string): Promise<Buffe
     fitTo: {mode: 'width', value: CARD_WIDTH},
     background: BG_COLOR,
   })
-  return Buffer.from(resvg.render().asPng())
+  const png = Buffer.from(resvg.render().asPng())
+
+  // Best-effort, atomic cache write — never fail a build over the cache, and
+  // never leave a truncated PNG (a killed build mid-write would otherwise be
+  // restored and served as a corrupt image). Write to a temp file, then rename.
+  await ensureCacheDir()
+  const tmpFile = `${cacheFile}.${randomBytes(4).toString('hex')}.tmp`
+  try {
+    await writeFile(tmpFile, png)
+    await rename(tmpFile, cacheFile)
+  } catch {
+    await rm(tmpFile, {force: true}).catch(() => {})
+  }
+
+  return png
 }
 
 /** Every (language, id) pair that has question text — used for static prerender. */

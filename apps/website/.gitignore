@@ -2,6 +2,8 @@
 dist/
 .output/
 .unlighthouse/
+# OG card render cache (persisted across deploys by netlify/plugins/og-cache)
+.cache/
 # generated types
 .astro/
 

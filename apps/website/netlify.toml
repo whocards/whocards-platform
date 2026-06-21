@@ -5,6 +5,11 @@
   command = "pnpm build"
   publish = "dist"
 
+# Persist the content-addressed OG card render cache across deploys so the build
+# only renders new/changed cards (see netlify/plugins/og-cache + src/server/card-image.ts).
+[[plugins]]
+  package = "/netlify/plugins/og-cache"
+
 # #43: old per-question urls now live on the generalized play screen.
 # Redirect /<lang>/question/<id> -> /play?lang=<lang>&q=<id> with a real 301 so
 # previously shared & indexed links keep working.
