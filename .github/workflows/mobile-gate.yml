@@ -1,0 +1,35 @@
+name: Mobile gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  gate:
+    name: Quality gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node from .nvmrc
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check (fmt + lint + typecheck + unit tests)
+        run: pnpm check
+
+      - name: Mobile unit tests
+        run: pnpm --filter mobile test
+
+      # TODO(#maestro): add Maestro e2e suite once a simulator is available in CI.
+      # When ready: install maestro, start the dev server, run `pnpm --filter mobile e2e`.

@@ -7,6 +7,12 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/TODO-RUN-eas-init"
+    },
     "ios": {
       "bundleIdentifier": "cc.whocards.mobile"
     },
@@ -45,11 +51,17 @@
             "./assets/fonts/noto-sans-hebrew.ttf"
           ]
         }
-      ]
+      ],
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "TODO-RUN-eas-init"
+      }
     }
   }
 }
