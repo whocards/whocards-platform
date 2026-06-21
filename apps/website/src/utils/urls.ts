@@ -1,6 +1,9 @@
 import {idsStore} from '~stores/Game.store'
 import type {QuestionId} from '~types'
-import {DEFAULT_LANGUAGE, LANG_KEYS} from '~utils'
+// import directly from the defining module, not the `~utils` barrel: the barrel
+// re-exports this file, so importing it back through `~utils` formed an
+// index → urls → index circular dependency (fallow dead-code).
+import {DEFAULT_LANGUAGE, LANG_KEYS} from '~utils/language'
 
 export const getTrimmedPath = () => window.location.pathname.replace(/\/$/, '')
 
