@@ -17,7 +17,12 @@ export const mainLinks: Link[] = [
   {href: '/contact', title: 'Request Cards', button: true},
 ]
 
-export const eventLinks: Link[] = [{href: '/events/hajnalig', title: 'Hajnalig'}]
+// Rendered as the "Events" dropdown. One entry per edition; the landing page is
+// the same shape, distinguished by year.
+export const eventLinks: Link[] = [
+  {href: '/events/hajnalig', title: 'Hajnalig 2026'},
+  {href: '/events/hajnalig/2025', title: 'Hajnalig 2025'},
+]
 
 export const eventMainLinks: Link[] = [
   // {href: donationUrl, title: 'Donate', external: true},

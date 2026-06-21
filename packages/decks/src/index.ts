@@ -14,6 +14,6 @@ export {
 
 export {libraryDeck} from './decks/library'
 export {aiAtWorkDeck} from './decks/ai-at-work'
-export {hajnaligDeck} from './decks/hajnalig'
+export {hajnaligDeck, hajnalig2025Deck, hajnalig2026Deck} from './decks/hajnalig'
 export {DEFAULT_DECK_SLUG, getDeck, getAllDecks, isDeckSlug, resolveDeck} from './decks/registry'
 export type {DeckSlug} from './decks/registry'

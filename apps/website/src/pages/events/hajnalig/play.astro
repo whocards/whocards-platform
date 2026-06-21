@@ -1,8 +1,9 @@
 ---
 import Layout from './_components/layout.astro'
 import {SimplePlay} from './_components/play'
+import {CURRENT_EDITION} from './_data/editions'
 ---
 
 <Layout>
-  <SimplePlay client:only />
+  <SimplePlay client:only year={CURRENT_EDITION} />
 </Layout>

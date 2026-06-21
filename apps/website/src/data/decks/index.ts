@@ -5,3 +5,4 @@
  */
 export type {Deck, DeckPresentation, DeckSource, ResolvedDeck, DeckSlug} from '@whocards/decks'
 export {DEFAULT_DECK_SLUG, getDeck, getAllDecks, isDeckSlug, resolveDeck} from '@whocards/decks'
+export {hajnalig2025Deck, hajnalig2026Deck} from '@whocards/decks'

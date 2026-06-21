@@ -9,6 +9,11 @@ interface Props {
   links: Link[]
 }
 const {links} = Astro.props
+
+// An event link is active on its landing page or its /play page.
+const isEventSelected = (href: string) =>
+  Astro.url.pathname === href || Astro.url.pathname === `${href}/play`
+const onEventsPage = Astro.url.pathname.startsWith('/events/')
 ---
 
 <div class='drawer drawer-end'>
@@ -30,7 +35,22 @@ const {links} = Astro.props
       >
         <ul class='menu menu-horizontal'>
           <!-- Navbar menu content here -->
-          {eventLinks.map((link) => <NavLink {...link} selected={false} />)}
+          <li>
+            <details open={onEventsPage}>
+              <summary class='text-white text-lg font-bold'>Events</summary>
+              <ul class='bg-darkest rounded-xl z-20'>
+                {eventLinks.map((link) => (
+                  <NavLink
+                    {...link}
+                    selected={isEventSelected(link.href)}
+                    class='text-white'
+                    hideIcon
+                    size='sm'
+                  />
+                ))}
+              </ul>
+            </details>
+          </li>
           <li class='divider-horizontal w-0.5 bg-white/20'></li>
           {
             links.map((link) => (
@@ -79,11 +99,23 @@ const {links} = Astro.props
         ))
       }
       <li class='divider-horizontal w-0.5 bg-white/20'></li>
-      {
-        eventLinks.map((link) => (
-          <NavLink button variant='secondary' light size='sm' {...link} selected={false} />
-        ))
-      }
+      <li>
+        <details open={onEventsPage}>
+          <summary class='text-white text-lg font-bold'>Events</summary>
+          <ul>
+            {eventLinks.map((link) => (
+              <NavLink
+                button
+                variant='secondary'
+                light
+                size='sm'
+                {...link}
+                selected={isEventSelected(link.href)}
+              />
+            ))}
+          </ul>
+        </details>
+      </li>
       <NavLink
         selected={false}
         title='Login'
