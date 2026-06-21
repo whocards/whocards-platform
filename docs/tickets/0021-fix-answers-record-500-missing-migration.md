@@ -2,7 +2,15 @@
 
 **Tags:** backend, data, dev-setup, bug
 **Surfaces:** backend (`apps/website` db)
-**Status:** open — fix is a one-liner (run `db:migrate` against the dev DB); see below. Raised 2026-06-21.
+**Status:** **DONE** (resolved by the env consolidation, `9473a5e`). Raised 2026-06-21.
+
+> **Resolution:** the root cause was an unmigrated **localhost** dev DB. After the single-root-`.env`
+> work, `DB_URL` points at the prod Supabase pooler (`aws-0-eu-central-1.pooler.supabase.com`), which
+> already has the live `answer` table — so local dev no longer hits `relation "answer" does not exist`.
+> The website dev server reads the root `.env` via Astro `vite.envDir`, and `/api/trpc/decks.manifest`
+> returns 200, confirming env + DB connectivity. The `db:migrate` step below is now only relevant if you
+> deliberately point `DB_URL` back at an **isolated localhost** DB. The follow-ups (dev-setup README
+> note for the localhost path) are still worth doing and roll into 0005's migration-history reconcile.
 
 ## Context
 
