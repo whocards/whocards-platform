@@ -2,7 +2,7 @@
 
 **Tags:** web, navigation, bug
 **Surfaces:** web (`apps/website`)
-**Status:** open (not started). Raised 2026-06-21.
+**Status:** DONE. Fixed in commit 5f06d1b. Root cause: `NavLink.astro` applied `text-white` unconditionally alongside `text-primary-light` when selected; `text-white` appeared later in the Tailwind stylesheet so it overrode the highlight. Fix: make `text-white` conditional on `!selected`, and update `Navigation.astro` to match the entire `/play` route family via `link.play ? pathname.startsWith('/play') : pathname === link.href`.
 
 ## Context
 

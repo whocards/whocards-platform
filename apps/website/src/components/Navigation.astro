@@ -36,7 +36,11 @@ const {links} = Astro.props
             links.map((link) => (
               <NavLink
                 {...link}
-                selected={Astro.url.pathname === link.href}
+                selected={
+                  link.play
+                    ? Astro.url.pathname === '/play' || Astro.url.pathname.startsWith('/play/')
+                    : Astro.url.pathname === link.href
+                }
                 class='menu-title text-white'
                 hideIcon
                 size='sm'
@@ -59,7 +63,11 @@ const {links} = Astro.props
         links.map((link) => (
           <NavLink
             {...link}
-            selected={Astro.url.pathname === link.href}
+            selected={
+              link.play
+                ? Astro.url.pathname === '/play' || Astro.url.pathname.startsWith('/play/')
+                : Astro.url.pathname === link.href
+            }
             size='lg'
             button
             variant={link.button ? 'primary' : 'secondary'}
