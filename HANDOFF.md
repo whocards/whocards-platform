@@ -83,10 +83,14 @@ from the currently-deployed site to this repo.
   `maxValue`/`ts80008` trap is resolved — there is **no `maxValue` left in `schema.ts`**.)
 - **Project agents** in `.claude/agents/` (architect, coder, researcher, reviewer).
 - **Tickets → GitHub Issues** (`whocards/whocards-platform`, **`#N` == old `000N`**); `docs/tickets/`
-  removed in the 2026-06-21 migration. **Closed:** #3, #7, #8, #9, #10, #13, #14, #21, #22, #23.
+  removed in the 2026-06-21 migration. **Closed:** #3, #7, #8, #9, #10, #13, #14, #20, #21, #22, #23.
   **Open:** #1 CJK fonts, #2 Convex (backlog/parked), #4 mobile PostHog transport, #5 DB
   reconcile/drops, #6 parity leftovers, #11/#12/#16/#17 release + store/Expo accounts (blocked),
-  #15 Maestro expansion + device matrix, #18/#19 web (need-decision), #20 GitHub+Netlify deploy.
+  #15 Maestro expansion + device matrix, #18/#19 web (need-decision).
+- **Website is LIVE on Netlify** (2026-06-21, #20 closed): `whocards.cc` serves the monorepo build,
+  **prod API `https://whocards.cc/api/trpc` is live** (`decks.manifest`/`pool.languages` → `200`),
+  OG social cards render via a deploy-persistent cache (`0cad542`). Netlify **Base directory must be
+  `apps/website`** (package_path empty) — see the comment in `apps/website/netlify.toml` and #20.
 
 ## Next Steps (ordered)
 

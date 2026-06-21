@@ -1,3 +1,7 @@
+# IMPORTANT: in the Netlify site settings, the Base directory MUST be `apps/website`
+# (and the monorepo "package" / package_path left empty). Otherwise CI resolves these
+# relative paths from the repo root — `publish` points at the wrong dist, `pnpm build`
+# runs the root `turbo build`, and the local plugin path 404s. See issue #20.
 [build.environment]
   NODE_VERSION = "22"
 

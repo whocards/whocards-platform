@@ -35,7 +35,7 @@ browse, Custom Decks, Personal Game, accounts/purchases, Facilitation (all futur
 
 These make the binary correct; the app is broken or unshippable without them.
 
-- [ ] **Prod API URL** — `production` profile sets `EXPO_PUBLIC_API_URL=https://whocards.cc` (app calls `/api/trpc`). Without it the build falls back to `localhost:4321`. **Verify `https://whocards.cc/api/trpc` is live in prod.**
+- [ ] **Prod API URL** — `production` profile sets `EXPO_PUBLIC_API_URL=https://whocards.cc` (app calls `/api/trpc`). Without it the build falls back to `localhost:4321`. ✅ **Prod API verified live 2026-06-21** (`/api/trpc/decks.manifest` & `pool.languages` → `200`, see #20); the remaining work here is setting the env on the `production` EAS profile (#11).
 - [ ] **App display name** — `app.json` `name`/`slug` are `"mobile"` → set the user-facing name to **WhoCards** (bundle IDs `cc.whocards.mobile` are already correct)
 - [ ] **App icon** — confirm `ios.icon` (`./assets/expo.icon`) is the WhoCards mark, not the Expo default; ensure the cross-platform `icon.png` is brand-correct
 - [ ] **Version fields** — `version: "1.0.0"`; build numbers via EAS remote auto-increment (no manual `buildNumber`/`versionCode`)
