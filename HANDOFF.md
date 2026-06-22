@@ -32,8 +32,8 @@ from the currently-deployed site to this repo.
   is green-modulo-the-known-website-type-debt. **Pushing to the public remote / opening PRs: only
   with explicit user OK.** Repo is **public** — never commit the gitignored root `.env` (prod
   `DB_URL`). **Tell each subagent the branch-local flow in its prompt** (their defs assume a `gh`/PR flow).
-- **`SendMessage` is not available in this environment** — you cannot resume a finished subagent's
-  context. For follow-up fixes, spawn a **fresh** `coder` with precise, file-specific instructions.
+- **`SendMessage` IS available now** (this was false in earlier sessions) — you can resume a
+  finished subagent's context via `SendMessage` instead of always cold-spawning a fresh `coder`.
 
 ## Current Progress (DONE — on `main`)
 
@@ -83,10 +83,11 @@ from the currently-deployed site to this repo.
   `maxValue`/`ts80008` trap is resolved — there is **no `maxValue` left in `schema.ts`**.)
 - **Project agents** in `.claude/agents/` (architect, coder, researcher, reviewer).
 - **Tickets → GitHub Issues** (`whocards/whocards-platform`, **`#N` == old `000N`**); `docs/tickets/`
-  removed in the 2026-06-21 migration. **Closed:** #3, #7, #8, #9, #10, #13, #14, #20, #21, #22, #23.
-  **Open:** #1 CJK fonts, #2 Convex (backlog/parked), #4 mobile PostHog transport, #5 DB
-  reconcile/drops, #6 parity leftovers, #11/#12/#16/#17 release + store/Expo accounts (blocked),
-  #15 Maestro expansion + device matrix, #18/#19 web (need-decision).
+  removed in the 2026-06-21 migration. **Closed:** #3, #4 (mobile PostHog transport — merged via
+  PR #31), #7, #8, #9, #10, #13, #14, #18, #20, #21, #22, #23.
+  **Open:** #1 CJK fonts, #2 Convex (backlog/parked), #5 DB reconcile/drops, #6 parity leftovers,
+  #11/#12/#16/#17 release + store-listing/Expo accounts (blocked), #15 Maestro + device matrix,
+  #19 web print (need-decision), #24 Hajnalig review (~2026-07-22), #27 Android store account.
 - **Website is LIVE on Netlify** (2026-06-21, #20 closed): `whocards.cc` serves the monorepo build,
   **prod API `https://whocards.cc/api/trpc` is live** (`decks.manifest`/`pool.languages` → `200`),
   OG social cards render via a deploy-persistent cache (`0cad542`). Netlify **Base directory must be
@@ -99,8 +100,9 @@ from the currently-deployed site to this repo.
    the question region or add `?q=` to the event deck), and hardening v1's lazy-image capture
    (scroll-to-load before the fullPage screenshot) so image-heavy-page numbers are trustworthy.
    Populate the README's known-acceptable-diffs table from a real run (e.g. `ai-at-work` = repo-ahead).
-2. **Mobile PostHog transport (0004 remainder).** Add `posthog-react-native` + provider, inject a
-   real sink. Native dep → **needs a dev-client rebuild = user/device.**
+2. **Mobile PostHog transport (0004 remainder) — DONE** (merged PR #31): `posthog-react-native`
+   provider + sink wired in `apps/mobile/src/lib/observability.ts`. Still owes an **on-device pass**
+   (a dev-client rebuild) to confirm real events land in PostHog.
 3. **Auth decision → cleanup migrations (0005).** Blocked: needs the user's auth choice
    (`auth_*` vs `account_*` vs drop) **and** explicit authorization to touch prod.
 4. **CJK question fonts (0001)** — mobile; needs the user's subset/bundle/system choice.
@@ -128,7 +130,13 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
   naming the target (safety classifier). Creds in `website-next-15/.env.prod` as `DATABASE_URL`;
   `apps/website` reads `DB_URL`.
 - Lint/format = **oxlint + oxfmt** (never eslint/prettier) for packages + mobile; **website excluded
-  from both** (prettier + `astro check`). `no-console: error` only bites packages/mobile.
+  from both** (prettier + `astro check`; oxfmt still can't format `.astro` as of 2026-06). `no-console`
+  and the new **`node/no-process-env`** errors only bite packages/mobile (website is oxlint-excluded).
+- **Env convention:** `process.env` is read ONLY in an `env.ts` (enforced by `node/no-process-env`,
+  with `**/env.ts` + `**/env.test.ts` allow-listed). Website: `apps/website/src/env.ts` (t3-env, was
+  `env-secrets.ts`). Mobile: `apps/mobile/src/env.ts` (zod, `z.stringbool` for booleans). Mobile's
+  generic `EXPO_PUBLIC_DEBUG` (replaces `EXPO_PUBLIC_POSTHOG_DEBUG`) forces transports on in dev AND
+  tees to console. Mobile `lint` script is now `oxlint` (was the `expo lint` footgun).
 - **`pnpm check`** = `oxfmt --check && oxlint --deny-warnings && turbo typecheck test`. It exits
   non-zero **only** on `website#typecheck`, which carries **12 PRE-EXISTING `astro check` errors**
   (measured on `main`: missing `wawoff2`/`bidi-js` decls, `Icon` types, etc.) — website type debt
@@ -163,13 +171,15 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
 
 ## What Didn't Work / Gotchas
 
-- **`SendMessage` is unavailable here** — couldn't resume the original `coder`'s context for the
-  review fixes; had to spawn a fresh `coder` with precise instructions. Plan for this.
+- (Historical — no longer true) Earlier sessions had no `SendMessage`, so a finished `coder` could
+  not be resumed and review-fixes needed a fresh cold-spawned `coder`. `SendMessage` works now.
 - **`pnpm check` is never fully green** because of the ~13 pre-existing website `astro check`
   errors. Don't chase them as part of an unrelated ticket; gate on "zero NEW errors" instead.
 - Custom `.claude/agents/*.md` register **only at session start** — restart if `coder`/`reviewer`
   aren't selectable.
-- **No git remote** — the agent defs assume `gh`/PRs; always adapt prompts to local branch + merge.
+- **Git remote NOW EXISTS** — `origin` = `https://github.com/whocards/whocards-platform.git` (public),
+  and `gh` works (issues/PRs). Earlier sessions had no remote. The user's flow still stands: coder
+  works branch-local, **push/PR only with explicit user OK** (public repo — never commit `.env`).
 - **A `coder` subagent can die mid-run** — the 0006 coder crashed after ~13 min (`API Error:
 ConnectionRefused`; safety classifier also down) with **no report**, leaving uncommitted files on
   its branch. Recovery: inspect `git status` + the branch, then run the verification the coder
