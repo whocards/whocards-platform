@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "lint": "expo lint",
+    "lint": "oxlint --deny-warnings",
     "e2e": "maestro test .maestro"
   },
   "dependencies": {
@@ -54,7 +54,8 @@
     "react-native-screens": "4.25.2",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.8.3",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^3.4.17",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@testing-library/react-native": "^13.3.3",

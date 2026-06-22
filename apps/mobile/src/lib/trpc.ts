@@ -2,6 +2,8 @@ import type {AppRouter} from '@whocards/api'
 import {createTRPCClient, httpBatchLink} from '@trpc/client'
 import Constants from 'expo-constants'
 
+import {env} from '@/env'
+
 /** Production API host — the deployed site that mounts the tRPC router (ADR-0002 / 0005). */
 const PROD_API_URL = 'https://whocards.cc'
 
@@ -12,10 +14,10 @@ const PROD_API_URL = 'https://whocards.cc'
  * on the website's default Astro port.
  *
  * Exported so the jest unit test can exercise each branch by toggling
- * `process.env.EXPO_PUBLIC_API_URL`, `__DEV__`, and `Constants.expoConfig`.
+ * `EXPO_PUBLIC_API_URL` (via a fresh module load), `__DEV__`, and `Constants.expoConfig`.
  */
 export const getBaseUrl = (): string => {
-  const fromEnv = process.env.EXPO_PUBLIC_API_URL
+  const fromEnv = env.EXPO_PUBLIC_API_URL
   if (fromEnv) return fromEnv
   if (!__DEV__) return PROD_API_URL
   const host = Constants.expoConfig?.hostUri?.split(':')[0]
