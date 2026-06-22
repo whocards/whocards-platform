@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "WhoCards",
-    "slug": "mobile",
+    "slug": "whocards-app",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/images/icon.png",

@@ -25,9 +25,8 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "TODO: set APPLE_ID or use ascApiKey",
-        "ascAppId": "TODO: App Store Connect app ID",
-        "appleTeamId": "TODO: Apple Team ID"
+        "ascAppId": "6782853824",
+        "appleTeamId": "6RTC67K8CW"
       },
       "android": {
         "serviceAccountKeyPath": "TODO: path to Play service-account JSON"
