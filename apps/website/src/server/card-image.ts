@@ -5,7 +5,7 @@ import process from 'node:process'
 
 import {Resvg} from '@resvg/resvg-js'
 import bidiFactory from 'bidi-js'
-import satori from 'satori'
+import satori, {type Font as FontOptions} from 'satori'
 import {decompress} from 'wawoff2'
 
 import languages from '~data/languages.json'
@@ -89,9 +89,7 @@ const fontFamilyFor = (language: string): string => {
   return FONT_FILES[key].family
 }
 
-const fontsFor = async (
-  language: string
-): Promise<{name: string; data: Buffer; weight: number; style: 'normal'}[]> => {
+const fontsFor = async (language: string): Promise<FontOptions[]> => {
   const scriptKey = LANGUAGE_FONT[language as LanguageCode]
   // Golos is the base (covers Latin question text), aptly renders the wordmark,
   // and the script-specific font is layered in for non-Latin question text.
@@ -100,7 +98,7 @@ const fontsFor = async (
   return keys.map((key, i) => ({
     name: FONT_FILES[key].family,
     data: data[i]!,
-    weight: key === 'aptly' ? 700 : 400,
+    weight: (key === 'aptly' ? 700 : 400) as FontOptions['weight'],
     style: 'normal' as const,
   }))
 }
