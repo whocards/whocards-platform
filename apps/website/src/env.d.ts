@@ -2,6 +2,11 @@
 /// <reference types="astro/client" />
 /// <reference path="../.astro/icon.d.ts" />
 
+interface ImportMetaEnv {
+  /** Opt in to recording Answer events while running the dev server. Prod always records. */
+  readonly PUBLIC_RECORD_ANSWERS?: string
+}
+
 interface Window {
   langsModal: HTMLDialogElement
   posthog?: import('posthog-js').PostHog
