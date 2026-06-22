@@ -2,7 +2,7 @@ import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'rea
 import type {QuestionSet, TrackingConfig} from '@whocards/decks'
 import {getDirection, getInitialNav, navReducer} from '@whocards/decks/engine'
 import {trackEvent} from '@whocards/observability'
-import {EVENTS, eventsFor, createViewTracker, track} from '@whocards/observability/events'
+import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 import {getDeviceId} from '~lib/device-id'
 import {createOfflineQueue} from '~lib/offline-queue'
 import {sendAnswer} from '~lib/answer-transport'
@@ -164,19 +164,36 @@ export const Play = ({
       })
       track({
         name: EVENTS.GAME_STARTED,
-        props: {deck_id: deckSlug, game: 'wh', language: language ?? defaultLanguage ?? ''},
+        props: {deck_id: deckSlug, game: GAMES.WH, language: language ?? defaultLanguage ?? ''},
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckSlug])
+
+  // keep the previous committed nav state so nav events read the REAL post-dispatch
+  // ids (no pre-dispatch approximation) — fixes question_next/deck_cycled at the cycle
+  // boundary and keeps the transition logic in @whocards/observability/events.
+  const prevNavRef = useRef<{ids: typeof ids; idx: number} | null>(null)
 
   // ---- track every question view ----
   useEffect(() => {
     const questionId = ids[idx]
     if (!questionId) return
 
-    // dwell: end previous view, start new one
-    viewTracker.endView('advanced')
+    // nav events from the real committed transition (prev → current)
+    const prev = prevNavRef.current
+    if (prev && prev.idx !== idx) {
+      const action = idx > prev.idx ? ({type: 'next'} as const) : ({type: 'previous'} as const)
+      for (const event of eventsFor(action, prev, {ids, idx}, {
+        deck_id: deckSlug ?? '',
+        language: language ?? '',
+        game: GAMES.WH,
+      })) {
+        track(event)
+      }
+    }
+
+    // dwell: start the new view (end is fired by the nav handlers / lifecycle)
     viewTracker.startView({deck_id: deckSlug ?? '', question_id: questionId, language: language ?? ''})
 
     // always-on catalog tracking
@@ -216,6 +233,8 @@ export const Play = ({
         language: language ?? '',
       })
     }
+
+    prevNavRef.current = {ids, idx}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, ids])
 
@@ -248,56 +267,18 @@ export const Play = ({
 
   // ---- navigation handlers ----
 
-  // keep a ref to nav state so eventsFor callbacks read live values without
-  // being in the dependency list (both are stable-by-identity reducer refs).
-  const navStateRef = useRef({ids, idx})
-  useEffect(() => {
-    navStateRef.current = {ids, idx}
-  })
-
+  // Handlers only end the outgoing dwell + dispatch; the nav events (question_next /
+  // question_previous / deck_cycled) are emitted from the [idx, ids] effect off the
+  // REAL committed state, so there's no pre-dispatch approximation to maintain.
   const handlePrevious = useCallback(() => {
-    const prev = navStateRef.current
-    // dispatch first so we can capture the returned next state via a local snap
-    dispatch({type: 'previous'})
-    // after dispatch the reducer clamps idx — compute expected next state
-    const nextIdx = prev.idx === 0 ? 0 : prev.idx - 1
-    const next = {ids: prev.ids, idx: nextIdx}
-    const navEvents = eventsFor({type: 'previous'}, prev, next, {
-      deck_id: deckSlug ?? '',
-      language: language ?? '',
-      game: 'wh',
-    })
     viewTracker.endView('previous')
-    for (const event of navEvents) {
-      track(event)
-    }
-  }, [deckSlug, language, viewTracker])
+    dispatch({type: 'previous'})
+  }, [viewTracker])
 
   const handleNext = useCallback(() => {
-    const prev = navStateRef.current
-    dispatch({type: 'next'})
-    // compute what next state will be (mirrors navReducer logic without importing
-    // shuffle — we read it from the reducer output via the state update, but
-    // for eventsFor purposes we only need the idx increment and ids-grew check)
-    // We read the post-dispatch state via useEffect; here we emit the pre-computed
-    // outgoing events using a "tentative next" that will match the reducer output
-    // for the purpose of question_next + deck_cycled detection.
-    const tentativeNext = {
-      ids: prev.idx >= prev.ids.length - 1
-        ? [...prev.ids, ...prev.ids] // overcount for ids.length; exact content irrelevant
-        : prev.ids,
-      idx: prev.idx + 1,
-    }
-    const navEvents = eventsFor({type: 'next'}, prev, tentativeNext, {
-      deck_id: deckSlug ?? '',
-      language: language ?? '',
-      game: 'wh',
-    })
     viewTracker.endView('advanced')
-    for (const event of navEvents) {
-      track(event)
-    }
-  }, [deckSlug, language, viewTracker])
+    dispatch({type: 'next'})
+  }, [viewTracker])
 
   const changeLanguage = useCallback(
     (next: string) => {

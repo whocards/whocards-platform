@@ -24,6 +24,9 @@ export const EVENTS = {
   LANGUAGE_CHANGED: 'language_changed',
 } as const
 
+/** Game ids used in event payloads — single source of truth for the `game` prop. */
+export const GAMES = {WH: 'wh'} as const
+
 export type DeckOpenedProps = {deck_id: string; source: string}
 export type GameStartedProps = {deck_id: string; game: string; language: string}
 export type QuestionShownProps = {

@@ -17,7 +17,7 @@ import {SafeAreaView} from 'react-native-safe-area-context'
 import type {QuestionSet} from '@whocards/decks'
 import {getDeck, getDirection, getInitialNav, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
-import {EVENTS, eventsFor, createViewTracker, track} from '@whocards/observability/events'
+import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 import {colors} from '@whocards/tokens'
 
 import {LanguageModal} from '@/components/language-modal'
@@ -143,18 +143,25 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
   // --- observability: dwell tracker (stable for the component lifetime) ---
   const viewTracker = useMemo(() => createViewTracker(trackEvent), [])
 
-  // --- observability: keep a ref to current nav state for eventsFor ---
-  const navStateRef = useRef({ids, idx})
-  useEffect(() => {
-    navStateRef.current = {ids, idx}
-  })
+  // previous committed nav state — nav events read the REAL post-dispatch ids (no
+  // pre-dispatch approximation; correct question_next/deck_cycled at the cycle
+  // boundary, transition logic stays in @whocards/observability/events).
+  const prevNavRef = useRef<{ids: typeof ids; idx: number} | null>(null)
 
-  // --- observability: emit deck_opened + game_started on mount ---
+  // --- observability: deck_opened on mount; game_started once the stored language
+  // has resolved (so its `language` is the real selection, not the default) ---
   useEffect(() => {
     track({name: EVENTS.DECK_OPENED, props: {deck_id: deckSlug, source: 'browse'}})
-    track({name: EVENTS.GAME_STARTED, props: {deck_id: deckSlug, game: 'wh', language}})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckSlug])
+
+  const gameStartedRef = useRef(false)
+  useEffect(() => {
+    if (!languageReady || gameStartedRef.current) return
+    gameStartedRef.current = true
+    track({name: EVENTS.GAME_STARTED, props: {deck_id: deckSlug, game: GAMES.WH, language}})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [languageReady])
 
   // --- Answer record: every serve enqueues an Answer; the queue sends it (or
   // retries offline). Recording is wired here, not in the engine, so the shared
@@ -189,6 +196,28 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
       cancelled = true
     }
   }, [questionId, deckSlug, language])
+
+  // --- observability: nav events from the real committed transition (prev → current) ---
+  useEffect(() => {
+    const prev = prevNavRef.current
+    if (prev && prev.idx !== idx) {
+      const action = idx > prev.idx ? ({type: 'next'} as const) : ({type: 'previous'} as const)
+      for (const event of eventsFor(
+        action,
+        prev,
+        {ids, idx},
+        {
+          deck_id: deckSlug,
+          language,
+          game: GAMES.WH,
+        }
+      )) {
+        track(event)
+      }
+    }
+    prevNavRef.current = {ids, idx}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, ids])
 
   // --- observability: track question shown + start dwell timer ---
   useEffect(() => {
@@ -301,82 +330,33 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
   // JS-thread callbacks for dispatching navigation after a committed swipe.
   // navDir is set here so the card-enter effect knows which edge to enter from.
   const dispatchNext = useCallback(() => {
-    const prev = navStateRef.current
     navDir.current = 1
     selection()
-    dispatch({type: 'next'})
-    // emit nav events (tentative next — ids grew check mirrors navReducer)
-    const tentativeNext = {
-      ids: prev.idx >= prev.ids.length - 1 ? [...prev.ids, ...prev.ids] : prev.ids,
-      idx: prev.idx + 1,
-    }
-    const navEvents = eventsFor({type: 'next'}, prev, tentativeNext, {
-      deck_id: deckSlug,
-      language,
-      game: 'wh',
-    })
     viewTracker.endView('advanced')
-    for (const event of navEvents) track(event)
-  }, [deckSlug, language, viewTracker])
+    dispatch({type: 'next'})
+  }, [viewTracker])
 
   const dispatchPrevious = useCallback(() => {
-    const prev = navStateRef.current
     navDir.current = -1
     selection()
-    dispatch({type: 'previous'})
-    const nextIdx = prev.idx === 0 ? 0 : prev.idx - 1
-    const navEvents = eventsFor(
-      {type: 'previous'},
-      prev,
-      {ids: prev.ids, idx: nextIdx},
-      {
-        deck_id: deckSlug,
-        language,
-        game: 'wh',
-      }
-    )
     viewTracker.endView('previous')
-    for (const event of navEvents) track(event)
-  }, [deckSlug, language, viewTracker])
+    dispatch({type: 'previous'})
+  }, [viewTracker])
 
   const goNext = useCallback(() => {
-    const prev = navStateRef.current
     navDir.current = 1
     revealChrome()
-    dispatch({type: 'next'})
-    const tentativeNext = {
-      ids: prev.idx >= prev.ids.length - 1 ? [...prev.ids, ...prev.ids] : prev.ids,
-      idx: prev.idx + 1,
-    }
-    const navEvents = eventsFor({type: 'next'}, prev, tentativeNext, {
-      deck_id: deckSlug,
-      language,
-      game: 'wh',
-    })
     viewTracker.endView('advanced')
-    for (const event of navEvents) track(event)
-  }, [revealChrome, deckSlug, language, viewTracker])
+    dispatch({type: 'next'})
+  }, [revealChrome, viewTracker])
 
   // the reducer clamps `previous` at the first card, so no idx guard is needed here
   const goPrevious = useCallback(() => {
-    const prev = navStateRef.current
     navDir.current = -1
     revealChrome()
-    dispatch({type: 'previous'})
-    const nextIdx = prev.idx === 0 ? 0 : prev.idx - 1
-    const navEvents = eventsFor(
-      {type: 'previous'},
-      prev,
-      {ids: prev.ids, idx: nextIdx},
-      {
-        deck_id: deckSlug,
-        language,
-        game: 'wh',
-      }
-    )
     viewTracker.endView('previous')
-    for (const event of navEvents) track(event)
-  }, [revealChrome, deckSlug, language, viewTracker])
+    dispatch({type: 'previous'})
+  }, [revealChrome, viewTracker])
 
   // leave the player — back to wherever we came from, falling back to the landing
   const handleExit = useCallback(() => {

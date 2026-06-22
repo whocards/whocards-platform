@@ -11,10 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
-  "dependencies": {
-    "@whocards/decks": "workspace:*"
-  },
   "devDependencies": {
+    "@whocards/decks": "workspace:*",
     "@whocards/typescript-config": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:"

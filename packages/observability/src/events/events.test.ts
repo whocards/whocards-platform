@@ -44,6 +44,20 @@ describe('eventsFor — next action', () => {
     expect(events[1]?.props).toEqual({deck_id: 'friends', game: 'wh'})
   })
 
+  it('reads to_question_id from the REAL appended ids at the cycle boundary', () => {
+    // At the wrap point the reducer appends a fresh shuffle; to_question_id must be
+    // the first card of that NEW batch. Regression guard: callers must pass the real
+    // post-dispatch state, not a pre-dispatch approximation (which mislabelled this id).
+    const prev: NavState = {ids: ['q1', 'q2'], idx: 1}
+    const next: NavState = {ids: ['q1', 'q2', 'q3', 'q1', 'q2'], idx: 2}
+
+    const events = eventsFor({type: 'next'}, prev, next, ctx)
+    const navEvent = events[0]
+    expect(navEvent?.name).toBe(EVENTS.QUESTION_NEXT)
+    expect((navEvent?.props as {to_question_id: string} | undefined)?.to_question_id).toBe('q3')
+    expect(events[1]?.name).toBe(EVENTS.DECK_CYCLED)
+  })
+
   it('does NOT emit deck_cycled when ids length stayed the same', () => {
     const prev: NavState = {ids: ['q1', 'q2', 'q3'], idx: 1}
     const next: NavState = {ids: ['q1', 'q2', 'q3'], idx: 2}
