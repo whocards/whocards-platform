@@ -183,24 +183,33 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
     [text, measured.width, measured.height]
   )
 
-  // --- auto-hiding chrome: Reanimated shared value drives opacity ---
-  const chromeOpacity = useSharedValue(1)
+  // --- auto-hiding chrome: a single 0→1 progress slides the bars in and out —
+  // the top bar up off the top edge, the bottom bar down off the bottom edge
+  // (a slide, not a fade). The card + gesture layer underneath spans the full
+  // screen, so a tap anywhere — including the bands the bars occupy — reveals
+  // the chrome again. ---
+  const chromeProgress = useSharedValue(1)
   const [chromeShown, setChromeShown] = useState(true)
+  // Measured bar heights drive both the off-screen slide distance and the card's
+  // padding, so the question never sits under a bar even though the gesture layer
+  // runs full-bleed behind them.
+  const [topBarH, setTopBarH] = useState(0)
+  const [bottomBarH, setBottomBarH] = useState(0)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const fadeChrome = useCallback(
+  const setChromeVisible = useCallback(
     (to: number) => {
       setChromeShown(to === 1)
-      chromeOpacity.set(withTiming(to, {duration: reduceMotion ? 0 : 300}))
+      chromeProgress.set(withTiming(to, {duration: reduceMotion ? 0 : 300}))
     },
-    [chromeOpacity, reduceMotion]
+    [chromeProgress, reduceMotion]
   )
 
   const revealChrome = useCallback(() => {
-    fadeChrome(1)
+    setChromeVisible(1)
     if (hideTimer.current) clearTimeout(hideTimer.current)
-    hideTimer.current = setTimeout(() => fadeChrome(0), CHROME_HIDE_MS)
-  }, [fadeChrome])
+    hideTimer.current = setTimeout(() => setChromeVisible(0), CHROME_HIDE_MS)
+  }, [setChromeVisible])
 
   useEffect(() => {
     revealChrome()
@@ -209,8 +218,21 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
     }
   }, [revealChrome])
 
-  const chromeStyle = useAnimatedStyle(() => ({
-    opacity: chromeOpacity.get(),
+  const onTopBarLayout = useCallback((event: LayoutChangeEvent) => {
+    setTopBarH(event.nativeEvent.layout.height)
+  }, [])
+  const onBottomBarLayout = useCallback((event: LayoutChangeEvent) => {
+    setBottomBarH(event.nativeEvent.layout.height)
+  }, [])
+
+  // top bar slides up off the top edge; bottom bar slides down off the bottom edge.
+  // topBarH/bottomBarH are captured per render, so the slide distance corrects once
+  // the bars measure.
+  const topChromeStyle = useAnimatedStyle(() => ({
+    transform: [{translateY: interpolate(chromeProgress.get(), [0, 1], [-topBarH, 0])}],
+  }))
+  const bottomChromeStyle = useAnimatedStyle(() => ({
+    transform: [{translateY: interpolate(chromeProgress.get(), [0, 1], [bottomBarH, 0])}],
   }))
 
   // --- Reanimated card enter/exit: translateX shared value ---
@@ -369,27 +391,14 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
   return (
     <ScreenBackground>
       <View className="flex-1">
-        {/* close — top-right, on a chip so it reads over any content (auto-hides) */}
-        <Animated.View style={[{pointerEvents: chromeShown ? 'auto' : 'none'}, chromeStyle]}>
-          <SafeAreaView edges={['top', 'left', 'right']}>
-            <View className="items-end px-4 pt-2">
-              <Pressable
-                onPress={handleExit}
-                hitSlop={8}
-                accessibilityLabel="exit deck"
-                className="h-10 w-10 items-center justify-center rounded-full bg-darker/80 active:bg-darker"
-              >
-                <Ionicons name="close" size={22} color={colors.white} />
-              </Pressable>
-            </View>
-          </SafeAreaView>
-        </Animated.View>
-
-        {/* the question — tap reveals the chrome, swipe navigates.
+        {/* full-screen card + gesture layer: tap anywhere reveals the chrome, swipe
+            navigates. The bars are overlays on top, so the whole screen — including
+            the bands they occupy — stays a live tap/swipe target even while hidden.
+            Padded by the measured bar heights so the question sits between the bars.
             Hidden until languageReady so the card never flips language mid-paint
             (ticket 0009 first-paint decision: gate on the single AsyncStorage read). */}
         <GestureDetector gesture={gesture}>
-          <View className="flex-1 px-8 py-2">
+          <View className="flex-1 px-8" style={{paddingTop: topBarH, paddingBottom: bottomBarH}}>
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
               {languageReady ? (
                 <Animated.View style={cardStyle}>
@@ -413,8 +422,35 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
           </View>
         </GestureDetector>
 
-        {/* bottom action bar — shares the chrome's fade */}
-        <Animated.View style={[{pointerEvents: chromeShown ? 'auto' : 'none'}, chromeStyle]}>
+        {/* close — top-right chip; slides up out of view when the chrome hides.
+            box-none lets taps on the empty top band fall through to reveal the chrome. */}
+        <Animated.View
+          pointerEvents={chromeShown ? 'box-none' : 'none'}
+          onLayout={onTopBarLayout}
+          className="absolute inset-x-0 top-0"
+          style={topChromeStyle}
+        >
+          <SafeAreaView edges={['top', 'left', 'right']}>
+            <View className="items-end px-4 pt-2">
+              <Pressable
+                onPress={handleExit}
+                hitSlop={8}
+                accessibilityLabel="exit deck"
+                className="h-10 w-10 items-center justify-center rounded-full bg-darker/80 active:bg-darker"
+              >
+                <Ionicons name="close" size={22} color={colors.white} />
+              </Pressable>
+            </View>
+          </SafeAreaView>
+        </Animated.View>
+
+        {/* bottom action bar — slides down out of view when the chrome hides */}
+        <Animated.View
+          pointerEvents={chromeShown ? 'box-none' : 'none'}
+          onLayout={onBottomBarLayout}
+          className="absolute inset-x-0 bottom-0"
+          style={bottomChromeStyle}
+        >
           <PlayerBar
             showLanguage={languages.length > 1}
             onPrevious={goPrevious}
