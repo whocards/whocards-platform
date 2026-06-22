@@ -47,3 +47,9 @@ tag, runs the gate → `eas build` → `eas submit` (beta track) → `eas update
   independently — don't tie store-listing version bumps to OTA reach.
 - The release **runbook and the build-up checklist** live in `docs/RELEASE.md`; this ADR records
   only the decisions and their trade-offs.
+- **Amendment (2026-06-22) — iOS-first for v1.** The "TestFlight **and** Play Internal" beta step
+  above is the steady-state intent, but the v1 launch ships **iOS first**: the Google Play account
+  is blocked (deferred to #27). The pipeline itself is unchanged — the Android build/submit steps in
+  `mobile-release.yml` are simply gated behind the `MOBILE_ANDROID_ENABLED` repo variable (off), so
+  iOS releases run end-to-end without them. Flip the variable on once #27 lands a working Play
+  account + service-account secret; no pipeline rework is needed.
