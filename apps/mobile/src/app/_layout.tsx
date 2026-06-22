@@ -3,13 +3,18 @@ import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {useEffect} from 'react'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
-import {configureLogger} from '@whocards/logger'
+import {configureObservability, identify} from '@whocards/observability'
 import {colors} from '@whocards/tokens'
 
 import {ErrorBoundary} from '@/components/error-boundary'
+import {getDeviceId} from '@/lib/device-id'
 
 // console-in-dev / no-op-in-prod; mobile PostHog transport deferred (ticket 0004)
-configureLogger({dev: __DEV__})
+configureObservability({dev: __DEV__})
+
+// Identify this device so all events share a stable distinct_id.
+// getDeviceId() is async on mobile (AsyncStorage backed).
+void getDeviceId().then((id) => identify(id))
 
 import '../global.css'
 

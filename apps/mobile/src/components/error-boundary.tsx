@@ -1,4 +1,4 @@
-import {logError} from '@whocards/logger'
+import {logError} from '@whocards/observability'
 import type {ReactNode} from 'react'
 import {Component} from 'react'
 import {Pressable, Text, View} from 'react-native'
@@ -9,8 +9,8 @@ type State = {hasError: boolean}
 
 /**
  * Root error boundary: catches render-time throws so a crash shows a recoverable
- * fallback instead of a blank screen, and routes the error through @whocards/logger
- * (console in dev, PostHog in prod once ticket 0004 lands). The fallback is
+ * fallback instead of a blank screen, and routes the error through @whocards/observability
+ * (console in dev, PostHog in prod). The fallback is
  * intentionally plain RN (no NativeWind/Reanimated/expo-image) so it can't itself
  * throw if the failure was in one of those layers.
  */

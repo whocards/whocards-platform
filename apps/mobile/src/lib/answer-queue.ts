@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import {logWarn} from '@whocards/logger'
+import {logWarn} from '@whocards/observability'
 
 /**
  * One queued Answer — a Device answered a Question in some Deck and language.

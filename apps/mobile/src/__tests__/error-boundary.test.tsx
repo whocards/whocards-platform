@@ -2,11 +2,11 @@
  * Component test for src/components/error-boundary.tsx
  *
  * Verifies that a render-time throw from a child is caught, the fallback UI
- * is shown, and `logError` from @whocards/logger is called with the error.
+ * is shown, and `logError` from @whocards/observability is called with the error.
  * Also verifies that pressing "Try again" resets the error state.
  */
 
-jest.mock('@whocards/logger', () => ({
+jest.mock('@whocards/observability', () => ({
   logError: jest.fn(),
 }))
 
@@ -15,7 +15,7 @@ jest.mock('@whocards/logger', () => ({
 
 import React from 'react'
 import {render, fireEvent} from '@testing-library/react-native'
-import {logError} from '@whocards/logger'
+import {logError} from '@whocards/observability'
 import {ErrorBoundary} from '../components/error-boundary'
 
 // Silence the React console.error output for expected errors in these tests.
