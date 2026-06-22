@@ -1,7 +1,7 @@
 import {drizzle} from 'drizzle-orm/postgres-js'
 import {createInsertSchema} from 'drizzle-zod'
 import postgres from 'postgres'
-import {env} from '~env-secrets'
+import {env} from '~env'
 import * as schemas from './schema'
 
 const client = postgres(env.DB_URL)

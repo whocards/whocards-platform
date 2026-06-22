@@ -2,7 +2,7 @@ import type {APIRoute} from 'astro'
 import {Resend} from 'resend'
 import {z} from 'zod'
 import questions from '~data/decks/ai-at-work.questions.json'
-import {env} from '~env-secrets'
+import {env} from '~env'
 import {insertUser} from '~server/db'
 
 // SSR endpoint for the AI Check-In lead magnet (/ai-at-work). Captures the email

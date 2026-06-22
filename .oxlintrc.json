@@ -1,12 +1,13 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "import", "unicorn", "oxc"],
+  "plugins": ["typescript", "import", "unicorn", "oxc", "node"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
   },
   "rules": {
     "no-console": "error",
+    "node/no-process-env": "error",
     "no-unused-vars": [
       "error",
       {"argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "ignoreRestSiblings": true}
@@ -34,7 +35,14 @@
       "rules": {
         "no-console": "off",
         "no-unsafe-finally": "off",
-        "import/no-unassigned-import": "off"
+        "import/no-unassigned-import": "off",
+        "node/no-process-env": "off"
+      }
+    },
+    {
+      "files": ["**/env.ts", "**/env.test.ts"],
+      "rules": {
+        "node/no-process-env": "off"
       }
     },
     {

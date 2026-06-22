@@ -10,7 +10,7 @@ jest.mock('@/lib/trpc', () => ({
   trpc: {answers: {record: {mutate: (event: unknown) => mockMutate(event)}}},
 }))
 
-import {send} from '../lib/answer-transport'
+import type {send as Send} from '../lib/answer-transport'
 import type {AnswerEvent} from '../lib/answer-queue'
 
 const EVENT: AnswerEvent = {deviceId: 'd1', deckSlug: 'library', questionId: 'q1', language: 'en'}
@@ -20,6 +20,18 @@ const EVENT: AnswerEvent = {deviceId: 'd1', deckSlug: 'library', questionId: 'q1
 const setDev = (value: boolean) => void ((globalThis as Record<string, unknown>)['__DEV__'] = value)
 
 const ORIGINAL_OPT_IN = process.env.EXPO_PUBLIC_RECORD_ANSWERS
+
+/**
+ * Loads a fresh answer-transport module so `send` re-reads `~/env`, which parses
+ * `process.env` at import time. Set the env var before calling this.
+ */
+const freshSend = (): typeof Send => {
+  let fn!: typeof Send
+  jest.isolateModules(() => {
+    fn = (require('../lib/answer-transport') as {send: typeof Send}).send
+  })
+  return fn
+}
 
 afterEach(() => {
   mockMutate.mockClear()
@@ -35,21 +47,21 @@ describe('send (recording gate)', () => {
   it('records in a release build', async () => {
     setDev(false)
     delete process.env.EXPO_PUBLIC_RECORD_ANSWERS
-    await send(EVENT)
+    await freshSend()(EVENT)
     expect(mockMutate).toHaveBeenCalledWith(EVENT)
   })
 
   it('skips in dev without the opt-in env var', async () => {
     setDev(true)
     delete process.env.EXPO_PUBLIC_RECORD_ANSWERS
-    await send(EVENT)
+    await freshSend()(EVENT)
     expect(mockMutate).not.toHaveBeenCalled()
   })
 
   it('records in dev when EXPO_PUBLIC_RECORD_ANSWERS=true', async () => {
     setDev(true)
     process.env.EXPO_PUBLIC_RECORD_ANSWERS = 'true'
-    await send(EVENT)
+    await freshSend()(EVENT)
     expect(mockMutate).toHaveBeenCalledWith(EVENT)
   })
 })
