@@ -8,7 +8,9 @@ name: Mobile release
 #     APP_STORE_KEY_ID    — App Store Connect API key ID      (iOS submit, #12)
 #     APP_STORE_ISSUER_ID — App Store Connect API issuer ID   (iOS submit, #12)
 #     APP_STORE_KEY_P8    — App Store Connect API key (.p8)   (iOS submit, #12)
-#     PLAY_SERVICE_ACCOUNT_JSON — Play Store service-account JSON (Android submit, #12)
+#     PLAY_SERVICE_ACCOUNT_JSON — Play Store service-account JSON (Android submit, #27)
+#
+#   Push the iOS secrets with: apps/mobile/scripts/set-mobile-ci-secrets.sh
 #
 #   One-time EAS setup (#11):
 #     1. Run `eas init` in apps/mobile to obtain a projectId.
