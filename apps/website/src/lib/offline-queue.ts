@@ -1,4 +1,4 @@
-import {logError, logWarn} from '@whocards/logger'
+import {logError, logWarn} from '@whocards/observability'
 import type {AnswerEvent} from './answer-event'
 
 /**

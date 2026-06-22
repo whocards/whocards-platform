@@ -1,16 +1,18 @@
 {
-  "name": "@whocards/logger",
+  "name": "@whocards/observability",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./events": "./src/events/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "devDependencies": {
+    "@whocards/decks": "workspace:*",
     "@whocards/typescript-config": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:"

@@ -16,6 +16,8 @@ import Animated, {
 import {SafeAreaView} from 'react-native-safe-area-context'
 import type {QuestionSet} from '@whocards/decks'
 import {getDeck, getDirection, getInitialNav, navReducer} from '@whocards/decks'
+import {trackEvent} from '@whocards/observability'
+import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 import {colors} from '@whocards/tokens'
 
 import {LanguageModal} from '@/components/language-modal'
@@ -138,6 +140,29 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
   // brand/script face where one exists; system font (with a weight) otherwise
   const questionFont = questionFontFamily(language)
 
+  // --- observability: dwell tracker (stable for the component lifetime) ---
+  const viewTracker = useMemo(() => createViewTracker(trackEvent), [])
+
+  // previous committed nav state — nav events read the REAL post-dispatch ids (no
+  // pre-dispatch approximation; correct question_next/deck_cycled at the cycle
+  // boundary, transition logic stays in @whocards/observability/events).
+  const prevNavRef = useRef<{ids: typeof ids; idx: number} | null>(null)
+
+  // --- observability: deck_opened on mount; game_started once the stored language
+  // has resolved (so its `language` is the real selection, not the default) ---
+  useEffect(() => {
+    track({name: EVENTS.DECK_OPENED, props: {deck_id: deckSlug, source: 'browse'}})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckSlug])
+
+  const gameStartedRef = useRef(false)
+  useEffect(() => {
+    if (!languageReady || gameStartedRef.current) return
+    gameStartedRef.current = true
+    track({name: EVENTS.GAME_STARTED, props: {deck_id: deckSlug, game: GAMES.WH, language}})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [languageReady])
+
   // --- Answer record: every serve enqueues an Answer; the queue sends it (or
   // retries offline). Recording is wired here, not in the engine, so the shared
   // headless engine stays pure (ADR-0003). ---
@@ -148,9 +173,12 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
     void flush(send)
     const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
       if (state === 'active') void flush(send)
+      if (state === 'background' || state === 'inactive') {
+        viewTracker.endView('backgrounded')
+      }
     })
     return () => sub.remove()
-  }, [])
+  }, [viewTracker])
 
   // one Answer per Question served (keyed on questionId, so re-renders don't
   // double-record); also a flush trigger via enqueue's opportunistic send.
@@ -168,6 +196,39 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
       cancelled = true
     }
   }, [questionId, deckSlug, language])
+
+  // --- observability: nav events from the real committed transition (prev → current) ---
+  useEffect(() => {
+    const prev = prevNavRef.current
+    if (prev && prev.idx !== idx) {
+      const action = idx > prev.idx ? ({type: 'next'} as const) : ({type: 'previous'} as const)
+      for (const event of eventsFor(
+        action,
+        prev,
+        {ids, idx},
+        {
+          deck_id: deckSlug,
+          language,
+          game: GAMES.WH,
+        }
+      )) {
+        track(event)
+      }
+    }
+    prevNavRef.current = {ids, idx}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, ids])
+
+  // --- observability: track question shown + start dwell timer ---
+  useEffect(() => {
+    if (!questionId) return
+    track({
+      name: EVENTS.QUESTION_SHOWN,
+      props: {deck_id: deckSlug, question_id: questionId, language, source: 'nav'},
+    })
+    viewTracker.startView({deck_id: deckSlug, question_id: questionId, language})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionId])
 
   // --- measure the card's box so the question can grow to fill it (landscape included) ---
   const {width: winWidth, height: winHeight} = useWindowDimensions()
@@ -271,27 +332,31 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
   const dispatchNext = useCallback(() => {
     navDir.current = 1
     selection()
+    viewTracker.endView('advanced')
     dispatch({type: 'next'})
-  }, [])
+  }, [viewTracker])
 
   const dispatchPrevious = useCallback(() => {
     navDir.current = -1
     selection()
+    viewTracker.endView('previous')
     dispatch({type: 'previous'})
-  }, [])
+  }, [viewTracker])
 
   const goNext = useCallback(() => {
     navDir.current = 1
     revealChrome()
+    viewTracker.endView('advanced')
     dispatch({type: 'next'})
-  }, [revealChrome])
+  }, [revealChrome, viewTracker])
 
   // the reducer clamps `previous` at the first card, so no idx guard is needed here
   const goPrevious = useCallback(() => {
     navDir.current = -1
     revealChrome()
+    viewTracker.endView('previous')
     dispatch({type: 'previous'})
-  }, [revealChrome])
+  }, [revealChrome, viewTracker])
 
   // leave the player — back to wherever we came from, falling back to the landing
   const handleExit = useCallback(() => {
@@ -466,6 +531,12 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerPro
           current={language}
           onSelect={(next) => {
             selection()
+            if (next !== language) {
+              track({
+                name: EVENTS.LANGUAGE_CHANGED,
+                props: {deck_id: deckSlug, from: language, to: next},
+              })
+            }
             setLanguage(next)
             void setStoredLanguage(deckSlug, next)
             setLangModalOpen(false)

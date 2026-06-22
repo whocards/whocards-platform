@@ -1,14 +1,18 @@
 <script>
   import posthog from 'posthog-js'
   import {env} from '~env-secrets'
-  import {initWebLogger} from '~lib/logger'
+  import {initObservability} from '~lib/observability'
+  import {identify} from '@whocards/observability'
+  import {getDeviceId} from '~lib/device-id'
 
   if (env.PUBLIC_POSTHOG_KEY) {
     posthog.init(env.PUBLIC_POSTHOG_KEY, {
       api_host: env.PUBLIC_POSTHOG_HOST,
+      ui_host: env.PUBLIC_POSTHOG_UI_HOST,
       capture_pageview: true,
       capture_pageleave: true,
-      autocapture: false,
+      autocapture: true,
+      capture_exceptions: true,
       disable_session_recording: true,
       persistence: 'localStorage+cookie',
     })
@@ -16,5 +20,9 @@
     window.posthog = posthog
   }
 
-  initWebLogger()
+  initObservability()
+
+  // Identify this device so all events share a stable distinct_id.
+  // getDeviceId() is sync on web; no await needed.
+  identify(getDeviceId())
 </script>

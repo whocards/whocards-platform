@@ -23,7 +23,7 @@
     "@trpc/server": "catalog:",
     "@whocards/api": "workspace:*",
     "@whocards/decks": "workspace:*",
-    "@whocards/logger": "workspace:*",
+    "@whocards/observability": "workspace:*",
     "@whocards/tokens": "workspace:*",
     "expo": "~56.0.12",
     "expo-constants": "~56.0.18",

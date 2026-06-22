@@ -18,6 +18,7 @@ export const env = createEnv({
   client: {
     PUBLIC_POSTHOG_KEY: z.string().optional(),
     PUBLIC_POSTHOG_HOST: z.string().url().optional().default('https://eu.i.posthog.com'),
+    PUBLIC_POSTHOG_UI_HOST: z.string().url().optional().default('https://eu.posthog.com'),
   },
   runtimeEnv: import.meta.env,
 })

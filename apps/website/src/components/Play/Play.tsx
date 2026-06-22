@@ -1,6 +1,8 @@
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {QuestionSet, TrackingConfig} from '@whocards/decks'
 import {getDirection, getInitialNav, navReducer} from '@whocards/decks/engine'
+import {trackEvent} from '@whocards/observability'
+import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 import {getDeviceId} from '~lib/device-id'
 import {createOfflineQueue} from '~lib/offline-queue'
 import {sendAnswer} from '~lib/answer-transport'
@@ -60,7 +62,7 @@ export const Play = ({
   })
 
   const getStoredLanguage = useCallback((): string => {
-    if (typeof window === 'undefined') return defaultLanguage
+    if (typeof window === 'undefined') return defaultLanguage ?? ''
     // a `?lang=` query param wins so deep links stay shareable
     const urlLang = new URLSearchParams(window.location.search).get('lang')
     if (urlLang && languages.includes(urlLang)) {
@@ -69,14 +71,13 @@ export const Play = ({
     }
     const stored = localStorage.getItem(languageStorageKey)
     if (stored && languages.includes(stored)) return stored
-    localStorage.setItem(languageStorageKey, defaultLanguage)
-    return defaultLanguage
+    localStorage.setItem(languageStorageKey, defaultLanguage ?? '')
+    return defaultLanguage ?? ''
   }, [defaultLanguage, languageStorageKey, languages])
 
   // lazy init: getStoredLanguage touches localStorage (read AND write) — pass the
   // function so it runs once on mount, not on every render (rerender-lazy-state-init)
   const [language, setLanguageState] = useState<string>(getStoredLanguage)
-  const [trackingSource, setTrackingSource] = useState('initial')
   const [showControls, setShowControls] = useState(true)
 
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -95,36 +96,8 @@ export const Play = ({
     [languageStorageKey]
   )
 
-  // ---- tracking helpers (no-ops when tracking is undefined) ----
-
-  const createQuestionTracking = useCallback(
-    (questionId: string, type: string, lang: string) => {
-      if (!tracking) return
-      void fetch(tracking.endpoint, {
-        method: 'POST',
-        body: JSON.stringify({
-          eventId: tracking.eventId,
-          userId: getDeviceId(),
-          questionId,
-          type,
-          language: lang,
-        }),
-      })
-    },
-    [tracking]
-  )
-
-  const capture = useCallback(
-    (eventName: string, questionId: string, properties: Record<string, unknown> = {}) => {
-      if (!tracking) return
-      window.posthog?.capture(eventName, {
-        event_id: tracking.eventId,
-        question_id: Number(questionId),
-        ...properties,
-      })
-    },
-    [tracking]
-  )
+  // ---- dwell tracker (stable for the component lifetime) ----
+  const viewTracker = useMemo(() => createViewTracker(trackEvent), [])
 
   // ---- auto-hiding controls ----
 
@@ -178,12 +151,76 @@ export const Play = ({
   // ---- flush any queued Answers on load and when the network returns ----
   useEffect(() => answerQueue.start(), [])
 
+  // ---- emit deck_opened on mount ----
+  useEffect(() => {
+    if (deckSlug) {
+      const startId =
+        typeof window === 'undefined'
+          ? undefined
+          : (new URLSearchParams(window.location.search).get('q') ?? undefined)
+      track({
+        name: EVENTS.DECK_OPENED,
+        props: {deck_id: deckSlug, source: startId ? 'deep_link' : 'browse'},
+      })
+      track({
+        name: EVENTS.GAME_STARTED,
+        props: {deck_id: deckSlug, game: GAMES.WH, language: language ?? defaultLanguage ?? ''},
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckSlug])
+
+  // keep the previous committed nav state so nav events read the REAL post-dispatch
+  // ids (no pre-dispatch approximation) — fixes question_next/deck_cycled at the cycle
+  // boundary and keeps the transition logic in @whocards/observability/events.
+  const prevNavRef = useRef<{ids: typeof ids; idx: number} | null>(null)
+
   // ---- track every question view ----
   useEffect(() => {
     const questionId = ids[idx]
+    if (!questionId) return
+
+    // nav events from the real committed transition (prev → current)
+    const prev = prevNavRef.current
+    if (prev && prev.idx !== idx) {
+      const action = idx > prev.idx ? ({type: 'next'} as const) : ({type: 'previous'} as const)
+      for (const event of eventsFor(action, prev, {ids, idx}, {
+        deck_id: deckSlug ?? '',
+        language: language ?? '',
+        game: GAMES.WH,
+      })) {
+        track(event)
+      }
+    }
+
+    // dwell: start the new view (end is fired by the nav handlers / lifecycle)
+    viewTracker.startView({deck_id: deckSlug ?? '', question_id: questionId, language: language ?? ''})
+
+    // always-on catalog tracking
+    track({
+      name: EVENTS.QUESTION_SHOWN,
+      props: {
+        deck_id: deckSlug ?? '',
+        question_id: questionId,
+        language: language ?? '',
+        source: 'nav',
+      },
+    })
+
     // legacy, event-scoped conference tracking (kept until it folds in, 0003)
-    createQuestionTracking(questionId, trackingSource, language)
-    capture('event_question_seen', questionId, {language, source: trackingSource})
+    if (tracking) {
+      void fetch(tracking.endpoint, {
+        method: 'POST',
+        body: JSON.stringify({
+          eventId: tracking.eventId,
+          userId: getDeviceId(),
+          questionId,
+          type: 'view',
+          language: language,
+        }),
+      })
+    }
+
     // durable Answer record: enqueue every serve, flushed via the offline queue.
     // TODO(answered=served): `language` in the deps re-records when language is
     // switched on the same card (an over-count vs "answered = served"); revisit
@@ -193,52 +230,70 @@ export const Play = ({
         deviceId: getDeviceId(),
         deckSlug,
         questionId,
-        language,
+        language: language ?? '',
       })
     }
+
+    prevNavRef.current = {ids, idx}
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idx, ids, language, trackingSource])
+  }, [idx, ids])
+
+  // ---- end dwell on tab hide / page close (use beacon path) ----
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        viewTracker.endView('closed')
+      }
+    }
+    const handlePagehide = () => {
+      viewTracker.endView('closed')
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('pagehide', handlePagehide)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pagehide', handlePagehide)
+    }
+  }, [viewTracker])
 
   // ---- keep ?q= and ?lang= in the url in sync so links stay shareable ----
   useEffect(() => {
     if (typeof window === 'undefined') return
     const url = new URL(window.location.href)
-    url.searchParams.set('q', ids[idx])
-    url.searchParams.set('lang', language)
+    url.searchParams.set('q', ids[idx] ?? '')
+    url.searchParams.set('lang', language ?? '')
     window.history.replaceState(null, '', url)
   }, [idx, ids, language])
 
   // ---- navigation handlers ----
 
+  // Handlers only end the outgoing dwell + dispatch; the nav events (question_next /
+  // question_previous / deck_cycled) are emitted from the [idx, ids] effect off the
+  // REAL committed state, so there's no pre-dispatch approximation to maintain.
   const handlePrevious = useCallback(() => {
-    const previousQuestionId = ids[idx - 1]
-    if (previousQuestionId) {
-      capture('event_question_previous', previousQuestionId, {
-        language,
-        from_question_id: Number(ids[idx]),
-      })
-    }
-    setTrackingSource('previous')
+    viewTracker.endView('previous')
     dispatch({type: 'previous'})
-  }, [idx, ids, language, capture])
+  }, [viewTracker])
 
   const handleNext = useCallback(() => {
-    capture('event_question_next', ids[idx], {language})
-    setTrackingSource('next')
+    viewTracker.endView('advanced')
     dispatch({type: 'next'})
-  }, [idx, ids, language, capture])
+  }, [viewTracker])
 
   const changeLanguage = useCallback(
     (next: string) => {
       if (next === language) return
-      capture('event_language_changed', ids[idx], {
-        from_language: language,
-        to_language: next,
+      track({
+        name: EVENTS.LANGUAGE_CHANGED,
+        props: {
+          deck_id: deckSlug ?? '',
+          from: language ?? '',
+          to: next,
+        },
       })
-      setTrackingSource('language_change')
       setLanguage(next)
     },
-    [idx, ids, language, capture, setLanguage]
+    [deckSlug, language, setLanguage]
   )
 
   // two languages => simple toggle (preserves hajnalig UX); more => dropdown
@@ -249,9 +304,9 @@ export const Play = ({
     if (otherLanguage) changeLanguage(otherLanguage)
   }, [otherLanguage, changeLanguage])
 
-  const direction = getDirection(language)
+  const direction = getDirection(language ?? '')
   const questionText =
-    questions[ids[idx]]?.[language] ?? questions[ids[idx]]?.[defaultLanguage] ?? ''
+    questions[ids[idx] ?? '']?.[language ?? ''] ?? questions[ids[idx] ?? '']?.[defaultLanguage ?? ''] ?? ''
 
   return (
     <>
@@ -310,7 +365,7 @@ export const Play = ({
                 onChange={(e) => changeLanguage(e.target.value)}
                 className={cn(
                   'btn btn-circle bg-gray hover:bg-gray/80 hover:text-primary-light cursor-pointer appearance-none text-center uppercase text-white',
-                  language.includes('-') && 'w-fit px-4'
+                  language?.includes('-') && 'w-fit px-4'
                 )}
               >
                 {languages.map((l) => (
