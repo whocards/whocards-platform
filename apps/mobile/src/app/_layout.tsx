@@ -1,16 +1,18 @@
 import {Stack} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
+import {PostHogProvider} from 'posthog-react-native'
 import {useEffect} from 'react'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
-import {configureObservability, identify} from '@whocards/observability'
+import {identify} from '@whocards/observability'
 import {colors} from '@whocards/tokens'
 
 import {ErrorBoundary} from '@/components/error-boundary'
 import {getDeviceId} from '@/lib/device-id'
+import {initObservability, posthog} from '@/lib/observability'
 
-// console-in-dev / no-op-in-prod; mobile PostHog transport deferred (ticket 0004)
-configureObservability({dev: __DEV__})
+// dev → console (core default); release → PostHog. Must run before identify().
+initObservability()
 
 // Identify this device so all events share a stable distinct_id.
 // getDeviceId() is async on mobile (AsyncStorage backed).
@@ -31,15 +33,30 @@ export default function RootLayout() {
     return () => clearTimeout(fallback)
   }, [])
 
+  const navigator = (
+    <Stack screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}} />
+  )
+
   return (
     <GestureHandlerRootView style={{flex: 1}}>
       {/* Default bar: light (white icons) over the dark landing and player screens.
           The language modal overrides this to dark while the white sheet is visible. */}
       <StatusBar style="light" />
+      {/* ErrorBoundary outermost so it catches render throws from anywhere below,
+          including PostHogProvider itself. PostHog autocapture (touches + screens)
+          wraps the navigator only when a client exists (key configured); the client
+          is disabled in dev. */}
       <ErrorBoundary>
-        <Stack
-          screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}}
-        />
+        {posthog ? (
+          <PostHogProvider
+            client={posthog}
+            autocapture={{captureTouches: true, captureScreens: true}}
+          >
+            {navigator}
+          </PostHogProvider>
+        ) : (
+          navigator
+        )}
       </ErrorBoundary>
     </GestureHandlerRootView>
   )

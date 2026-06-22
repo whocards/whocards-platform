@@ -51,7 +51,8 @@
           ]
         }
       ],
-      "expo-updates"
+      "expo-updates",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
