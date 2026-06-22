@@ -9,16 +9,24 @@ import type {LogEntry, ObservabilityProvider} from '@whocards/observability'
 const apiKey = process.env.EXPO_PUBLIC_POSTHOG_KEY
 const host = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? 'https://eu.i.posthog.com'
 
+// In dev we keep PostHog off and route to the console provider so local play never
+// pollutes the project. Set EXPO_PUBLIC_POSTHOG_DEBUG=1 to force the real transport
+// on in a dev build (emulator/device testing). Release builds always send. This one
+// flag drives BOTH the client `disabled` state and the core dev/console routing
+// below, so explicit events and autocapture flip together.
+const debug = process.env.EXPO_PUBLIC_POSTHOG_DEBUG === '1'
+const sendToPostHog = !__DEV__ || debug
+
 /**
- * The app's PostHog client, or `undefined` when no key is configured. Disabled in
- * dev (`__DEV__`) so local play never pollutes the real project — release builds
- * send. Mounted into the tree by `PostHogProvider` (app root) for autocapture.
+ * The app's PostHog client, or `undefined` when no key is configured. Disabled
+ * unless we're sending (release, or dev with EXPO_PUBLIC_POSTHOG_DEBUG=1). Mounted
+ * into the tree by `PostHogProvider` (app root) for autocapture.
  */
 export const posthog =
   apiKey !== undefined && apiKey !== ''
     ? new PostHog(apiKey, {
         host,
-        disabled: __DEV__,
+        disabled: !sendToPostHog,
         captureAppLifecycleEvents: true,
         enableSessionReplay: false,
       })
@@ -56,5 +64,8 @@ const provider: ObservabilityProvider = {
  * console provider; release → this PostHog provider. Call once at app startup.
  */
 export const initObservability = (): void => {
-  configureObservability({dev: __DEV__, provider})
+  // `dev:false` routes explicit events through the PostHog provider; `dev:true` uses
+  // the console provider. Tied to sendToPostHog so the debug flag flips routing and
+  // the client together (otherwise explicit events would still go to console in dev).
+  configureObservability({dev: !sendToPostHog, provider})
 }
