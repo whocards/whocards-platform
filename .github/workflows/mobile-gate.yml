@@ -26,11 +26,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check (fmt + lint + typecheck + unit tests)
-        run: pnpm check
+      # apps/website is intentionally excluded from this gate's typecheck. Its `astro check`
+      # needs astro-icon's build-time type generation (.astro/icon.d.ts), which only a full
+      # `astro build` produces — and that build needs DB secrets (with-env). The website is
+      # validated by its own Netlify build on deploy. This gate covers the mobile app + the
+      # shared packages it depends on, which is what mobile releases gate on.
+      - name: Format check
+        run: pnpm format
 
-      - name: Mobile unit tests
-        run: pnpm --filter mobile test
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck + unit tests (mobile + shared packages)
+        run: pnpm exec turbo run typecheck test --filter='!website'
 
       # TODO(#maestro): add Maestro e2e suite once a simulator is available in CI.
       # When ready: install maestro, start the dev server, run `pnpm --filter mobile e2e`.
