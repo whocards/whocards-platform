@@ -1,5 +1,5 @@
 import {serialize} from 'object-to-formdata'
-import {env} from '~env-secrets'
+import {env} from '~env'
 
 type ContactSheetEntry = Record<string, string | number | boolean | null | undefined>
 
