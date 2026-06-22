@@ -82,8 +82,8 @@ const {class: classes} = Astro.props
 <script>
   const timeline = document.querySelector('[data-usage-timeline]')
   const steps = timeline ? Array.from(timeline.querySelectorAll('[data-usage-step]')) : []
-  const lines = timeline ? Array.from(timeline.querySelectorAll('[data-usage-line]')) : []
-  const rings = steps.map((step) => step.querySelector('[data-usage-ring]'))
+  const lines = timeline ? Array.from(timeline.querySelectorAll<HTMLElement>('[data-usage-line]')) : []
+  const rings = steps.map((step) => step.querySelector<HTMLElement>('[data-usage-ring]'))
 
   const updateTimeline = () => {
     if (!timeline) return

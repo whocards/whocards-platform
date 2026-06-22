@@ -43,6 +43,7 @@ export default defineConfig({
     react(),
     icon({
       include: {
+        'akar-icons': ['arrow-up'],
         mdi: ['twitter', 'linkedin', 'instagram', 'github', 'email'],
         'fa-solid': ['clone', 'external-link-alt'],
         ic: [

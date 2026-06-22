@@ -1,8 +1,13 @@
-import {Icon} from '@iconify-icon/react'
+import {Icon as _Icon, type IconifyIconProps} from '@iconify-icon/react'
 import {useStore} from '@nanostores/react'
-import {useState} from 'react'
+import {useState, type ComponentType} from 'react'
 import {$langStore} from '~stores/Language.store'
 import {LANGUAGES, cn} from '~utils'
+
+// @types/react 18 doesn't include bigint in ReactNode, but iconify-icon's
+// ForwardRefExoticComponent return type does. Double-cast via unknown is type-only,
+// no runtime effect.
+const Icon = _Icon as unknown as ComponentType<IconifyIconProps>
 
 export default function Print() {
   const store = useStore($langStore)

@@ -1,5 +1,6 @@
 ---
 import {Icon} from 'astro-icon/components'
+import type {Icon as IconName} from 'virtual:astro-icon'
 import {mainLinks, socialLinks, legalLinks} from '~constants/navigation'
 ---
 
@@ -17,7 +18,7 @@ import {mainLinks, socialLinks, legalLinks} from '~constants/navigation'
             target='_blank'
             class='bg-dark p-2 rounded-full flex items-center justify-center border border-transparent hover:border-primary-light active:border-primary-dark'
           >
-            <Icon name={link.icon} class='h-5 w-5' />
+            {link.icon && <Icon name={link.icon as IconName} class='h-5 w-5' />}
           </a>
         ))
       }
