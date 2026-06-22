@@ -20,7 +20,7 @@ browse, Custom Decks, Personal Game, accounts/purchases, Facilitation (all futur
 > Google Play account is blocked, so iOS ships first. The release workflow gates every Android build/submit step
 > behind the `MOBILE_ANDROID_ENABLED` repo variable; flip it on once #27 lands a working account + service-account secret.
 
-- [ ] **Accounts** (start early — Apple org enrollment has lead time)
+- [ ] **Accounts** — Apple done; Google Play deferred (#27)
   - [x] Apple Developer Program ($99/yr) — enrolled; App Store Connect app record created (`ascAppId 6782853824`, Team ID `6RTC67K8CW`)
   - [ ] Google Play Console ($25 one-time) — **deferred to #27** (prior account closed for inactivity; re-registration under a fresh dedicated Google account pending)
   - [x] Expo account / org (free) — projectId `70c97b4d…` wired into `app.json`; `EXPO_TOKEN` set as an Actions secret
