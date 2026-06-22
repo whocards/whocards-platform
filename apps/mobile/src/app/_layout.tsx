@@ -33,12 +33,8 @@ export default function RootLayout() {
     return () => clearTimeout(fallback)
   }, [])
 
-  const content = (
-    <ErrorBoundary>
-      <Stack
-        screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}}
-      />
-    </ErrorBoundary>
+  const navigator = (
+    <Stack screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}} />
   )
 
   return (
@@ -46,18 +42,22 @@ export default function RootLayout() {
       {/* Default bar: light (white icons) over the dark landing and player screens.
           The language modal overrides this to dark while the white sheet is visible. */}
       <StatusBar style="light" />
-      {/* PostHog autocapture (touches + screens) wraps the navigator — only when a
-          client exists (key configured). The client itself is disabled in dev. */}
-      {posthog ? (
-        <PostHogProvider
-          client={posthog}
-          autocapture={{captureTouches: true, captureScreens: true}}
-        >
-          {content}
-        </PostHogProvider>
-      ) : (
-        content
-      )}
+      {/* ErrorBoundary outermost so it catches render throws from anywhere below,
+          including PostHogProvider itself. PostHog autocapture (touches + screens)
+          wraps the navigator only when a client exists (key configured); the client
+          is disabled in dev. */}
+      <ErrorBoundary>
+        {posthog ? (
+          <PostHogProvider
+            client={posthog}
+            autocapture={{captureTouches: true, captureScreens: true}}
+          >
+            {navigator}
+          </PostHogProvider>
+        ) : (
+          navigator
+        )}
+      </ErrorBoundary>
     </GestureHandlerRootView>
   )
 }

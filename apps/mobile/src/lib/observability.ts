@@ -55,6 +55,7 @@ const provider: ObservabilityProvider = {
     posthog?.identify(id, props as PHProps)
   },
   reset(): void {
+    // TODO(accounts): call on logout / account-claim to re-key the PostHog person.
     posthog?.reset()
   },
 }
