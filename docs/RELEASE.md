@@ -16,36 +16,40 @@ browse, Custom Decks, Personal Game, accounts/purchases, Facilitation (all futur
 
 ## Phase 0 — One-time foundation
 
+> **Android is deferred for the v1 launch** ([#27](https://github.com/whocards/whocards-platform/issues/27)) — the
+> Google Play account is blocked, so iOS ships first. The release workflow gates every Android build/submit step
+> behind the `MOBILE_ANDROID_ENABLED` repo variable; flip it on once #27 lands a working account + service-account secret.
+
 - [ ] **Accounts** (start early — Apple org enrollment has lead time)
-  - [ ] Apple Developer Program ($99/yr; org enrollment needs a D-U-N-S number) — durable owner, not a personal throwaway
-  - [ ] Google Play Console ($25 one-time)
-  - [ ] Expo account / org (free)
-- [ ] **EAS init** — `eas init` in `apps/mobile`, commit the `projectId` to `app.json` (`extra.eas.projectId`)
-- [ ] **Credentials** — let EAS manage signing: iOS distribution cert + provisioning; Android keystore (EAS-generated, **never** in the repo)
-- [ ] **Submit creds** — App Store Connect API key (iOS) + Play service-account JSON (Android), stored as EAS secrets / CI secrets
-- [ ] **`eas.json`** — `cli.appVersionSource: "remote"`; profiles `development` / `preview` / `production`; `autoIncrement` on `production`; per-profile `env` (`EXPO_PUBLIC_API_URL`); channels `preview` / `production`
-- [ ] **OTA** — add `expo-updates`; set `runtimeVersion: { "policy": "fingerprint" }` in `app.json`; `eas update:configure`
-- [ ] **CI** (GitHub Actions, `.github/workflows/`)
-  - [ ] PR/main workflow: the quality gate (below)
-  - [ ] Tag (`v*`) workflow: gate → `eas build` → `eas submit` (beta) → `eas update`
-  - [ ] Secrets: `EXPO_TOKEN` + store-submit creds
+  - [x] Apple Developer Program ($99/yr) — enrolled; App Store Connect app record created (`ascAppId 6782853824`, Team ID `6RTC67K8CW`)
+  - [ ] Google Play Console ($25 one-time) — **deferred to #27** (prior account closed for inactivity; re-registration under a fresh dedicated Google account pending)
+  - [x] Expo account / org (free) — projectId `70c97b4d…` wired into `app.json`; `EXPO_TOKEN` set as an Actions secret
+- [x] **EAS init** — `projectId` committed to `app.json` (`extra.eas.projectId`)
+- [x] **Credentials** — EAS-managed signing: iOS distribution cert + provisioning done (Android keystore deferred → #27). Local `credentials.json` is gitignored (it holds a plaintext cert password)
+- [x] **Submit creds** — App Store Connect API key stored on EAS; push it to CI with `apps/mobile/scripts/set-mobile-ci-secrets.sh`. Play service-account JSON deferred → #27
+- [x] **`eas.json`** — `cli.appVersionSource: "remote"`; profiles `development` / `preview` / `production`; `autoIncrement` on `production`; per-profile `env` (`EXPO_PUBLIC_API_URL`); channels `preview` / `production`
+- [x] **OTA** — `expo-updates` added; `runtimeVersion: { "policy": "fingerprint" }` set in `app.json`
+- [x] **CI** (GitHub Actions, `.github/workflows/`)
+  - [x] PR/main workflow: the quality gate (`mobile-gate.yml`)
+  - [x] Tag (`v*`) workflow: gate → `eas build` → `eas submit` (beta) → `eas update` (`mobile-release.yml`) — **inert until `EAS_RELEASE_ENABLED=true`**; Android steps additionally gated on `MOBILE_ANDROID_ENABLED`
+  - [x] Secrets: `EXPO_TOKEN` set; iOS ASC API key via the script above; Play JSON pending (#27)
 - [ ] **`docs/mobile/README` / this runbook** linked from the repo README
 
 ## Phase 1 — Blockers before the first build
 
 These make the binary correct; the app is broken or unshippable without them.
 
-- [ ] **Prod API URL** — `production` profile sets `EXPO_PUBLIC_API_URL=https://whocards.cc` (app calls `/api/trpc`). Without it the build falls back to `localhost:4321`. ✅ **Prod API verified live 2026-06-21** (`/api/trpc/decks.manifest` & `pool.languages` → `200`, see #20); the remaining work here is setting the env on the `production` EAS profile (#11).
-- [ ] **App display name** — `app.json` `name`/`slug` are `"mobile"` → set the user-facing name to **WhoCards** (bundle IDs `cc.whocards.mobile` are already correct)
-- [ ] **App icon** — confirm `ios.icon` (`./assets/expo.icon`) is the WhoCards mark, not the Expo default; ensure the cross-platform `icon.png` is brand-correct
-- [ ] **Version fields** — `version: "1.0.0"`; build numbers via EAS remote auto-increment (no manual `buildNumber`/`versionCode`)
-- [ ] **Error boundary** — root error boundary with recovery (no white-screen on a render throw)
+- [x] **Prod API URL** — `production` (and `preview`) profile sets `EXPO_PUBLIC_API_URL=https://whocards.cc` in `eas.json` (app calls `/api/trpc`); without it the build falls back to `localhost:4321`. Prod API verified live 2026-06-21 (`/api/trpc/decks.manifest` & `pool.languages` → `200`, see #20).
+- [x] **App display name** — `app.json` `name` is **WhoCards**; `slug` is `whocards-app` (matches the EAS project); bundle IDs `cc.whocards.mobile` correct. (`scheme` stays `mobile` — that's the deep-link scheme, unrelated.)
+- [x] **App icon** — WhoCards dark `?` mark (`icon.png` + Android adaptive icons); intentionally dark-only
+- [x] **Version fields** — `version: "1.0.0"`; build numbers via EAS remote auto-increment (no manual `buildNumber`/`versionCode`)
+- [x] **Error boundary** — root error boundary with recovery in `src/components/error-boundary.tsx`, mounted in `src/app/_layout.tsx`
 - [ ] **Quality gate green** (see below)
 
 ## Phase 2 — Cut the first beta
 
-- [ ] `eas build -p ios --profile production` and `-p android --profile production`
-- [ ] `eas submit -p ios` → TestFlight · `eas submit -p android` → Play Internal Testing
+- [ ] `eas build -p ios --profile production` (Android `-p android` deferred → #27)
+- [ ] `eas submit -p ios` → TestFlight (Android `-p android` → Play Internal Testing deferred → #27; first Android AAB must be hand-uploaded once unblocked)
 - [ ] **Device matrix smoke**: 2 iOS + 2 Android OS versions — launch, splash→landing handoff, play/swipe, language switch + RTL (Hebrew right-aligned), language persists across relaunch, share, **offline → reconnect drains the Answer queue**, deep-link/back
 - [ ] File and fix anything found as `v1.0.x` (OTA if JS-only, rebuild if native)
 
