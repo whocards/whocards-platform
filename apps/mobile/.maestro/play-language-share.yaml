@@ -1,0 +1,40 @@
+# Happy-path player loop: launch → play → swipe both ways → switch language → share.
+# Exercises the core in-app surface (landing CTA, the swipe gesture engine, the
+# auto-hiding chrome, the language sheet, and the share action) on one run.
+#
+# Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
+appId: cc.whocards.mobile
+tags:
+  - ios
+  - android
+---
+- launchApp:
+    clearState: true # reset persisted language so we always start from the default
+
+# Landing → player
+- assertVisible: 'Play'
+- tapOn: 'Play'
+
+# Swipe forward to the next card, then back — the gesture engine commits a nav each way.
+- swipe:
+    direction: LEFT
+- waitForAnimationToEnd
+- swipe:
+    direction: RIGHT
+- waitForAnimationToEnd
+
+# Reveal the auto-hiding chrome (a tap anywhere), then open the language sheet.
+- tapOn:
+    point: '50%,45%'
+- tapOn: 'change language'
+- assertVisible: 'Choose your language'
+- tapOn: 'Hebrew'
+- waitForAnimationToEnd # let the sheet finish dismissing before continuing
+
+# Re-reveal the chrome (it auto-hides after 3s) and fire the share action. The native
+# share sheet is OS chrome (varies by platform/version), so we don't assert its
+# contents — a clean tap with no error is the signal the action is wired.
+- tapOn:
+    point: '50%,45%'
+- tapOn: 'share question'
+- takeScreenshot: .maestro/artifacts/play-language-share

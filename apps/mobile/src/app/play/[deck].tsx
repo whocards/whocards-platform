@@ -77,7 +77,10 @@ const fitFontSize = (text: string, width: number, height: number) => {
 }
 
 export default function PlayScreen() {
-  const {deck: slug} = useLocalSearchParams<{deck: string}>()
+  // `q` deep-links to a specific question (e.g. mobile://play/library?q=1): the engine
+  // starts there in natural order instead of shuffling, so deep links and screenshot
+  // captures are reproducible. Mirrors the web <Play> `?q=` behaviour (ADR-0003).
+  const {deck: slug, q} = useLocalSearchParams<{deck: string; q?: string}>()
   const deck = getDeck(slug)
 
   if (!deck) {
@@ -96,6 +99,7 @@ export default function PlayScreen() {
       questionIds={deck.questionIds}
       questions={deck.questions}
       languages={deck.languages}
+      startId={typeof q === 'string' ? q : undefined}
     />
   )
 }
@@ -105,15 +109,18 @@ type DeckPlayerProps = {
   questionIds: string[]
   questions: QuestionSet
   languages: string[]
+  startId?: string
 }
 
-const DeckPlayer = ({deckSlug, questionIds, questions, languages}: DeckPlayerProps) => {
+const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: DeckPlayerProps) => {
   const router = useRouter()
   const reduceMotion = useReducedMotion()
 
   // the shared headless engine — identical behaviour to the web <Play> (ADR-0003)
   const reducer = useMemo(() => navReducer(questionIds), [questionIds])
-  const [{ids, idx}, dispatch] = useReducer(reducer, undefined, () => getInitialNav(questionIds))
+  const [{ids, idx}, dispatch] = useReducer(reducer, undefined, () =>
+    getInitialNav(questionIds, startId)
+  )
   const defaultLanguage = languages[0]
   const [language, setLanguage] = useState(defaultLanguage)
   // true once the AsyncStorage read has settled — gates the first card paint so

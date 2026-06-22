@@ -1,0 +1,49 @@
+# Deterministic store-listing captures for the App Store / Play Store (#34).
+# Driven by `?q=` so the same question renders every run, and waits for the
+# auto-hiding chrome to clear before shooting the cards for clean marketing frames.
+# Output: apps/mobile/store-assets/<DEVICE>/NN-*.png  (DEVICE passed per run).
+#
+# Tagged `screenshots` so the e2e quality gate (pnpm -F mobile e2e) skips it; run
+# it via:  pnpm -F mobile screenshots
+appId: cc.whocards.mobile
+tags:
+  - screenshots
+# DEVICE names the per-device output folder; the capture script passes it via
+# `-e DEVICE=<name>` (e.g. iphone-17-pro-max). Run directly and it lands in
+# store-assets/<the literal you pass>/.
+---
+- launchApp:
+    clearState: true # default language (en) for the English captures
+
+# 1) Landing — logo, tagline, Play CTA.
+- assertVisible: 'Play'
+- takeScreenshot: store-assets/${DEVICE}/01-landing
+
+# 2) Question card (English). Stop the app, then cold deep-link to q=1 (a foregrounded
+#    app makes iOS show an "Open in WhoCards?" confirm). Wait for the chrome bars to
+#    auto-hide so the card is shot clean (no toolbar over the marketing frame).
+- stopApp
+- openLink: mobile://play/library?q=1
+- tapOn:
+    text: 'Open'
+    optional: true
+- assertVisible: '(?s).*most interesting thing you have learned recently.*'
+- extendedWaitUntil:
+    notVisible: 'next question'
+    timeout: 4000
+- takeScreenshot: store-assets/${DEVICE}/02-card-en
+
+# 3) Language picker — reveal the chrome, open the sheet.
+- tapOn:
+    point: '50%,45%'
+- tapOn: 'change language'
+- assertVisible: 'Choose your language'
+- takeScreenshot: store-assets/${DEVICE}/03-language-picker
+
+# 4) Question card (Hebrew, RTL) — showcases the i18n / right-alignment, shot clean.
+- tapOn: 'Hebrew'
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    notVisible: 'next question'
+    timeout: 4000
+- takeScreenshot: store-assets/${DEVICE}/04-card-he

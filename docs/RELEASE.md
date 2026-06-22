@@ -74,7 +74,7 @@ These make the binary correct; the app is broken or unshippable without them.
 
 - [ ] `pnpm check` green (tsc + oxlint + oxfmt + `decks`/`api` unit tests + **mobile jest suite**)
 - [ ] **Mobile unit/component tests** — `pnpm --filter mobile test` (jest + RN Testing Library; covers language-store, answer-queue, device-id, getBaseUrl, ErrorBoundary)
-- [ ] **Maestro suite** — expand from the RTL flow to the happy paths: launch→play→swipe→language→share, deep-link/back, offline-record (see `.maestro/` — expansion is DEFERRED pending a simulator session)
+- [ ] **Maestro suite** — `pnpm --filter mobile e2e` (flows: `play-language-share`, `deep-link-back`, `language-persist`, `rtl-alignment`; see `.maestro/README.md`). Offline-record→drain has no observable UI signal and is covered by the `answer-queue`/`answer-transport` jest tests instead.
 - [ ] Manual smoke on the **device matrix** (native builds — see below)
 
 ## Device matrix
