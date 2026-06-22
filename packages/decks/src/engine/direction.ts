@@ -35,7 +35,7 @@ export const getDirection = (language: LanguageCode): 'ltr' | 'rtl' => {
   // explicit set first — reliable across JS engines, including Hermes (RN), whose
   // Intl.Locale lacks textInfo so the branch below can't detect RTL on device
   const base = language.toLowerCase().split(/[-_]/)[0]
-  if (RTL_BASE_LANGUAGES.has(base)) return 'rtl'
+  if (base && RTL_BASE_LANGUAGES.has(base)) return 'rtl'
 
   if (typeof Intl === 'undefined' || !('Locale' in Intl)) return 'ltr'
   try {

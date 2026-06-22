@@ -87,6 +87,7 @@ describe('getDirection', () => {
       expect(getDirection('he')).toBe('rtl')
       expect(getDirection('en')).toBe('ltr')
     } finally {
+      // @ts-expect-error — restore the real Locale stubbed above
       Intl.Locale = RealLocale
     }
   })
