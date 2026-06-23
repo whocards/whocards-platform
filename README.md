@@ -9,6 +9,7 @@ product glossary and [docs/adr](./docs/adr) for the architecture decisions.
 apps/
   website/   Astro marketing + play site (the host that mounts the API — ADR-0002)
   mobile/    Expo + NativeWind React Native app
+  emails/    React Email templates + guarded Resend delivery helpers
 packages/
   tokens/    @whocards/tokens — design tokens shared by web + mobile
   decks/     @whocards/decks — Pool data + headless play engine (ADR-0003)
@@ -35,6 +36,8 @@ the pnpm `catalog:` in [pnpm-workspace.yaml](./pnpm-workspace.yaml).
 pnpm install
 pnpm dev          # turbo dev across apps
 pnpm build        # turbo build
+pnpm email:dev    # React Email preview server
+pnpm email:render # Render HTML + plain-text email artifacts
 pnpm typecheck    # tsc --noEmit per package
 pnpm test         # vitest per package
 pnpm lint         # oxlint
