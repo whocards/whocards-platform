@@ -1,7 +1,7 @@
 # Whocards website
 
 https://github.com/whocards/website
-https://calmly.whocards.cc
+https://whocards.cc
 
 # build status
 
