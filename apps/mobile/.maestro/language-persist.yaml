@@ -24,7 +24,7 @@ tags:
 - tapOn: 'change language'
 - tapOn: 'Hebrew'
 - waitForAnimationToEnd
-- assertNotVisible: '.*most interesting thing you have learned recently.*'
+- assertNotVisible: '(?s).*most interesting thing you have learned recently.*'
 
 # Relaunch (stop the app, then cold deep-link to the same card) WITHOUT clearing
 # state. The stored language is reapplied, so the English text is still absent —
@@ -34,5 +34,8 @@ tags:
 - tapOn:
     text: 'Open'
     optional: true
-- waitForAnimationToEnd
-- assertNotVisible: '(?s).*most interesting thing you have learned recently.*'
+# Cold launch holds the first card paint behind the AsyncStorage language read, so
+# wait for the English text to be gone rather than asserting on a fixed animation beat.
+- extendedWaitUntil:
+    notVisible: '(?s).*most interesting thing you have learned recently.*'
+    timeout: 5000

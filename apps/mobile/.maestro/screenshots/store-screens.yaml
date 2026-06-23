@@ -12,6 +12,8 @@ tags:
 # `-e DEVICE=<name>` (e.g. iphone-17-pro-max). Run directly and it lands in
 # store-assets/<the literal you pass>/.
 ---
+# Requires: -e DEVICE=<name>  (scripts/capture-screenshots.sh sets this per device).
+# Without it, ${DEVICE} is empty and frames land in store-assets//.
 - launchApp:
     clearState: true # default language (en) for the English captures
 

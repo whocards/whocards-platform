@@ -158,7 +158,10 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
   // --- observability: deck_opened on mount; game_started once the stored language
   // has resolved (so its `language` is the real selection, not the default) ---
   useEffect(() => {
-    track({name: EVENTS.DECK_OPENED, props: {deck_id: deckSlug, source: 'browse'}})
+    track({
+      name: EVENTS.DECK_OPENED,
+      props: {deck_id: deckSlug, source: startId ? 'deep_link' : 'browse'},
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckSlug])
 

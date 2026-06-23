@@ -58,7 +58,7 @@ These make the binary correct; the app is broken or unshippable without them.
 - [ ] **Observability live** — finish #4 (`posthog-react-native` sink + product events); confirm events + JS errors arrive in PostHog
 - [ ] **Privacy Policy** — `whocards.cc/legal/pp` updated to disclose the app's data: Device id, the Answer record, PostHog analytics
 - [ ] **App Privacy (Apple) + Data Safety (Play)** forms filled to match (device id, usage/analytics; no tracking SDK unless added)
-- [ ] **Store assets** — name, subtitle, description, keywords, category, screenshots per device size, support URL
+- [ ] **Store assets** — name, subtitle, description, keywords, category, support URL, and per-device-size screenshots (raw captures via `pnpm -F mobile screenshots`, #34; then frame/compose)
 - [ ] **Permissions** — confirm only what's used (network, haptics); no stray permission pulled in by a dep
 - [ ] Promote the **same** validated build to the public App Store + Google Play
 
