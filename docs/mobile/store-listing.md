@@ -34,7 +34,7 @@ Each card is a question designed to move you past small talk and into the things
 
 HOW IT WORKS
 
-Pick up the WhoCards deck and swipe through questions together. Every question you answer is marked globally, so the deck keeps moving forward for everyone. Come back tomorrow and you'll find questions the world hasn't answered yet.
+Pick up the WhoCards deck and swipe through questions together. Take turns, slow down when a question opens something up, and keep going for as long as the conversation feels alive.
 
 PLAY ANYWHERE, IN ANY LANGUAGE
 
@@ -42,15 +42,15 @@ WhoCards is available in 14 languages, including right-to-left support for Hebre
 
 OFFLINE READY
 
-No signal? No problem. Keep playing offline and your answers sync automatically when you're back online, so nothing is lost and the shared progress stays intact.
+No signal? No problem. The full deck is included in the app, so you can keep playing wherever the conversation takes you.
 
 SHARE A MOMENT
 
-Found a question that stopped you in your tracks? Share it with anyone — as a link or a card image — directly from the app.
+Found a question that stopped you in your tracks? Share its text directly from the app.
 
 WHAT WE DON'T DO
 
-No account required. No advertising. No tracking across other apps. No data sold. We collect only what's needed to run the shared game (an anonymous device id and a record of which questions have been answered), and we use privacy-conscious analytics solely to improve the product.
+No account required. No advertising. No tracking across other apps. No data sold. We collect only what's needed to operate and improve WhoCards: an anonymous device id, question activity, and privacy-conscious product analytics.
 
 WhoCards is made by Alles ist Dialog, a cultural association based in Switzerland.
 
@@ -75,7 +75,7 @@ conversation,icebreaker,questions,connection,game,social,party,team,dating,talk
 ### Support URL
 
 ```
-https://whocards.cc
+https://whocards.cc/contact
 ```
 
 ### Support Email
@@ -125,7 +125,7 @@ Each card is a question designed to move you past small talk and into the things
 
 HOW IT WORKS
 
-Pick up the WhoCards deck and swipe through questions together. Every question you answer is marked globally, so the deck keeps moving forward for everyone. Come back tomorrow and you'll find questions the world hasn't answered yet.
+Pick up the WhoCards deck and swipe through questions together. Take turns, slow down when a question opens something up, and keep going for as long as the conversation feels alive.
 
 PLAY ANYWHERE, IN ANY LANGUAGE
 
@@ -133,15 +133,15 @@ WhoCards is available in 14 languages, including right-to-left support for Hebre
 
 OFFLINE READY
 
-No signal? No problem. Keep playing offline and your answers sync automatically when you're back online, so nothing is lost and the shared progress stays intact.
+No signal? No problem. The full deck is included in the app, so you can keep playing wherever the conversation takes you.
 
 SHARE A MOMENT
 
-Found a question that stopped you in your tracks? Share it with anyone — as a link or a card image — directly from the app.
+Found a question that stopped you in your tracks? Share its text directly from the app.
 
 WHAT WE DON'T DO
 
-No account required. No advertising. No tracking across other apps. No data sold. We collect only what's needed to run the shared game (an anonymous device id and a record of which questions have been answered), and we use privacy-conscious analytics solely to improve the product.
+No account required. No advertising. No tracking across other apps. No data sold. We collect only what's needed to operate and improve WhoCards: an anonymous device id, question activity, and privacy-conscious product analytics.
 
 WhoCards is made by Alles ist Dialog, a cultural association based in Switzerland.
 
@@ -196,10 +196,9 @@ Everyone (IARC / ESRB)
 | 2   | WhoCards Deck — question card (English)     | Full question text, card design, swipe affordance        |
 | 3   | Language switcher open                      | Language list, current selection highlighted             |
 | 4   | WhoCards Deck — question card (Hebrew, RTL) | Hebrew text right-aligned, RTL layout correct            |
-| 5   | Share sheet or share card preview           | Share action visible, branded card image                 |
-| 6   | Offline indicator (optional)                | Offline banner or indicator if one exists in v1.0        |
+| 5   | Share sheet                                 | Shared question text visible                             |
 
-> Recommended: 6 screenshots for iOS, 8 for Google Play (Play shows more on tablets). Use the
+> Recommended: at least 5 screenshots for each store. Use the
 > same shots for both stores, cropped to the required dimensions.
 
 ### iOS — Required device sizes (App Store Connect)
@@ -247,11 +246,11 @@ pixel dimensions.
 
 ### Apple App Privacy (App Store Connect)
 
-| Data type                               | Collected                  | Linked to identity | Used for tracking |
-| --------------------------------------- | -------------------------- | ------------------ | ----------------- |
-| Device ID (anonymous, app-generated)    | Yes                        | No                 | No                |
-| Product interaction (PostHog analytics) | Yes (planned)              | No                 | No                |
-| Crash data / diagnostics                | Yes (planned, via PostHog) | No                 | No                |
+| Data type                               | Collected         | Linked to identity | Used for tracking |
+| --------------------------------------- | ----------------- | ------------------ | ----------------- |
+| Device ID (anonymous, app-generated)    | Yes               | No                 | No                |
+| Product interaction (PostHog analytics) | Yes               | No                 | No                |
+| Crash data / diagnostics                | Yes (via PostHog) | No                 | No                |
 
 - **Tracking:** No — do not check "track users across apps or websites owned by other companies."
 - **Data linked to you:** None — the anonymous Device id is not linked to a name, email, or
@@ -261,10 +260,10 @@ pixel dimensions.
 
 ### Google Play Data Safety
 
-| Data type                                 | Collected     | Shared | Encrypted in transit | User can request deletion    |
-| ----------------------------------------- | ------------- | ------ | -------------------- | ---------------------------- |
-| App interactions (PostHog)                | Yes (planned) | No     | Yes                  | No (aggregated)              |
-| Device or other IDs (anonymous Device id) | Yes           | No     | Yes                  | Yes (by Device id via email) |
+| Data type                                 | Collected | Shared | Encrypted in transit | User can request deletion    |
+| ----------------------------------------- | --------- | ------ | -------------------- | ---------------------------- |
+| App interactions (PostHog)                | Yes       | No     | Yes                  | No (aggregated)              |
+| Device or other IDs (anonymous Device id) | Yes       | No     | Yes                  | Yes (by Device id via email) |
 
 - **Cross-app tracking:** No.
 - **Advertising ID (GAID):** Not used — do not declare it.
