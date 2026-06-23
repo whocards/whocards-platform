@@ -14,6 +14,7 @@ describe('AndroidTesterRecruitmentEmail', () => {
     expect(html).toContain(signupUrl)
     expect(html).toContain('Android people, we need you')
     expect(html).toContain('first test release is available')
+    expect(html).toContain('Forward this their way')
   })
 
   it('provides a complete plain-text fallback', () => {
@@ -21,5 +22,6 @@ describe('AndroidTesterRecruitmentEmail', () => {
     expect(text).toContain(signupUrl)
     expect(text).toContain('ANDROID PEOPLE, WE NEED YOU')
     expect(text).toContain('private download and installation link')
+    expect(text).toContain('Forward this their way')
   })
 })

@@ -45,6 +45,10 @@ export function AndroidTesterRecruitmentEmail({
           {signupUrl}
         </Link>
       </Text>
+      <Text style={{...paragraph, marginTop: '24px'}}>
+        Know another Android person who loves a good conversation? Forward this their way—the more
+        curious button-pressers, the better.
+      </Text>
       <Hr style={rule} />
       <Text style={paragraph}>
         Thanks for helping us bring better questions into more rooms, walks, dinners, dates, and
@@ -72,6 +76,8 @@ You don’t need to be technical. Curiosity, an Android phone, and a willingness
 
 Sign up now and we’ll send you the private download and installation link as soon as the first test release is available:
 ${signupUrl}
+
+Know another Android person who loves a good conversation? Forward this their way—the more curious button-pressers, the better.
 
 Thanks for helping us bring better questions into more rooms, walks, dinners, dates, and gloriously long conversations.
 
