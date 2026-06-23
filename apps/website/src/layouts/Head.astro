@@ -1,4 +1,6 @@
 ---
+import {socialLinks} from '~constants/navigation'
+
 export interface Props {
   title?: string
   description?: string
@@ -116,12 +118,12 @@ const title = titles.join(' | ')
       '@type': 'Organization',
       name: 'WhoCards',
       url: site?.toString(),
-      logo: image,
-      sameAs: [
-        'https://www.linkedin.com/company/whocards',
-        'https://facebook.com/whocards',
-        'https://instagram.com/who_cards',
-      ],
+      // Stable brand asset — `image` is the per-page OG image (a per-question card
+      // on /play), which is not a valid Organization logo. social.png is the
+      // canonical brand mark in /public.
+      logo: `${site?.toString().replace(/\/$/, '')}/social.png`,
+      // Source of truth for social URLs lives in ~constants/navigation.
+      sameAs: socialLinks.map((link) => link.href),
     },
     {
       '@context': 'https://schema.org',
