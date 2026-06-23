@@ -47,3 +47,6 @@ example
 
 # maestro e2e screenshots / run artifacts
 .maestro/artifacts/
+
+# generated store-listing screenshots (regenerate with `pnpm -F mobile screenshots`)
+store-assets/

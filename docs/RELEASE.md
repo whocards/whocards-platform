@@ -58,7 +58,7 @@ These make the binary correct; the app is broken or unshippable without them.
 - [ ] **Observability live** — finish #4 (`posthog-react-native` sink + product events); confirm events + JS errors arrive in PostHog
 - [ ] **Privacy Policy** — `whocards.cc/legal/pp` updated to disclose the app's data: Device id, the Answer record, PostHog analytics
 - [ ] **App Privacy (Apple) + Data Safety (Play)** forms filled to match (device id, usage/analytics; no tracking SDK unless added)
-- [ ] **Store assets** — name, subtitle, description, keywords, category, screenshots per device size, support URL
+- [ ] **Store assets** — name, subtitle, description, keywords, category, support URL, and per-device-size screenshots (raw captures via `pnpm -F mobile screenshots`, #34; then frame/compose)
 - [ ] **Permissions** — confirm only what's used (network, haptics); no stray permission pulled in by a dep
 - [ ] Promote the **same** validated build to the public App Store + Google Play
 
@@ -74,7 +74,7 @@ These make the binary correct; the app is broken or unshippable without them.
 
 - [ ] `pnpm check` green (tsc + oxlint + oxfmt + `decks`/`api` unit tests + **mobile jest suite**)
 - [ ] **Mobile unit/component tests** — `pnpm --filter mobile test` (jest + RN Testing Library; covers language-store, answer-queue, device-id, getBaseUrl, ErrorBoundary)
-- [ ] **Maestro suite** — expand from the RTL flow to the happy paths: launch→play→swipe→language→share, deep-link/back, offline-record (see `.maestro/` — expansion is DEFERRED pending a simulator session)
+- [ ] **Maestro suite** — `pnpm --filter mobile e2e` (flows: `play-language-share`, `deep-link-back`, `language-persist`, `rtl-alignment`; see `.maestro/README.md`). Offline-record→drain has no observable UI signal and is covered by the `answer-queue`/`answer-transport` jest tests instead.
 - [ ] Manual smoke on the **device matrix** (native builds — see below)
 
 ## Device matrix

@@ -43,14 +43,20 @@ export default function RootLayout() {
           The language modal overrides this to dark while the white sheet is visible. */}
       <StatusBar style="light" />
       {/* ErrorBoundary outermost so it catches render throws from anywhere below,
-          including PostHogProvider itself. PostHog autocapture (touches + screens)
-          wraps the navigator only when a client exists (key configured); the client
-          is disabled in dev. */}
+          including PostHogProvider itself. PostHog autocapture wraps the navigator
+          only when a client exists (key configured); the client is disabled in dev.
+
+          captureScreens is OFF: PostHogProvider mounts ABOVE expo-router's navigation
+          container, so its screen-tracking hook can't find a navigation object and
+          throws "Couldn't find a navigation object" — non-fatal on iOS but a white
+          screen on Android release. Screen/view events are already captured explicitly
+          via `track()` in the player (deck_opened, question_shown, dwell), so touch
+          autocapture is all we take from the provider. */}
       <ErrorBoundary>
         {posthog ? (
           <PostHogProvider
             client={posthog}
-            autocapture={{captureTouches: true, captureScreens: true}}
+            autocapture={{captureTouches: true, captureScreens: false}}
           >
             {navigator}
           </PostHogProvider>

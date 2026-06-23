@@ -13,7 +13,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "oxlint --deny-warnings",
-    "e2e": "maestro test .maestro"
+    "e2e": "maestro test .maestro --exclude-tags=screenshots",
+    "screenshots": "bash scripts/capture-screenshots.sh"
   },
   "dependencies": {
     "@expo/metro-runtime": "~56.0.15",

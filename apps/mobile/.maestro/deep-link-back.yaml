@@ -1,0 +1,26 @@
+# Deep link straight into a specific question, then exit back to the landing.
+# `?q=` pins the engine to a question in natural order (no shuffle), so the deep
+# link is reproducible — q=1 is the first Pool question, shown in English (default).
+#
+# Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
+appId: cc.whocards.mobile
+tags:
+  - ios
+  - android
+---
+- launchApp:
+    clearState: true # default language (en) so q=1 renders its English text
+- stopApp # deep-link cold: a foregrounded app makes iOS show an "Open in WhoCards?" confirm
+
+# Cold deep-link into the player at question 1.
+- openLink: mobile://play/library?q=1
+- tapOn:
+    text: 'Open' # accept the iOS confirm if a version still shows it (optional otherwise)
+    optional: true
+- assertVisible: '(?s).*most interesting thing you have learned recently.*'
+
+# Reveal the chrome and exit — the close chip pops back to the landing.
+- tapOn:
+    point: '50%,45%'
+- tapOn: 'exit deck'
+- assertVisible: 'Play'

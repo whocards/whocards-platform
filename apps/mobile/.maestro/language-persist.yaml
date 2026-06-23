@@ -1,0 +1,41 @@
+# A chosen language survives an app relaunch (language-store persistence, ticket 0009).
+# Uses `?q=1` so the same question renders before and after, making the language
+# switch observable: the English text is present at first, gone once Hebrew is
+# selected, and still gone after a cold relaunch — proving the choice persisted.
+#
+# Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
+appId: cc.whocards.mobile
+tags:
+  - ios
+  - android
+---
+- launchApp:
+    clearState: true # start clean: default language is English
+- stopApp # deep-link cold to avoid the iOS "Open in WhoCards?" foreground confirm
+- openLink: mobile://play/library?q=1
+- tapOn:
+    text: 'Open'
+    optional: true
+- assertVisible: '(?s).*most interesting thing you have learned recently.*'
+
+# Switch to Hebrew — the same card (q=1) now renders Hebrew, so the English text goes away.
+- tapOn:
+    point: '50%,45%'
+- tapOn: 'change language'
+- tapOn: 'Hebrew'
+- waitForAnimationToEnd
+- assertNotVisible: '(?s).*most interesting thing you have learned recently.*'
+
+# Relaunch (stop the app, then cold deep-link to the same card) WITHOUT clearing
+# state. The stored language is reapplied, so the English text is still absent —
+# proving the choice persisted across the restart.
+- stopApp
+- openLink: mobile://play/library?q=1
+- tapOn:
+    text: 'Open'
+    optional: true
+# Cold launch holds the first card paint behind the AsyncStorage language read, so
+# wait for the English text to be gone rather than asserting on a fixed animation beat.
+- extendedWaitUntil:
+    notVisible: '(?s).*most interesting thing you have learned recently.*'
+    timeout: 5000
