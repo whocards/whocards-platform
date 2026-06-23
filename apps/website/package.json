@@ -9,7 +9,7 @@
     "start": "pnpm with-env astro dev",
     "build": "pnpm with-env astro build",
     "preview": "pnpm with-env astro preview",
-    "typecheck": "astro check",
+    "typecheck": "astro sync && astro check",
     "test:e2e": "playwright test",
     "test:e2e:ssr": "playwright test -c playwright.ssr.config.ts",
     "pretty": "prettier --write . --plugin=prettier-plugin-astro",
