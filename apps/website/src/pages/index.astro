@@ -225,6 +225,19 @@ import bgLeftImage from '~assets/images/bg-left-large.svg'
       </div>
     </div>
   </div>
+  <script
+    is:inline
+    type='application/ld+json'
+    set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((f) => ({
+        '@type': 'Question',
+        name: f.title,
+        acceptedAnswer: {'@type': 'Answer', text: f.content},
+      })),
+    })}
+  ></script>
 </Layout>
 
 <script>
