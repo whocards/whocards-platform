@@ -14,10 +14,17 @@
       "url": "https://u.expo.dev/70c97b4d-b05c-4839-a6a3-054bb0625e1f"
     },
     "ios": {
-      "bundleIdentifier": "cc.whocards.mobile"
+      "bundleIdentifier": "cc.whocards.mobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "cc.whocards.mobile",
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#08001A",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
