@@ -15,7 +15,7 @@
     "test:parity": "playwright test -c playwright.parity.config.ts",
     "test:parity:ssr": "playwright test -c playwright.parity.ssr.config.ts",
     "pretty": "prettier --write . --plugin=prettier-plugin-astro",
-    "analyze": "pnpx unlighthouse --site https://calmly.whocards.cc",
+    "analyze": "pnpx unlighthouse --site https://whocards.cc",
     "db:generate": "pnpm with-env drizzle-kit generate",
     "db:migrate": "pnpm with-env drizzle-kit migrate",
     "db:push": "pnpm with-env drizzle-kit push",
