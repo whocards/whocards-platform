@@ -87,10 +87,27 @@ Getting a local Android **release** build to succeed needs three things:
 3. **More Metaspace, skip release lint.** Bump `org.gradle.jvmargs` Metaspace (KSP OOMs at
    the default 512m) and skip the `lintVital*` tasks (lint analysis crashes under this JDK).
 
-> Status: on the Pixel emulator the release build installs and launches without the PostHog
-> crash, but the landing content does not yet render (a separate Android-release rendering
-> issue — empty view tree). The flows are `android`-tagged and pass on iOS; the Android run
-> is blocked on that render bug, tracked separately.
+> Status: the Android release **renders correctly** end-to-end — landing entrance, Play, the
+> swipe/chrome/language/share flows all work. Verified on a freshly-booted Pixel 9 emulator
+> (API 35, `-gpu host`): 6/6 cold launches paint the full landing (logo, tagline, card count,
+> Play). The store screenshots in `store-assets/pixel-9` + `pixel-9-pro-xl` were captured this
+> way.
+>
+> The "blank landing" (logo on a dark screen, no tagline/Play) is **not a code bug** — the
+> landing mounts and is fully interactive even when blank (tapping where Play sits navigates
+> to a card; the card then paints perfectly). It's a **cold-start first-paint stall under a
+> degraded/overloaded emulator**: the landing's reveal is gated on a post-mount JS timer +
+> Reanimated, and when the JS thread is starved at startup (software `-gpu swiftshader`, or a
+> long-lived emulator after dozens of rapid `pm clear`+relaunch cycles — memory pressure/GC)
+> that timer fires many seconds late or not within the capture window, so the splash→landing
+> handoff is caught before content reveals. A real device / fresh emulator clears this in
+> well under a second. Repro notes: under swiftshader it was blank at t=4s but fully rendered
+> by t=10s on the identical APK; on a degraded long-running `-gpu host` session it went ~0/8,
+> while a fresh boot of the same APK was 6/6. So for Maestro/screenshots: **boot a FRESH
+> emulator with `-gpu host`**, don't hammer it with dozens of relaunches in one session, and
+> give the first `assertVisible` a generous timeout. Also run
+> `adb shell settings put global hide_error_dialogs 1` first, so a system ANR (e.g. Digital
+> Wellbeing) can't pop over the app and fail an `assertVisible`.
 
 ## Running
 

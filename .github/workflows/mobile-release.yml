@@ -8,7 +8,9 @@ name: Mobile release
 #     APP_STORE_KEY_ID    — App Store Connect API key ID      (iOS submit, #12)
 #     APP_STORE_ISSUER_ID — App Store Connect API issuer ID   (iOS submit, #12)
 #     APP_STORE_KEY_P8    — App Store Connect API key (.p8)   (iOS submit, #12)
-#     PLAY_SERVICE_ACCOUNT_JSON — Play Store service-account JSON (Android submit, #27)
+#
+#   The Android Play service-account key is NOT a CI secret — it's uploaded to EAS
+#   (`eas credentials` → Android → service account), so eas submit pulls it via EXPO_TOKEN.
 #
 #   Push the iOS secrets with: apps/mobile/scripts/set-mobile-ci-secrets.sh
 #
@@ -24,10 +26,7 @@ name: Mobile release
 # EXTRA SAFETY: the EAS jobs (build / submit / ota-update) are also gated on the repo
 # variable EAS_RELEASE_ENABLED. They are SKIPPED unless it is set to 'true', so even a
 # stray `v*` tag only runs the quality gate. Flip the variable when you are ready to ship.
-#
-# ANDROID DEFERRED (#27): the Play account is blocked, so the Android build/submit steps are
-# additionally gated on the repo variable MOBILE_ANDROID_ENABLED. iOS ships without them; set
-# MOBILE_ANDROID_ENABLED=true once #27 lands a working Play account + service-account secret.
+# iOS and Android build/submit together under that single switch.
 
 on:
   push:
@@ -46,13 +45,13 @@ jobs:
     if: vars.EAS_RELEASE_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node from .nvmrc
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -61,7 +60,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Setup Expo
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@v9
         with:
           expo-version: latest
           eas-version: latest
@@ -71,9 +70,7 @@ jobs:
         working-directory: apps/mobile
         run: eas build --platform ios --profile production --non-interactive
 
-      # Android deferred (#27) — Play account blocked. Gated off until MOBILE_ANDROID_ENABLED=true.
       - name: Build Android (production)
-        if: vars.MOBILE_ANDROID_ENABLED == 'true'
         working-directory: apps/mobile
         run: eas build --platform android --profile production --non-interactive
 
@@ -83,13 +80,13 @@ jobs:
     if: vars.EAS_RELEASE_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node from .nvmrc
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -98,15 +95,14 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Setup Expo
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@v9
         with:
           expo-version: latest
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # TODO(#12): store-submit secrets must be added before this step is functional.
-      # iOS: APP_STORE_KEY_ID, APP_STORE_ISSUER_ID, APP_STORE_KEY_P8 → TestFlight beta.
-      # Android: PLAY_SERVICE_ACCOUNT_JSON → Play Internal Testing track.
+      # iOS needs the App Store Connect API secrets (APP_STORE_KEY_ID / ISSUER_ID / KEY_P8)
+      # set in CI for TestFlight. Android's key lives on EAS, so it needs nothing here.
       - name: Submit iOS (TestFlight)
         working-directory: apps/mobile
         env:
@@ -115,12 +111,10 @@ jobs:
           EXPO_APPLE_API_KEY: ${{ secrets.APP_STORE_KEY_P8 }}
         run: eas submit --platform ios --profile production --latest --non-interactive
 
-      # Android deferred (#27) — Play account blocked. Gated off until MOBILE_ANDROID_ENABLED=true.
+      # Service-account key is stored on EAS (uploaded via `eas credentials`), so no
+      # key file or secret is needed here — eas-cli pulls it, authed by EXPO_TOKEN.
       - name: Submit Android (Play Internal Testing)
-        if: vars.MOBILE_ANDROID_ENABLED == 'true'
         working-directory: apps/mobile
-        env:
-          EXPO_GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
         run: eas submit --platform android --profile production --latest --non-interactive
 
   ota-update:
@@ -129,13 +123,13 @@ jobs:
     if: vars.EAS_RELEASE_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node from .nvmrc
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -144,7 +138,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Setup Expo
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@v9
         with:
           expo-version: latest
           eas-version: latest

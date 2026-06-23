@@ -13,8 +13,8 @@
 #   APP_STORE_KEY_P8_PATH=/path/to/AuthKey_ABC123XYZ.p8 \
 #   ./apps/mobile/scripts/set-mobile-ci-secrets.sh
 #
-# EXPO_TOKEN is assumed already set. Android (PLAY_SERVICE_ACCOUNT_JSON) is deferred
-# to #27 — see the commented block below.
+# EXPO_TOKEN is assumed already set. The Android Play service-account key is NOT a CI
+# secret — it's uploaded to EAS (`eas credentials`), so eas submit pulls it via EXPO_TOKEN.
 #
 # This script does NOT enable the release pipeline: EAS_RELEASE_ENABLED stays false.
 
@@ -37,14 +37,14 @@ gh secret set APP_STORE_KEY_ID    --repo "$REPO" --body "$APP_STORE_KEY_ID"
 gh secret set APP_STORE_ISSUER_ID --repo "$REPO" --body "$APP_STORE_ISSUER_ID"
 gh secret set APP_STORE_KEY_P8    --repo "$REPO" < "$APP_STORE_KEY_P8_PATH"
 
-# --- Android submit secret (#27 — deferred) --------------------------------
-# Uncomment once a Play service-account JSON exists:
-#   : "${PLAY_SERVICE_ACCOUNT_JSON_PATH:?set PLAY_SERVICE_ACCOUNT_JSON_PATH}"
-#   gh secret set PLAY_SERVICE_ACCOUNT_JSON --repo "$REPO" < "$PLAY_SERVICE_ACCOUNT_JSON_PATH"
+# --- Android submit key (no CI secret) -------------------------------------
+# The Play service-account key is NOT a GitHub secret — it's uploaded to EAS once
+# (`cd apps/mobile && eas credentials` → Android → Google Service Account → upload the
+# JSON), so `eas submit -p android` pulls it from EAS, authed by EXPO_TOKEN. eas.json
+# carries no serviceAccountKeyPath. Nothing to push here.
 
-# --- safety readout (does not modify the gates) ----------------------------
+# --- safety readout (does not modify the gate) -----------------------------
 echo
-echo "Secrets set: APP_STORE_KEY_ID, APP_STORE_ISSUER_ID, APP_STORE_KEY_P8."
-echo "Release gates (unchanged — the pipeline stays inert until you flip these):"
-echo "  EAS_RELEASE_ENABLED   = $(gh variable get EAS_RELEASE_ENABLED   --repo "$REPO" 2>/dev/null || echo '(unset → off)')"
-echo "  MOBILE_ANDROID_ENABLED = $(gh variable get MOBILE_ANDROID_ENABLED --repo "$REPO" 2>/dev/null || echo '(unset → off)')"
+echo "iOS secrets set: APP_STORE_KEY_ID, APP_STORE_ISSUER_ID, APP_STORE_KEY_P8."
+echo "Release gate (unchanged — the pipeline stays inert until you flip this):"
+echo "  EAS_RELEASE_ENABLED = $(gh variable get EAS_RELEASE_ENABLED --repo "$REPO" 2>/dev/null || echo '(unset → off)')"
