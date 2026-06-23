@@ -1,0 +1,274 @@
+---
+export const prerender = false
+
+import {Icon} from 'astro-icon/components'
+import Button from '~components/ui/Button.astro'
+import PreorderSection from '~components/Purchase/PreorderSection.astro'
+import WhatCard from '~components/Purchase/WhatCard.astro'
+import Layout from '~layouts/Layout.astro'
+import {APP_LAUNCHED, APP_STORE_URL, PLAY_STORE_URL} from '~constants/app'
+
+// Device detection — server-side UA sniff so store ordering is personalised.
+// Default: iOS/desktop visitors see App Store first; Android visitors see Google Play first.
+const ua = Astro.request.headers.get('user-agent') ?? ''
+const isAndroid = /android/i.test(ua)
+const iosFirst = !isAndroid
+---
+
+<Layout
+  title='WhoCards — Get the App'
+  description='Download WhoCards for iOS and Android. Meaningful conversations in your pocket — wherever you go.'
+  class='scrollbar-hide'
+>
+  {
+    APP_LAUNCHED ? (
+      /* ====================================================
+       * LAUNCH MODE — store badges front and centre
+       * ==================================================== */
+      <section class='flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col items-center justify-center gap-6 px-8 text-center lg:gap-8'>
+        <h3 class='text-sm font-semibold uppercase leading-snug tracking-wide text-primary-dark lg:text-base'>
+          It's live
+        </h3>
+        <h1 class='font-title text-4xl font-bold leading-tight text-white lg:text-7xl lg:leading-tight'>
+          WhoCards is now in <span class='text-gradient'>your pocket</span>.
+        </h1>
+        <p class='max-w-2xl text-sm font-semibold leading-7 lg:text-lg'>
+          The conversations that skip the small talk — now close at hand whenever a moment calls for
+          something real.
+        </p>
+
+        {/* Store links — device-aware ordering */}
+        <div class='flex w-full max-w-md flex-col gap-4 pt-2 sm:flex-row sm:justify-center'>
+          {iosFirst ? (
+            <>
+              <Button
+                tag='a'
+                href={APP_STORE_URL}
+                size='lg'
+                hideIcon
+                full
+                target='_blank'
+              >
+                {/* TODO: swap in official Apple App Store badge artwork */}
+                Download on the App Store
+              </Button>
+              <Button
+                tag='a'
+                href={PLAY_STORE_URL}
+                size='lg'
+                hideIcon
+                variant='secondary'
+                full
+                target='_blank'
+              >
+                {/* TODO: swap in official Google Play badge artwork */}
+                Get it on Google Play
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                tag='a'
+                href={PLAY_STORE_URL}
+                size='lg'
+                hideIcon
+                full
+                target='_blank'
+              >
+                {/* TODO: swap in official Google Play badge artwork */}
+                Get it on Google Play
+              </Button>
+              <Button
+                tag='a'
+                href={APP_STORE_URL}
+                size='lg'
+                hideIcon
+                variant='secondary'
+                full
+                target='_blank'
+              >
+                {/* TODO: swap in official Apple App Store badge artwork */}
+                Download on the App Store
+              </Button>
+            </>
+          )}
+        </div>
+
+        <p class='text-xs text-gray-dark'>Free to download · iOS &amp; Android</p>
+
+        {/* Fallback waitlist for desktop / other-device visitors */}
+        <div class='mt-4 w-full max-w-xl rounded-3xl border border-gray-dark bg-background px-6 py-8'>
+          <p class='mb-4 text-sm font-semibold text-gray-dark'>
+            Not on your phone right now? We'll send you the download link.
+          </p>
+          <form id='waitlist-form' class='flex w-full flex-col gap-4 sm:flex-row'>
+            <label class='sr-only' for='waitlist-email'>Email address</label>
+            <input
+              id='waitlist-email'
+              type='email'
+              name='email'
+              required
+              placeholder='you@example.com'
+              class='w-full rounded-xl border border-gray-dark bg-background px-5 py-3 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none'
+            />
+            <input type='hidden' name='source' value='app-page-launch-fallback' />
+            <Button type='submit' tag='button' size='lg' hideIcon class='shrink-0'>
+              Remind me
+            </Button>
+          </form>
+          <p id='waitlist-status' class='min-h-5 mt-2 text-sm text-primary-light' role='status' aria-live='polite' />
+        </div>
+      </section>
+    ) : (
+      /* ====================================================
+       * WAITLIST MODE — pre-launch, build the list
+       * ==================================================== */
+      <section class='flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col items-center justify-center gap-6 px-8 text-center lg:gap-8'>
+        <h3 class='text-sm font-semibold uppercase leading-snug tracking-wide text-primary-dark lg:text-base'>
+          Coming soon
+        </h3>
+        <h1 class='font-title text-4xl font-bold leading-tight text-white lg:text-7xl lg:leading-tight'>
+          WhoCards is coming to <span class='text-gradient'>your pocket</span>.
+        </h1>
+        <p class='max-w-2xl text-sm font-semibold leading-7 lg:text-lg'>
+          The conversations that skip the small talk — soon available on iOS and Android, close at
+          hand whenever a moment calls for something real. Be the first to know when it's live.
+        </p>
+
+        {/* App screenshot placeholder */}
+        <div class='flex h-40 w-full max-w-sm items-center justify-center rounded-3xl border border-dashed border-gray-dark bg-background text-xs text-gray-dark'>
+          {/* TODO: replace with real app screenshots before launch */}
+          App screenshots coming soon
+        </div>
+
+        {/* Email capture */}
+        <form id='waitlist-form' class='flex w-full max-w-xl flex-col gap-4 sm:flex-row'>
+          <label class='sr-only' for='waitlist-email'>Email address</label>
+          <input
+            id='waitlist-email'
+            type='email'
+            name='email'
+            required
+            placeholder='you@example.com'
+            class='w-full rounded-xl border border-gray-dark bg-background px-5 py-3 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none'
+          />
+          <input type='hidden' name='source' value='app-waitlist' />
+          <Button type='submit' tag='button' size='lg' hideIcon class='shrink-0'>
+            Notify me when it's live
+          </Button>
+        </form>
+        <p id='waitlist-status' class='min-h-5 text-sm text-primary-light' role='status' aria-live='polite' />
+        <p class='text-xs text-gray-dark'>No spam. We'll only email you when the app is ready.</p>
+
+        <div class='absolute bottom-5 left-0 right-0 grid place-items-center'>
+          <a
+            href='#why-the-app'
+            class='scale-150 border-0 border-x-8 border-t-8 border-solid border-x-transparent border-t-primary-light transition-transform hover:scale-[2]'
+            aria-label='Scroll to learn more'
+          />
+        </div>
+      </section>
+    )
+  }
+
+  {/* Value props — shown in both modes */}
+  <PreorderSection subtitle='why the app?' title='Conversations in your pocket'>
+    <div class='grid grid-flow-row gap-8 lg:grid-flow-col lg:grid-cols-3 lg:gap-12'>
+      <WhatCard icon='group-chat' title='Always with you'>
+        The right question at the right moment — on the couch, at dinner, in a team meeting, on a
+        date. No cards to carry, no setup required.
+      </WhatCard>
+      <WhatCard icon='group' title='Every language'>
+        Play in your language. WhoCards supports multiple languages so every team and family can
+        connect in the words that feel most like home.
+      </WhatCard>
+      <WhatCard icon='star-circle' title='Free to play'>
+        All 66 questions, zero cost. Draw a card, ask it, listen. That's the whole app.
+      </WhatCard>
+    </div>
+  </PreorderSection>
+
+  {/* Footer CTA */}
+  <div class='w-full px-5 pb-12 lg:max-w-7xl xl:px-0'>
+    <div
+      class='relative flex flex-col items-center overflow-hidden rounded-3xl border border-gray-dark bg-background px-5 py-16 text-center lg:gap-5'
+    >
+      <Icon name='pattern-mobile' class='absolute left-0 right-0 top-0 lg:hidden' />
+      <h3
+        class='text-gradient px-5 text-center font-title text-4xl font-extrabold leading-10 text-white lg:text-[54px] lg:leading-normal'
+      >
+        {APP_LAUNCHED ? 'Download WhoCards' : 'Join the waitlist'}
+      </h3>
+      <p class='max-w-xl px-5 pb-10 pt-5 text-center text-sm leading-snug lg:max-w-3xl lg:text-lg lg:leading-normal'>
+        {
+          APP_LAUNCHED
+            ? 'Available now on iOS and Android. Free to download.'
+            : "We'll send you the download link the moment WhoCards lands in the stores."
+        }
+      </p>
+      {
+        APP_LAUNCHED ? (
+          <div class='flex flex-col gap-4 sm:flex-row'>
+            <Button tag='a' href={APP_STORE_URL} hideIcon target='_blank'>
+              {/* TODO: swap in official Apple App Store badge artwork */}
+              App Store
+            </Button>
+            <Button tag='a' href={PLAY_STORE_URL} hideIcon variant='secondary' target='_blank'>
+              {/* TODO: swap in official Google Play badge artwork */}
+              Google Play
+            </Button>
+          </div>
+        ) : (
+          <span class='px-5'>
+            <Button tag='a' href='#waitlist-email'>
+              Get notified
+            </Button>
+          </span>
+        )
+      }
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const form = document.getElementById('waitlist-form') as HTMLFormElement | null
+  const status = document.getElementById('waitlist-status')
+  const submit = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null
+
+  const setStatus = (message: string, ok: boolean) => {
+    if (!status) return
+    status.textContent = message
+    status.classList.toggle('text-primary-light', ok)
+    status.classList.toggle('text-red-400', !ok)
+  }
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    const data = new FormData(form)
+    const email = data.get('email')?.toString().trim()
+    const source = data.get('source')?.toString() ?? 'app-waitlist'
+    if (!email) return
+
+    if (submit) submit.disabled = true
+    setStatus('Sending…', true)
+
+    try {
+      const res = await fetch('/api/app-launch-subscribe', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email, source}),
+      })
+      const json = (await res.json().catch(() => ({}))) as {message?: string}
+      if (res.ok) {
+        form.reset()
+        setStatus(json.message || "You're on the list — we'll email you when it's live.", true)
+      } else {
+        setStatus(json.message || 'Something went wrong. Please try again.', false)
+      }
+    } catch {
+      setStatus('Something went wrong. Please try again.', false)
+    } finally {
+      if (submit) submit.disabled = false
+    }
+  })
+</script>

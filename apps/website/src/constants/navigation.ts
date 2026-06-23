@@ -13,6 +13,7 @@ export const mainLinks: Link[] = [
   {href: '/#what-is-whocards', title: 'About'},
   {href: '/play', title: 'Play', play: true},
   {href: '/print', title: 'Print'},
+  {href: '/app', title: 'Get the App'},
   // {href: donationUrl, title: 'Donate', external: true},
   {href: '/contact', title: 'Request Cards', button: true},
 ]

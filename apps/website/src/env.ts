@@ -19,6 +19,12 @@ export const env = createEnv({
     PUBLIC_POSTHOG_KEY: z.string().optional(),
     PUBLIC_POSTHOG_HOST: z.string().url().optional().default('https://eu.i.posthog.com'),
     PUBLIC_POSTHOG_UI_HOST: z.string().url().optional().default('https://eu.posthog.com'),
+    // Set to "true" to flip /app from waitlist mode to download mode on launch day.
+    PUBLIC_APP_LAUNCHED: z
+      .string()
+      .optional()
+      .default('false')
+      .transform((v) => v === 'true' || v === '1'),
   },
   runtimeEnv: import.meta.env,
 })
