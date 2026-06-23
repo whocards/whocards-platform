@@ -8,7 +8,9 @@ name: Mobile release
 #     APP_STORE_KEY_ID    — App Store Connect API key ID      (iOS submit, #12)
 #     APP_STORE_ISSUER_ID — App Store Connect API issuer ID   (iOS submit, #12)
 #     APP_STORE_KEY_P8    — App Store Connect API key (.p8)   (iOS submit, #12)
-#     PLAY_SERVICE_ACCOUNT_JSON — Play Store service-account JSON (Android submit, #27)
+#
+#   The Android Play service-account key is NOT a CI secret — it's uploaded to EAS
+#   (`eas credentials` → Android → service account), so eas submit pulls it via EXPO_TOKEN.
 #
 #   Push the iOS secrets with: apps/mobile/scripts/set-mobile-ci-secrets.sh
 #
@@ -99,9 +101,8 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # TODO(#12): store-submit secrets must be added before this step is functional.
-      # iOS: APP_STORE_KEY_ID, APP_STORE_ISSUER_ID, APP_STORE_KEY_P8 → TestFlight beta.
-      # Android: PLAY_SERVICE_ACCOUNT_JSON → Play Internal Testing track.
+      # iOS needs the App Store Connect API secrets (APP_STORE_KEY_ID / ISSUER_ID / KEY_P8)
+      # set in CI for TestFlight. Android's key lives on EAS, so it needs nothing here.
       - name: Submit iOS (TestFlight)
         working-directory: apps/mobile
         env:
@@ -110,10 +111,10 @@ jobs:
           EXPO_APPLE_API_KEY: ${{ secrets.APP_STORE_KEY_P8 }}
         run: eas submit --platform ios --profile production --latest --non-interactive
 
+      # Service-account key is stored on EAS (uploaded via `eas credentials`), so no
+      # key file or secret is needed here — eas-cli pulls it, authed by EXPO_TOKEN.
       - name: Submit Android (Play Internal Testing)
         working-directory: apps/mobile
-        env:
-          EXPO_GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
         run: eas submit --platform android --profile production --latest --non-interactive
 
   ota-update:

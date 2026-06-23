@@ -13,8 +13,8 @@
 #   APP_STORE_KEY_P8_PATH=/path/to/AuthKey_ABC123XYZ.p8 \
 #   ./apps/mobile/scripts/set-mobile-ci-secrets.sh
 #
-# EXPO_TOKEN is assumed already set. The Play service-account JSON
-# (PLAY_SERVICE_ACCOUNT_JSON) is pushed too, when the JSON is present on disk.
+# EXPO_TOKEN is assumed already set. The Android Play service-account key is NOT a CI
+# secret — it's uploaded to EAS (`eas credentials`), so eas submit pulls it via EXPO_TOKEN.
 #
 # This script does NOT enable the release pipeline: EAS_RELEASE_ENABLED stays false.
 
@@ -37,17 +37,11 @@ gh secret set APP_STORE_KEY_ID    --repo "$REPO" --body "$APP_STORE_KEY_ID"
 gh secret set APP_STORE_ISSUER_ID --repo "$REPO" --body "$APP_STORE_ISSUER_ID"
 gh secret set APP_STORE_KEY_P8    --repo "$REPO" < "$APP_STORE_KEY_P8_PATH"
 
-# --- Android submit secret -------------------------------------------------
-# The Play service-account JSON consumed by `eas submit -p android` (mobile-release.yml).
-# Defaults to the gitignored credentials path; override with PLAY_SERVICE_ACCOUNT_JSON_PATH.
-PLAY_SERVICE_ACCOUNT_JSON_PATH="${PLAY_SERVICE_ACCOUNT_JSON_PATH:-apps/mobile/credentials/android/google-play-service-account.json}"
-if [ -f "$PLAY_SERVICE_ACCOUNT_JSON_PATH" ]; then
-  echo "Pushing Play service-account secret to $REPO ..."
-  gh secret set PLAY_SERVICE_ACCOUNT_JSON --repo "$REPO" < "$PLAY_SERVICE_ACCOUNT_JSON_PATH"
-else
-  echo "skip PLAY_SERVICE_ACCOUNT_JSON — no JSON at $PLAY_SERVICE_ACCOUNT_JSON_PATH"
-  echo "  (set PLAY_SERVICE_ACCOUNT_JSON_PATH=/path/to/service-account.json to push it)"
-fi
+# --- Android submit key (no CI secret) -------------------------------------
+# The Play service-account key is NOT a GitHub secret — it's uploaded to EAS once
+# (`cd apps/mobile && eas credentials` → Android → Google Service Account → upload the
+# JSON), so `eas submit -p android` pulls it from EAS, authed by EXPO_TOKEN. eas.json
+# carries no serviceAccountKeyPath. Nothing to push here.
 
 # --- safety readout (does not modify the gate) -----------------------------
 echo

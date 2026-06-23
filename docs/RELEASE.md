@@ -28,13 +28,13 @@ browse, Custom Decks, Personal Game, accounts/purchases, Facilitation (all futur
   - [x] Expo account / org (free) — projectId `70c97b4d…` wired into `app.json`; `EXPO_TOKEN` set as an Actions secret
 - [x] **EAS init** — `projectId` committed to `app.json` (`extra.eas.projectId`)
 - [x] **Credentials** — EAS-managed signing: iOS distribution cert + provisioning done (Android keystore deferred → #27). Local `credentials.json` is gitignored (it holds a plaintext cert password)
-- [x] **Submit creds** — App Store Connect API key stored on EAS; push it to CI with `apps/mobile/scripts/set-mobile-ci-secrets.sh`. Play service-account JSON deferred → #27
+- [x] **Submit creds** — App Store Connect API key stored on EAS; push it to CI with `apps/mobile/scripts/set-mobile-ci-secrets.sh`. Android Play service-account key: upload to EAS (`eas credentials` → Android → Google Service Account) so `eas submit` pulls it — no `serviceAccountKeyPath`, no CI secret
 - [x] **`eas.json`** — `cli.appVersionSource: "remote"`; profiles `development` / `preview` / `production`; `autoIncrement` on `production`; per-profile `env` (`EXPO_PUBLIC_API_URL`); channels `preview` / `production`
 - [x] **OTA** — `expo-updates` added; `runtimeVersion: { "policy": "fingerprint" }` set in `app.json`
 - [x] **CI** (GitHub Actions, `.github/workflows/`)
   - [x] PR/main workflow: the quality gate (`mobile-gate.yml`)
   - [x] Tag (`v*`) workflow: gate → `eas build` → `eas submit` (beta) → `eas update` (`mobile-release.yml`) — **inert until `EAS_RELEASE_ENABLED=true`** (iOS + Android together)
-  - [x] Secrets: `EXPO_TOKEN` set; iOS ASC API key via the script above; Play JSON pending (#27)
+  - [x] Secrets: `EXPO_TOKEN` set; iOS ASC API key via the script above; Android Play key lives on EAS (not a CI secret)
 - [ ] **`docs/mobile/README` / this runbook** linked from the repo README
 
 ## Phase 1 — Blockers before the first build
