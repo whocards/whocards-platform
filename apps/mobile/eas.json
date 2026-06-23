@@ -29,7 +29,7 @@
         "appleTeamId": "6RTC67K8CW"
       },
       "android": {
-        "serviceAccountKeyPath": "TODO: path to Play service-account JSON"
+        "serviceAccountKeyPath": "./credentials/android/google-play-service-account.json"
       }
     }
   }
