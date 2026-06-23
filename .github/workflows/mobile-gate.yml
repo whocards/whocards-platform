@@ -3,8 +3,21 @@ name: Mobile gate
 on:
   pull_request:
     branches: [main]
+    # Docs-only changes don't affect the mobile app or shared packages, so skip the
+    # gate entirely for them (no install / typecheck / test). Markdown formatting is
+    # still enforced locally by the husky pre-commit hook (lint-staged → oxfmt).
+    # paths-ignore only skips when *every* changed file matches, so a PR touching both
+    # docs and code still runs the full gate.
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  # workflow_call has no path filter on purpose: the release pipeline calls this gate
+  # and must always run the full checks regardless of what changed.
   workflow_call: {}
 
 jobs:
