@@ -38,7 +38,11 @@ export default defineConfig({
   trailingSlash: 'never',
   integrations: [
     mdx(),
-    sitemap(),
+    // Keep noindexed utility pages (/images, /[language]/images) out of the
+    // sitemap so we don't advertise pages we ask crawlers not to index.
+    sitemap({
+      filter: (page) => !new URL(page).pathname.endsWith('/images'),
+    }),
     robotsTxt(),
     react(),
     icon({
