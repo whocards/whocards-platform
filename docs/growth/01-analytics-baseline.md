@@ -5,34 +5,34 @@ from live event data, not estimates. Where a number is derived or inferred it is
 
 > **The single most important fact:** product analytics only began capturing data around
 > **2026-05-31**. Every "all-time" number below is really **~3.5 weeks** of data, and almost
-> all of it comes from **one event activation**. Treat this as a *launch snapshot*, not a
+> all of it comes from **one event activation**. Treat this as a _launch snapshot_, not a
 > trend. There is no real historical baseline yet — which is itself the headline finding.
 
 ---
 
 ## 1. Headline numbers (2026-05-31 → 2026-06-23)
 
-| Metric | Value | Notes |
-|---|---|---|
-| Total pageviews | **1,603** | 100% classified "Regular"/human; bot/AI-crawler traffic negligible |
-| Unique visitors | **307** | `$pageview` unique users, the month |
-| Device split | **270 mobile / 37 desktop** | **88% mobile** |
-| Mobile app opens | **28** | native Expo app barely used yet |
-| Questions seen (event deck) | **3,427** | legacy `event_question_seen` |
-| Question "next" taps (event deck) | **2,375** | legacy `event_question_next` |
-| Library deck opens | **18** | generic `deck_opened` |
-| Games started (Library) | **18** | generic `game_started` |
+| Metric                            | Value                       | Notes                                                              |
+| --------------------------------- | --------------------------- | ------------------------------------------------------------------ |
+| Total pageviews                   | **1,603**                   | 100% classified "Regular"/human; bot/AI-crawler traffic negligible |
+| Unique visitors                   | **307**                     | `$pageview` unique users, the month                                |
+| Device split                      | **270 mobile / 37 desktop** | **88% mobile**                                                     |
+| Mobile app opens                  | **28**                      | native Expo app barely used yet                                    |
+| Questions seen (event deck)       | **3,427**                   | legacy `event_question_seen`                                       |
+| Question "next" taps (event deck) | **2,375**                   | legacy `event_question_next`                                       |
+| Library deck opens                | **18**                      | generic `deck_opened`                                              |
+| Games started (Library)           | **18**                      | generic `game_started`                                             |
 
 ## 2. Traffic shape — a spike that is decaying fast
 
 Weekly pageviews:
 
-| Week of | Pageviews | WoW |
-|---|---|---|
-| 2026-05-31 | 981 | launch |
-| 2026-06-07 | 483 | −51% |
-| 2026-06-14 | 122 | −75% |
-| 2026-06-21 | 17 | partial week |
+| Week of    | Pageviews | WoW          |
+| ---------- | --------- | ------------ |
+| 2026-05-31 | 981       | launch       |
+| 2026-06-07 | 483       | −51%         |
+| 2026-06-14 | 122       | −75%         |
+| 2026-06-21 | 17        | partial week |
 
 This is a textbook **event spike with no retention loop** — roughly halving every week back
 toward an organic floor near zero. The "leaky bucket" is the central growth problem.
@@ -49,27 +49,27 @@ LinkedIn.
 
 **Top pages:**
 
-| Path | Pageviews |
-|---|---|
-| `/events/hajnalig/play` | 842 |
-| `/events/hajnalig` | 294 |
-| `/contact` | **123** |
-| `/` (home) | 99 |
-| `/play` (Library) | 32 |
+| Path                                         | Pageviews                |
+| -------------------------------------------- | ------------------------ |
+| `/events/hajnalig/play`                      | 842                      |
+| `/events/hajnalig`                           | 294                      |
+| `/contact`                                   | **123**                  |
+| `/` (home)                                   | 99                       |
+| `/play` (Library)                            | 32                       |
 | `/en/question/40` and other `/en/question/*` | ~3–10 each (legacy URLs) |
-| `/print` | 8 |
-| `/ai-at-work` | 6 |
+| `/print`                                     | 8                        |
+| `/ai-at-work`                                | 6                        |
 
 **Conclusion:** ~75% of all traffic and ~96% of all engagement is the **"Hajnalig" event**
 (a Hungarian event, sponsored — note the Hello Parks / LearnWorlds partner referral). This was
-a QR/link-driven, on-site, mobile activation. It worked extremely well *as an event* and tells
+a QR/link-driven, on-site, mobile activation. It worked extremely well _as an event_ and tells
 us almost nothing yet about organic demand.
 
 ## 4. Engagement quality — the content works
 
 The conference deck generated **3,427 question views and 2,375 "next" taps**. Against the
 people who actually played, that is a very high questions-per-session — players went deep. The
-product experience is sticky *within a session*. The problem is not the cards; it is
+product experience is sticky _within a session_. The problem is not the cards; it is
 **distribution and return**.
 
 By contrast the general **Library product is effectively pre-launch by usage**: 18 deck opens,
@@ -88,7 +88,7 @@ unmonetized demand** — every non-Hungarian, non-English locale is greenfield.
 ## 6. Patterns that matter for growth
 
 1. **Event-led, single-channel.** The only thing that has driven real usage is a live event.
-   That is a *repeatable, proven channel*, not a fluke — but right now it is a one-off.
+   That is a _repeatable, proven channel_, not a fluke — but right now it is a one-off.
 2. **No retention mechanism.** Nothing brings a player back: no account prompt, no email, no
    notification, no streak, no "new deck" reason. Traffic decays to zero between events.
 3. **Activation cliff on the core product.** 307 visitors → 18 Library deck opens (~6%). The

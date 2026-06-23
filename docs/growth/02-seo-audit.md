@@ -31,6 +31,7 @@ indexable surface.
 route appears to have been removed — yet `/en/question/40`, `/en/question/1`, `/en/question/33`…
 still receive pageviews and are **referred from ChatGPT and Google**. They are almost certainly
 **404ing now**. This is the biggest single organic opportunity:
+
 - **66 questions × 14 languages ≈ 900 unique, long-tail content pages** ("deep questions to
   ask…", "conversation starters about…"). Perfect for both classic SEO and answer engines.
 - Either **restore them as static pages** (preferred — compounding asset) or **301-redirect**
@@ -40,8 +41,8 @@ still receive pageviews and are **referred from ChatGPT and Google**. They are a
 **2. Fix the homepage meta — it is off-strategy.**
 The homepage passes `description='Request a WhoCards deck by reaching out through our contact
 form.'` (a leftover from a preorder/contact era). The home page should target the actual
-high-intent terms the product wins on: *conversation game, conversation cards, deep questions,
-icebreaker / connection questions, free online*. The H1 ("Change Your World, One Conversation
+high-intent terms the product wins on: _conversation game, conversation cards, deep questions,
+icebreaker / connection questions, free online_. The H1 ("Change Your World, One Conversation
 at a Time") is good brand but carries no keyword — add a keyword-bearing subhead and a real
 meta description.
 
@@ -54,12 +55,13 @@ cluster (+ `x-default`) in `Head.astro`, generated from the languages list.
 ### P1 — high value, slightly more work
 
 **4. Unique, descriptive meta on question pages (when restored).**
-Today every question page would get `title = "WhoCards | Question #N"` and the *same*
+Today every question page would get `title = "WhoCards | Question #N"` and the _same_
 `description = "Dare to be Curious?"` → thin/duplicate content. Make `title` = the question
 text (localized), `description` = a short contextual line. This is what makes 900 pages rank
 instead of dedupe.
 
 **5. Add structured data (JSON-LD).** None present today. Quick, high-value wins:
+
 - `Organization` + `WebSite` (with `SearchAction` for sitelinks search) sitewide.
 - **`FAQPage`** — FAQs already exist in `src/constants/faqs.ts`; emitting FAQPage schema on the
   home/FAQ section is near-free and surfaces rich results + feeds answer engines.

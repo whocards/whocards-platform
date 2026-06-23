@@ -27,7 +27,7 @@ A PostHog-grounded analytics review, SEO/AEO audit, and business/marketing growt
   already cited by ChatGPT), **mobile share virality** (you auto-generate share cards), and the
   **AI-at-work B2B wedge** for first revenue.
 - **12-month MAU:** status-quo ~150–350 (sawtooth) → conservative ~2–4k → aggressive ~10–25k +
-  B2B revenue. The spread is almost entirely *retention rate × one breakout channel*.
+  B2B revenue. The spread is almost entirely _retention rate × one breakout channel_.
 
 > Mission and growth point the same way here: help more people have a real conversation, in
 > their language, and come back for another. Estimates are planning ranges, not forecasts —
