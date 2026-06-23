@@ -13,6 +13,7 @@ export interface Props {
   class?: string
   title?: string
   description?: string
+  noindex?: boolean
   lang?: string
   showLangModal?: boolean
   links?: Link[]
@@ -27,6 +28,7 @@ const {
   class: mainClasses,
   title,
   description,
+  noindex = false,
   lang = 'en',
   showLangModal = false,
   links = mainLinks,
@@ -40,7 +42,7 @@ const {
 <!doctype html>
 <html lang={lang} class='scroll-smooth bg-darkest'>
   <head>
-    <Head title={title} description={description} image={image} id={id} language={lang} />
+    <Head title={title} description={description} noindex={noindex} image={image} id={id} language={lang} />
     <PostHog />
   </head>
   <body
