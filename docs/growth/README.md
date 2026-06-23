@@ -13,6 +13,10 @@ A PostHog-grounded analytics review, SEO/AEO audit, and business/marketing growt
 3. **[03-growth-strategy.md](./03-growth-strategy.md)** — business analysis, five prioritized
    growth levers, instrumentation, current→historical→projected stats (3 scenarios with
    assumptions), and a 90-day plan.
+4. **[04-app-launch-plan.md](./04-app-launch-plan.md)** — the concrete mobile-app launch playbook
+   (iOS + Android): launch notification channels, the `/app` page, waitlist email capture, the
+   review/ratings flywheel, the re-engagement cadence, instrumentation, and a phased roadmap that
+   threads the existing growth tickets together.
 
 ## TL;DR
 
