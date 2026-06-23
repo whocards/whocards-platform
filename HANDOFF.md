@@ -149,7 +149,7 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
 - **Git remote NOW EXISTS** — `origin` = `https://github.com/whocards/whocards-platform.git` (public),
   and `gh` works (issues/PRs). Earlier sessions had no remote. The user's flow still stands: coder
   works branch-local, **push/PR only with explicit user OK** (public repo — never commit `.env`).
-- **A `coder` subagent can die mid-run** — the 0006 coder crashed after ~13 min (`API Error:
+- **A `coder` subagent can die mid-run** — a previous coder crashed after ~13 min (`API Error:
 ConnectionRefused`; safety classifier also down) with **no report**, leaving uncommitted files on
   its branch. Recovery: inspect `git status` + the branch, then run the verification the coder
   skipped and commit the output yourself — don't assume a silent/dead agent finished cleanly.
@@ -173,5 +173,5 @@ pnpm install
 pnpm -F website dev      # needs apps/website/.env for full run (placeholders ok for build)
 pnpm -F mobile start     # Expo
 pnpm check               # oxfmt --check && oxlint --deny-warnings && turbo typecheck test
-pnpm -F @whocards/logger test   # 12 tests, the logger package
+pnpm -F @whocards/observability test   # observability events + logger behavior
 ```
