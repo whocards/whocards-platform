@@ -47,9 +47,11 @@ tag, runs the gate → `eas build` → `eas submit` (beta track) → `eas update
   independently — don't tie store-listing version bumps to OTA reach.
 - The release **runbook and the build-up checklist** live in `docs/RELEASE.md`; this ADR records
   only the decisions and their trade-offs.
-- **Amendment (2026-06-22) — iOS-first for v1.** The "TestFlight **and** Play Internal" beta step
-  above is the steady-state intent, but the v1 launch ships **iOS first**: the Google Play account
-  is blocked (deferred to #27). The pipeline itself is unchanged — the Android build/submit steps in
-  `mobile-release.yml` are simply gated behind the `MOBILE_ANDROID_ENABLED` repo variable (off), so
-  iOS releases run end-to-end without them. Flip the variable on once #27 lands a working Play
-  account + service-account secret; no pipeline rework is needed.
+- **Amendment (2026-06-22) — iOS-first for v1.** The v1 launch was planned **iOS first** while the
+  Google Play account was blocked (#27), with the Android build/submit steps temporarily gated behind
+  a `MOBILE_ANDROID_ENABLED` repo variable so iOS could ship without them.
+- **Amendment (2026-06-23) — Android re-enabled.** A fresh Play account + service-account JSON are
+  set up and the release verified rendering on device, so the `MOBILE_ANDROID_ENABLED` gate is
+  **removed**: iOS and Android build/submit together under the single `EAS_RELEASE_ENABLED` switch.
+  Remaining Android prerequisite (outside the pipeline): create the Play app record and hand-upload
+  the first AAB, which Google requires before `eas submit -p android` succeeds.

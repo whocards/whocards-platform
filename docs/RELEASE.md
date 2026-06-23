@@ -16,9 +16,11 @@ browse, Custom Decks, Personal Game, accounts/purchases, Facilitation (all futur
 
 ## Phase 0 — One-time foundation
 
-> **Android is deferred for the v1 launch** ([#27](https://github.com/whocards/whocards-platform/issues/27)) — the
-> Google Play account is blocked, so iOS ships first. The release workflow gates every Android build/submit step
-> behind the `MOBILE_ANDROID_ENABLED` repo variable; flip it on once #27 lands a working account + service-account secret.
+> **Android is back in the release** ([#27](https://github.com/whocards/whocards-platform/issues/27)) — a fresh Google
+> Play account + service-account JSON are set up, and the release verified rendering on device. iOS and Android now
+> build/submit together under the single `EAS_RELEASE_ENABLED` switch (the old `MOBILE_ANDROID_ENABLED` gate is removed).
+> Remaining Android prerequisite: create the Play app record and hand-upload the first AAB (Google requires this before
+> `eas submit -p android` works).
 
 - [ ] **Accounts** — Apple done; Google Play deferred (#27)
   - [x] Apple Developer Program ($99/yr) — enrolled; App Store Connect app record created (`ascAppId 6782853824`, Team ID `6RTC67K8CW`)
@@ -31,7 +33,7 @@ browse, Custom Decks, Personal Game, accounts/purchases, Facilitation (all futur
 - [x] **OTA** — `expo-updates` added; `runtimeVersion: { "policy": "fingerprint" }` set in `app.json`
 - [x] **CI** (GitHub Actions, `.github/workflows/`)
   - [x] PR/main workflow: the quality gate (`mobile-gate.yml`)
-  - [x] Tag (`v*`) workflow: gate → `eas build` → `eas submit` (beta) → `eas update` (`mobile-release.yml`) — **inert until `EAS_RELEASE_ENABLED=true`**; Android steps additionally gated on `MOBILE_ANDROID_ENABLED`
+  - [x] Tag (`v*`) workflow: gate → `eas build` → `eas submit` (beta) → `eas update` (`mobile-release.yml`) — **inert until `EAS_RELEASE_ENABLED=true`** (iOS + Android together)
   - [x] Secrets: `EXPO_TOKEN` set; iOS ASC API key via the script above; Play JSON pending (#27)
 - [ ] **`docs/mobile/README` / this runbook** linked from the repo README
 
