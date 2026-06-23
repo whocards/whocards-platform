@@ -3,6 +3,7 @@ export interface Props {
   title?: string
   description?: string
   image?: string
+  noindex?: boolean
   // id/language let SSR pages (e.g. /play) supply the per-question metadata that
   // static question pages used to get from route params.
   id?: string
@@ -16,6 +17,7 @@ const {
   title: propTitle,
   description: propDesc,
   image: img,
+  noindex = false,
   id: propId,
   language: propLang,
 } = Astro.props
@@ -58,6 +60,7 @@ const title = titles.join(' | ')
 <title>{title}</title>
 <meta name='title' content={title} />
 {description && <meta name='description' content={description} />}
+{noindex && <meta name='robots' content='noindex, follow' />}
 <link rel='canonical' href={canonicalUrl} />
 
 <!-- Favicon -->
@@ -102,3 +105,29 @@ const title = titles.join(' | ')
     <link rel='preload' href={`/fonts/${font}.woff2`} as='font' type='font/woff2' crossorigin />
   ))
 }
+
+<!-- JSON-LD structured data -->
+<script
+  is:inline
+  type='application/ld+json'
+  set:html={JSON.stringify([
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'WhoCards',
+      url: site?.toString(),
+      logo: image,
+      sameAs: [
+        'https://www.linkedin.com/company/whocards',
+        'https://facebook.com/whocards',
+        'https://instagram.com/who_cards',
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'WhoCards',
+      url: site?.toString(),
+    },
+  ])}
+/>
