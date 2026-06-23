@@ -1,0 +1,39 @@
+{
+  "name": "@whocards/emails",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./resend": "./src/resend.ts"
+  },
+  "scripts": {
+    "with-env": "dotenv -e ../../.env${ENV:+.${ENV}} --",
+    "dev": "email dev --dir src/templates",
+    "export": "email export --dir src/templates --outDir dist",
+    "render": "pnpm with-env tsx scripts/render.tsx",
+    "test-send": "pnpm with-env tsx scripts/send-test.tsx",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.9",
+    "@whocards/tokens": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "resend": "^6.14.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@whocards/typescript-config": "workspace:*",
+    "dotenv-cli": "^11.0.0",
+    "react-email": "^6.6.4",
+    "tsx": "^4.21.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
