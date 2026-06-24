@@ -1,5 +1,7 @@
 import {Ionicons} from '@expo/vector-icons'
+import * as Application from 'expo-application'
 import {useLocalSearchParams, useRouter} from 'expo-router'
+import * as StoreReview from 'expo-store-review'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
 import {AppState, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
@@ -25,6 +27,13 @@ import {PlayerBar} from '@/components/player-bar'
 import {ScreenBackground} from '@/components/screen-background'
 import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
+import {
+  getReviewState,
+  incrementCardCount,
+  incrementSessionCount,
+  isReviewEligible,
+  markReviewAttempted,
+} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, setStoredLanguage} from '@/lib/language-store'
@@ -174,6 +183,55 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageReady])
 
+  // Counts this session for review eligibility on its FIRST served card (below), so a
+  // session that never showed a card isn't counted — matches the session-count doc.
+  const sessionCountedRef = useRef(false)
+
+  // --- In-app review: check eligibility and fire the native OS prompt ---
+  // Called after play (on exit or background), never mid-card or on launch.
+  // Fails silently; emits app_review_eligible and app_review_requested via track().
+  // An in-flight ref dedupes concurrent calls (AppState background + exit can both
+  // fire) so two callers can't pass the eligibility check before the first persists.
+  const reviewRequestInFlightRef = useRef(false)
+  const maybeRequestReview = useCallback(async () => {
+    if (reviewRequestInFlightRef.current) return
+    reviewRequestInFlightRef.current = true
+    try {
+      const appVersion = Application.nativeApplicationVersion ?? '0'
+      const state = await getReviewState()
+      if (!isReviewEligible(state, appVersion)) return
+
+      track({
+        name: EVENTS.APP_REVIEW_ELIGIBLE,
+        props: {
+          app_version: appVersion,
+          card_count: state.cardCount,
+          session_count: state.sessionCount,
+        },
+      })
+
+      const available = await StoreReview.isAvailableAsync()
+      if (!available) return
+      const hasAction = await StoreReview.hasAction()
+      if (!hasAction) return
+
+      // Persist before calling so a background/crash after this point doesn't
+      // allow a second attempt on the same version.
+      await markReviewAttempted(appVersion)
+
+      track({
+        name: EVENTS.APP_REVIEW_REQUESTED,
+        props: {app_version: appVersion},
+      })
+
+      await StoreReview.requestReview()
+    } catch {
+      // Fail silently — store review is best-effort.
+    } finally {
+      reviewRequestInFlightRef.current = false
+    }
+  }, [])
+
   // --- Answer record: every serve enqueues an Answer; the queue sends it (or
   // retries offline). Recording is wired here, not in the engine, so the shared
   // headless engine stays pure (ADR-0003). ---
@@ -186,16 +244,20 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
       if (state === 'active') void flush(send)
       if (state === 'background' || state === 'inactive') {
         viewTracker.endView('backgrounded')
+        // After a play session ends (app backgrounded), check for review eligibility.
+        void maybeRequestReview()
       }
     })
     return () => sub.remove()
-  }, [viewTracker])
+  }, [viewTracker, maybeRequestReview])
 
   // one Answer per Question served (keyed on questionId, so re-renders don't
   // double-record); also a flush trigger via enqueue's opportunistic send.
   // TODO(answered=served): `language` in the deps re-records when the language is
   // switched on the same card (an over-count vs "answered = served"); revisit when
   // the "answered" definition gains a dwell timer.
+  // Card count for in-app review eligibility increments on the same questionId key
+  // (same over-count caveat as above).
   useEffect(() => {
     if (!questionId) return
     let cancelled = false
@@ -203,6 +265,12 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
       if (cancelled) return
       void enqueue({deviceId, deckSlug, questionId, language}, send)
     })
+    void incrementCardCount()
+    // First served card of this session → count the session for review eligibility.
+    if (!sessionCountedRef.current) {
+      sessionCountedRef.current = true
+      void incrementSessionCount()
+    }
     return () => {
       cancelled = true
     }
@@ -371,9 +439,10 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
 
   // leave the player — back to wherever we came from, falling back to the landing
   const handleExit = useCallback(() => {
+    void maybeRequestReview()
     if (router.canGoBack()) router.back()
     else router.replace('/')
-  }, [router])
+  }, [router, maybeRequestReview])
 
   const handleShare = useCallback(() => {
     if (!text) return

@@ -58,12 +58,12 @@ Name the output folder for the slot (`iphone-6.5`) and the capture script verifi
 PNG is an Apple-accepted size for that slot — a wrong-sized capture fails here instead of
 being rejected at upload.
 
-| Slot folder           | Accepted portrait px            | Simulator that renders it                       |
-| --------------------- | ------------------------------- | ----------------------------------------------- |
-| `iphone-6.5`          | **1242×2688** or **1284×2778**  | iPhone 11 Pro Max / XS Max · **iPhone 14 Plus** |
-| `iphone-6.7`          | 1290×2796                       | iPhone 15 Plus / 15 Pro Max / 14 Pro Max        |
-| `iphone-6.9`          | 1320×2868                       | iPhone 16 Pro Max                               |
-| `ipad-13` / `ipad-12.9` | 2048×2732                     | iPad Pro 13" / 12.9"                            |
+| Slot folder             | Accepted portrait px           | Simulator that renders it                       |
+| ----------------------- | ------------------------------ | ----------------------------------------------- |
+| `iphone-6.5`            | **1242×2688** or **1284×2778** | iPhone 11 Pro Max / XS Max · **iPhone 14 Plus** |
+| `iphone-6.7`            | 1290×2796                      | iPhone 15 Plus / 15 Pro Max / 14 Pro Max        |
+| `iphone-6.9`            | 1320×2868                      | iPhone 16 Pro Max                               |
+| `ipad-13` / `ipad-12.9` | 2048×2732                      | iPad Pro 13" / 12.9"                            |
 
 The mandatory 6.5" set is the **default** (`pnpm -F mobile screenshots`, see above) — it
 resolves a 6.5"-class simulator (iPhone 14 Plus → 1284×2778) automatically. Install the
