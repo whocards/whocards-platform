@@ -46,26 +46,75 @@ no review is a vanity number.
 
 ---
 
-## 2. Decision: how do we tell people? (launch notification)
+## 2. Decision: how do we tell people? (buildup + launch notification)
 
-The "notification" is a **portfolio of owned channels**, fired on launch day. Ranked by ROI:
+The campaign has two distinct sends:
 
-| Channel                                                                                           | Reach                | Cost       | Verdict                                                                                                              |
-| ------------------------------------------------------------------------------------------------- | -------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------- |
-| **Email blast to our list** (cards requesters + newsletter + AI-at-work leads + **app waitlist**) | Warm, owned          | Free       | **Primary.** Highest-intent audience we have.                                                                        |
-| **Smart App Banner + site CTA** (whocards.cc → /app)                                              | All web-play traffic | Free       | **Primary.** Converts existing in-product attention. iOS `apple-itunes-app` meta tag; Android native-app deep links. |
-| **Social posts** (LinkedIn / Facebook / Instagram — accounts already exist)                       | Cold-ish             | Free       | **Yes.** Reuse auto-generated question cards as creative (§ ties to #56).                                            |
-| **In-app web→app handoff** (banner inside `/play`)                                                | Engaged players      | Free       | **Yes.** Catch people at peak engagement.                                                                            |
-| **Web push**                                                                                      | Opted-in web users   | Setup cost | **Defer.** Not set up; not worth blocking launch.                                                                    |
-| **Paid ads**                                                                                      | Cold, broad          | $$         | **Defer.** Strategy says organic-first until retention is proven.                                                    |
+1. **Pre-launch buildup:** publish `/app` in waitlist mode and invite the existing, consented
+   newsletter audience to follow the app's progress. New app-notification signups only join the
+   buildup when they also check the optional newsletter box. Use the buildup to raise engagement
+   before asking for a download.
+2. **Campaign launch:** after both public store listings are live and verified, send the dedicated
+   launch announcement to the app-notification list and the newsletter audience, segmented by
+   source and deduplicated.
+
+The channel portfolio is ranked by ROI:
+
+| Channel                                                                                         | Reach                | Cost       | Verdict                                                                                                              |
+| ----------------------------------------------------------------------------------------------- | -------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Email to consented newsletter subscribers** (+ **app-notification list** for the launch send) | Warm, owned          | Free       | **Primary.** Highest-intent audience we have; deduplicate people present in both Segments.                           |
+| **Smart App Banner + site CTA** (whocards.cc → /app)                                            | All web-play traffic | Free       | **Primary.** Converts existing in-product attention. iOS `apple-itunes-app` meta tag; Android native-app deep links. |
+| **Social posts** (LinkedIn / Facebook / Instagram — accounts already exist)                     | Cold-ish             | Free       | **Yes.** Reuse auto-generated question cards as creative (§ ties to #56).                                            |
+| **In-app web→app handoff** (banner inside `/play`)                                              | Engaged players      | Free       | **Yes.** Catch people at peak engagement.                                                                            |
+| **Web push**                                                                                    | Opted-in web users   | Setup cost | **Defer.** Not set up; not worth blocking launch.                                                                    |
+| **Paid ads**                                                                                    | Cold, broad          | $$         | **Defer.** Strategy says organic-first until retention is proven.                                                    |
 
 **Why owned-first:** per `01-analytics-baseline.md`, traffic is bursty and ~0% returns. A paid
 push into a leaky bucket is wasted. Email + on-site banner reach the people most likely to install
 and stick, for free.
 
-**The launch-day email** is a dedicated React Email template in `@whocards/emails` ("It's live —
-WhoCards is in your pocket"), segment-able by source so we can tailor copy (waitlist vs. cards
-customer vs. AI-at-work lead). It depends on the `apps/emails` package (PR #84 / #82).
+**The launch email** is a dedicated React Email template in `@whocards/emails` ("It's live —
+WhoCards is in your pocket"), segment-able by source so we can tailor copy (waitlist vs. existing
+newsletter subscriber vs. cards customer vs. AI-at-work lead). It depends on the `apps/emails`
+package (PR #84 / #82). It is not the pre-launch buildup email.
+
+### General audience email cadence (event-triggered, not calendar-triggered)
+
+1. **Waitlist live — “we're building this with you.”** Send to newsletter subscribers when the
+   pre-launch signup banner and `/app` are live. Show the app preview and the reason for building
+   it; ask for a reply about where they would use WhoCards. Primary goal: conversation and signal,
+   not downloads.
+2. **Beta validated — “almost ready.”** Send after the release candidate passes the beta exit
+   gate, including Google's mandatory 12-testers-for-14-continuous-days Closed Testing gate.
+   Share one Question and a behind-the-scenes detail; invite people to play it now and forward it
+   to someone. Primary goal: engagement and anticipation.
+3. **Campaign launch — “it's live.”** Send only after both public store listings and their URLs
+   are verified. App-notification subscribers receive this send even without newsletter consent;
+   newsletter subscribers receive it as a product update; deduplicate contacts in both Segments.
+
+Do not use a date-based countdown until store review is complete. Store delays should postpone the
+next send, not turn “coming this week” into an apology email.
+
+### Android tester email journey
+
+The mandatory Closed Test is a separate engagement journey, not a footnote inside the general
+buildup email:
+
+1. **Recruitment — “help unlock the Android launch.”** Send the dedicated #82 template once the
+   Play Closed Testing opt-in URL exists. Send it to the consented newsletter audience and support
+   it with personal outreach; invite forwarding to Android friends. Recruit 18–20 people into one
+   Google Group so at least 12 remain continuously opted in.
+2. **Onboarding — “your testing mission.”** After each tester joins, send the opt-in/install steps
+   plus a short mission: first play, swipe, change language, share, background/reopen, and report
+   one confusing or delightful moment.
+3. **Midpoint check-in.** Around day 7, thank the cohort, share what has changed, and ask one focused
+   feedback question. This keeps the cohort active and produces evidence for Google's
+   production-access questionnaire.
+4. **Completion.** After the continuous 14-day gate, thank testers, tell them the production
+   application is submitted, and keep them as the first feedback cohort for future releases.
+
+Tester lifecycle emails go only to the tester cohort; they do not count as the general newsletter
+buildup sequence.
 
 ---
 
@@ -93,25 +142,39 @@ instrument cleanly, and flip between two modes with a single switch.
 **Why both stores at once:** confirmed launch posture is iOS + Android together, so the page must
 carry both badges and detect platform rather than hardcode one store.
 
+**Coordinated-release rule:** submit iOS for App Review during Android's mandatory Closed Testing
+window, but select manual release and hold the approved iOS version. Publicly release iOS and
+Android together only after Google grants production access. This keeps one launch promise, one
+campaign date, and two working badges.
+
 ---
 
-## 4. Decision: email capture (the waitlist)
+## 4. Decision: app notification + permanent newsletter signup
 
-Reuse the proven website pattern (`apps/website/src/pages/api/ai-checkin-subscribe.ts`:
-`insertUser({newsletter:true})` + a Resend confirmation), **not** a new bespoke system.
+Do not treat an app-launch notification and an ongoing newsletter as the same consent. The website
+has two explicit signup paths:
 
-- **Where:** primary on `/app`; secondary nudge at end-of-deck (ties to existing #51) and a
-  homepage CTA. Capture is email-only (lowest friction) with optional name.
+- **Pre-launch signup banner:** email capture for the one-time app launch notification. It includes
+  a separate, optional, unchecked checkbox for occasional WhoCards newsletters. This is distinct
+  from Apple's post-release **Smart App Banner**.
+- **Permanent footer signup:** a sitewide newsletter form for occasional questions, product news,
+  and future releases. This remains after the launch campaign ends.
+- **Additional capture:** an end-of-deck nudge (ties to existing #51) can offer the same newsletter
+  signup at a proven moment of engagement.
+- **Consent:** persist app-notification and newsletter consent separately. App-only subscribers get
+  the confirmation and public-download notification; only newsletter subscribers receive the
+  pre-launch buildup and ongoing engagement emails.
 - **Source tagging:** every signup is tagged with its source (e.g. `app-waitlist`) via a PostHog
-  event and, where possible, persisted, so the launch blast can segment. _This is the single most
-  important detail_ — an untagged list can't be segmented and the launch email becomes generic.
-- **Confirmation email:** immediate "You're on the list" with what to expect + a soft ask to add
-  `hello@whocards.cc` to contacts (deliverability). Inline-HTML in the API route, consistent with
-  the AI-checkin endpoint (no new infra), until `@whocards/emails` is on `main`, then it can move
-  to a branded template.
-- **Consent/unsubscribe:** the list is reused for marketing, so the production launch blast must
-  carry an unsubscribe + honor suppression (the emails-package README already flags this as a
-  pre-campaign requirement — do not skip).
+  event **and persisted**, so every Broadcast can segment and deduplicate correctly.
+- **Confirmation email:** immediate "You're on the list" with copy that reflects the selected
+  consent and a soft ask to add `hello@whocards.cc` to contacts.
+- **Delivery and preferences:** Postgres remains the consent record. Sync consented contacts to
+  Resend Contacts using separate `newsletter` and `app-waitlist` Segments; use a newsletter/product
+  updates Topic for user-visible preferences. Send marketing through Resend Broadcasts so
+  unsubscribe, suppression, batching, and campaign reporting are handled before any buildup send.
+- **Free-tier constraint:** stay within Resend's free Marketing plan (currently 1,000 contacts,
+  three Segments, and unlimited Broadcast sending). The current consented newsletter audience is
+  30 contacts, leaving ample launch headroom.
 
 ---
 
@@ -119,17 +182,25 @@ Reuse the proven website pattern (`apps/website/src/pages/api/ai-checkin-subscri
 
 Ratings are the compounding ASO asset. Ranked by leverage:
 
-1. **Native in-app review prompt** (`expo-store-review` / StoreReview). Trigger at a **proven-happy
-   moment** — e.g. after the player has answered N cards across ≥2 sessions — never on first open,
-   never mid-play. Respect the OS quota (the system shows it sparingly). **Highest leverage; build
-   it.**
-2. **Soft-ask gate** in front of the native prompt: "Enjoying WhoCards?" → 👍 routes to the store
-   review, 👎 routes to a feedback capture (email/`/contact`). Protects the public rating; sends
-   unhappy signal somewhere useful.
-3. **Review-ask email** a few days post-install (for installers we can email). Secondary.
+1. **Ship `expo-store-review` in the v1 binary.** It is a native dependency, so it must land before
+   the release candidate enters the 14-day Closed Test. Trigger the standardized native prompt
+   directly after a proven moment of value: at least 10 answered Cards across at least two
+   sessions, after play rather than mid-Card. Attempt at most once per app version and respect the
+   OS quota.
+2. **No soft-ask or review gating.** Apple disallows custom review prompts, and Expo explicitly
+   says not to ask a question before presenting the native review UI. Feedback/contact remains
+   always available as a separate support path; it is not selected based on whether someone says
+   they are happy.
+3. **Measure requests, not outcomes.** `StoreReview.requestReview()` returns no submission result,
+   and the OS may decline to show the prompt. Track eligibility and request attempts
+   (`app_review_eligible`, `app_review_requested`), never a fictional “accepted” event.
+4. **Testing:** verify the flow on Android through the Play test track. On iOS,
+   `StoreReview.isAvailableAsync()` is false under TestFlight, so unit-test the eligibility gate
+   and verify the native prompt only after App Store distribution.
 
 **Anti-patterns to avoid:** prompting on launch, prompting every session, prompting before the
-player has felt the value, or routing unhappy users straight to a public review box.
+player has felt the value, adding a custom pre-prompt, or claiming to know whether a rating was
+submitted.
 
 ---
 
@@ -139,7 +210,7 @@ The launch is release #1 of many. The engagement engine is mostly **already tick
 plan threads them into a release cadence rather than reinventing them:
 
 - **Push notifications for conversation prompts** — Epic **#71**. The core re-engagement engine;
-  a daily/weekly prompt is the reason to re-open. Sequenced as Phase 3 (post-launch).
+  a daily/weekly prompt is the reason to re-open. Sequenced as Phase 5 (post-launch).
 - **Question / deck of the week** return hook — **#52**, and social **#56** (question-of-the-day
   using auto-generated cards). Cross-channel re-engagement.
 - **Share a question card** — mobile **#76** + web **#53**: retention _and_ acquisition (viral
@@ -159,14 +230,14 @@ the list; the cadence keeps it.
 
 One funnel in PostHog (feeds **#54**), every step a named event:
 
-| Step            | Event                                         | Notes                                             |
-| --------------- | --------------------------------------------- | ------------------------------------------------- |
-| Page view       | `app_page_viewed`                             | with detected platform                            |
-| Waitlist signup | `app_waitlist_signup`                         | **with `source`**                                 |
-| Store click     | `app_store_clicked`                           | `store: ios \| android`, UTM on the outbound link |
-| Install         | (attribution)                                 | store-console + UTM; best-effort                  |
-| First play      | existing play/answer events                   | activation                                        |
-| Review prompt   | `app_review_prompted` / `app_review_accepted` | soft-ask + native                                 |
+| Step            | Event                                          | Notes                                             |
+| --------------- | ---------------------------------------------- | ------------------------------------------------- |
+| Page view       | `app_page_viewed`                              | with detected platform                            |
+| Waitlist signup | `app_waitlist_signup`                          | **with `source`**                                 |
+| Store click     | `app_store_clicked`                            | `store: ios \| android`, UTM on the outbound link |
+| Install         | (attribution)                                  | store-console + UTM; best-effort                  |
+| First play      | existing play/answer events                    | activation                                        |
+| Review prompt   | `app_review_eligible` / `app_review_requested` | native request only; outcome is not observable    |
 
 Put **UTM params on every store link** so installs are attributable to channel. Stand up a small
 **launch scoreboard** (page→signup→click rates, signup-by-source) — without it we can't tell which
@@ -176,18 +247,21 @@ channel earned the installs.
 
 ## 8. Phased roadmap
 
-| Phase                        | When    | Ships                                                                                                                                                                                                      |
-| ---------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **0 — Pre-launch**           | now     | `/app` page in **waitlist mode**, waitlist capture + confirmation email, source tagging, instrumentation; store-listing copy + screenshots (#17/#34); ASO keywords; smart-banner prep. **Build the list.** |
-| **1 — Launch day**           | release | flip `/app` to **download mode**; **launch-day email blast** (segmented); social posts; homepage + `/play` CTAs; smart app banner live.                                                                    |
-| **2 — Post-launch (wk 1–4)** | after   | **in-app review prompt** (soft-ask + native); review-ask email; launch funnel/scoreboard (#54); fix top activation friction.                                                                               |
-| **3 — Engagement cadence**   | ongoing | push prompts (#71); question/deck of the week (#52/#56); share card (#76/#53); what's-new per release.                                                                                                     |
+| Phase                               | When            | Ships                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **0 — Pre-launch**                  | now             | Merge the campaign code; publish the app-notification banner and `/app` in **waitlist mode** with optional newsletter consent; add the permanent footer newsletter signup; invite the existing newsletter audience into the buildup; capture + confirm new subscribers; sync Resend Segments/Topic; source tagging and instrumentation; store-listing copy + screenshots (#17/#34); ASO keywords; Smart App Banner prep. **Build and warm the list.** |
+| **1 — Beta + Play eligibility**     | minimum 14 days | TestFlight + Android Closed Testing in parallel; recruit 18–20 Android testers so 12 remain continuously opted in for 14 days; run the release/device gates; fix feedback; submit iOS for App Review with manual release; apply for Google production access and allow up to 7 more days for review.                                                                                                                                                  |
+| **2 — Public release + quiet soak** | after approval  | Promote the validated iOS + Android binaries together, keep `/app` in waitlist mode, and run a 24-hour public-production soak. Testers reinstall from the stores; verify both listings, badges/deep links, PostHog, Answer recording, and support. No unresolved P0/P1 issue.                                                                                                                                                                         |
+| **3 — Campaign launch**             | after soak      | flip `/app` to **download mode**; **launch announcement** (segmented); social posts; homepage + `/play` CTAs; Smart App Banner live.                                                                                                                                                                                                                                                                                                                  |
+| **4 — Post-launch (wk 1–4)**        | after           | Monitor the **native in-app review prompt** eligibility/request rate; launch funnel/scoreboard (#54); fix the largest activation friction.                                                                                                                                                                                                                                                                                                            |
+| **5 — Engagement cadence**          | ongoing         | push prompts (#71); question/deck of the week (#52/#56); share card (#76/#53); what's-new per release.                                                                                                                                                                                                                                                                                                                                                |
 
 ---
 
-## 9. What is being built now (code, behind review, **not merged until after release**)
+## 9. What is being built now (code, behind review, **merged before public release**)
 
-This plan ships with a vertical slice so Phase 0 is real, not just words:
+This vertical slice lands with `/app` in waitlist mode so Phase 0 can build the audience while the
+store binaries move through beta and review:
 
 - **`/app` download/launch landing page** — waitlist mode now, launch mode flag-ready, device-aware
   store badges.
@@ -195,7 +269,8 @@ This plan ships with a vertical slice so Phase 0 is real, not just words:
   the AI-checkin pattern.
 - **Launch-day announcement email template** — branded React Email in `@whocards/emails` (lands
   once PR #84 puts that package on `main`).
-- **In-app review prompt** — soft-ask gate + `expo-store-review` on mobile (Phase 2 slice).
+- **In-app review prompt** — policy-compliant direct `expo-store-review` request after the
+  eligibility threshold; must land in the v1 binary before Closed Testing.
 
 Tracked as the **"App launch + growth"** epic and its child issues (see the issue tracker).
 
@@ -206,4 +281,4 @@ Tracked as the **"App launch + growth"** epic and its child issues (see the issu
 #71 (push), #54 (funnel/scoreboard), #51 (end-of-deck capture), #52 (return hook), #56 (social
 QOTD), #50 (reposition landing), #53/#76 (share card), #17 (store listing/compliance), #34 (store
 screenshots), #82/#84 (tester recruitment + emails package). New issues created by this plan are
-listed in the epic.
+listed in the epic, including #96 (buildup + tester lifecycle emails).
