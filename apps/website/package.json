@@ -21,11 +21,6 @@
     "db:studio": "pnpm with-env drizzle-kit studio"
   },
   "dependencies": {
-    "@whocards/api": "workspace:*",
-    "@whocards/decks": "workspace:*",
-    "@whocards/observability": "workspace:*",
-    "@trpc/client": "catalog:",
-    "@trpc/server": "catalog:",
     "@astrojs/mdx": "^5.0.6",
     "@astrojs/netlify": "^7.0.10",
     "@astrojs/react": "^5.0.5",
@@ -43,8 +38,13 @@
     "@t3-oss/env-core": "^0.7.1",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.3.0",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
+    "@whocards/api": "workspace:*",
+    "@whocards/decks": "workspace:*",
+    "@whocards/observability": "workspace:*",
     "astro": "^6.3.8",
     "astro-icon": "^1.1.5",
     "astro-robots-txt": "^1.0.0",
@@ -73,6 +73,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@astrojs/node": "^10.1.1",
+    "@electric-sql/pglite": "^0.5.3",
     "@netlify/functions": "^2.3.0",
     "@playwright/test": "^1.60.0",
     "@types/node": "^20.8.6",

@@ -360,10 +360,10 @@ importers:
         version: 5.5.23
       drizzle-orm:
         specifier: ^0.33.0
-        version: 0.33.0(@electric-sql/pglite@0.3.16)(@opentelemetry/api@1.9.0)(@types/react@18.3.31)(pg@8.21.0)(postgres@3.4.9)(react@18.3.1)
+        version: 0.33.0(@electric-sql/pglite@0.5.3)(@opentelemetry/api@1.9.0)(@types/react@18.3.31)(pg@8.21.0)(postgres@3.4.9)(react@18.3.1)
       drizzle-zod:
         specifier: ^0.5.1
-        version: 0.5.1(drizzle-orm@0.33.0(@electric-sql/pglite@0.3.16)(@opentelemetry/api@1.9.0)(@types/react@18.3.31)(pg@8.21.0)(postgres@3.4.9)(react@18.3.1))(zod@3.25.76)
+        version: 0.5.1(drizzle-orm@0.33.0(@electric-sql/pglite@0.5.3)(@opentelemetry/api@1.9.0)(@types/react@18.3.31)(pg@8.21.0)(postgres@3.4.9)(react@18.3.1))(zod@3.25.76)
       gsap:
         specifier: ^3.12.2
         version: 3.15.0
@@ -416,6 +416,9 @@ importers:
       '@astrojs/node':
         specifier: ^10.1.1
         version: 10.1.4(astro@6.4.7(@netlify/blobs@10.7.9)(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.62.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+      '@electric-sql/pglite':
+        specifier: ^0.5.3
+        version: 0.5.3
       '@netlify/functions':
         specifier: ^2.3.0
         version: 2.8.2
@@ -1110,6 +1113,9 @@ packages:
 
   '@electric-sql/pglite@0.3.16':
     resolution: {integrity: sha512-mZkZfOd9OqTMHsK+1cje8OSzfAQcpD7JmILXTl5ahdempjUDdmg4euf1biDex5/LfQIDJ3gvCu6qDgdnDxfJmA==}
+
+  '@electric-sql/pglite@0.5.3':
+    resolution: {integrity: sha512-iTTYbA5Uesrl+N7zss0J5LopT7KE4j9aymYo+EZZh+rZbARQCUQOs+n2pay64JRUpc3fCkpfrniTNJnvYzOE+g==}
 
   '@emmetio/abbreviation@2.3.3':
     resolution: {integrity: sha512-mgv58UrU3rh4YgbE/TzgLQwJ3pFsHHhCLqY20aJq+9comytTXUDNGG/SMtSeMJdkpxgXSXunBGLD8Boka3JyVA==}
@@ -10990,6 +10996,8 @@ snapshots:
 
   '@electric-sql/pglite@0.3.16': {}
 
+  '@electric-sql/pglite@0.5.3': {}
+
   '@emmetio/abbreviation@2.3.3':
     dependencies:
       '@emmetio/scanner': 1.0.4
@@ -15337,18 +15345,18 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.33.0(@electric-sql/pglite@0.3.16)(@opentelemetry/api@1.9.0)(@types/react@18.3.31)(pg@8.21.0)(postgres@3.4.9)(react@18.3.1):
+  drizzle-orm@0.33.0(@electric-sql/pglite@0.5.3)(@opentelemetry/api@1.9.0)(@types/react@18.3.31)(pg@8.21.0)(postgres@3.4.9)(react@18.3.1):
     optionalDependencies:
-      '@electric-sql/pglite': 0.3.16
+      '@electric-sql/pglite': 0.5.3
       '@opentelemetry/api': 1.9.0
       '@types/react': 18.3.31
       pg: 8.21.0
       postgres: 3.4.9
       react: 18.3.1
 
-  drizzle-zod@0.5.1(drizzle-orm@0.33.0(@electric-sql/pglite@0.3.16)(@opentelemetry/api@1.9.0)(@types/react@18.3.31)(pg@8.21.0)(postgres@3.4.9)(react@18.3.1))(zod@3.25.76):
+  drizzle-zod@0.5.1(drizzle-orm@0.33.0(@electric-sql/pglite@0.5.3)(@opentelemetry/api@1.9.0)(@types/react@18.3.31)(pg@8.21.0)(postgres@3.4.9)(react@18.3.1))(zod@3.25.76):
     dependencies:
-      drizzle-orm: 0.33.0(@electric-sql/pglite@0.3.16)(@opentelemetry/api@1.9.0)(@types/react@18.3.31)(pg@8.21.0)(postgres@3.4.9)(react@18.3.1)
+      drizzle-orm: 0.33.0(@electric-sql/pglite@0.5.3)(@opentelemetry/api@1.9.0)(@types/react@18.3.31)(pg@8.21.0)(postgres@3.4.9)(react@18.3.1)
       zod: 3.25.76
 
   dset@3.1.4: {}
