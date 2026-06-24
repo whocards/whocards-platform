@@ -22,6 +22,28 @@ export const countryString = z.string().transform((val, ctx) => {
   return country.code
 })
 
+// General support/contact form (used by /contact — the App Store support URL).
+// Separate from cardRequestSchema so the two forms evolve independently.
+export const contactMessageSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, {message: 'Name is required'})
+    .max(100, {message: 'Name must be 100 characters or fewer'}),
+  email: z
+    .string()
+    .trim()
+    .email({message: 'A valid email is required'})
+    .max(254, {message: 'Email must be 254 characters or fewer'}),
+  message: z
+    .string()
+    .trim()
+    .min(10, {message: 'Message must be at least 10 characters'})
+    .max(2000, {message: 'Message must be 2000 characters or fewer'}),
+  // Cloudflare Turnstile token — validated server-side.
+  'cf-turnstile-response': z.string().optional().default(''),
+})
+
 export const cardRequestSchema = thankYouFormSchema.extend({
   name: z.string().min(2, {message: 'Field is required'}),
   email: z.string().email({message: 'A valid email is required'}),

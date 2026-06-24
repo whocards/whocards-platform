@@ -1,0 +1,116 @@
+---
+export const prerender = false
+
+import {Icon} from 'astro-icon/components'
+import type {Icon as IconName} from 'virtual:astro-icon'
+import type {ZodIssue} from 'zod'
+import {FormSuccess} from '~components/thanks'
+import EmailForm from '~components/thanks/EmailForm.astro'
+import {contactLinks} from '~constants/navigation'
+import {Layout} from '~layouts'
+import {insertUser} from '~server/db'
+import {createContactSheetRow} from '~server/gsheet'
+import {cardRequestSchema} from '~utils/schemas'
+
+let formData: Record<string, string> | undefined
+let errors: Record<string, ZodIssue> | undefined
+let confirmed = false
+
+// when form is posted
+if (Astro.request.method === 'POST') {
+  try {
+    const rawFormData = await Astro.request.formData()
+    formData = Object.fromEntries(rawFormData.entries()) as Record<string, string>
+    if (formData['nobot'] !== '' && formData['thanks'] !== 'youre-welcome') {
+      throw new Error('Bot detected')
+    }
+
+    const parsed = cardRequestSchema.safeParse(formData)
+    if (!parsed.success) {
+      errors = Object.fromEntries(
+        parsed.error.issues.map((issue) => [String(issue.path[0]), issue])
+      )
+    } else {
+      const request = parsed.data
+
+      await insertUser({
+        name: request.name,
+        email: request.email,
+        newsletter: request.newsletter ?? false,
+      })
+
+      await createContactSheetRow({
+        name: request.name,
+        email: request.email,
+        newsletter: request.newsletter ?? false,
+        requestType: 'cards',
+        quantity: request.quantity,
+        organization: request.organization,
+        phone: request.phone,
+        address: request.address,
+        address2: request.address2,
+        zip: request.zip,
+        city: request.city,
+        region: request.region,
+        country: request.country,
+        message: request.message,
+      })
+
+      confirmed = true
+    }
+  } catch (error) {
+    console.error(error)
+    errors ??= {}
+  }
+}
+---
+
+<Layout title='Request Cards' description='Use this form to request WhoCards for yourself or your organization. Tell us what you need and our team will follow up with you.' class='pt-28 lg:pt-32'>
+  <div
+    class='grid grid-flow-row md:grid-flow-col md:grid-cols-2 md:px-[2vw] lg:max-w-7xl px-5 xl:px-0 w-full justify-between items-start'
+  >
+    <div
+      class='flex text-lg lg:text-xl text-gray-dark flex-col items-center md:items-start md:justify-start justify-center text-center md:text-start gap-4 md:gap-5 pb-14'
+    >
+      <h1
+        class='text-3xl lg:text-5xl text-white md:pb-2 font-bold font-title tracking-tight leading-tight'
+      >
+        Request WhoCards
+      </h1>
+      <Icon name='chat' class='w-16 h-16' />
+      <p class='md:text-lg font-semibold'>Tell us what you need and we will follow up.</p>
+      <Icon name='divider' class='w-64 py-2 md:hidden' />
+      <Icon name='divider-left' class='w-3/4 py-4 hidden md:block' />
+      <div class='grid grid-cols-2 lg:grid-cols-1 gap-3'>
+        {
+          contactLinks.map((link) => (
+            <a
+              href={link.href}
+              target='_blank'
+              class='flex items-center text-gray-dark hover:text-primary-light active:text-primary-dark gap-3'
+            >
+              <>
+                <Icon name={link.icon as IconName} class='h-6 w-6' />
+                <span class='block'>{link.title}</span>
+              </>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+    {
+      confirmed ? (
+        <FormSuccess
+          class='h-full'
+          type='request'
+          href='/request-cards'
+          title='Your card request has been submitted'
+          message='Thanks for reaching out. We will get back to you shortly.'
+          buttonLabel='Submit another request'
+        />
+      ) : (
+        <EmailForm mode='request' formData={formData} errors={errors} />
+      )
+    }
+  </div>
+</Layout>
