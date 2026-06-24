@@ -12,6 +12,8 @@ import {
   AppLaunchAnnouncementEmail,
   appLaunchAnnouncementText,
 } from '../src/templates/app-launch-announcement'
+import {BetaValidatedEmail, betaValidatedText} from '../src/templates/buildup-beta-validated'
+import {WaitlistLiveEmail, waitlistLiveText} from '../src/templates/buildup-waitlist-live'
 
 const signupUrl = process.env.ANDROID_TESTER_SIGNUP_URL ?? 'https://whocards.cc/android-testers'
 // TODO: replace with real store URLs before the launch blast is sent.
@@ -39,6 +41,18 @@ const launchText = appLaunchAnnouncementText({
   greeting: 'Hi there,',
 })
 
+// --- Pre-launch buildup (#96) ---
+const waitlistLiveHtml = await render(createElement(WaitlistLiveEmail, {greeting: 'Hi there,'}))
+const waitlistLiveTxt = waitlistLiveText({
+  appUrl: 'https://whocards.cc/app?utm_source=email&utm_medium=buildup&utm_campaign=launch',
+  greeting: 'Hi there,',
+})
+const betaValidatedHtml = await render(createElement(BetaValidatedEmail, {greeting: 'Hi there,'}))
+const betaValidatedTxt = betaValidatedText({
+  playUrl: 'https://whocards.cc/play?utm_source=email&utm_medium=buildup&utm_campaign=launch',
+  greeting: 'Hi there,',
+})
+
 await Promise.all([
   writeFile(resolve(outputDirectory, 'android-tester-recruitment.html'), androidHtml),
   writeFile(resolve(outputDirectory, 'android-tester-recruitment.txt'), androidText),
@@ -52,6 +66,10 @@ await Promise.all([
     resolve(outputDirectory, 'app-launch-announcement.generated.txt'),
     toPlainText(launchHtml)
   ),
+  writeFile(resolve(outputDirectory, 'buildup-waitlist-live.html'), waitlistLiveHtml),
+  writeFile(resolve(outputDirectory, 'buildup-waitlist-live.txt'), waitlistLiveTxt),
+  writeFile(resolve(outputDirectory, 'buildup-beta-validated.html'), betaValidatedHtml),
+  writeFile(resolve(outputDirectory, 'buildup-beta-validated.txt'), betaValidatedTxt),
 ])
 
 console.log(`Rendered emails to ${outputDirectory}`)
