@@ -42,6 +42,31 @@ DEVICES="<udid>:iphone-17-pro-max <udid>:iphone-17-pro emulator-5554:pixel-3a" \
   pnpm -F mobile screenshots
 ```
 
+### Required App Store sizes — the 6.5" set (#111)
+
+App Store Connect **requires** a 6.5" Display screenshot set to submit the iOS app.
+Name the output folder for the slot (`iphone-6.5`) and the capture script verifies each
+PNG is an Apple-accepted size for that slot — a wrong-sized capture fails here instead of
+being rejected at upload.
+
+| Slot folder    | Accepted portrait px            | Simulator that renders it                       |
+| -------------- | ------------------------------- | ----------------------------------------------- |
+| `iphone-6.5`   | **1242×2688** or **1284×2778**  | iPhone 11 Pro Max / XS Max · **iPhone 14 Plus** |
+| `iphone-6.7`   | 1290×2796                       | iPhone 15 / 14 Pro Max                          |
+| `iphone-6.9`   | 1320×2868                       | iPhone 16 Pro Max                               |
+| `ipad-13`      | 2048×2732                       | iPad Pro 13" / 12.9"                            |
+
+Generate the mandatory 6.5" set from a 6.5"-class simulator (iPhone 14 Plus → 1284×2778):
+
+```bash
+# install the Release .app on the 6.5" sim first (see "Building + installing" below), then:
+DEVICES="<iphone-14-plus-udid>:iphone-6.5" pnpm -F mobile screenshots
+# → store-assets/iphone-6.5/NN-*.png, each verified ✓ at an accepted 6.5" size
+```
+
+Only `iphone-6.5` / `iphone-6.7` / `iphone-6.9` / `ipad-13` folder names are
+dimension-checked; any other name (e.g. `pixel-3a`) is captured without a size check.
+
 The framing/compositing step (device frames + marketing copy, e.g. fastlane `frameit` or a
 Sharp/Satori compositor reusing `apps/website/src/server/card-image.ts`) is a follow-up —
 this produces the raw, correctly-sized device captures it consumes.
