@@ -28,6 +28,7 @@ import {send} from '@/lib/answer-transport'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, setStoredLanguage} from '@/lib/language-store'
+import {buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
 const CHROME_HIDE_MS = 3000
@@ -375,8 +376,12 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
   }, [router])
 
   const handleShare = useCallback(() => {
-    if (text) void Share.share({message: `${text}\n\n— WhoCards`})
-  }, [text])
+    if (!text) return
+    const url = buildShareUrl(deckSlug, language, questionId)
+    // `url` is read by iOS share sheet; `message` carries the link on Android (which
+    // ignores the `url` field) and provides a fallback for any platform.
+    void Share.share({message: `${text}\n\n${url}`, url})
+  }, [text, deckSlug, language, questionId])
 
   const openLanguage = useCallback(() => setLangModalOpen(true), [])
 
