@@ -33,7 +33,7 @@ default_ios_65_udid() {
   local name udid
   for name in "iPhone 14 Plus" "iPhone 11 Pro Max" "iPhone XS Max" "iPhone 13 Pro Max" "iPhone 12 Pro Max"; do
     udid="$(xcrun simctl list devices available 2>/dev/null \
-      | grep -F "$name (" | head -1 | grep -oiE '[0-9a-f]{8}-[0-9a-f-]{27}')"
+      | grep -F "$name (" | head -1 | grep -oiE '[0-9a-f]{8}-[0-9a-f-]{27}' || true)"
     if [[ -n "$udid" ]]; then
       echo "$udid"
       return 0
