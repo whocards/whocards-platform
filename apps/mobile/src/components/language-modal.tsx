@@ -1,6 +1,6 @@
 import {Ionicons} from '@expo/vector-icons'
 import {StatusBar} from 'expo-status-bar'
-import {Modal, Pressable, ScrollView, Text, View} from 'react-native'
+import {Modal, Platform, Pressable, ScrollView, Text, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {getLanguageName} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
@@ -42,7 +42,12 @@ export const LanguageModal = ({
       {/* Dark status-bar icons are legible over this white sheet. */}
       <StatusBar style="dark" />
       <View className="flex-1 bg-white">
-        <View className="border-gray-lighter flex-row items-center justify-between border-b px-5 py-4">
+        {/* On Android, pageSheet renders behind the status bar, so push the header
+            below the display cutout. On iOS the card sheet already insets itself. */}
+        <View
+          className="border-gray-lighter flex-row items-center justify-between border-b px-5 py-4"
+          style={{paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16}}
+        >
           <Text className="text-darker font-title text-2xl">Choose your language</Text>
           <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
             <Ionicons name="close" size={24} color={colors.darker} />
