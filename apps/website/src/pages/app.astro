@@ -95,6 +95,7 @@ const features = [
                   href={store.href}
                   target='_blank'
                   rel='noopener noreferrer'
+                  data-store={store.name === 'App Store' ? 'ios' : 'android'}
                   class:list={[
                     'group flex min-h-16 items-center gap-3 rounded-2xl border px-5 py-3 text-left transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light',
                     index === 0
@@ -273,6 +274,7 @@ const features = [
               hideIcon
               target='_blank'
               rel='noopener noreferrer'
+              data-store={stores[0].name === 'App Store' ? 'ios' : 'android'}
             >
               Open the app
             </Button>
@@ -288,6 +290,33 @@ const features = [
 </Layout>
 
 <script>
+  // --- #92 launch funnel instrumentation ---------------------------------
+  // Never attach raw email to events. window.posthog is initialised in <head>.
+  const ua = navigator.userAgent
+  const platform = /android/i.test(ua)
+    ? 'android'
+    : /iphone|ipad|ipod/i.test(ua)
+      ? 'ios'
+      : 'desktop'
+  const params = new URLSearchParams(location.search)
+  const pageSource =
+    params.get('utm_source') ??
+    (document.querySelector('input[name="source"]') as HTMLInputElement | null)?.value ??
+    'app-page'
+  const campaign = params.get('utm_campaign') ?? 'launch'
+
+  window.posthog?.capture('app_page_viewed', {platform, source: pageSource})
+
+  document.querySelectorAll<HTMLAnchorElement>('a[data-store]').forEach((link) => {
+    link.addEventListener('click', () => {
+      window.posthog?.capture('app_store_clicked', {
+        store: link.dataset.store,
+        source: pageSource,
+        campaign,
+      })
+    })
+  })
+
   const form = document.getElementById('waitlist-form') as HTMLFormElement | null
   const status = document.getElementById('waitlist-status')
   const submit = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null
@@ -320,6 +349,7 @@ const features = [
       })
       const json = (await res.json().catch(() => ({}))) as {message?: string}
       if (res.ok) {
+        window.posthog?.capture('app_waitlist_signup', {source, newsletter_opt_in: newsletter})
         form.reset()
         setStatus(json.message || 'You’re on the list — we’ll email you when it’s live.', true)
       } else {
