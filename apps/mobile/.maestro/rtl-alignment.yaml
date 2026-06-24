@@ -3,13 +3,17 @@
 # both branches; every other shipped language is LTR and behaves like en.
 #
 # Run: pnpm --filter mobile e2e   (needs a Release build installed on a booted sim)
-appId: cc.whocards.mobile
+appId: ${APP_ID}
 ---
 - launchApp:
     clearState: true # reset persisted language so we always start from the default
 
 # Landing → player
-- tapOn: 'Play'
+- assertVisible: 'Play'
+- tapOn:
+    text: 'Play'
+    retryTapIfNoChange: true
+- assertNotVisible: 'Play'
 
 # Reveal chrome and capture the default (English, LTR — should read left-aligned)
 - tapOn:

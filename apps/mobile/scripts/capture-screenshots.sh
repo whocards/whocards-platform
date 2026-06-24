@@ -99,7 +99,12 @@ for entry in $DEVICES; do
     exit 1
   fi
   echo "▶ capturing on $name ($id)"
-  maestro --device "$id" test "$FLOW" -e "DEVICE=$name"
+  app_id="cc.whocards.mobile"
+  if command -v adb >/dev/null 2>&1 \
+    && adb devices | awk 'NR > 1 && $2 == "device" {print $1}' | grep -Fxq "$id"; then
+    app_id="com.whocards.mobile"
+  fi
+  maestro --device "$id" test "$FLOW" -e "DEVICE=$name" -e "APP_ID=$app_id"
   verify_sizes "$name"
 done
 

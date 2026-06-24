@@ -4,7 +4,7 @@
 # selected, and still gone after a cold relaunch — proving the choice persisted.
 #
 # Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
-appId: cc.whocards.mobile
+appId: ${APP_ID}
 tags:
   - ios
   - android

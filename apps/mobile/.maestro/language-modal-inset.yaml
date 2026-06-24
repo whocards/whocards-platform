@@ -6,7 +6,7 @@
 # the inset math is the jest test (src/__tests__/language-modal.test.tsx).
 #
 # Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
-appId: cc.whocards.mobile
+appId: ${APP_ID}
 tags:
   - ios
   - android

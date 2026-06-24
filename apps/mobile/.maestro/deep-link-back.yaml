@@ -3,7 +3,7 @@
 # link is reproducible — q=1 is the first Pool question, shown in English (default).
 #
 # Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
-appId: cc.whocards.mobile
+appId: ${APP_ID}
 tags:
   - ios
   - android

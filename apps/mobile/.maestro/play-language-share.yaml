@@ -3,7 +3,7 @@
 # auto-hiding chrome, the language sheet, and the share action) on one run.
 #
 # Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
-appId: cc.whocards.mobile
+appId: ${APP_ID}
 tags:
   - ios
   - android
