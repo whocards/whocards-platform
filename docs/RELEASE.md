@@ -82,11 +82,11 @@ These make the binary correct; the app is broken or unshippable without them.
 - [ ] Recruit 18–20 Android testers through a dedicated #82/#96 tester Broadcast plus personal
       outreach; manage the cohort through one Google Group tied to the Closed Testing track
 - [ ] Enrol the buffer cohort so **12 remain continuously opted in for 14 days** (the minimum
-      required by Google); testers need Google accounts
+      required by Google); testers need Google accounts (#98)
 - [ ] Send tester onboarding instructions, a day-7 feedback check-in, and a completion thank-you;
       opting out resets that tester's continuous-day count
 - [ ] After day 14, apply for Google Play production access and answer the testing/readiness
-      questionnaire; budget up to another 7 days for Google's review
+      questionnaire; budget up to another 7 days for Google's review (#98)
 - [ ] In parallel, submit the iOS release candidate for App Review with **manual release** selected;
       keep the approved version pending developer release while Android completes its gate
 - [ ] **Device matrix smoke**: 2 iOS + 2 Android OS versions — launch, splash→landing handoff, play/swipe, language switch + RTL (Hebrew right-aligned), language persists across relaunch, share, **offline → reconnect drains the Answer queue**, deep-link/back
