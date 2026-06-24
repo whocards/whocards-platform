@@ -23,6 +23,11 @@ const schema = z.object({
    * Replaces the old single-purpose `EXPO_PUBLIC_POSTHOG_DEBUG` flag.
    */
   EXPO_PUBLIC_DEBUG: z.stringbool().default(false),
+  /**
+   * Production web origin used when building shareable question deep-links.
+   * Defaults to the live site; override in staging/preview builds.
+   */
+  EXPO_PUBLIC_WEB_URL: z.string().url().default('https://whocards.cc'),
 })
 
 export const env = schema.parse({
@@ -31,4 +36,5 @@ export const env = schema.parse({
   EXPO_PUBLIC_POSTHOG_HOST: process.env.EXPO_PUBLIC_POSTHOG_HOST,
   EXPO_PUBLIC_RECORD_ANSWERS: process.env.EXPO_PUBLIC_RECORD_ANSWERS,
   EXPO_PUBLIC_DEBUG: process.env.EXPO_PUBLIC_DEBUG,
+  EXPO_PUBLIC_WEB_URL: process.env.EXPO_PUBLIC_WEB_URL,
 })
