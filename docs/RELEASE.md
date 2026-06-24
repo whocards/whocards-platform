@@ -14,6 +14,42 @@ browse, Custom Decks, Personal Game, accounts/purchases, Facilitation (all futur
 
 ---
 
+## Local development — use a dev build, not Expo Go
+
+This app uses custom native modules (`expo-dev-client`, `expo-updates`, `posthog-react-native`,
+etc.) that Expo Go cannot load. **Do not use Expo Go for local development.** The `start` /
+`ios` / `android` scripts already pass `--dev-client` so Metro targets the installed dev client.
+
+### First time
+
+Build and install a `development`-profile binary once per device/simulator. EAS builds it in the
+cloud and distributes via internal distribution (no App Store):
+
+```bash
+pnpx eas-cli@latest build -p ios --profile development
+pnpx eas-cli@latest build -p android --profile development
+```
+
+Or build locally with Xcode / Gradle:
+
+```bash
+pnpm -F mobile exec expo run:ios
+pnpm -F mobile exec expo run:android
+```
+
+### Day-to-day
+
+With the dev build installed, start Metro and connect:
+
+```bash
+pnpm -F mobile start        # opens the dev-client launcher
+pnpm -F mobile ios          # boots the iOS simulator and connects
+pnpm -F mobile android      # boots an Android emulator and connects
+```
+
+The dev-client launcher QR/URL connects to Metro just like Expo Go would, but uses the custom
+native runtime that matches what ships in production.
+
 ## Phase 0 — One-time foundation
 
 > **Android is back in the release** ([#27](https://github.com/whocards/whocards-platform/issues/27)) — a fresh Google
