@@ -1,0 +1,24 @@
+# Visual on-device check for the Pixel-notch fix (#102): the language sheet header
+# ("Choose your language" + close button) must sit BELOW the status bar / display
+# cutout, not under the clock and system icons. Maestro has no coordinate assertion,
+# so this captures a screenshot for review on a device WITH a cutout (e.g. a Pixel) —
+# the title overlapping the status bar is the regression. The deterministic guard for
+# the inset math is the jest test (src/__tests__/language-modal.test.tsx).
+#
+# Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
+appId: cc.whocards.mobile
+tags:
+  - ios
+  - android
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'Play'
+- tapOn: 'Play'
+
+# Reveal the auto-hiding chrome (a tap anywhere), then open the language sheet.
+- tapOn:
+    point: '50%,45%'
+- tapOn: 'change language'
+- assertVisible: 'Choose your language'
+- takeScreenshot: .maestro/artifacts/language-modal-inset

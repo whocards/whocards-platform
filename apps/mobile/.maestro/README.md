@@ -16,8 +16,27 @@ against a build installed on a booted simulator/emulator.
   before/after, making the switch observable.
 - `rtl-alignment.yaml` — opens a card, screenshots the default (English, LTR) and the
   Hebrew (RTL) card to verify right-alignment. Screenshots land in `.maestro/artifacts/`.
+- `language-modal-inset.yaml` — opens the language sheet and screenshots it so the
+  header can be confirmed clear of the status bar / display cutout on a device **with a
+  cutout** (the Pixel-notch fix, #102). The inset math is also guarded deterministically
+  by `src/__tests__/language-modal.test.tsx`.
+- `share-question-url.yaml` (**android only**) — cold deep-links to `q=1`, taps Share,
+  and asserts the question's web link (`whocards.cc/play…?q=1`) shows in Android's
+  share-sheet preview (the share-link fix, #101). The URL builder itself is unit-tested
+  in `src/__tests__/share-url.test.ts`; iOS doesn't expose the share-sheet text to match.
 
-All four are tagged `ios` + `android` and run on either platform.
+All flows are tagged `ios` + `android` (and run on either platform) except
+`share-question-url.yaml`, which is `android` only — iOS's share sheet doesn't surface
+the URL as matchable text, so the iOS share tap is covered by `play-language-share.yaml`.
+
+### Why the splash fix (#100) has no flow
+
+The Android splash-icon padding fix (#100) can't be asserted with a flow: the native
+splash window is dismissed before Maestro's first command runs, so there's nothing on
+screen to screenshot or match. It's guarded at the config/asset level instead by
+`src/__tests__/splash-config.test.ts` (the `android` image override is set and the asset
+stays near-square), with the final visual confirmation done by a manual cold launch on
+an Android 12+ device.
 
 ### Why no offline-record→drain flow
 
