@@ -34,11 +34,20 @@ ordering/trim/flush) and `answer-transport.test.ts`.
 It's tagged `screenshots` so the e2e gate skips it. `?q=1` + waiting for the chrome to
 auto-hide makes the captures reproducible and clean.
 
-Output: `store-assets/<device>/NN-*.png` (gitignored — regenerate on demand). Drive a
-device matrix with the capture script:
+Output: `store-assets/<device>/NN-*.png` (gitignored — regenerate on demand).
+
+**Default (no `DEVICES`)** captures the App Store-required **iOS 6.5" set** — the script
+resolves an available 6.5"-class simulator by name (iPhone 14 Plus → 1284×2778) and writes
+it to `store-assets/iphone-6.5/`, verified against an accepted size:
 
 ```bash
-DEVICES="<udid>:iphone-17-pro-max <udid>:iphone-17-pro emulator-5554:pixel-3a" \
+pnpm -F mobile screenshots
+```
+
+Set `DEVICES` explicitly to drive a full matrix (the folder name still drives the size check):
+
+```bash
+DEVICES="<udid>:iphone-6.5 <udid>:iphone-17-pro emulator-5554:pixel-3a" \
   pnpm -F mobile screenshots
 ```
 
@@ -56,10 +65,12 @@ being rejected at upload.
 | `iphone-6.9`          | 1320×2868                       | iPhone 16 Pro Max                               |
 | `ipad-13` / `ipad-12.9` | 2048×2732                     | iPad Pro 13" / 12.9"                            |
 
-Generate the mandatory 6.5" set from a 6.5"-class simulator (iPhone 14 Plus → 1284×2778):
+The mandatory 6.5" set is the **default** (`pnpm -F mobile screenshots`, see above) — it
+resolves a 6.5"-class simulator (iPhone 14 Plus → 1284×2778) automatically. Install the
+Release `.app` on that sim first (see "Building + installing" below). To pin a specific
+device explicitly:
 
 ```bash
-# install the Release .app on the 6.5" sim first (see "Building + installing" below), then:
 DEVICES="<iphone-14-plus-udid>:iphone-6.5" pnpm -F mobile screenshots
 # → store-assets/iphone-6.5/NN-*.png, each verified ✓ at an accepted 6.5" size
 ```
