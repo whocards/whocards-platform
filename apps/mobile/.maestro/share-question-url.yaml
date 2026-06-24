@@ -1,0 +1,30 @@
+# On-device confirmation of the share-link fix (#101): tapping Share must put the
+# question's web URL on the OS share sheet — not just the raw question text. We cold
+# deep-link to q=1 (default `library` deck, English) so the shared link is
+# deterministic — https://whocards.cc/play?lang=en&q=1 — then assert that link shows
+# in Android's share-sheet content preview.
+#
+# Android-only: Android's Sharesheet renders a text/link preview we can match on; the
+# iOS share sheet doesn't expose the URL as matchable text (the iOS share tap is
+# exercised by play-language-share.yaml). The URL-building logic itself is unit-tested
+# in src/__tests__/share-url.test.ts.
+#
+# Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
+appId: cc.whocards.mobile
+tags:
+  - android
+---
+- launchApp:
+    clearState: true # default language (en) so the shared URL is lang=en
+- stopApp # cold deep-link so q=1 renders in natural order (no shuffle)
+- openLink: mobile://play/library?q=1
+- assertVisible: '(?s).*most interesting thing you have learned recently.*'
+
+# Reveal the auto-hiding chrome, then fire the share action.
+- tapOn:
+    point: '50%,45%'
+- tapOn: 'share question'
+
+# Android's share sheet previews the shared text, which now carries the web link.
+- assertVisible: '(?s).*whocards\.cc/play.*q=1.*'
+- takeScreenshot: .maestro/artifacts/share-question-url
