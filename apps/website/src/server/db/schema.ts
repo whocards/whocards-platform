@@ -25,6 +25,10 @@ export const users = pgTable('user', {
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
   newsletter: boolean('newsletter').default(false).notNull(),
+  // App-launch notification consent (#87) — stored separately from the ongoing
+  // `newsletter` consent. A waitlist signup grants this without ever implying
+  // newsletter consent; the two are independent and merged non-destructively.
+  appWaitlist: boolean('app_waitlist').default(false).notNull(),
   // retire-candidate (ticket 0005): from website-next-15, approved to drop in a later migration
   ocSlug: text('oc_slug'),
 })

@@ -8,6 +8,13 @@
       "when": 1781788305448,
       "tag": "0000_full_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782338624017,
+      "tag": "0001_app_waitlist_consent",
+      "breakpoints": true
     }
   ]
 }

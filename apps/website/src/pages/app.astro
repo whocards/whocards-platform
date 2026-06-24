@@ -117,24 +117,38 @@ const features = [
               <p class='mb-3 text-sm text-gray-lighter'>
                 On a computer? Send the download links to your inbox.
               </p>
-              <form id='waitlist-form' class='flex flex-col gap-3 sm:flex-row'>
-                <label class='sr-only' for='waitlist-email'>
-                  Email address
+              <form id='waitlist-form' class='flex flex-col gap-3'>
+                <div class='flex flex-col gap-3 sm:flex-row'>
+                  <label class='sr-only' for='waitlist-email'>
+                    Email address
+                  </label>
+                  <input
+                    id='waitlist-email'
+                    type='email'
+                    name='email'
+                    required
+                    autocomplete='email'
+                    inputmode='email'
+                    placeholder='you@example.com'
+                    class='min-h-12 w-full rounded-xl border border-white/25 bg-white/5 px-4 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light/20'
+                  />
+                  <input type='hidden' name='source' value='app-page-launch-fallback' />
+                  <Button type='submit' tag='button' size='md' hideIcon class='shrink-0 sm:w-auto'>
+                    Send links
+                  </Button>
+                </div>
+                {/* Optional, unchecked by default — newsletter consent is never assumed (#87) */}
+                <label class='flex cursor-pointer items-start gap-2 text-left text-xs text-gray-lighter'>
+                  <input
+                    type='checkbox'
+                    name='newsletter'
+                    class='mt-0.5 size-4 shrink-0 accent-primary-light'
+                  />
+                  <span>
+                    Also send me the occasional WhoCards email — a good question now and then, plus
+                    product news. <span class='text-gray-dark'>Optional.</span>
+                  </span>
                 </label>
-                <input
-                  id='waitlist-email'
-                  type='email'
-                  name='email'
-                  required
-                  autocomplete='email'
-                  inputmode='email'
-                  placeholder='you@example.com'
-                  class='min-h-12 w-full rounded-xl border border-white/25 bg-white/5 px-4 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light/20'
-                />
-                <input type='hidden' name='source' value='app-page-launch-fallback' />
-                <Button type='submit' tag='button' size='md' hideIcon class='shrink-0 sm:w-auto'>
-                  Send links
-                </Button>
               </form>
               <p
                 id='waitlist-status'
@@ -146,30 +160,44 @@ const features = [
           </>
         ) : (
           <div class='mt-8 w-full max-w-lg'>
-            <form id='waitlist-form' class='flex flex-col gap-3 sm:flex-row'>
-              <label class='sr-only' for='waitlist-email'>
-                Email address
+            <form id='waitlist-form' class='flex flex-col gap-3'>
+              <div class='flex flex-col gap-3 sm:flex-row'>
+                <label class='sr-only' for='waitlist-email'>
+                  Email address
+                </label>
+                <input
+                  id='waitlist-email'
+                  type='email'
+                  name='email'
+                  required
+                  autocomplete='email'
+                  inputmode='email'
+                  placeholder='you@example.com'
+                  class='min-h-14 w-full rounded-2xl border border-white/25 bg-white/5 px-5 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light/20'
+                />
+                <input type='hidden' name='source' value='app-waitlist' />
+                <Button
+                  type='submit'
+                  tag='button'
+                  size='lg'
+                  hideIcon
+                  class='shrink-0 whitespace-nowrap sm:w-auto'
+                >
+                  Tell me when it’s live
+                </Button>
+              </div>
+              {/* Optional, unchecked by default — newsletter consent is never assumed (#87) */}
+              <label class='flex cursor-pointer items-start gap-2 text-left text-xs text-gray-lighter'>
+                <input
+                  type='checkbox'
+                  name='newsletter'
+                  class='mt-0.5 size-4 shrink-0 accent-primary-light'
+                />
+                <span>
+                  Also send me the occasional WhoCards email — a good question now and then, plus
+                  product news. <span class='text-gray-dark'>Optional.</span>
+                </span>
               </label>
-              <input
-                id='waitlist-email'
-                type='email'
-                name='email'
-                required
-                autocomplete='email'
-                inputmode='email'
-                placeholder='you@example.com'
-                class='min-h-14 w-full rounded-2xl border border-white/25 bg-white/5 px-5 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light/20'
-              />
-              <input type='hidden' name='source' value='app-waitlist' />
-              <Button
-                type='submit'
-                tag='button'
-                size='lg'
-                hideIcon
-                class='shrink-0 whitespace-nowrap sm:w-auto'
-              >
-                Tell me when it’s live
-              </Button>
             </form>
             <p
               id='waitlist-status'
@@ -276,6 +304,9 @@ const features = [
     const data = new FormData(form)
     const email = data.get('email')?.toString().trim()
     const source = data.get('source')?.toString() ?? 'app-waitlist'
+    // Unchecked native checkboxes are absent from FormData, so this is false by
+    // default — newsletter consent is only sent when the visitor opts in (#87).
+    const newsletter = data.get('newsletter') === 'on'
     if (!email) return
 
     if (submit) submit.disabled = true
@@ -285,7 +316,7 @@ const features = [
       const res = await fetch('/api/app-launch-subscribe', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email, source}),
+        body: JSON.stringify({email, source, newsletter}),
       })
       const json = (await res.json().catch(() => ({}))) as {message?: string}
       if (res.ok) {

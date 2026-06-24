@@ -10,6 +10,7 @@
     "build": "pnpm with-env astro build",
     "preview": "pnpm with-env astro preview",
     "typecheck": "astro sync && astro check",
+    "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ssr": "playwright test -c playwright.ssr.config.ts",
     "pretty": "prettier --write . --plugin=prettier-plugin-astro",
@@ -81,6 +82,7 @@
     "prettier": "^3.0.3",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.5.6",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
