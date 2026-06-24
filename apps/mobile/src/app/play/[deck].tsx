@@ -180,15 +180,22 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
     if (!languageReady || gameStartedRef.current) return
     gameStartedRef.current = true
     track({name: EVENTS.GAME_STARTED, props: {deck_id: deckSlug, game: GAMES.WH, language}})
-    // Count this play session for in-app review eligibility (once per mount).
-    void incrementSessionCount()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageReady])
+
+  // Counts this session for review eligibility on its FIRST served card (below), so a
+  // session that never showed a card isn't counted — matches the session-count doc.
+  const sessionCountedRef = useRef(false)
 
   // --- In-app review: check eligibility and fire the native OS prompt ---
   // Called after play (on exit or background), never mid-card or on launch.
   // Fails silently; emits app_review_eligible and app_review_requested via track().
+  // An in-flight ref dedupes concurrent calls (AppState background + exit can both
+  // fire) so two callers can't pass the eligibility check before the first persists.
+  const reviewRequestInFlightRef = useRef(false)
   const maybeRequestReview = useCallback(async () => {
+    if (reviewRequestInFlightRef.current) return
+    reviewRequestInFlightRef.current = true
     try {
       const appVersion = Application.nativeApplicationVersion ?? '0'
       const state = await getReviewState()
@@ -220,6 +227,8 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
       await StoreReview.requestReview()
     } catch {
       // Fail silently — store review is best-effort.
+    } finally {
+      reviewRequestInFlightRef.current = false
     }
   }, [])
 
@@ -257,6 +266,11 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
       void enqueue({deviceId, deckSlug, questionId, language}, send)
     })
     void incrementCardCount()
+    // First served card of this session → count the session for review eligibility.
+    if (!sessionCountedRef.current) {
+      sessionCountedRef.current = true
+      void incrementSessionCount()
+    }
     return () => {
       cancelled = true
     }

@@ -76,7 +76,8 @@ export const incrementCardCount = async (delta = 1): Promise<number> => {
 
 /**
  * Increments the persisted session count by 1.
- * Call once per play session (e.g. on GAME_STARTED).
+ * Call once per play session, on its first served card (so a session that never
+ * showed a card isn't counted — matches the "≥1 answered card" definition above).
  * Returns the new cumulative session count.
  */
 export const incrementSessionCount = async (): Promise<number> => {
