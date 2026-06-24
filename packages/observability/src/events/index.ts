@@ -22,6 +22,8 @@ export const EVENTS = {
   QUESTION_VIEWED: 'question_viewed',
   DECK_CYCLED: 'deck_cycled',
   LANGUAGE_CHANGED: 'language_changed',
+  APP_REVIEW_ELIGIBLE: 'app_review_eligible',
+  APP_REVIEW_REQUESTED: 'app_review_requested',
 } as const
 
 /** Game ids used in event payloads — single source of truth for the `game` prop. */
@@ -57,6 +59,12 @@ export type QuestionViewedProps = {
 }
 export type DeckCycledProps = {deck_id: string; game: string}
 export type LanguageChangedProps = {deck_id: string; from: string; to: string}
+export type AppReviewEligibleProps = {
+  app_version: string
+  card_count: number
+  session_count: number
+}
+export type AppReviewRequestedProps = {app_version: string}
 
 // ---------------------------------------------------------------------------
 // Typed track wrapper
