@@ -4,6 +4,10 @@ How `apps/mobile` (the WhoCards Expo app) gets built, tested, and shipped. Decis
 their trade-offs live in [ADR-0005](./adr/0005-mobile-release-pipeline.md); this is the
 operational checklist.
 
+**Tracking:** [#99](https://github.com/whocards/whocards-platform/issues/99) is the ordered v1.0
+release epic. [#85](https://github.com/whocards/whocards-platform/issues/85) owns the audience and
+post-launch growth workstream.
+
 **Pipeline at a glance:** EAS Build + Submit · **beta-first** (TestFlight + Play testing →
 promote to public) · OTA via EAS Update on a `fingerprint` runtime version · build numbers
 auto-incremented by EAS · fully automated in CI on `v*` tags. The first Android release has an

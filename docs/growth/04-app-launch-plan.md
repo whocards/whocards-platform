@@ -9,6 +9,10 @@ first**) and turns the app launch into the moment we actually start keeping peop
 > Every choice below is graded on "does this build a list we can talk to again, and a reason for
 > them to open the app next week," not on launch-day download count alone.
 
+**Tracking:** [#99](https://github.com/whocards/whocards-platform/issues/99) owns the finite,
+ordered v1.0 release. [#85](https://github.com/whocards/whocards-platform/issues/85) owns the
+audience, Campaign launch, and post-launch growth workstream.
+
 ---
 
 ## 0. Where the app launch sits in the existing strategy
@@ -266,14 +270,14 @@ store binaries move through beta and review:
 
 - **`/app` download/launch landing page** — waitlist mode now, launch mode flag-ready, device-aware
   store badges.
-- **Waitlist capture API + confirmation email** — `insertUser` + Resend, source-tagged, following
-  the AI-checkin pattern.
-- **Launch-day announcement email template** — branded React Email in `@whocards/emails` (lands
+- **App-notification capture + confirmation email** — separate one-time app notification from
+  optional newsletter consent; source-tagged and projected to Resend through #87/#97.
+- **Campaign launch announcement email template** — branded React Email in `@whocards/emails` (lands
   once PR #84 puts that package on `main`).
 - **In-app review prompt** — policy-compliant direct `expo-store-review` request after the
   eligibility threshold; must land in the v1 binary before Closed Testing.
 
-Tracked as the **"App launch + growth"** epic and its child issues (see the issue tracker).
+Tracked as the ordered **first mobile release** epic #99 and the related audience/growth epic #85.
 
 ---
 
@@ -283,4 +287,5 @@ Tracked as the **"App launch + growth"** epic and its child issues (see the issu
 QOTD), #50 (reposition landing), #53/#76 (share card), #17 (store listing/compliance), #34 (store
 screenshots), #82/#84 (tester recruitment + emails package). New issues created by this plan are
 listed in the epic, including #96 (buildup + tester lifecycle emails), #97 (production Resend
-audience), and #98 (Android Closed Test + production access).
+audience), and #98 (Android Closed Test + production access). The complete dependency order lives
+in #99.
