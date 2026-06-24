@@ -18,9 +18,9 @@ describe('AppLaunchAnnouncementEmail', () => {
     )
     expect(html).toContain(appStoreUrl)
     expect(html).toContain(playStoreUrl)
-    expect(html).toContain('WhoCards is now in your pocket')
+    expect(html).toContain('Your next good conversation is one tap away')
     expect(html).toContain(greeting)
-    expect(html).toContain('Download WhoCards now')
+    expect(html).toContain('YOUR FIRST CARD')
   })
 
   it('provides a complete plain-text fallback', () => {
@@ -28,7 +28,7 @@ describe('AppLaunchAnnouncementEmail', () => {
     expect(text).toContain(appStoreUrl)
     expect(text).toContain(playStoreUrl)
     expect(text).toContain("It's live")
-    expect(text).toContain('DOWNLOAD WHOCARDS NOW')
+    expect(text).toContain('YOUR FIRST CARD')
     expect(text).toContain(greeting)
   })
 })

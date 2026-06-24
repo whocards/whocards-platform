@@ -12,6 +12,7 @@ import Accordion from '~components/ui/Accordion.astro'
 import Button from '~components/ui/Button.astro'
 import RoundedImage from '~components/ui/RoundedImage.astro'
 import WhoCard from '~components/ui/WhoCard.astro'
+import {APP_LAUNCHED} from '~constants/app'
 import {faqs} from '~constants/faqs'
 import Layout from '~layouts/Layout.astro'
 import {Image} from 'astro:assets'
@@ -34,17 +35,17 @@ import bgLeftImage from '~assets/images/bg-left-large.svg'
       Join us in spreading openness, vulnerability, and authenticity by gifting WhoCards for
       yourself or someone who'll treasure them.
     </p>
-    <div
-      class='grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-8 w-full md:max-w-xl py-5 lg:pt-8 mx-auto'
-    >
+    <div class='grid w-full gap-4 py-5 md:max-w-xl md:grid-cols-2 lg:pt-8'>
       <Button tag='a' class='play' size='lg' full>Play Online</Button>
-      <Button tag='a' href='/contact' full hideIcon variant='secondary'>Request Cards</Button>
+      <Button tag='a' href='/app' full hideIcon variant='secondary' light>
+        {APP_LAUNCHED ? 'Get the app' : 'Join the app waitlist'}
+      </Button>
     </div>
     <a
-      href='/app'
-      class='text-sm font-semibold text-primary-light underline-offset-4 hover:underline'
+      href='/contact'
+      class='text-sm font-semibold text-gray-lighter underline-offset-4 transition-colors hover:text-primary-light hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light'
     >
-      Get the app →
+      Looking for printed cards? Request a deck →
     </a>
     <div class='absolute bottom-5 left-0 right-0 grid place-items-center'>
       <a

@@ -19,28 +19,40 @@ const schema = z.object({
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json'}})
 
-const buildEmailHtml = () => `
-  <div style="max-width:560px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1f1f1f;">
-    <h1 style="font-size:22px;line-height:1.3;margin:0 0 16px;">You're on the list.</h1>
-    <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">
-      Thanks for signing up — we'll send you the download link the moment WhoCards lands
-      in the App Store and Google Play.
-    </p>
-    <p style="font-size:16px;line-height:1.6;margin:0 0 16px;">
-      In the meantime, you can already play WhoCards in your browser at
-      <a href="https://whocards.cc/play" style="color:#6c5ce7;">whocards.cc/play</a> — all 66
-      questions, no install needed.
-    </p>
-    <p style="font-size:16px;line-height:1.6;margin:0 0 24px;">
-      To make sure our launch email reaches you, add
-      <strong>hello@whocards.cc</strong> to your contacts now. Email clients sometimes
-      send first-time senders to spam — we'd hate for you to miss it.
-    </p>
-    <p style="font-size:13px;line-height:1.6;color:#888;margin:0;">
-      You're getting this because you signed up at whocards.cc/app. Not what you expected?
-      Just ignore this email — no further messages until launch.
-    </p>
-  </div>`
+const buildEmailHtml = () => `<!doctype html>
+  <html lang="en">
+    <body style="background:#08001a;margin:0;padding:32px 12px;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;">
+      <div style="max-width:560px;margin:0 auto;">
+        <div style="color:#f9d75f;font-size:24px;font-weight:800;margin:0 8px 22px;">
+          WhoCards<span style="color:#c058d2;">?</span>
+        </div>
+        <div style="background:#262432;border-radius:24px;padding:32px 28px;color:#f5f5f5;">
+          <p style="color:#f9d75f;font-size:12px;font-weight:700;letter-spacing:1.5px;margin:0 0 10px;">YOU'RE IN</p>
+          <h1 style="font-size:34px;line-height:1.15;letter-spacing:-0.6px;margin:0 0 20px;">We'll bring the download link to you.</h1>
+          <p style="font-size:17px;line-height:1.6;margin:0 0 18px;">
+            You're on the WhoCards app list. We'll email you once when the app lands in the App Store and Google Play.
+          </p>
+          <div style="background:#0d051f;border:1px solid #474a69;border-radius:20px;margin:26px 0;padding:24px;">
+            <p style="color:#f9d75f;font-size:12px;font-weight:700;letter-spacing:1.5px;margin:0 0 12px;">A QUESTION WHILE YOU WAIT</p>
+            <p style="font-size:24px;font-weight:700;line-height:1.35;margin:0;">What is the most interesting thing you have learned recently?</p>
+            <p style="color:#dcdee9;font-size:14px;line-height:1.5;margin:10px 0 0;">(About yourself or in general.)</p>
+          </div>
+          <p style="font-size:17px;line-height:1.6;margin:0 0 24px;">
+            You can already play all 66 questions in your browser. No account or install needed.
+          </p>
+          <p style="margin:0 0 28px;text-align:center;">
+            <a href="https://whocards.cc/play" style="background:#f9d75f;border-radius:999px;color:#111516;display:inline-block;font-size:17px;font-weight:700;padding:15px 28px;text-decoration:none;">Play WhoCards online →</a>
+          </p>
+          <p style="color:#dcdee9;font-size:13px;line-height:1.6;margin:0;">
+            Add <strong style="color:#f5f5f5;">hello@whocards.cc</strong> to your contacts so the launch email doesn't wander into spam.
+          </p>
+        </div>
+        <p style="color:#9698af;font-size:12px;line-height:1.5;margin:20px 8px 0;text-align:center;">
+          You signed up at whocards.cc/app. No messages until launch.
+        </p>
+      </div>
+    </body>
+  </html>`
 
 export const POST: APIRoute = async ({request}) => {
   const body = await request.json().catch(() => null)

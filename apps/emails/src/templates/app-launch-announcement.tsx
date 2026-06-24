@@ -1,7 +1,7 @@
 import {Heading, Hr, Link, Section, Text} from '@react-email/components'
 
 import {emailBrand} from '../brand'
-import {BrandButton, BrandCard, EmailShell} from '../components'
+import {BrandButton, EmailShell} from '../components'
 
 export const appLaunchAnnouncementSubject = "It's live — WhoCards is in your pocket"
 export const appLaunchAnnouncementPreview =
@@ -33,24 +33,23 @@ export function AppLaunchAnnouncementEmail({
   return (
     <EmailShell preview={appLaunchAnnouncementPreview}>
       <Text style={eyebrow}>IT&apos;S LIVE</Text>
-      <Heading style={heading}>WhoCards is now in your pocket.</Heading>
+      <Heading style={heading}>Your next good conversation is one tap away.</Heading>
       <Text style={paragraph}>{greeting}</Text>
       <Text style={paragraph}>
-        We promised to let you know when WhoCards landed in the stores — and here we are. The
-        questions that skip the small talk are now available on iOS and Android, free to download.
+        We promised to let you know when WhoCards landed in the stores. It&apos;s here: all 66
+        questions, in 14 languages, free on iOS and Android.
       </Text>
-      <BrandCard>
-        <Text style={cardHeading}>Download WhoCards now</Text>
-        <Text style={cardText}>
-          All 66 questions. Multiple languages. Draw a card, ask it, listen. That&apos;s the whole
-          app — and it only gets better when the person across from you is surprised by their own
-          answer.
-        </Text>
-        <Text style={{...cardText, marginBottom: 0}}>
-          Whether it&apos;s a date, a team meeting, a family dinner, or just two people on a walk —
-          WhoCards helps you move past &quot;What do you do?&quot; toward &quot;Who are you?&quot;
-        </Text>
-      </BrandCard>
+
+      <Section style={questionCard}>
+        <Text style={questionLabel}>YOUR FIRST CARD</Text>
+        <Text style={question}>What is the most interesting thing you have learned recently?</Text>
+        <Text style={questionNote}>(About yourself or in general.)</Text>
+      </Section>
+
+      <Text style={paragraph}>
+        Open it on a date, a walk, over dinner, or whenever the room could use a little more
+        curiosity. Draw a card, ask it, and listen. That&apos;s the whole app.
+      </Text>
 
       <Section style={{margin: '30px 0', textAlign: 'center'}}>
         <BrandButton href={appStoreUrl}>Download on the App Store →</BrandButton>
@@ -60,27 +59,26 @@ export function AppLaunchAnnouncementEmail({
       </Section>
 
       <Text style={smallText}>
-        Buttons not working? App Store:{' '}
+        Buttons not working?{' '}
         <Link href={appStoreUrl} style={link}>
-          {appStoreUrl}
+          Open the App Store
         </Link>
-        <br />
-        Google Play:{' '}
+        {' · '}
         <Link href={playStoreUrl} style={link}>
-          {playStoreUrl}
+          Open Google Play
         </Link>
       </Text>
 
       <Text style={{...paragraph, marginTop: '24px'}}>
-        Know someone who&apos;d love a good conversation? Forward this — the best thing about
-        WhoCards is that it&apos;s better with others.
+        Know someone who&apos;d love a better question? Forward this. WhoCards only gets interesting
+        when there&apos;s someone else in the conversation.
       </Text>
 
       <Hr style={rule} />
 
       <Text style={paragraph}>
-        Thanks for being part of this. The list we sent this to was built one curious person at a
-        time — we&apos;re glad you&apos;re on it.
+        Thanks for being one of the curious people who asked us to keep them posted. We&apos;re glad
+        you&apos;re here.
       </Text>
       <Text style={{...paragraph, marginBottom: 0}}>
         See you past the small talk,
@@ -100,13 +98,14 @@ export function appLaunchAnnouncementText({
 
 ${greeting}
 
-We promised to let you know when WhoCards landed in the stores — and here we are. The questions that skip the small talk are now available on iOS and Android, free to download.
+We promised to let you know when WhoCards landed in the stores. It's here: all 66 questions, in 14 languages, free on iOS and Android.
 
-DOWNLOAD WHOCARDS NOW
+YOUR FIRST CARD
 
-All 66 questions. Multiple languages. Draw a card, ask it, listen. That's the whole app — and it only gets better when the person across from you is surprised by their own answer.
+What is the most interesting thing you have learned recently?
+(About yourself or in general.)
 
-Whether it's a date, a team meeting, a family dinner, or just two people on a walk — WhoCards helps you move past "What do you do?" toward "Who are you?"
+Open it on a date, a walk, over dinner, or whenever the room could use a little more curiosity. Draw a card, ask it, and listen. That's the whole app.
 
 Download on the App Store:
 ${appStoreUrl}
@@ -114,9 +113,9 @@ ${appStoreUrl}
 Get it on Google Play:
 ${playStoreUrl}
 
-Know someone who'd love a good conversation? Forward this — the best thing about WhoCards is that it's better with others.
+Know someone who'd love a better question? Forward this. WhoCards only gets interesting when there's someone else in the conversation.
 
-Thanks for being part of this. The list we sent this to was built one curious person at a time — we're glad you're on it.
+Thanks for being one of the curious people who asked us to keep them posted. We're glad you're here.
 
 See you past the small talk,
 The WhoCards team
@@ -147,18 +146,33 @@ const paragraph = {
   lineHeight: '27px',
   margin: '0 0 18px',
 }
-const cardHeading = {
-  color: emailBrand.colors.accent,
-  fontSize: '22px',
-  fontWeight: 700,
-  lineHeight: '28px',
-  margin: '0 0 12px',
+const questionCard = {
+  backgroundColor: emailBrand.colors.background,
+  border: `1px solid ${emailBrand.colors.cardMuted}`,
+  borderRadius: '20px',
+  margin: '28px 0',
+  padding: '26px 24px',
 }
-const cardText = {
-  color: emailBrand.colors.ink,
-  fontSize: '16px',
-  lineHeight: '25px',
+const questionLabel = {
+  color: emailBrand.colors.accent,
+  fontSize: '12px',
+  fontWeight: 700,
+  letterSpacing: '1.5px',
   margin: '0 0 14px',
+}
+const question = {
+  color: emailBrand.colors.ink,
+  fontFamily: emailBrand.fonts.title,
+  fontSize: '26px',
+  fontWeight: 700,
+  lineHeight: '33px',
+  margin: 0,
+}
+const questionNote = {
+  color: emailBrand.colors.inkMuted,
+  fontSize: '14px',
+  lineHeight: '21px',
+  margin: '12px 0 0',
 }
 const smallText = {
   color: emailBrand.colors.inkMuted,
@@ -166,7 +180,6 @@ const smallText = {
   lineHeight: '18px',
   margin: 0,
   textAlign: 'center' as const,
-  wordBreak: 'break-all' as const,
 }
 const link = {color: emailBrand.colors.accent, textDecoration: 'underline'}
 const rule = {borderColor: emailBrand.colors.cardMuted, margin: '30px 0'}
