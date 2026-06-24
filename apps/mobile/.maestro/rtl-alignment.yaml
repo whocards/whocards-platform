@@ -2,7 +2,7 @@
 # Alignment is a pure function of writing direction, so en (LTR) + he (RTL) exercise
 # both branches; every other shipped language is LTR and behaves like en.
 #
-# Run: pnpm --filter mobile e2e   (needs a Release build installed on a booted sim)
+# Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs a Release build on a booted device)
 appId: ${APP_ID}
 ---
 - launchApp:

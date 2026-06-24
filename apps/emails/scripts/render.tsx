@@ -17,13 +17,15 @@ import {
   androidTesterOnboardingText,
 } from '../src/templates/android-tester-lifecycle'
 
-const signupUrl = process.env.ANDROID_TESTER_SIGNUP_URL ?? 'https://whocards.cc/android-testers'
+// Non-production placeholders so a preview rendered without env never embeds a
+// real (or real-looking, not-yet-live) tester link. Set the ANDROID_TESTER_*
+// env vars to render against the verified URLs before sending.
+const signupUrl = process.env.ANDROID_TESTER_SIGNUP_URL ?? 'https://example.com/android-testers'
 const groupUrl =
-  process.env.ANDROID_TESTER_GROUP_URL ?? 'https://groups.google.com/g/whocards-testers'
+  process.env.ANDROID_TESTER_GROUP_URL ?? 'https://groups.google.com/g/example-testers'
 const optInUrl =
-  process.env.ANDROID_TESTER_OPT_IN_URL ??
-  'https://play.google.com/apps/testing/com.whocards.mobile'
-const feedbackUrl = process.env.ANDROID_TESTER_FEEDBACK_URL ?? 'https://whocards.cc/contact'
+  process.env.ANDROID_TESTER_OPT_IN_URL ?? 'https://play.google.com/apps/testing/example.package'
+const feedbackUrl = process.env.ANDROID_TESTER_FEEDBACK_URL ?? 'https://example.com/feedback'
 const outputDirectory = resolve('dist')
 const recruitmentHtml = await render(createElement(AndroidTesterRecruitmentEmail, {signupUrl}))
 const onboardingHtml = await render(
