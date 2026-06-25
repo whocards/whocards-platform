@@ -42,8 +42,8 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "{packages,tooling,apps/mobile,apps/emails}/**/*.{ts,tsx,js,jsx,mjs,cjs}": [
-      "oxlint --fix",
+    "**/*.{ts,tsx,js,jsx,mjs,cjs}": [
+      "oxlint --fix --no-error-on-unmatched-pattern",
       "oxfmt --no-error-on-unmatched-pattern"
     ],
     "apps/website/**/*.{ts,tsx,js,jsx,mjs,cjs,astro}": [
