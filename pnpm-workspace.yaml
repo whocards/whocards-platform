@@ -33,8 +33,3 @@ catalog:
   '@types/react': ^19.2.7
   '@types/react-dom': ^19.2.3
   '@types/node': ^24.10.2
-
-minimumReleaseAgeExclude:
-  - '@posthog/core@1.37.2'
-  - '@posthog/types@1.391.1'
-  - posthog-js@1.393.4
