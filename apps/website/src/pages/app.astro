@@ -6,6 +6,7 @@ import {Icon} from 'astro-icon/components'
 import AppShowcase from '~components/App/AppShowcase.astro'
 import Button from '~components/ui/Button.astro'
 import {APP_LAUNCHED, APP_STORE_URL, APP_VISIBLE, PLAY_STORE_URL} from '~constants/app'
+import {env} from '~env'
 import Layout from '~layouts/Layout.astro'
 
 // Hide the public /app funnel until the waitlist is opened
@@ -18,6 +19,11 @@ if (!APP_VISIBLE) return Astro.redirect('/', 302)
 // Default: iOS/desktop visitors see App Store first; Android visitors see Google Play first.
 const ua = Astro.request.headers.get('user-agent') ?? ''
 const isAndroid = /android/i.test(ua)
+
+// Cloudflare Turnstile site key for the form widget — bot protection, required
+// (server verifies the token in /api/app-launch-subscribe). Same pattern as the
+// /contact and /request-cards forms.
+const siteKey = env.PUBLIC_TURNSTILE_SITE_KEY
 
 const stores = [
   {
@@ -156,6 +162,7 @@ const features = [
                     product news. <span class='text-gray-dark'>Optional.</span>
                   </span>
                 </label>
+                {siteKey && <div class='cf-turnstile' data-sitekey={siteKey} data-theme='dark' />}
               </form>
               <p
                 id='waitlist-status'
@@ -205,6 +212,7 @@ const features = [
                   product news. <span class='text-gray-dark'>Optional.</span>
                 </span>
               </label>
+              {siteKey && <div class='cf-turnstile' data-sitekey={siteKey} data-theme='dark' />}
             </form>
             <p
               id='waitlist-status'
@@ -295,6 +303,12 @@ const features = [
   </section>
 </Layout>
 
+{
+  siteKey && (
+    <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
+  )
+}
+
 <script>
   // --- #92 launch funnel instrumentation ---------------------------------
   // Never attach raw email to events. window.posthog is initialised in <head>.
@@ -334,14 +348,22 @@ const features = [
     status.classList.toggle('text-red-400', !ok)
   }
 
+  // Turnstile resets its single-use token after each attempt so a second submit
+  // (e.g. after an error) gets a fresh one.
+  const resetTurnstile = () =>
+    (window as unknown as {turnstile?: {reset: () => void}}).turnstile?.reset()
+
   form?.addEventListener('submit', async (event) => {
     event.preventDefault()
     const data = new FormData(form)
     const email = data.get('email')?.toString().trim()
-    const source = data.get('source')?.toString() ?? 'app-waitlist'
+    // Persist the same acquisition source analytics records (utm_source-aware),
+    // not just the static hidden input, so UTM-driven signups segment correctly.
+    const source = pageSource
     // Unchecked native checkboxes are absent from FormData, so this is false by
     // default — newsletter consent is only sent when the visitor opts in (#87).
     const newsletter = data.get('newsletter') === 'on'
+    const turnstileToken = data.get('cf-turnstile-response')?.toString() ?? ''
     if (!email) return
 
     if (submit) submit.disabled = true
@@ -351,7 +373,7 @@ const features = [
       const res = await fetch('/api/app-launch-subscribe', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email, source, newsletter}),
+        body: JSON.stringify({email, source, newsletter, turnstileToken}),
       })
       const json = (await res.json().catch(() => ({}))) as {message?: string}
       if (res.ok) {
@@ -365,6 +387,7 @@ const features = [
       setStatus('Something went wrong. Please try again.', false)
     } finally {
       if (submit) submit.disabled = false
+      resetTurnstile()
     }
   })
 </script>

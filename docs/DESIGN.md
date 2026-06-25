@@ -141,9 +141,11 @@ For the first mobile release, this specification is subordinate to `docs/RELEASE
 
 - The v1 journey is landing → the single WhoCards Deck → Global Game. Do not imply that Library
   browsing, accounts, purchases, Custom Decks, Personal Game, or Facilitation already exist.
-- `/app` has two deliberate states behind `PUBLIC_APP_LAUNCHED`. Before Campaign launch it collects
-  a one-time public-download notification; afterward it leads with both store badges, ordered for
-  the visitor's device. Never show placeholder store links or claim availability early.
+- `/app` is gated by `APP_VISIBLE` (`PUBLIC_APP_WAITLIST_ENABLED` OR `PUBLIC_APP_LAUNCHED`) and is
+  hidden by default — both flags off redirects it home. Opening the waitlist
+  (`PUBLIC_APP_WAITLIST_ENABLED=true`) collects a one-time public-download notification; launch mode
+  (`PUBLIC_APP_LAUNCHED=true`) leads with both store badges, ordered for the visitor's device. Never
+  show placeholder store links or claim availability early.
 - App-notification and newsletter consent are separate. Newsletter consent is optional, unchecked,
   and described plainly; confirmation copy must reflect exactly what the person selected.
 - iOS and Android are one launch promise. Do not visually privilege one platform except by

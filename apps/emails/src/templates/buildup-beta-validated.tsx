@@ -26,6 +26,12 @@ export function BetaValidatedEmail({
   playUrl = DEFAULT_PLAY_URL,
   greeting = 'Hi there,',
 }: BetaValidatedProps) {
+  // Show the same address the button opens — never a hardcoded one that can drift.
+  const playUrlLabel = (() => {
+    const {host, pathname} = new URL(playUrl)
+    return `${host}${pathname}`
+  })()
+
   return (
     <EmailShell preview={betaValidatedPreview}>
       <Text style={eyebrow}>ALMOST READY</Text>
@@ -60,7 +66,7 @@ export function BetaValidatedEmail({
       <Text style={smallText}>
         Button not working?{' '}
         <Link href={playUrl} style={link}>
-          Open whocards.cc/play
+          Open {playUrlLabel}
         </Link>
       </Text>
 

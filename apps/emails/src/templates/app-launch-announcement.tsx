@@ -7,11 +7,12 @@ export const appLaunchAnnouncementSubject = "It's live — WhoCards is in your p
 export const appLaunchAnnouncementPreview =
   'WhoCards is now on iOS and Android. Download it and start a real conversation today.'
 
-// TODO: replace idTODO / cc.whocards.appTODO with real store IDs before sending.
+// Real store listings (iOS App Store id 6782853824 / Android com.whocards.mobile).
+// The send path (render.tsx) overrides these via APP_STORE_URL / PLAY_STORE_URL.
 const DEFAULT_APP_STORE_URL =
-  'https://apps.apple.com/app/whocards/idTODO?utm_source=email&utm_medium=launch_blast&utm_campaign=launch'
+  'https://apps.apple.com/app/whocards/id6782853824?utm_source=email&utm_medium=launch_blast&utm_campaign=launch'
 const DEFAULT_PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=cc.whocards.appTODO&utm_source=email&utm_medium=launch_blast&utm_campaign=launch'
+  'https://play.google.com/store/apps/details?id=com.whocards.mobile&utm_source=email&utm_medium=launch_blast&utm_campaign=launch'
 
 export type AppLaunchAnnouncementProps = Readonly<{
   /** Pre-populated App Store URL (with UTM). Defaults to placeholder. */

@@ -128,7 +128,8 @@ A dedicated **`/app`** download landing page (linked from the homepage hero and 
 badges bolted onto the homepage. Rationale: one page we can point every channel at, A/B and
 instrument cleanly, and flip between two modes with a single switch.
 
-**Two modes, one date-driven flip** (`PUBLIC_APP_LAUNCHED` / a launch date constant):
+**Two modes behind `APP_VISIBLE`** (`PUBLIC_APP_WAITLIST_ENABLED` OR `PUBLIC_APP_LAUNCHED`; both
+default off, so `/app` is hidden and redirects home until one is flipped):
 
 - **Pre-launch (waitlist mode):** hero + value prop + screenshots + **"Notify me when it's
   live"** email capture. Builds the owned audience the launch email needs.
@@ -168,8 +169,10 @@ has two explicit signup paths:
 - **Consent:** persist app-notification and newsletter consent separately. App-only subscribers get
   the confirmation and public-download notification; only newsletter subscribers receive the
   pre-launch buildup and ongoing engagement emails.
-- **Source tagging:** every signup is tagged with its source (e.g. `app-waitlist`) via a PostHog
-  event **and persisted**, so every Broadcast can segment and deduplicate correctly.
+- **Source tagging:** every signup carries its acquisition source (e.g. `app-waitlist`, or the
+  `utm_source` for campaign traffic) on the PostHog event for segmentation. The DB stores only the
+  canonical `consent_source` (`app_page`); per-signup source persistence is tracked in #92, so don't
+  treat `source` as a stored column today.
 - **Confirmation email:** immediate "You're on the list" with copy that reflects the selected
   consent and a soft ask to add `hello@whocards.cc` to contacts.
 - **Delivery and preferences:** Postgres remains the consent record. Sync consented contacts to

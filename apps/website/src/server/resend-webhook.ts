@@ -201,7 +201,10 @@ export async function dispatchResendEvent<T extends PgQueryResultHKT>(
 
   const ev = event as Record<string, unknown>
   const type = typeof ev['type'] === 'string' ? ev['type'] : 'unknown'
-  const rawData = typeof ev['data'] === 'object' && ev['data'] !== null ? (ev['data'] as Record<string, unknown>) : {}
+  const rawData =
+    typeof ev['data'] === 'object' && ev['data'] !== null
+      ? (ev['data'] as Record<string, unknown>)
+      : {}
 
   // -------------------------------------------------------------------------
   // contact.updated — the primary unsubscribe signal from Resend
@@ -224,15 +227,27 @@ export async function dispatchResendEvent<T extends PgQueryResultHKT>(
 
     // Check if the event is scoped to a specific segment/audience.
     const rawSegmentId = extractSegmentId(rawData)
-    const consentType = segmentIdToConsentType(rawSegmentId, segmentIds)
 
-    if (consentType) {
+    if (rawSegmentId) {
+      // The event is scoped to one segment. Only act when we can map it to a
+      // known consent type. An UNMAPPED segment id (renamed, brand-new, or env
+      // vars not yet configured) must NOT fall through to a global unsubscribe —
+      // that would wipe consent the user never opted out of. Ignore and log for
+      // follow-up instead.
+      const consentType = segmentIdToConsentType(rawSegmentId, segmentIds)
+      if (!consentType) {
+        log.warn(
+          'resend-webhook: contact.updated unsubscribe for an UNMAPPED segment id %s — ignoring (not treating as global unsubscribe)',
+          rawSegmentId
+        )
+        return {type, action: 'ignored', affectedRows: 0}
+      }
+
       // Topic-scoped unsubscribe: only update the one consent type that maps to this segment.
       log.info(
-        'resend-webhook: contact.updated unsubscribe scoped to segment %s (%s) for %s',
+        'resend-webhook: contact.updated unsubscribe scoped to segment %s (%s)',
         rawSegmentId,
-        consentType,
-        email
+        consentType
       )
       const affectedRows = await unsubscribeByEmailAndType(db, {
         email,
@@ -242,12 +257,8 @@ export async function dispatchResendEvent<T extends PgQueryResultHKT>(
       return {type, action: 'unsubscribed_scoped', affectedRows}
     }
 
-    // No segment scope (or unmapped segment id) → treat as global unsubscribe.
-    log.info(
-      'resend-webhook: contact.updated global unsubscribe for %s (segment=%s, unmapped)',
-      email,
-      rawSegmentId ?? 'none'
-    )
+    // No segment scope at all → a contact-level (global) unsubscribe.
+    log.info('resend-webhook: contact.updated global unsubscribe (no segment scope)')
     const affectedRows = await unsubscribeAllActiveByEmail(db, {
       email,
       source: UNSUBSCRIBE_SOURCE.globalUnsubscribe,
@@ -265,7 +276,7 @@ export async function dispatchResendEvent<T extends PgQueryResultHKT>(
       return {type, action: 'no_email', affectedRows: 0}
     }
     const email = normalizeEmail(rawEmail)
-    log.info('resend-webhook: contact.deleted global unsubscribe for %s', email)
+    log.info('resend-webhook: contact.deleted — global unsubscribe')
     const affectedRows = await unsubscribeAllActiveByEmail(db, {
       email,
       source: UNSUBSCRIBE_SOURCE.globalUnsubscribe,
@@ -283,7 +294,7 @@ export async function dispatchResendEvent<T extends PgQueryResultHKT>(
       return {type, action: 'no_email', affectedRows: 0}
     }
     const email = normalizeEmail(rawEmail)
-    log.info('resend-webhook: email.bounced — unsubscribing all active rows for %s', email)
+    log.info('resend-webhook: email.bounced — unsubscribing all active rows')
     const affectedRows = await unsubscribeAllActiveByEmail(db, {
       email,
       source: UNSUBSCRIBE_SOURCE.bounce,
@@ -301,7 +312,7 @@ export async function dispatchResendEvent<T extends PgQueryResultHKT>(
       return {type, action: 'no_email', affectedRows: 0}
     }
     const email = normalizeEmail(rawEmail)
-    log.info('resend-webhook: email.complained — unsubscribing all active rows for %s', email)
+    log.info('resend-webhook: email.complained — unsubscribing all active rows')
     const affectedRows = await unsubscribeAllActiveByEmail(db, {
       email,
       source: UNSUBSCRIBE_SOURCE.complaint,
@@ -319,7 +330,7 @@ export async function dispatchResendEvent<T extends PgQueryResultHKT>(
       return {type, action: 'no_email', affectedRows: 0}
     }
     const email = normalizeEmail(rawEmail)
-    log.info('resend-webhook: email.suppressed — unsubscribing all active rows for %s', email)
+    log.info('resend-webhook: email.suppressed — unsubscribing all active rows')
     const affectedRows = await unsubscribeAllActiveByEmail(db, {
       email,
       source: UNSUBSCRIBE_SOURCE.suppressed,

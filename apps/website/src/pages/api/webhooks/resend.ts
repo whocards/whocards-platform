@@ -48,12 +48,12 @@ export const POST: APIRoute = async ({request}) => {
     })
   }
 
-  // Dispatch the verified event. Wrap in try/catch so a handler bug on a valid
-  // delivery does not produce an infinite retry loop from Resend.
-  // We return 200 for all unknown/irrelevant types, and also for handler
-  // errors on valid deliveries (logged). The only acceptable reason to return
-  // 500 after a verified signature would be a transient DB error — kept simple
-  // here: we log and 200 to avoid retry storms on any non-transient bug.
+  // Dispatch the verified event. The dispatcher never throws for unknown or
+  // irrelevant event types — it returns a summary and we 200 those. The ONLY way
+  // to reach this catch is a transient failure applying a real consent change
+  // (e.g. a DB error). For an unsubscribe/preferences signal we must NOT swallow
+  // that with a 200: Resend would stop retrying and the consent change would be
+  // lost forever (permanent drift). Return 500 so Resend retries the delivery.
   try {
     const summary = await dispatchResendEvent(db, event, {
       segmentIds: {
@@ -66,9 +66,12 @@ export const POST: APIRoute = async ({request}) => {
       headers: {'Content-Type': 'application/json'},
     })
   } catch (err) {
-    console.error('resend-webhook: dispatch threw (non-fatal, returning 200 to avoid retry storm)', err)
+    console.error(
+      'resend-webhook: dispatch failed applying a verified event — returning 500 so Resend retries',
+      err
+    )
     return new Response(JSON.stringify({ok: false, error: 'Internal dispatch error'}), {
-      status: 200,
+      status: 500,
       headers: {'Content-Type': 'application/json'},
     })
   }

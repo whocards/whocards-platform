@@ -39,7 +39,9 @@ export const makeSegmentIdResolver =
 // ---------------------------------------------------------------------------
 
 /** Selecting shape for get/update — mirrors the SDK's SelectingField. */
-export type ResendSelectingField = {id: string; email?: undefined | null} | {email: string; id?: undefined | null}
+export type ResendSelectingField =
+  | {id: string; email?: undefined | null}
+  | {email: string; id?: undefined | null}
 
 export interface ResendContactsPort {
   /** Create a contact (with optional segment membership). Returns {data: {id}, error}. */
@@ -153,8 +155,8 @@ export async function syncConsentToResend(
 
     if (!createResult.error && createResult.data?.id) {
       log.info(
-        'resend-sync: created contact %s in segment %s (contactId=%s)',
-        consent.email,
+        'resend-sync: created contact for consent #%d in segment %s (contactId=%s)',
+        consent.id,
         segmentId,
         createResult.data.id
       )
@@ -164,7 +166,7 @@ export async function syncConsentToResend(
     // If it's a definitely-fatal error, surface it immediately.
     if (createResult.error && isDefinitelyFatalCreateError(createResult.error)) {
       const msg = createResult.error.message
-      log.error('resend-sync: fatal create error for %s: %s', consent.email, msg)
+      log.error('resend-sync: fatal create error for consent #%d: %s', consent.id, msg)
       return {status: 'failed', error: msg}
     }
 
@@ -172,8 +174,8 @@ export async function syncConsentToResend(
     // fall through to get + addToSegment for idempotency.
     if (createResult.error) {
       log.warn(
-        'resend-sync: create returned error for %s (%s: %s) — falling through to segment-add path',
-        consent.email,
+        'resend-sync: create returned error for consent #%d (%s: %s) — falling through to segment-add path',
+        consent.id,
         createResult.error.name,
         createResult.error.message
       )
@@ -183,7 +185,7 @@ export async function syncConsentToResend(
     const getResult = await resendContacts.get({email: consent.email})
     if (getResult.error || !getResult.data) {
       const msg = getResult.error?.message ?? 'get failed'
-      log.error('resend-sync: get error for %s: %s', consent.email, msg)
+      log.error('resend-sync: get error for consent #%d: %s', consent.id, msg)
       return {status: 'failed', error: msg}
     }
 
@@ -192,20 +194,20 @@ export async function syncConsentToResend(
 
     if (addResult.error) {
       const msg = addResult.error.message ?? 'addToSegment failed'
-      log.error('resend-sync: addToSegment error for %s: %s', consent.email, msg)
+      log.error('resend-sync: addToSegment error for consent #%d: %s', consent.id, msg)
       return {status: 'failed', error: msg}
     }
 
     log.info(
-      'resend-sync: added contact %s to segment %s (contactId=%s)',
-      consent.email,
+      'resend-sync: added contact for consent #%d to segment %s (contactId=%s)',
+      consent.id,
       segmentId,
       contactId
     )
     return {status: 'synced', contactId, segmentId}
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    log.error('resend-sync: threw for %s: %s', consent.email, msg)
+    log.error('resend-sync: threw for consent #%d: %s', consent.id, msg)
     return {status: 'failed', error: msg}
   }
 }
@@ -361,10 +363,7 @@ export async function reconcile<T extends PgQueryResultHKT>(
   const {emailConsent, users} = schema
 
   // 1. Active consent rows needing sync (DB-filtered via buildNeedsSyncWhere).
-  const toSync = await db
-    .select()
-    .from(emailConsent)
-    .where(buildNeedsSyncWhere())
+  const toSync = await db.select().from(emailConsent).where(buildNeedsSyncWhere())
 
   log.info('[reconcile] Found %d consent rows needing sync.', toSync.length)
 

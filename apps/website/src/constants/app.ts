@@ -7,8 +7,9 @@
  * Both default to false, which hides /app (redirects home) and removes its
  * nav/homepage entry points while the email/consent backend ships.
  *
- * Store URLs are placeholders until the apps are live — replace the TODO values
- * with real store IDs before launch.
+ * Store URLs point at the real listings (iOS App Store id + Android package).
+ * The guard below throws at module load if a placeholder ever slips back in
+ * while APP_LAUNCHED is true, so a broken CTA can never reach a launched funnel.
  */
 import {env} from '~env'
 
@@ -37,10 +38,19 @@ export const APP_VISIBLE: boolean = computeAppVisible(APP_LAUNCHED, APP_WAITLIST
  */
 export const APP_STORE_APP_ID = '6782853824'
 
-/** TODO: replace with real App Store product URL once the iOS app is live. */
-export const APP_STORE_URL =
-  'https://apps.apple.com/app/whocards/idTODO?utm_source=website&utm_medium=app_page&utm_campaign=launch'
+/** App Store product URL — keyed off the numeric App Store id (slug is cosmetic). */
+export const APP_STORE_URL = `https://apps.apple.com/app/whocards/id${APP_STORE_APP_ID}?utm_source=website&utm_medium=app_page&utm_campaign=launch`
 
-/** TODO: replace with real Google Play store URL once the Android app is live. */
+/** Google Play store URL — keyed off the Android application id. */
 export const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=cc.whocards.appTODO&utm_source=website&utm_medium=app_page&utm_campaign=launch'
+  'https://play.google.com/store/apps/details?id=com.whocards.mobile&utm_source=website&utm_medium=app_page&utm_campaign=launch'
+
+// Defence-in-depth: a launched funnel must never serve a placeholder store link.
+// This fires at module load (SSR) so a stray `TODO` can't slip past review and
+// reach visitors once PUBLIC_APP_LAUNCHED is flipped.
+if (APP_LAUNCHED && (APP_STORE_URL.includes('TODO') || PLAY_STORE_URL.includes('TODO'))) {
+  throw new Error(
+    'App is launched (PUBLIC_APP_LAUNCHED=true) but a store URL still contains a TODO placeholder. ' +
+      'Set the real App Store id / Android package in src/constants/app.ts before launch.'
+  )
+}

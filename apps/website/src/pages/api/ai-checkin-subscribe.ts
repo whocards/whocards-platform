@@ -4,6 +4,7 @@ import {z} from 'zod'
 import questions from '~data/decks/ai-at-work.questions.json'
 import {env} from '~env'
 import {insertUser} from '~server/db'
+import {verifyTurnstile} from '~server/turnstile'
 
 // SSR endpoint for the AI Check-In lead magnet (/ai-at-work). Captures the email
 // as a newsletter user (reusing the existing users table — no migration) and
@@ -31,8 +32,9 @@ const STARTER_IDS = [
   'ai-37',
 ] as const
 
-const starterQuestions = STARTER_IDS.map((id) => (questions as Record<string, {en: string}>)[id]?.en)
-  .filter((q): q is string => Boolean(q))
+const starterQuestions = STARTER_IDS.map(
+  (id) => (questions as Record<string, {en: string}>)[id]?.en
+).filter((q): q is string => Boolean(q))
 
 const DECK_URL = 'https://whocards.cc/play/ai-at-work'
 
@@ -67,12 +69,34 @@ const buildEmailHtml = () => {
   </div>`
 }
 
-export const POST: APIRoute = async ({request}) => {
+export const POST: APIRoute = async ({request, clientAddress}) => {
   const body = await request.json().catch(() => null)
   const parsed = schema.safeParse(body)
 
   if (!parsed.success) {
     return json({message: 'Please enter a valid email address.'}, 400)
+  }
+
+  // Bot protection — verify the Turnstile token server-side before sending any
+  // email. Required, like every other WhoCards form. The token is read from the
+  // raw body (verified separately, never a schema field).
+  const turnstileToken =
+    body &&
+    typeof body === 'object' &&
+    typeof (body as Record<string, unknown>).turnstileToken === 'string'
+      ? ((body as Record<string, unknown>).turnstileToken as string)
+      : ''
+  const turnstile = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY, clientAddress)
+  if (!turnstile.ok) {
+    return json(
+      {
+        message:
+          turnstile.reason === 'missing-token'
+            ? 'Please complete the security check.'
+            : 'Security check failed. Please try again.',
+      },
+      403
+    )
   }
 
   const {email, name} = parsed.data

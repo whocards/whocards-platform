@@ -1,6 +1,6 @@
 import {and, isNull, eq, sql} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
-import type {ConsentType} from '~server/consent'
+import {normalizeEmail, type ConsentType} from '../consent'
 import * as schema from './schema'
 
 export type UserCreate = typeof schema.users.$inferInsert
@@ -17,20 +17,24 @@ export type UserCreate = typeof schema.users.$inferInsert
 export const upsertUser = <T extends PgQueryResultHKT>(
   database: PgDatabase<T, typeof schema>,
   user: UserCreate
-) =>
-  database
+) => {
+  // Normalize at the DB boundary so the (case-sensitive text) email key never
+  // diverges across callers — the webhook normalizes lookups, so writes must too.
+  const email = normalizeEmail(user.email)
+  return database
     .insert(schema.users)
-    .values(user)
+    .values({...user, email})
     .onConflictDoUpdate({
       target: schema.users.email,
       set: {
         name: user.name,
-        email: user.email,
+        email,
         newsletter: sql`${schema.users.newsletter} OR excluded.newsletter`,
       },
     })
     .returning()
     .then((rows) => rows[0])
+}
 
 export type ConsentCreate = {
   email: string
@@ -46,16 +50,21 @@ export type ConsentCreate = {
 //   - Updates name when a new value is provided.
 //   - Coalesces userId so we never null an existing link.
 //   - Clears unsubscribe fields on resubscribe.
+//   - Resets provider sync state on resubscribe so reconciliation re-adds the
+//     contact to Resend (a previously-synced-then-unsubscribed row would
+//     otherwise look "already synced" and be skipped by needsSync()).
 //   - Does NOT overwrite consentedAt (preserves first-consent timestamp).
-//   - Does NOT touch fulfilledAt or provider_* fields.
+//   - Does NOT touch fulfilledAt.
 export const upsertConsent = <T extends PgQueryResultHKT>(
   database: PgDatabase<T, typeof schema>,
   consent: ConsentCreate
-) =>
-  database
+) => {
+  // Normalize at the DB boundary — keeps one row per logical (email, type).
+  const email = normalizeEmail(consent.email)
+  return database
     .insert(schema.emailConsent)
     .values({
-      email: consent.email,
+      email,
       name: consent.name ?? null,
       userId: consent.userId ?? null,
       consentType: consent.consentType,
@@ -68,11 +77,14 @@ export const upsertConsent = <T extends PgQueryResultHKT>(
         userId: sql`COALESCE(excluded.user_id, ${schema.emailConsent.userId})`,
         unsubscribedAt: null,
         unsubscribeSource: null,
+        providerSyncedAt: null,
+        providerSyncError: null,
         updatedAt: sql`now()`,
       },
     })
     .returning()
     .then((rows) => rows[0])
+}
 
 // ---------------------------------------------------------------------------
 // Webhook unsubscribe helpers (#121)

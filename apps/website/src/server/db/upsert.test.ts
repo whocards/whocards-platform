@@ -131,14 +131,23 @@ describe('upsertConsent — email_consent table (#119)', () => {
       consentType: 'app_launch',
       consentSource: 'app_page',
     })
+
+    // Seed a FIXED older consented_at so the assertion is deterministic — two
+    // back-to-back now() defaults can collide and mask a wrongful overwrite.
+    const fixedConsentedAt = '2024-01-01T00:00:00.000Z'
+    await db
+      .update(schema.emailConsent)
+      .set({consentedAt: fixedConsentedAt})
+      .where(eq(schema.emailConsent.id, first!.id))
+
     // Simulate a later re-signup
     const second = await upsertConsent(db, {
       email: 'resub@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
     })
-    // consentedAt must be the original timestamp, not overwritten
-    expect(second!.consentedAt).toBe(first!.consentedAt)
+    // consentedAt must be the original (seeded) timestamp, not overwritten
+    expect(new Date(second!.consentedAt).toISOString()).toBe(fixedConsentedAt)
   })
 
   it('non-destructive resubscribe: clears unsubscribe fields and reuses same row', async () => {
@@ -150,10 +159,18 @@ describe('upsertConsent — email_consent table (#119)', () => {
     })
     expect(initial).toBeDefined()
 
-    // Simulate an unsubscribe by directly updating the row
+    // Simulate an unsubscribe AND a prior provider sync by directly updating the
+    // row — a previously-synced row that later unsubscribed is the case that must
+    // re-sync on resubscribe (otherwise needsSync() skips it forever).
     await db
       .update(schema.emailConsent)
-      .set({unsubscribedAt: '2025-01-01T00:00:00Z', unsubscribeSource: 'user_request'})
+      .set({
+        unsubscribedAt: '2025-01-01T00:00:00Z',
+        unsubscribeSource: 'user_request',
+        providerSyncedAt: '2025-01-01T00:00:00Z',
+        providerContactId: 'contact_123',
+        providerSegmentId: 'seg_123',
+      })
       .where(eq(schema.emailConsent.email, 'unsub@example.com'))
 
     const [unsubRow] = await db
@@ -174,10 +191,18 @@ describe('upsertConsent — email_consent table (#119)', () => {
     // Unsubscribe fields are cleared
     expect(resub!.unsubscribedAt).toBeNull()
     expect(resub!.unsubscribeSource).toBeNull()
+    // Provider sync state is reset so reconciliation re-adds the contact to Resend
+    // (needsSync() keys off providerSyncedAt IS NULL). The contact id is kept.
+    expect(resub!.providerSyncedAt).toBeNull()
+    expect(resub!.providerSyncError).toBeNull()
   })
 
   it('links userId when provided, coalesces on re-upsert', async () => {
-    const user = await upsertUser(db, {email: 'linked@example.com', name: 'Linked', newsletter: false})
+    const user = await upsertUser(db, {
+      email: 'linked@example.com',
+      name: 'Linked',
+      newsletter: false,
+    })
     const row = await upsertConsent(db, {
       email: 'linked@example.com',
       consentType: 'app_launch',

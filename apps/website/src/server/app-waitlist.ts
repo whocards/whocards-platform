@@ -16,6 +16,9 @@ export const appWaitlistSchema = z.object({
   // instrumentation tracked in #92 — do not add a column/migration here).
   source: z.string().trim().optional(),
 })
+// Note: the Cloudflare Turnstile token (`turnstileToken`) is intentionally NOT a
+// schema field — like /contact and /request-cards it is always required and
+// verified separately server-side (see ~server/turnstile), never optional.
 
 export type AppWaitlistInput = z.infer<typeof appWaitlistSchema>
 

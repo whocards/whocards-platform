@@ -19,12 +19,17 @@ test.describe('/app waitlist (pre-launch)', () => {
     await expect(page.locator('input[name="email"]').first()).toBeVisible()
   })
 
-  test('does not expose the placeholder store links while unlaunched', async ({page}) => {
+  test('does not expose the store links while unlaunched', async ({page}) => {
     const res = await page.goto('/app')
-    const html = (await res?.text()) ?? ''
 
-    // The App Store / Play links are placeholders (idTODO / appTODO) and must be
-    // unreachable until launch. In waitlist mode they are not rendered at all.
+    // Prove we are actually inspecting the waitlist page, not an unexpected
+    // redirect to / (which also lacks store links) or a null navigation.
+    expect(res?.ok()).toBeTruthy()
+    expect(new URL(res!.url()).pathname).toBe('/app')
+
+    const html = await res!.text()
+    // Store links are only rendered in launch mode. In waitlist mode the App
+    // Store / Google Play links must not appear at all.
     expect(html).not.toContain('apps.apple.com')
     expect(html).not.toContain('play.google.com')
   })

@@ -1,14 +1,11 @@
 import type {APIRoute} from 'astro'
 import {Resend} from 'resend'
 import {env} from '~env'
-import {
-  appWaitlistSchema,
-  confirmationEmail,
-  confirmationMessage,
-} from '~server/app-waitlist'
+import {appWaitlistSchema, confirmationEmail, confirmationMessage} from '~server/app-waitlist'
 import {CONSENT_SOURCE, normalizeEmail} from '~server/consent'
 import {db, insertConsent, insertUser} from '~server/db'
 import {makeSegmentIdResolver, syncEmailConsents} from '~server/resend-sync'
+import {verifyTurnstile} from '~server/turnstile'
 
 // SSR endpoint for the /app waitlist and launch-day reminder capture.
 // Modelled on ai-checkin-subscribe.ts — same DB pattern, same error handling.
@@ -17,7 +14,7 @@ export const prerender = false
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json'}})
 
-export const POST: APIRoute = async ({request}) => {
+export const POST: APIRoute = async ({request, clientAddress}) => {
   const body = await request.json().catch(() => null)
   const parsed = appWaitlistSchema.safeParse(body)
 
@@ -25,20 +22,46 @@ export const POST: APIRoute = async ({request}) => {
     return json({message: 'Please enter a valid email address.'}, 400)
   }
 
+  // Bot protection — this is the most prominent public form, so verify the
+  // Turnstile token server-side before sending any email (a forged/blank token
+  // can't reach Resend). Required, like /contact and /request-cards. The token
+  // is read from the raw body (not a schema field — it's verified separately).
+  const turnstileToken =
+    body &&
+    typeof body === 'object' &&
+    typeof (body as Record<string, unknown>).turnstileToken === 'string'
+      ? ((body as Record<string, unknown>).turnstileToken as string)
+      : ''
+  const turnstile = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY, clientAddress)
+  if (!turnstile.ok) {
+    return json(
+      {
+        message:
+          turnstile.reason === 'missing-token'
+            ? 'Please complete the security check.'
+            : 'Security check failed. Please try again.',
+      },
+      403
+    )
+  }
+
   const {email: rawEmail, name, newsletter, source} = parsed.data
   const email = normalizeEmail(rawEmail)
   const displayName = name && name.length > 0 ? name : email.split('@')[0]
-  const consentSource = source ?? CONSENT_SOURCE.appPage
+  // consent_source is a canonical CONSENT_SOURCE value, never the client-supplied
+  // `source` (which is for segmentation only and is logged below, not persisted).
+  const consentSource = CONSENT_SOURCE.appPage
 
-  // Log source for segmentation (full persistence tracked in #92).
+  // Log source for segmentation (full persistence tracked in #92). No email — PII.
   if (source) {
-    console.info('app-launch-subscribe: source=%s email=%s', source, email)
+    console.info('app-launch-subscribe: source=%s', source)
   }
 
   // Persist the lead. Upsert the user row first (keeps user.newsletter OR-merge
   // compatibility), then write consent rows: app_launch always, newsletter only
-  // when the visitor opted in. Don't fail the request if the DB write hiccups —
-  // sending the confirmation matters more (#119).
+  // when the visitor opted in. The durable consent row is the point of the form —
+  // if it fails, fail the request rather than telling the visitor they're on the
+  // list with no record to back it (and nothing for the Resend sync to reconcile).
   try {
     const user = await insertUser({
       email,
@@ -66,6 +89,7 @@ export const POST: APIRoute = async ({request}) => {
     }
   } catch (error) {
     console.error('app-launch-subscribe: failed to store lead', error)
+    return json({message: "We couldn't save your signup. Please try again."}, 503)
   }
 
   if (!env.RESEND_API_KEY) {

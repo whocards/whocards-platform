@@ -108,9 +108,7 @@ describe('verifyResendSignature', () => {
     const payload = JSON.stringify({type: 'contact.updated', data: {email: 'a@b.com'}})
     const headers = signPayload(payload)
 
-    expect(() =>
-      verifyResendSignature({secret: TEST_SECRET, payload, headers})
-    ).not.toThrow()
+    expect(() => verifyResendSignature({secret: TEST_SECRET, payload, headers})).not.toThrow()
   })
 
   it('returns the parsed event object on success', () => {
@@ -150,9 +148,7 @@ describe('verifyResendSignature', () => {
     const headers = signPayload(payload)
     const wrongSecret = 'whsec_' + Buffer.from('b'.repeat(32)).toString('base64')
 
-    expect(() =>
-      verifyResendSignature({secret: wrongSecret, payload, headers})
-    ).toThrow()
+    expect(() => verifyResendSignature({secret: wrongSecret, payload, headers})).toThrow()
   })
 })
 
@@ -330,10 +326,15 @@ describe('dispatchResendEvent — contact.updated global unsubscribe', () => {
     }
   })
 
-  it('treats an unmapped segment id as a global unsubscribe', async () => {
+  it('ignores a scoped unsubscribe for an unmapped segment id — never a global wipe', async () => {
     await upsertConsent(db, {
       email: 'unmapped@example.com',
       consentType: 'newsletter',
+      consentSource: 'app_page',
+    })
+    await upsertConsent(db, {
+      email: 'unmapped@example.com',
+      consentType: 'app_launch',
       consentSource: 'app_page',
     })
 
@@ -351,9 +352,18 @@ describe('dispatchResendEvent — contact.updated global unsubscribe', () => {
       logger: silentLogger,
     })
 
-    // Falls back to global since the segment id isn't mapped.
-    expect(summary.action).toBe('unsubscribed_global')
-    expect(summary.affectedRows).toBe(1)
+    // A scoped event for an unknown segment must NOT fall through to a global
+    // unsubscribe — that would wipe consent the user never opted out of. Ignore it.
+    expect(summary.action).toBe('ignored')
+    expect(summary.affectedRows).toBe(0)
+
+    // Both consent rows remain active.
+    const rows = await db
+      .select()
+      .from(schema.emailConsent)
+      .where(eq(schema.emailConsent.email, 'unmapped@example.com'))
+    expect(rows).toHaveLength(2)
+    for (const row of rows) expect(row.unsubscribedAt).toBeNull()
   })
 
   it('ignores contact.updated when unsubscribed is false (benign update)', async () => {
