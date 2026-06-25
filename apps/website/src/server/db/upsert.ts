@@ -1,4 +1,4 @@
-import {sql} from 'drizzle-orm'
+import {and, isNull, eq, sql} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import type {ConsentType} from '~server/consent'
 import * as schema from './schema'
@@ -73,3 +73,59 @@ export const upsertConsent = <T extends PgQueryResultHKT>(
     })
     .returning()
     .then((rows) => rows[0])
+
+// ---------------------------------------------------------------------------
+// Webhook unsubscribe helpers (#121)
+// ---------------------------------------------------------------------------
+
+/**
+ * Set unsubscribed_at + unsubscribe_source on ALL currently-active consent rows
+ * for the given email. Only touches rows where unsubscribed_at IS NULL so that
+ * repeated webhook deliveries are idempotent (a second call affects 0 rows).
+ * Returns the count of rows actually updated.
+ */
+export const unsubscribeAllActiveByEmail = async <T extends PgQueryResultHKT>(
+  database: PgDatabase<T, typeof schema>,
+  {email, source}: {email: string; source: string}
+): Promise<number> => {
+  const {emailConsent} = schema
+  const rows = await database
+    .update(emailConsent)
+    .set({
+      unsubscribedAt: sql`now()`,
+      unsubscribeSource: source,
+      updatedAt: sql`now()`,
+    })
+    .where(and(eq(emailConsent.email, email), isNull(emailConsent.unsubscribedAt)))
+    .returning({id: emailConsent.id})
+  return rows.length
+}
+
+/**
+ * Set unsubscribed_at + unsubscribe_source on the single active consent row
+ * for the given (email, consentType) pair. Only touches rows where
+ * unsubscribed_at IS NULL — idempotent on repeated delivery.
+ * Returns the count of rows actually updated (0 or 1).
+ */
+export const unsubscribeByEmailAndType = async <T extends PgQueryResultHKT>(
+  database: PgDatabase<T, typeof schema>,
+  {email, consentType, source}: {email: string; consentType: ConsentType; source: string}
+): Promise<number> => {
+  const {emailConsent} = schema
+  const rows = await database
+    .update(emailConsent)
+    .set({
+      unsubscribedAt: sql`now()`,
+      unsubscribeSource: source,
+      updatedAt: sql`now()`,
+    })
+    .where(
+      and(
+        eq(emailConsent.email, email),
+        eq(emailConsent.consentType, consentType),
+        isNull(emailConsent.unsubscribedAt)
+      )
+    )
+    .returning({id: emailConsent.id})
+  return rows.length
+}

@@ -17,6 +17,10 @@ export const env = createEnv({
     // Both are optional — when absent, sync for that consent type is a logged no-op.
     RESEND_SEGMENT_NEWSLETTER_ID: z.string().optional(),
     RESEND_SEGMENT_APP_WAITLIST_ID: z.string().optional(),
+    // Svix signing secret for verifying Resend webhook deliveries (#121).
+    // Format: whsec_<base64>. Optional so builds/dev don't break without it;
+    // the webhook route returns 500 when unset (can't verify) so Resend will retry.
+    RESEND_WEBHOOK_SECRET: z.string().optional(),
   },
   clientPrefix: 'PUBLIC_',
   client: {

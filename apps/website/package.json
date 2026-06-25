@@ -66,6 +66,7 @@
     "satori": "^0.26.0",
     "sharp": "^0.34.5",
     "split-text-js": "^1.0.3",
+    "svix": "^1.96.0",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.0",
     "wawoff2": "^2.0.1",
