@@ -11,7 +11,7 @@ import {env} from '~env'
 import {Layout} from '~layouts'
 import {insertUser} from '~server/db'
 import {createContactSheetRow} from '~server/gsheet'
-import {verifyTurnstile} from '~server/turnstile'
+import {turnstileErrorFor, verifyTurnstile} from '~server/turnstile'
 import {cardRequestSchema} from '~utils/schemas'
 
 const siteKey = env.PUBLIC_TURNSTILE_SITE_KEY
@@ -19,10 +19,6 @@ const siteKey = env.PUBLIC_TURNSTILE_SITE_KEY
 let formData: Record<string, string> | undefined
 let errors: Record<string, ZodIssue> | undefined
 let confirmed = false
-
-const turnstileError = (message: string): Record<string, ZodIssue> => ({
-  'cf-turnstile-response': {code: 'custom', message, path: ['cf-turnstile-response']} as ZodIssue,
-})
 
 // when form is posted
 if (Astro.request.method === 'POST') {
@@ -35,14 +31,10 @@ if (Astro.request.method === 'POST') {
     if (env.TURNSTILE_SECRET_KEY) {
       const result = await verifyTurnstile(
         formData['cf-turnstile-response'] ?? '',
-        env.TURNSTILE_SECRET_KEY
+        env.TURNSTILE_SECRET_KEY,
+        Astro.clientAddress
       )
-      if (!result.ok) {
-        errors =
-          result.reason === 'missing-token'
-            ? turnstileError('Please complete the security check.')
-            : turnstileError('Security check failed. Please try again.')
-      }
+      if (!result.ok) errors = turnstileErrorFor(result.reason)
     }
 
     const parsed = errors ? undefined : cardRequestSchema.safeParse(formData)
@@ -85,7 +77,11 @@ if (Astro.request.method === 'POST') {
 }
 ---
 
-<Layout title='Request Cards' description='Use this form to request WhoCards for yourself or your organization. Tell us what you need and our team will follow up with you.' class='pt-28 lg:pt-32'>
+<Layout
+  title='Request Cards'
+  description='Use this form to request WhoCards for yourself or your organization. Tell us what you need and our team will follow up with you.'
+  class='pt-28 lg:pt-32'
+>
   <div
     class='grid grid-flow-row md:grid-flow-col md:grid-cols-2 md:px-[2vw] lg:max-w-7xl px-5 xl:px-0 w-full justify-between items-start'
   >
@@ -107,6 +103,7 @@ if (Astro.request.method === 'POST') {
             <a
               href={link.href}
               target='_blank'
+              rel='noopener noreferrer'
               class='flex items-center text-gray-dark hover:text-primary-light active:text-primary-dark gap-3'
             >
               <>

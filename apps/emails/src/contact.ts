@@ -1,11 +1,11 @@
 import {createElement} from 'react'
 
 import {sendEmail} from './resend'
+import type {ContactMessageProps} from './templates/contact-message'
 import {
   ContactMessageEmail,
   contactMessageSubject,
   contactMessageText,
-  type ContactMessageProps,
 } from './templates/contact-message'
 
 export type SendContactMessageInput = ContactMessageProps &

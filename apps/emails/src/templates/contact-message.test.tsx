@@ -1,11 +1,7 @@
 import {render} from '@react-email/render'
 import {describe, expect, it} from 'vitest'
 
-import {
-  ContactMessageEmail,
-  contactMessageSubject,
-  contactMessageText,
-} from './contact-message'
+import {ContactMessageEmail, contactMessageSubject, contactMessageText} from './contact-message'
 
 const props = {
   name: 'Ada Lovelace',

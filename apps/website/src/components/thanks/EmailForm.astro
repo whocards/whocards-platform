@@ -19,9 +19,7 @@ const isRequest = mode === 'request'
 const heading = isRequest ? 'Request WhoCards' : 'Would you like to\nhear from us?'
 const subheading = isRequest ? 'Tell us how many decks you need and where to send them.' : undefined
 const newsletterChecked =
-  formData?.newsletter === 'on' ||
-  formData?.newsletter === true ||
-  user?.newsletter === true
+  formData?.newsletter === 'on' || formData?.newsletter === true || user?.newsletter === true
 ---
 
 <div class='flex flex-col items-center text-center md:text-start md:items-start gap-4 md:gap-5'>
@@ -161,7 +159,11 @@ const newsletterChecked =
       Yes, I would like to sign up for occasional newsletters from WhoCards.
     </Checkbox>
 
-    {siteKey ? <div class='cf-turnstile mt-2 mb-4' data-sitekey={siteKey} data-theme='dark' /> : null}
+    {
+      siteKey ? (
+        <div class='cf-turnstile mt-2 mb-4' data-sitekey={siteKey} data-theme='dark' />
+      ) : null
+    }
     {
       errors?.['cf-turnstile-response'] && (
         <p class='text-xs text-red mb-4'>{errors['cf-turnstile-response'].message}</p>
@@ -192,6 +194,8 @@ const newsletterChecked =
   })
 </script>
 
-{siteKey && (
-  <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
-)}
+{
+  siteKey && (
+    <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
+  )
+}
