@@ -12,6 +12,7 @@ describe('AndroidTesterRecruitmentEmail', () => {
   it('renders the signup link and release expectation', async () => {
     const html = await render(<AndroidTesterRecruitmentEmail signupUrl={signupUrl} />)
     expect(html).toContain(signupUrl)
+    expect(html).toContain('same Google account')
     expect(html).toContain('Android people, we need you')
     expect(html).toContain('first test release is available')
     expect(html).toContain('Forward this their way')

@@ -78,7 +78,7 @@ native runtime that matches what ships in production.
 These make the binary correct; the app is broken or unshippable without them.
 
 - [x] **Prod API URL** — `production` (and `preview`) profile sets `EXPO_PUBLIC_API_URL=https://whocards.cc` in `eas.json` (app calls `/api/trpc`); without it the build falls back to `localhost:4321`. Prod API verified live 2026-06-21 (`/api/trpc/decks.manifest` & `pool.languages` → `200`, see #20).
-- [x] **App display name** — `app.json` `name` is **WhoCards**; `slug` is `whocards-app` (matches the EAS project); bundle IDs `cc.whocards.mobile` correct. (`scheme` stays `mobile` — that's the deep-link scheme, unrelated.)
+- [x] **App display name** — `app.json` `name` is **WhoCards**; `slug` is `whocards-app` (matches the EAS project); iOS bundle ID is `cc.whocards.mobile` and Android package is `com.whocards.mobile`. (`scheme` stays `mobile` — that's the deep-link scheme, unrelated.)
 - [x] **App icon** — WhoCards dark `?` mark (`icon.png` + Android adaptive icons); intentionally dark-only
 - [x] **Version fields** — `version: "1.0.0"`; build numbers via EAS remote auto-increment (no manual `buildNumber`/`versionCode`)
 - [x] **Error boundary** — root error boundary with recovery in `src/components/error-boundary.tsx`, mounted in `src/app/_layout.tsx`
@@ -112,7 +112,7 @@ These make the binary correct; the app is broken or unshippable without them.
 
 - [ ] `pnpm check` green (tsc + oxlint + oxfmt + `decks`/`api` unit tests + **mobile jest suite**)
 - [ ] **Mobile unit/component tests** — `pnpm --filter mobile test` (jest + RN Testing Library; covers language-store, answer-queue, device-id, getBaseUrl, ErrorBoundary)
-- [ ] **Maestro suite** — `pnpm --filter mobile e2e` (flows: `play-language-share`, `deep-link-back`, `language-persist`, `rtl-alignment`; see `.maestro/README.md`). Offline-record→drain has no observable UI signal and is covered by the `answer-queue`/`answer-transport` jest tests instead.
+- [ ] **Maestro suite** — run `pnpm --filter mobile e2e:ios` and `pnpm --filter mobile e2e:android` (see `.maestro/README.md`). Offline-record→drain has no observable UI signal and is covered by the `answer-queue`/`answer-transport` jest tests instead.
 - [ ] Manual smoke on the **device matrix** (native builds — see below)
 
 ## Device matrix

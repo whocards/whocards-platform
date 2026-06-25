@@ -99,7 +99,20 @@ for entry in $DEVICES; do
     exit 1
   fi
   echo "▶ capturing on $name ($id)"
-  maestro --device "$id" test "$FLOW" -e "DEVICE=$name"
+  app_id="cc.whocards.mobile"
+  if command -v adb >/dev/null 2>&1; then
+    # adb lists Android devices/emulators with their state in column 2. iOS sims
+    # never appear here (so adb_state is empty → the iOS bundle id is correct).
+    adb_state="$(adb devices | awk -v id="$id" 'NR > 1 && $1 == id {print $2}')"
+    if [[ "$adb_state" == "device" ]]; then
+      app_id="com.whocards.mobile"
+    elif [[ -n "$adb_state" ]]; then
+      # adb knows this id but it isn't online — without this warning the run would
+      # fall through to the iOS bundle and fail with a misleading "app not found".
+      echo "  ⚠ adb reports $id as '$adb_state' (not 'device') — fix the emulator's adb state; otherwise it runs with the iOS bundle id and fails as a missing app" >&2
+    fi
+  fi
+  maestro --device "$id" test "$FLOW" -e "DEVICE=$name" -e "APP_ID=$app_id"
   verify_sizes "$name"
 done
 

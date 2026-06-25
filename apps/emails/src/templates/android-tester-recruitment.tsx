@@ -34,7 +34,8 @@ export function AndroidTesterRecruitmentEmail({
       </BrandCard>
       <Text style={paragraph}>
         Sign up now and we’ll send you the private download and installation link as soon as the
-        first test release is available.
+        first test release is available. You’ll need to open it with the same Google account you use
+        on your Android phone.
       </Text>
       <Section style={{margin: '30px 0', textAlign: 'center'}}>
         <BrandButton href={signupUrl}>Count me in →</BrandButton>
@@ -76,6 +77,8 @@ You don’t need to be technical. Curiosity, an Android phone, and a willingness
 
 Sign up now and we’ll send you the private download and installation link as soon as the first test release is available:
 ${signupUrl}
+
+You’ll need to open the testing link with the same Google account you use on your Android phone.
 
 Know another Android person who loves a good conversation? Forward this their way—the more curious button-pressers, the better.
 

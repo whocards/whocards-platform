@@ -9,10 +9,11 @@
 # exercised by play-language-share.yaml). The URL-building logic itself is unit-tested
 # in src/__tests__/share-url.test.ts.
 #
-# Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
-appId: cc.whocards.mobile
+# Run: pnpm --filter mobile e2e:android   (Android-only flow; needs the app installed on a booted device)
+appId: ${APP_ID}
 tags:
   - android
+  - android-only
 ---
 - launchApp:
     clearState: true # default language (en) so the shared URL is lang=en
@@ -23,6 +24,7 @@ tags:
 # Reveal the auto-hiding chrome, then fire the share action.
 - tapOn:
     point: '50%,45%'
+- assertVisible: 'change language'
 - tapOn: 'share question'
 
 # Android's share sheet previews the shared text, which now carries the web link.

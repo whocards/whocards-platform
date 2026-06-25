@@ -5,8 +5,8 @@
 # the title overlapping the status bar is the regression. The deterministic guard for
 # the inset math is the jest test (src/__tests__/language-modal.test.tsx).
 #
-# Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
-appId: cc.whocards.mobile
+# Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
+appId: ${APP_ID}
 tags:
   - ios
   - android

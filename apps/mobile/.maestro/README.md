@@ -3,7 +3,15 @@
 End-to-end flows for the Expo app, run with [Maestro](https://maestro.mobile.dev)
 against a build installed on a booted simulator/emulator.
 
-## Flows (the quality gate — `pnpm -F mobile e2e`)
+## Flows
+
+The flows are shared, but the installed app id differs by platform. Always use the explicit
+platform command so Maestro targets the binary that is actually installed:
+
+```bash
+pnpm -F mobile e2e:ios      # cc.whocards.mobile
+pnpm -F mobile e2e:android  # com.whocards.mobile
+```
 
 - `play-language-share.yaml` — launch → play → swipe forward/back → switch language →
   share. Exercises the landing CTA, the swipe gesture engine, the auto-hiding chrome,
@@ -124,6 +132,11 @@ xcrun simctl install <other-sim-udid> \
 pnpm -F mobile exec expo run:android --variant release
 ```
 
+For everyday development, `pnpm -F mobile android` starts Metro and opens an already-installed
+development build. If Expo reports that no development build is installed, run
+`pnpm -F mobile android:build` once for that emulator/device, then use `pnpm -F mobile android` on
+subsequent starts.
+
 ### Android toolchain notes
 
 Getting a local Android **release** build to succeed needs three things:
@@ -167,8 +180,9 @@ Getting a local Android **release** build to succeed needs three things:
 ## Running
 
 ```bash
-pnpm -F mobile e2e                         # the gate (all flows, all booted device(s))
-maestro --device <id> test .maestro/deep-link-back.yaml   # a single flow on a device
+pnpm -F mobile e2e:ios
+pnpm -F mobile e2e:android
+maestro --device <id> test .maestro/deep-link-back.yaml -e APP_ID=com.whocards.mobile
 ```
 
 Run against **one booted simulator at a time** unless you pass `--device <udid>` — with
