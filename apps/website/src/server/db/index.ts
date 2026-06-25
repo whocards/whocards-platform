@@ -1,5 +1,4 @@
 import {drizzle} from 'drizzle-orm/postgres-js'
-import {createInsertSchema} from 'drizzle-zod'
 import postgres from 'postgres'
 import {env} from '~env'
 import * as schemas from './schema'
@@ -17,7 +16,6 @@ export type UserSelect = typeof users.$inferSelect
 
 // schemas
 export const schema = {...schemas}
-export const insertUserSchema = createInsertSchema(users)
 
 // queries — the non-destructive consent merge lives in ./upsert so it can be
 // tested against an in-process Postgres without opening this module's live client.

@@ -32,22 +32,12 @@ export const env = createEnv({
     PUBLIC_POSTHOG_HOST: z.string().url().optional().default('https://eu.i.posthog.com'),
     PUBLIC_POSTHOG_UI_HOST: z.string().url().optional().default('https://eu.posthog.com'),
     // Set to "true" to flip /app from waitlist mode to download mode on launch day.
-    // NB: z.stringbool() (zod v4) isn't available here — the website is pinned to
-    // zod 3 by @t3-oss/env-core, so we coerce the string flag to a boolean by hand.
-    PUBLIC_APP_LAUNCHED: z
-      .string()
-      .optional()
-      .default('false')
-      .transform((v) => v === 'true' || v === '1'),
+    PUBLIC_APP_LAUNCHED: z.stringbool().default(false),
     // Set to "true" to expose the pre-launch /app waitlist funnel before launch.
     // Safe default: false — keeps /app and its nav/homepage entry points hidden
     // (/app redirects home) while the email/consent backend ships. Ignored once
     // PUBLIC_APP_LAUNCHED is true (launch/download mode is always visible).
-    PUBLIC_APP_WAITLIST_ENABLED: z
-      .string()
-      .optional()
-      .default('false')
-      .transform((v) => v === 'true' || v === '1'),
+    PUBLIC_APP_WAITLIST_ENABLED: z.stringbool().default(false),
     // Cloudflare Turnstile — client-side site key for the form widgets. Required
     // (build fails without it) so the widget always renders. Use Cloudflare's
     // always-passing test keys for local dev.
