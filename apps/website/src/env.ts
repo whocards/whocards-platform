@@ -13,6 +13,10 @@ export const env = createEnv({
     // Must be a Resend-verified sender. Defaults to the WhoCards domain — verify
     // whocards.cc in Resend (or override this env) before it can email real users.
     RESEND_FROM_EMAIL: z.string().default('WhoCards <hello@whocards.cc>'),
+    // Resend Segment (Audience) ids for syncing email_consent rows (#120).
+    // Both are optional — when absent, sync for that consent type is a logged no-op.
+    RESEND_SEGMENT_NEWSLETTER_ID: z.string().optional(),
+    RESEND_SEGMENT_APP_WAITLIST_ID: z.string().optional(),
   },
   clientPrefix: 'PUBLIC_',
   client: {

@@ -18,7 +18,8 @@
     "db:generate": "pnpm with-env drizzle-kit generate",
     "db:migrate": "pnpm with-env drizzle-kit migrate",
     "db:push": "pnpm with-env drizzle-kit push",
-    "db:studio": "pnpm with-env drizzle-kit studio"
+    "db:studio": "pnpm with-env drizzle-kit studio",
+    "reconcile:resend": "pnpm with-env tsx scripts/reconcile-resend.ts"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",

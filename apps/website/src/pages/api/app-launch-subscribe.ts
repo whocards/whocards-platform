@@ -7,7 +7,8 @@ import {
   confirmationMessage,
 } from '~server/app-waitlist'
 import {CONSENT_SOURCE, normalizeEmail} from '~server/consent'
-import {insertConsent, insertUser} from '~server/db'
+import {db, insertConsent, insertUser} from '~server/db'
+import {makeSegmentIdResolver, syncEmailConsents} from '~server/resend-sync'
 
 // SSR endpoint for the /app waitlist and launch-day reminder capture.
 // Modelled on ai-checkin-subscribe.ts — same DB pattern, same error handling.
@@ -72,10 +73,11 @@ export const POST: APIRoute = async ({request}) => {
     return json({message: 'Email is not configured yet. Please try again later.'}, 503)
   }
 
+  const resend = new Resend(env.RESEND_API_KEY)
+
   const email_ = confirmationEmail({newsletter})
 
   try {
-    const resend = new Resend(env.RESEND_API_KEY)
     const {error} = await resend.emails.send({
       from: env.RESEND_FROM_EMAIL,
       to: email,
@@ -90,6 +92,27 @@ export const POST: APIRoute = async ({request}) => {
   } catch (error) {
     console.error('app-launch-subscribe: send threw', error)
     return json({message: "We couldn't send the confirmation email. Please try again."}, 502)
+  }
+
+  // Best-effort Resend Contacts/Segments sync (#120). Runs AFTER the
+  // confirmation email so a sync failure never blocks a successful signup.
+  // Wrap in try/catch — provider failures are recorded in provider_sync_error
+  // for reconciliation; they must NOT erase the consent rows.
+  try {
+    const segmentIdFor = makeSegmentIdResolver(
+      env.RESEND_SEGMENT_NEWSLETTER_ID,
+      env.RESEND_SEGMENT_APP_WAITLIST_ID
+    )
+    const resendContacts = {
+      create: (payload: Parameters<typeof resend.contacts.create>[0]) =>
+        resend.contacts.create(payload),
+      get: (options: {email: string}) => resend.contacts.get(options),
+      addToSegment: (options: {email: string; segmentId: string}) =>
+        resend.contacts.segments.add(options),
+    }
+    await syncEmailConsents(db, email, {resendContacts, segmentIdFor})
+  } catch (syncErr) {
+    console.error('app-launch-subscribe: resend sync threw (non-fatal)', syncErr)
   }
 
   return json({message: confirmationMessage({newsletter})}, 200)
