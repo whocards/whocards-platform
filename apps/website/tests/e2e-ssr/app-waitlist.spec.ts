@@ -1,9 +1,11 @@
 import {expect, test} from '@playwright/test'
 
-// /app is SSR (prerender = false). The e2e-ssr suite runs against `astro dev`,
-// where PUBLIC_APP_LAUNCHED defaults to false → the page renders in WAITLIST
-// mode. These assertions need no external services (no valid form submit, so
-// neither Postgres nor Resend is touched).
+// /app is SSR (prerender = false). The e2e-ssr suite runs against `astro dev`
+// with PUBLIC_APP_WAITLIST_ENABLED=true (set in playwright.ssr.config.ts) and
+// PUBLIC_APP_LAUNCHED unset → the page renders in WAITLIST mode. Without the
+// waitlist flag /app is hidden and redirects home (see app-visibility.test.ts).
+// These assertions need no external services (no valid form submit, so neither
+// Postgres nor Resend is touched).
 
 test.describe('/app waitlist (pre-launch)', () => {
   test('renders the newsletter opt-in unchecked — consent is never assumed', async ({page}) => {
