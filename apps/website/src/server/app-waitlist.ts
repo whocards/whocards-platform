@@ -19,16 +19,24 @@ export const appWaitlistSchema = z.object({
 
 export type AppWaitlistInput = z.infer<typeof appWaitlistSchema>
 
-export type Consent = Readonly<{appWaitlist: boolean; newsletter: boolean}>
+export type Consent = Readonly<{
+  // Whether to write an app_launch consent row. Always true for waitlist signups.
+  appLaunch: boolean
+  newsletter: boolean
+}>
 
 /**
  * The consent a waitlist signup grants. Joining the waitlist always records the
- * one-time app-launch notification consent (`appWaitlist`); the ongoing
- * `newsletter` consent is granted only when the visitor opts in. The two are
- * stored separately and never conflated (#87).
+ * one-time `app_launch` consent row; the ongoing `newsletter` consent is recorded
+ * only when the visitor opts in. The two are stored as separate email_consent rows
+ * and never conflated (#87, #119).
+ *
+ * Note: the SSR route (app-launch-subscribe.ts) calls upsertConsent directly and
+ * does not call resolveConsent at runtime. This function is retained as canonical
+ * documentation of the consent model and is exercised by app-waitlist.test.ts.
  */
 export const resolveConsent = ({newsletter}: {newsletter?: boolean}): Consent => ({
-  appWaitlist: true,
+  appLaunch: true,
   newsletter: newsletter ?? false,
 })
 

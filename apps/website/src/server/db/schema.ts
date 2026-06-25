@@ -25,13 +25,45 @@ export const users = pgTable('user', {
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
   newsletter: boolean('newsletter').default(false).notNull(),
-  // App-launch notification consent (#87) — stored separately from the ongoing
-  // `newsletter` consent. A waitlist signup grants this without ever implying
-  // newsletter consent; the two are independent and merged non-destructively.
-  appWaitlist: boolean('app_waitlist').default(false).notNull(),
   // retire-candidate (ticket 0005): from website-next-15, approved to drop in a later migration
   ocSlug: text('oc_slug'),
 })
+
+// Generic consent ledger — one row per (email, consent_type) pair.
+// Replaces the `user.app_waitlist` boolean (#119). Resend sync is a separate
+// concern (#120); the provider_* columns are pre-wired but not yet populated.
+export const emailConsent = pgTable(
+  'email_consent',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id').references(() => users.id),
+    email: text('email').notNull(),
+    name: text('name'),
+    consentType: text('consent_type').notNull(),
+    consentedAt: timestamp('consented_at', {withTimezone: true, mode: 'string'})
+      .defaultNow()
+      .notNull(),
+    consentSource: text('consent_source').notNull(),
+    unsubscribedAt: timestamp('unsubscribed_at', {withTimezone: true, mode: 'string'}),
+    unsubscribeSource: text('unsubscribe_source'),
+    fulfilledAt: timestamp('fulfilled_at', {withTimezone: true, mode: 'string'}),
+    providerName: text('provider_name').default('resend').notNull(),
+    providerContactId: text('provider_contact_id'),
+    providerSegmentId: text('provider_segment_id'),
+    providerSyncedAt: timestamp('provider_synced_at', {withTimezone: true, mode: 'string'}),
+    providerSyncError: text('provider_sync_error'),
+    createdAt: timestamp('created_at', {withTimezone: true, mode: 'string'})
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', {withTimezone: true, mode: 'string'}),
+  },
+  (table) => ({
+    emailConsentUnique: unique('email_consent_email_consent_type_unique').on(
+      table.email,
+      table.consentType
+    ),
+  })
+)
 
 export const usersRelations = relations(users, ({many}) => ({
   purchases: many(purchases),

@@ -1,13 +1,13 @@
 import {PGlite} from '@electric-sql/pglite'
+import {eq} from 'drizzle-orm'
 import {drizzle} from 'drizzle-orm/pglite'
 import {beforeEach, describe, expect, it} from 'vitest'
 import * as schema from './schema'
-import {upsertUser} from './upsert'
+import {upsertConsent, upsertUser} from './upsert'
 
 // Exercises the real ON CONFLICT OR-merge SQL against an in-process Postgres
 // (pglite) — the pure-TS consent tests in app-waitlist.test.ts can't catch a
-// wrong SQL expression. Only the `user` table is created; that's all upsertUser
-// touches.
+// wrong SQL expression.
 let db: ReturnType<typeof drizzle<typeof schema>>
 
 beforeEach(async () => {
@@ -19,46 +19,204 @@ beforeEach(async () => {
       "email" text NOT NULL UNIQUE,
       "name" text NOT NULL,
       "newsletter" boolean DEFAULT false NOT NULL,
-      "app_waitlist" boolean DEFAULT false NOT NULL,
       "oc_slug" text
+    );
+
+    CREATE TABLE "email_consent" (
+      "id" serial PRIMARY KEY,
+      "user_id" integer REFERENCES "user"("id"),
+      "email" text NOT NULL,
+      "name" text,
+      "consent_type" text NOT NULL,
+      "consented_at" timestamptz DEFAULT now() NOT NULL,
+      "consent_source" text NOT NULL,
+      "unsubscribed_at" timestamptz,
+      "unsubscribe_source" text,
+      "fulfilled_at" timestamptz,
+      "provider_name" text DEFAULT 'resend' NOT NULL,
+      "provider_contact_id" text,
+      "provider_segment_id" text,
+      "provider_synced_at" timestamptz,
+      "provider_sync_error" text,
+      "created_at" timestamptz DEFAULT now() NOT NULL,
+      "updated_at" timestamptz,
+      CONSTRAINT "email_consent_email_consent_type_unique" UNIQUE ("email", "consent_type")
     );
   `)
 })
 
-describe('upsertUser — non-destructive consent merge (#87)', () => {
-  it('first signup stores the two consents independently', async () => {
+describe('upsertUser — non-destructive newsletter consent merge (#87)', () => {
+  it('first signup stores newsletter independently', async () => {
     const row = await upsertUser(db, {
       email: 'a@b.com',
       name: 'A',
       newsletter: false,
-      appWaitlist: true,
     })
     expect(row.newsletter).toBe(false)
-    expect(row.appWaitlist).toBe(true)
   })
 
-  it('a later waitlist signup (newsletter unchecked) does not erase newsletter consent', async () => {
-    await upsertUser(db, {email: 'a@b.com', name: 'A', newsletter: true, appWaitlist: false})
+  it('a later signup (newsletter unchecked) does not erase newsletter consent', async () => {
+    await upsertUser(db, {email: 'a@b.com', name: 'A', newsletter: true})
     const row = await upsertUser(db, {
       email: 'a@b.com',
       name: 'A renamed',
       newsletter: false, // box unchecked this time
-      appWaitlist: true,
     })
     expect(row.newsletter).toBe(true) // preserved, not downgraded
-    expect(row.appWaitlist).toBe(true) // newly granted
     expect(row.name).toBe('A renamed') // name still updates
   })
 
-  it('a later newsletter opt-in adds newsletter without dropping app consent', async () => {
-    await upsertUser(db, {email: 'c@d.com', name: 'C', newsletter: false, appWaitlist: true})
+  it('a later newsletter opt-in adds newsletter', async () => {
+    await upsertUser(db, {email: 'c@d.com', name: 'C', newsletter: false})
     const row = await upsertUser(db, {
       email: 'c@d.com',
       name: 'C',
       newsletter: true,
-      appWaitlist: false,
     })
     expect(row.newsletter).toBe(true)
-    expect(row.appWaitlist).toBe(true)
+  })
+})
+
+describe('upsertConsent — email_consent table (#119)', () => {
+  it('creates separate rows for separate consent types on the same email', async () => {
+    await upsertConsent(db, {
+      email: 'x@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    await upsertConsent(db, {
+      email: 'x@example.com',
+      consentType: 'newsletter',
+      consentSource: 'app_page',
+    })
+    const rows = await db.select().from(schema.emailConsent)
+    expect(rows).toHaveLength(2)
+    const types = rows.map((r) => r.consentType).sort()
+    expect(types).toEqual(['app_launch', 'newsletter'])
+  })
+
+  it('waitlist signup writes app_launch only — NO newsletter row when checkbox omitted', async () => {
+    // Legally significant: joining the waitlist must NEVER imply newsletter consent.
+    await upsertConsent(db, {
+      email: 'waitlist-only@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    const rows = await db.select().from(schema.emailConsent)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.consentType).toBe('app_launch')
+    const newsletterRows = rows.filter((r) => r.consentType === 'newsletter')
+    expect(newsletterRows).toHaveLength(0)
+  })
+
+  it('unique(email, consent_type) — same email+type returns same row id', async () => {
+    const first = await upsertConsent(db, {
+      email: 'dup@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    const second = await upsertConsent(db, {
+      email: 'dup@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    expect(second!.id).toBe(first!.id)
+    const rows = await db.select().from(schema.emailConsent)
+    expect(rows).toHaveLength(1)
+  })
+
+  it('preserves consentedAt on re-upsert', async () => {
+    const first = await upsertConsent(db, {
+      email: 'resub@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    // Simulate a later re-signup
+    const second = await upsertConsent(db, {
+      email: 'resub@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    // consentedAt must be the original timestamp, not overwritten
+    expect(second!.consentedAt).toBe(first!.consentedAt)
+  })
+
+  it('non-destructive resubscribe: clears unsubscribe fields and reuses same row', async () => {
+    // Insert a row first
+    const initial = await upsertConsent(db, {
+      email: 'unsub@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    expect(initial).toBeDefined()
+
+    // Simulate an unsubscribe by directly updating the row
+    await db
+      .update(schema.emailConsent)
+      .set({unsubscribedAt: '2025-01-01T00:00:00Z', unsubscribeSource: 'user_request'})
+      .where(eq(schema.emailConsent.email, 'unsub@example.com'))
+
+    const [unsubRow] = await db
+      .select()
+      .from(schema.emailConsent)
+      .where(eq(schema.emailConsent.email, 'unsub@example.com'))
+    expect(unsubRow!.unsubscribedAt).not.toBeNull()
+    expect(unsubRow!.unsubscribeSource).toBe('user_request')
+
+    // Re-subscribe: upsertConsent should clear unsubscribe fields
+    const resub = await upsertConsent(db, {
+      email: 'unsub@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page_return',
+    })
+    // The row id should be the same (upsert, not a new insert)
+    expect(resub!.id).toBe(initial!.id)
+    // Unsubscribe fields are cleared
+    expect(resub!.unsubscribedAt).toBeNull()
+    expect(resub!.unsubscribeSource).toBeNull()
+  })
+
+  it('links userId when provided, coalesces on re-upsert', async () => {
+    const user = await upsertUser(db, {email: 'linked@example.com', name: 'Linked', newsletter: false})
+    const row = await upsertConsent(db, {
+      email: 'linked@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+      userId: user!.id,
+    })
+    expect(row!.userId).toBe(user!.id)
+
+    // Re-upsert without userId — should NOT null the existing link
+    const row2 = await upsertConsent(db, {
+      email: 'linked@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+      userId: null,
+    })
+    expect(row2!.userId).toBe(user!.id) // preserved
+  })
+
+  it('updates name when new value provided; keeps existing when null', async () => {
+    await upsertConsent(db, {
+      email: 'named@example.com',
+      name: 'Original',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    const updated = await upsertConsent(db, {
+      email: 'named@example.com',
+      name: 'Updated',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    expect(updated!.name).toBe('Updated')
+
+    // Now upsert with no name — should keep 'Updated'
+    const kept = await upsertConsent(db, {
+      email: 'named@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    expect(kept!.name).toBe('Updated')
   })
 })

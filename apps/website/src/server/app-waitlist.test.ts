@@ -24,16 +24,16 @@ describe('app waitlist consent (#87)', () => {
   })
 
   describe('resolveConsent — the two consents are stored separately', () => {
-    it('a waitlist-only signup grants app-notification consent but NOT newsletter', () => {
-      expect(resolveConsent({newsletter: false})).toEqual({appWaitlist: true, newsletter: false})
+    it('a waitlist-only signup grants app_launch consent but NOT newsletter', () => {
+      expect(resolveConsent({newsletter: false})).toEqual({appLaunch: true, newsletter: false})
     })
 
     it('opting in grants both consents', () => {
-      expect(resolveConsent({newsletter: true})).toEqual({appWaitlist: true, newsletter: true})
+      expect(resolveConsent({newsletter: true})).toEqual({appLaunch: true, newsletter: true})
     })
 
     it('a missing newsletter field is treated as no newsletter consent', () => {
-      expect(resolveConsent({})).toEqual({appWaitlist: true, newsletter: false})
+      expect(resolveConsent({})).toEqual({appLaunch: true, newsletter: false})
     })
   })
 

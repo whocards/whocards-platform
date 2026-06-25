@@ -5,9 +5,9 @@ import {
   appWaitlistSchema,
   confirmationEmail,
   confirmationMessage,
-  resolveConsent,
 } from '~server/app-waitlist'
-import {insertUser} from '~server/db'
+import {CONSENT_SOURCE, normalizeEmail} from '~server/consent'
+import {insertConsent, insertUser} from '~server/db'
 
 // SSR endpoint for the /app waitlist and launch-day reminder capture.
 // Modelled on ai-checkin-subscribe.ts — same DB pattern, same error handling.
@@ -24,25 +24,45 @@ export const POST: APIRoute = async ({request}) => {
     return json({message: 'Please enter a valid email address.'}, 400)
   }
 
-  const {email, name, newsletter, source} = parsed.data
+  const {email: rawEmail, name, newsletter, source} = parsed.data
+  const email = normalizeEmail(rawEmail)
   const displayName = name && name.length > 0 ? name : email.split('@')[0]
-  const consent = resolveConsent({newsletter})
+  const consentSource = source ?? CONSENT_SOURCE.appPage
 
   // Log source for segmentation (full persistence tracked in #92).
   if (source) {
     console.info('app-launch-subscribe: source=%s email=%s', source, email)
   }
 
-  // Persist the lead with its two consents recorded separately. Upserts on
-  // email and never erases an existing positive consent (see insertUser).
-  // Don't fail the request if the DB write hiccups — sending the confirmation matters more.
+  // Persist the lead. Upsert the user row first (keeps user.newsletter OR-merge
+  // compatibility), then write consent rows: app_launch always, newsletter only
+  // when the visitor opted in. Don't fail the request if the DB write hiccups —
+  // sending the confirmation matters more (#119).
   try {
-    await insertUser({
+    const user = await insertUser({
       email,
       name: displayName,
-      newsletter: consent.newsletter,
-      appWaitlist: consent.appWaitlist,
+      newsletter,
     })
+    const userId = user?.id ?? null
+
+    await insertConsent({
+      email,
+      name: displayName,
+      userId,
+      consentType: 'app_launch',
+      consentSource,
+    })
+
+    if (newsletter) {
+      await insertConsent({
+        email,
+        name: displayName,
+        userId,
+        consentType: 'newsletter',
+        consentSource,
+      })
+    }
   } catch (error) {
     console.error('app-launch-subscribe: failed to store lead', error)
   }
@@ -52,7 +72,7 @@ export const POST: APIRoute = async ({request}) => {
     return json({message: 'Email is not configured yet. Please try again later.'}, 503)
   }
 
-  const email_ = confirmationEmail({newsletter: consent.newsletter})
+  const email_ = confirmationEmail({newsletter})
 
   try {
     const resend = new Resend(env.RESEND_API_KEY)
@@ -72,5 +92,5 @@ export const POST: APIRoute = async ({request}) => {
     return json({message: "We couldn't send the confirmation email. Please try again."}, 502)
   }
 
-  return json({message: confirmationMessage({newsletter: consent.newsletter})}, 200)
+  return json({message: confirmationMessage({newsletter})}, 200)
 }

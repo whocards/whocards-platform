@@ -1,5 +1,5 @@
 {
-  "id": "196725b3-2efc-4891-9513-ece6958da030",
+  "id": "7b482668-af4b-42de-b671-99e7ce896478",
   "prevId": "3934f188-9f1f-49c3-8983-76345e76920d",
   "version": "7",
   "dialect": "postgresql",
@@ -786,6 +786,144 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
+    "public.email_consent": {
+      "name": "email_consent",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "consent_type": {
+          "name": "consent_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "consented_at": {
+          "name": "consented_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "consent_source": {
+          "name": "consent_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unsubscribed_at": {
+          "name": "unsubscribed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unsubscribe_source": {
+          "name": "unsubscribe_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fulfilled_at": {
+          "name": "fulfilled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_name": {
+          "name": "provider_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'resend'"
+        },
+        "provider_contact_id": {
+          "name": "provider_contact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_segment_id": {
+          "name": "provider_segment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_synced_at": {
+          "name": "provider_synced_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_sync_error": {
+          "name": "provider_sync_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "email_consent_user_id_user_id_fk": {
+          "name": "email_consent_user_id_user_id_fk",
+          "tableFrom": "email_consent",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "email_consent_email_consent_type_unique": {
+          "name": "email_consent_email_consent_type_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email",
+            "consent_type"
+          ]
+        }
+      }
+    },
     "public.purchase": {
       "name": "purchase",
       "schema": "",
@@ -1011,13 +1149,6 @@
         },
         "newsletter": {
           "name": "newsletter",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "app_waitlist": {
-          "name": "app_waitlist",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,

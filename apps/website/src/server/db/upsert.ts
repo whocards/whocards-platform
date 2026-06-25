@@ -1,5 +1,6 @@
 import {sql} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
+import type {ConsentType} from '~server/consent'
 import * as schema from './schema'
 
 export type UserCreate = typeof schema.users.$inferInsert
@@ -26,7 +27,48 @@ export const upsertUser = <T extends PgQueryResultHKT>(
         name: user.name,
         email: user.email,
         newsletter: sql`${schema.users.newsletter} OR excluded.newsletter`,
-        appWaitlist: sql`${schema.users.appWaitlist} OR excluded.app_waitlist`,
+      },
+    })
+    .returning()
+    .then((rows) => rows[0])
+
+export type ConsentCreate = {
+  email: string
+  name?: string | null
+  userId?: number | null
+  consentType: ConsentType
+  consentSource: string
+}
+
+// Upserts a consent row for a given (email, consentType) pair.
+//
+// On conflict (same email + consent_type):
+//   - Updates name when a new value is provided.
+//   - Coalesces userId so we never null an existing link.
+//   - Clears unsubscribe fields on resubscribe.
+//   - Does NOT overwrite consentedAt (preserves first-consent timestamp).
+//   - Does NOT touch fulfilledAt or provider_* fields.
+export const upsertConsent = <T extends PgQueryResultHKT>(
+  database: PgDatabase<T, typeof schema>,
+  consent: ConsentCreate
+) =>
+  database
+    .insert(schema.emailConsent)
+    .values({
+      email: consent.email,
+      name: consent.name ?? null,
+      userId: consent.userId ?? null,
+      consentType: consent.consentType,
+      consentSource: consent.consentSource,
+    })
+    .onConflictDoUpdate({
+      target: [schema.emailConsent.email, schema.emailConsent.consentType],
+      set: {
+        name: sql`CASE WHEN excluded.name IS NOT NULL THEN excluded.name ELSE ${schema.emailConsent.name} END`,
+        userId: sql`COALESCE(excluded.user_id, ${schema.emailConsent.userId})`,
+        unsubscribedAt: null,
+        unsubscribeSource: null,
+        updatedAt: sql`now()`,
       },
     })
     .returning()
