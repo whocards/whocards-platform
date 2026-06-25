@@ -2,7 +2,7 @@
 # Exercises the core in-app surface (landing CTA, the swipe gesture engine, the
 # auto-hiding chrome, the language sheet, and the share action) on one run.
 #
-# Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
+# Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}
 tags:
   - ios

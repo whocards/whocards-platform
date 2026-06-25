@@ -3,7 +3,7 @@
 # switch observable: the English text is present at first, gone once Hebrew is
 # selected, and still gone after a cold relaunch — proving the choice persisted.
 #
-# Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
+# Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}
 tags:
   - ios

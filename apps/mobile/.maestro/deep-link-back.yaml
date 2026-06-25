@@ -2,7 +2,7 @@
 # `?q=` pins the engine to a question in natural order (no shuffle), so the deep
 # link is reproducible — q=1 is the first Pool question, shown in English (default).
 #
-# Run: pnpm --filter mobile e2e   (needs the app installed on a booted device)
+# Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}
 tags:
   - ios
