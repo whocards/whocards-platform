@@ -4,7 +4,7 @@ import {useLocalSearchParams, useRouter} from 'expo-router'
 import * as StoreReview from 'expo-store-review'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Platform, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -221,7 +221,7 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
 
       track({
         name: EVENTS.APP_REVIEW_REQUESTED,
-        props: {app_version: appVersion},
+        props: {app_version: appVersion, platform: Platform.OS},
       })
 
       await StoreReview.requestReview()
