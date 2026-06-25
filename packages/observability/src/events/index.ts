@@ -64,7 +64,9 @@ export type AppReviewEligibleProps = {
   card_count: number
   session_count: number
 }
-export type AppReviewRequestedProps = {app_version: string}
+// `platform` is React Native's `Platform.OS` ('ios' | 'android'); typed as string
+// here so the shared (web + mobile) package needn't depend on react-native types.
+export type AppReviewRequestedProps = {app_version: string; platform: string}
 
 // ---------------------------------------------------------------------------
 // Typed track wrapper
