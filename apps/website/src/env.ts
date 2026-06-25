@@ -13,12 +13,20 @@ export const env = createEnv({
     // Must be a Resend-verified sender. Defaults to the WhoCards domain — verify
     // whocards.cc in Resend (or override this env) before it can email real users.
     RESEND_FROM_EMAIL: z.string().default('WhoCards <hello@whocards.cc>'),
+    // Cloudflare Turnstile — server-side secret protecting the /contact and
+    // /request-cards forms. Required: the build fails without it (incl. dev) so bot
+    // protection can never be silently dropped by a missing env var.
+    TURNSTILE_SECRET_KEY: z.string().min(1),
   },
   clientPrefix: 'PUBLIC_',
   client: {
     PUBLIC_POSTHOG_KEY: z.string().optional(),
     PUBLIC_POSTHOG_HOST: z.string().url().optional().default('https://eu.i.posthog.com'),
     PUBLIC_POSTHOG_UI_HOST: z.string().url().optional().default('https://eu.posthog.com'),
+    // Cloudflare Turnstile — client-side site key for the form widgets. Required
+    // (build fails without it) so the widget always renders. Use Cloudflare's
+    // always-passing test keys for local dev.
+    PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1),
   },
   runtimeEnv: import.meta.env,
 })

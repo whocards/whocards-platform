@@ -14,7 +14,7 @@ export const mainLinks: Link[] = [
   {href: '/play', title: 'Play', play: true},
   {href: '/print', title: 'Print'},
   // {href: donationUrl, title: 'Donate', external: true},
-  {href: '/contact', title: 'Request Cards', button: true},
+  {href: '/request-cards', title: 'Request Cards', button: true},
 ]
 
 // Rendered as the "Events" dropdown. One entry per edition; the landing page is
@@ -26,7 +26,7 @@ export const eventLinks: Link[] = [
 
 export const eventMainLinks: Link[] = [
   // {href: donationUrl, title: 'Donate', external: true},
-  {href: '/contact', title: 'Request Cards', button: true},
+  {href: '/request-cards', title: 'Request Cards', button: true},
 ]
 
 export const socialLinks: Link[] = [

@@ -1,71 +1,77 @@
 ---
 export const prerender = false
 
+import {sendContactMessage} from '@whocards/emails/contact'
 import {Icon} from 'astro-icon/components'
-import type {Icon as IconName} from 'virtual:astro-icon'
 import type {ZodIssue} from 'zod'
+import ContactForm from '~components/thanks/ContactForm.astro'
 import {FormSuccess} from '~components/thanks'
-import EmailForm from '~components/thanks/EmailForm.astro'
 import {contactLinks} from '~constants/navigation'
+import {env} from '~env'
 import {Layout} from '~layouts'
-import {insertUser} from '~server/db'
-import {createContactSheetRow} from '~server/gsheet'
-import {cardRequestSchema} from '~utils/schemas'
+import {turnstileErrorFor, verifyTurnstile} from '~server/turnstile'
+import {contactMessageSchema} from '~utils/schemas'
+
+const siteKey = env.PUBLIC_TURNSTILE_SITE_KEY
 
 let formData: Record<string, string> | undefined
 let errors: Record<string, ZodIssue> | undefined
 let confirmed = false
+let serverError: string | undefined
 
-// when form is posted
 if (Astro.request.method === 'POST') {
   try {
     const rawFormData = await Astro.request.formData()
     formData = Object.fromEntries(rawFormData.entries()) as Record<string, string>
-    if (formData['nobot'] !== '' && formData['thanks'] !== 'youre-welcome') {
-      throw new Error('Bot detected')
-    }
 
-    const parsed = cardRequestSchema.safeParse(formData)
-    if (!parsed.success) {
-      errors = Object.fromEntries(
-        parsed.error.issues.map((issue) => [String(issue.path[0]), issue])
-      )
-    } else {
-      const request = parsed.data
+    // Verify the Turnstile token server-side — the client widget alone isn't
+    // trustworthy. The secret is a required env var, so this always runs.
+    const result = await verifyTurnstile(
+      formData['cf-turnstile-response'] ?? '',
+      env.TURNSTILE_SECRET_KEY,
+      Astro.clientAddress
+    )
+    if (!result.ok) errors = turnstileErrorFor(result.reason)
 
-      await insertUser({
-        name: request.name,
-        email: request.email,
-        newsletter: request.newsletter ?? false,
-      })
+    if (!errors) {
+      const parsed = contactMessageSchema.safeParse(formData)
+      if (!parsed.success) {
+        errors = Object.fromEntries(
+          parsed.error.issues.map((issue) => [String(issue.path[0]), issue])
+        )
+      } else if (!env.RESEND_API_KEY) {
+        console.error('contact: RESEND_API_KEY not configured')
+        serverError =
+          'Our contact system is temporarily unavailable. Please email us directly at hello@whocards.cc.'
+      } else {
+        const {error} = await sendContactMessage({
+          apiKey: env.RESEND_API_KEY,
+          from: env.RESEND_FROM_EMAIL,
+          to: 'hello@whocards.cc',
+          ...parsed.data,
+        })
 
-      await createContactSheetRow({
-        name: request.name,
-        email: request.email,
-        newsletter: request.newsletter ?? false,
-        requestType: 'cards',
-        quantity: request.quantity,
-        organization: request.organization,
-        phone: request.phone,
-        address: request.address,
-        address2: request.address2,
-        zip: request.zip,
-        city: request.city,
-        region: request.region,
-        country: request.country,
-        message: request.message,
-      })
-
-      confirmed = true
+        if (error) {
+          console.error('contact: resend error', error)
+          serverError =
+            "We couldn't send your message just now. Please try again or email us directly at hello@whocards.cc."
+        } else {
+          confirmed = true
+        }
+      }
     }
   } catch (error) {
-    console.error(error)
+    console.error('contact: unexpected error', error)
     errors ??= {}
   }
 }
 ---
 
-<Layout title='Request Cards' description='Use this form to request WhoCards for yourself or your organization. Tell us what you need and our team will follow up with you.' class='pt-28 lg:pt-32'>
+<Layout
+  title='Contact'
+  description='Get in touch with the WhoCards team. We are here to help with app support, general questions, and anything else you need.'
+  class='pt-28 lg:pt-32'
+>
   <div
     class='grid grid-flow-row md:grid-flow-col md:grid-cols-2 md:px-[2vw] lg:max-w-7xl px-5 xl:px-0 w-full justify-between items-start'
   >
@@ -75,10 +81,13 @@ if (Astro.request.method === 'POST') {
       <h1
         class='text-3xl lg:text-5xl text-white md:pb-2 font-bold font-title tracking-tight leading-tight'
       >
-        Request WhoCards
+        Contact Us
       </h1>
       <Icon name='chat' class='w-16 h-16' />
-      <p class='md:text-lg font-semibold'>Tell us what you need and we will follow up.</p>
+      <p class='md:text-lg font-semibold'>We would love to hear from you.</p>
+      <p class='text-base'>
+        Reach out for app support, general questions, or anything else — we read every message.
+      </p>
       <Icon name='divider' class='w-64 py-2 md:hidden' />
       <Icon name='divider-left' class='w-3/4 py-4 hidden md:block' />
       <div class='grid grid-cols-2 lg:grid-cols-1 gap-3'>
@@ -87,30 +96,49 @@ if (Astro.request.method === 'POST') {
             <a
               href={link.href}
               target='_blank'
+              rel='noopener noreferrer'
               class='flex items-center text-gray-dark hover:text-primary-light active:text-primary-dark gap-3'
             >
               <>
-                <Icon name={link.icon as IconName} class='h-6 w-6' />
+                <Icon name={link.icon as string} class='h-6 w-6' />
                 <span class='block'>{link.title}</span>
               </>
             </a>
           ))
         }
       </div>
+      <p class='text-sm text-gray-dark mt-2'>
+        Looking to order WhoCards? <a
+          href='/request-cards'
+          class='underline text-primary-light hover:text-primary-dark'>Request cards here.</a
+        >
+      </p>
     </div>
+
     {
       confirmed ? (
         <FormSuccess
           class='h-full'
-          type='request'
+          type='message'
           href='/contact'
-          title='Your card request has been submitted'
-          message='Thanks for reaching out. We will get back to you shortly.'
-          buttonLabel='Submit another request'
+          title='Message sent!'
+          message="Thanks for reaching out. We'll get back to you soon."
+          buttonLabel='Send another message'
         />
       ) : (
-        <EmailForm mode='request' formData={formData} errors={errors} />
+        <ContactForm
+          formData={formData}
+          errors={errors}
+          serverError={serverError}
+          siteKey={siteKey}
+        />
       )
     }
   </div>
 </Layout>
+
+{
+  siteKey && (
+    <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
+  )
+}

@@ -1,0 +1,72 @@
+---
+import type {ZodIssue} from 'zod'
+import Button from '~components/ui/Button.astro'
+import Input from '~components/ui/Input.astro'
+
+export interface Props {
+  formData?: Record<string, string>
+  errors?: Record<string, ZodIssue>
+  serverError?: string
+  siteKey?: string
+}
+
+const {formData, errors, serverError, siteKey} = Astro.props
+---
+
+<div class='flex flex-col items-center text-center md:text-start md:items-start gap-4 md:gap-5'>
+  <h2 class='text-3xl lg:text-5xl text-gradient font-bold font-title tracking-tight leading-tight'>
+    Send us a message
+  </h2>
+  {serverError && <p class='lg:text-base text-red-500'>{serverError}</p>}
+  {
+    errors && !serverError && (
+      <p class='lg:text-base text-red-500'>Please check the form and try again.</p>
+    )
+  }
+  <form method='POST' class='flex flex-col w-full pb-14'>
+    <Input
+      name='name'
+      minlength={2}
+      autocomplete='name'
+      required
+      value={formData?.name ?? ''}
+      error={errors?.name}
+    />
+    <Input
+      name='email'
+      type='email'
+      autocomplete='email'
+      required
+      value={formData?.email ?? ''}
+      error={errors?.email}
+    />
+    <label
+      for='contact-message'
+      class='text-start text-base font-medium flex flex-col gap-2 pb-2.5'
+    >
+      <div>message *</div>
+      <textarea
+        id='contact-message'
+        name='message'
+        rows={5}
+        required
+        minlength={10}
+        maxlength={2000}
+        class='w-full bg-transparent py-3 px-4.5 border placeholder:text-gray-dark rounded-xl'
+        class:list={[errors?.message ? 'border-red' : 'border-gray']}
+        placeholder='How can we help?'
+        set:text={formData?.message ?? ''}
+      />
+      <p class='text-xs text-red'>{errors?.message?.message ?? <>&nbsp;</>}</p>
+    </label>
+
+    {siteKey ? <div class='cf-turnstile mb-4' data-sitekey={siteKey} data-theme='dark' /> : null}
+    {
+      errors?.['cf-turnstile-response'] && (
+        <p class='text-xs text-red mb-4'>{errors['cf-turnstile-response'].message}</p>
+      )
+    }
+
+    <Button type='submit' class='mt-4 capitalize lg:max-w-xs' full>Send message</Button>
+  </form>
+</div>

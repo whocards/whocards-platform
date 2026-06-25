@@ -340,6 +340,9 @@ importers:
       '@whocards/decks':
         specifier: workspace:*
         version: link:../../packages/decks
+      '@whocards/emails':
+        specifier: workspace:*
+        version: link:../emails
       '@whocards/observability':
         specifier: workspace:*
         version: link:../../packages/observability
