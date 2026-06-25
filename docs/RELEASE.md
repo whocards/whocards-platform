@@ -64,13 +64,13 @@ native runtime that matches what ships in production.
   - [x] Expo account / org (free) — projectId `70c97b4d…` wired into `app.json`; `EXPO_TOKEN` set as an Actions secret
 - [x] **EAS init** — `projectId` committed to `app.json` (`extra.eas.projectId`)
 - [x] **Credentials** — EAS-managed signing: iOS distribution cert + provisioning done (Android keystore deferred → #27). Local `credentials.json` is gitignored (it holds a plaintext cert password)
-- [x] **Submit creds** — App Store Connect API key stored on EAS; push it to CI with `apps/mobile/scripts/set-mobile-ci-secrets.sh`. Android Play service-account key: upload to EAS (`eas credentials` → Android → Google Service Account) so `eas submit` pulls it — no `serviceAccountKeyPath`, no CI secret
+- [x] **Submit creds** — both stored on EAS and pulled by `eas submit` via `EXPO_TOKEN`, so neither is a CI secret: iOS App Store Connect API key (`eas credentials` → iOS → App Store Connect API Key) and Android Play service-account key (`eas credentials` → Android → Google Service Account) — no `serviceAccountKeyPath`
 - [x] **`eas.json`** — `cli.appVersionSource: "remote"`; profiles `development` / `preview` / `production`; `autoIncrement` on `production`; per-profile `env` (`EXPO_PUBLIC_API_URL`); channels `preview` / `production`
 - [x] **OTA** — `expo-updates` added; `runtimeVersion: { "policy": "fingerprint" }` set in `app.json`
 - [x] **CI** (GitHub Actions, `.github/workflows/`)
   - [x] PR/main workflow: the quality gate (`mobile-gate.yml`)
   - [x] Tag (`v*`) workflow: gate → `eas build` → `eas submit` (beta) → `eas update` (`mobile-release.yml`) — **inert until `EAS_RELEASE_ENABLED=true`** (iOS + Android together)
-  - [x] Secrets: `EXPO_TOKEN` set; iOS ASC API key via the script above; Android Play key lives on EAS (not a CI secret)
+  - [x] Secrets: `EXPO_TOKEN` is the only CI secret; both the iOS ASC API key and Android Play key live on EAS (`eas credentials`), pulled by `eas submit`
 - [ ] **`docs/mobile/README` / this runbook** linked from the repo README
 
 ## Phase 1 — Blockers before the first build

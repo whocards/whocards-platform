@@ -4,15 +4,12 @@ name: Mobile release
 # This workflow is intentionally inert until the following one-time setup is complete (#11/#12):
 #
 #   Required secrets (Settings → Secrets → Actions):
-#     EXPO_TOKEN          — Expo account token (`eas whoami` must return the project owner)
-#     APP_STORE_KEY_ID    — App Store Connect API key ID      (iOS submit, #12)
-#     APP_STORE_ISSUER_ID — App Store Connect API issuer ID   (iOS submit, #12)
-#     APP_STORE_KEY_P8    — App Store Connect API key (.p8)   (iOS submit, #12)
+#     EXPO_TOKEN — Expo account token (`eas whoami` must return the project owner)
 #
-#   The Android Play service-account key is NOT a CI secret — it's uploaded to EAS
-#   (`eas credentials` → Android → service account), so eas submit pulls it via EXPO_TOKEN.
-#
-#   Push the iOS secrets with: apps/mobile/scripts/set-mobile-ci-secrets.sh
+#   That is the ONLY CI secret. Both submit credentials live on EAS, not in CI:
+#     - iOS App Store Connect API Key  — uploaded via `eas credentials` (App Store Connect)
+#     - Android Play service-account key — uploaded via `eas credentials` (service account)
+#   eas submit pulls both, authed by EXPO_TOKEN, so no APP_STORE_* secrets are needed.
 #
 #   One-time EAS setup (#11):
 #     1. Run `eas init` in apps/mobile to obtain a projectId.
@@ -101,14 +98,10 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # iOS needs the App Store Connect API secrets (APP_STORE_KEY_ID / ISSUER_ID / KEY_P8)
-      # set in CI for TestFlight. Android's key lives on EAS, so it needs nothing here.
+      # iOS ASC API Key lives on EAS (uploaded via `eas credentials`), exactly like the
+      # Android service-account key — eas-cli pulls it, authed by EXPO_TOKEN. No secret here.
       - name: Submit iOS (TestFlight)
         working-directory: apps/mobile
-        env:
-          EXPO_APPLE_API_KEY_ID: ${{ secrets.APP_STORE_KEY_ID }}
-          EXPO_APPLE_API_ISSUER_ID: ${{ secrets.APP_STORE_ISSUER_ID }}
-          EXPO_APPLE_API_KEY: ${{ secrets.APP_STORE_KEY_P8 }}
         run: eas submit --platform ios --profile production --latest --non-interactive
 
       # Service-account key is stored on EAS (uploaded via `eas credentials`), so no
