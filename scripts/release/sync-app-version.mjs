@@ -12,7 +12,7 @@ import {fileURLToPath} from 'node:url'
 import {dirname, resolve} from 'node:path'
 
 const version = process.argv[2]
-if (!version || !/^\d+\.\d+\.\d+/.test(version)) {
+if (!version || !/^\d+\.\d+\.\d+$/.test(version)) {
   console.error(`sync-app-version: expected a semver version, got "${version ?? ''}"`)
   process.exit(1)
 }

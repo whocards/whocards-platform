@@ -6,9 +6,8 @@
 # point PUBLIC_POSTHOG_HOST at your CNAME subdomain (e.g. https://e.whocards.cc) so
 # events skip browser ad-blockers; see docs / issue #4 for the DNS setup.
 #
-# This is the web counterpart of apps/mobile/scripts/set-mobile-ci-secrets.sh
-# (which pushes iOS submit secrets to GitHub Actions). Web config lives in Netlify,
-# not GitHub — the mobile-only workflows never consume PostHog.
+# Web config lives in Netlify, not GitHub Actions — the mobile-only release workflows
+# never consume these PostHog vars, and mobile submit creds live on EAS, not in CI.
 #
 # Nothing is hard-coded — values are read from your environment. The easy path is to
 # source your local root .env first:

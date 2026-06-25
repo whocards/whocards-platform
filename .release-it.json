@@ -25,6 +25,9 @@
       "preset": {"name": "conventionalcommits"},
       "infile": "CHANGELOG.md",
       "header": "# Changelog\n\nMobile app releases (the `v*` tags that drive `mobile-release.yml`). Only commits that touched the mobile app or shared packages are listed.\n",
+      "commitsOpts": {
+        "path": ["apps/mobile", "packages"]
+      },
       "gitRawCommitsOpts": {
         "path": ["apps/mobile", "packages"]
       }
