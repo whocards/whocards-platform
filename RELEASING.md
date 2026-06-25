@@ -67,3 +67,31 @@ Then the pipeline builds both platforms and submits:
 - **Android** → Play **internal** track. Production needs the closed-test requirement met
   first; promote in the Play Console when eligible.
 - **OTA** → an `eas update` is published to the `production` channel.
+
+## Shipping without a new version (no tag)
+
+A git tag is only for a new **marketing version** (e.g. `1.0.0 → 1.1.0`). The build number
+moves on its own — EAS auto-increments it (`appVersionSource: remote`, `autoIncrement`). So
+to ship without bumping the version:
+
+- **OTA — JS/asset-only changes, no build, no review:**
+
+  ```sh
+  pnpm mobile:ota        # eas update --channel production (prompts for a message)
+  ```
+
+  Only reaches builds with a matching `runtimeVersion` fingerprint. If you changed native
+  deps/config, the fingerprint differs and you need a rebuild instead.
+
+- **Native rebuild, same version (build number bumps to the next):**
+  ```sh
+  pnpm mobile:rebuild:ios       # e2e:ios gate → eas build → eas submit
+  pnpm mobile:rebuild:android   # e2e:android gate → eas build → eas submit
+  ```
+  Each runs the same Maestro e2e gate as the release command (skip with
+  `RELEASE_SKIP_E2E=1`), then builds and submits to TestFlight / Play internal. No tag,
+  no `app.json` edit.
+
+Note: to ship a **native** change to App Store _production_ users, Apple won't accept
+another build of an already-released version — that needs a real `pnpm release` (`1.0.1`).
+Rebuild/OTA are for testing tracks and JS fixes.
