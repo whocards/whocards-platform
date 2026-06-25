@@ -1,6 +1,6 @@
 {
   "name": "whocards",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -39,6 +39,8 @@
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo run clean",
     "lint:ws": "pnpm dlx sherif@latest",
+    "release": "release-it",
+    "release:dry": "release-it --dry-run",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -54,11 +56,13 @@
     ]
   },
   "devDependencies": {
+    "@release-it/conventional-changelog": "^11.0.1",
     "dotenv-cli": "^11.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.0",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.69.0",
+    "release-it": "^20.2.0",
     "turbo": "^2.6.3",
     "typescript": "catalog:"
   }

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://unpkg.com/release-it/schema/release-it.json",
+  "hooks": {
+    "before:init": "node scripts/release/pre-release-check.mjs",
+    "after:bump": "node scripts/release/sync-app-version.mjs ${version}"
+  },
+  "git": {
+    "requireBranch": "main",
+    "requireCleanWorkingDir": true,
+    "requireUpstream": true,
+    "commitMessage": "chore(release): v${version}",
+    "tagName": "v${version}",
+    "tagAnnotation": "Release v${version}",
+    "push": true
+  },
+  "github": {
+    "release": true,
+    "releaseName": "v${version}"
+  },
+  "npm": {
+    "publish": false
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": {"name": "conventionalcommits"},
+      "infile": "CHANGELOG.md",
+      "header": "# Changelog\n\nMobile app releases (the `v*` tags that drive `mobile-release.yml`). Only commits that touched the mobile app or shared packages are listed.\n",
+      "gitRawCommitsOpts": {
+        "path": ["apps/mobile", "packages"]
+      }
+    }
+  }
+}
