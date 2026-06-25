@@ -1,6 +1,6 @@
 {
   "name": "whocards",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -23,6 +23,9 @@
     "mobile:build:android": "pnpm --filter mobile eas:build:android",
     "mobile:submit:ios": "pnpm --filter mobile eas:submit:ios",
     "mobile:submit:android": "pnpm --filter mobile eas:submit:android",
+    "mobile:ota": "pnpm --filter mobile eas:update",
+    "mobile:rebuild:ios": "node scripts/release/pre-release-check.mjs ios && pnpm mobile:build:ios && pnpm mobile:submit:ios",
+    "mobile:rebuild:android": "node scripts/release/pre-release-check.mjs android && pnpm mobile:build:android && pnpm mobile:submit:android",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "test:e2e": "pnpm --filter website test:e2e",
@@ -39,6 +42,8 @@
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo run clean",
     "lint:ws": "pnpm dlx sherif@latest",
+    "release": "release-it",
+    "release:dry": "release-it --dry-run",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -54,11 +59,13 @@
     ]
   },
   "devDependencies": {
+    "@release-it/conventional-changelog": "^11.0.1",
     "dotenv-cli": "^11.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.0",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.69.0",
+    "release-it": "^20.2.0",
     "turbo": "^2.6.3",
     "typescript": "catalog:"
   }
