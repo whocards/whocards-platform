@@ -33,3 +33,17 @@ catalog:
   '@types/react': ^19.2.7
   '@types/react-dom': ^19.2.3
   '@types/node': ^24.10.2
+
+# Supply-chain guard: quarantine newly published versions for 2 days (2880 min)
+# before they're installable.
+minimumReleaseAge: 2880
+# TEMPORARY excludes: versions this PR pulls in that were published <2 days ago, so
+# the lockfile would otherwise be rejected. All age out by 2026-06-27 — remove this
+# whole block then (tracked in the cleanup issue).
+minimumReleaseAgeExclude:
+  - posthog-js@1.393.4
+  - '@posthog/core@1.37.2'
+  - '@posthog/types@1.391.1'
+  - playwright@1.61.1
+  - playwright-core@1.61.1
+  - '@playwright/test@1.61.1'

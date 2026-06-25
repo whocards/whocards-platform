@@ -1,3 +1,4 @@
+import {APP_VISIBLE} from './app'
 import {websiteNextUrl} from './urls'
 
 export type Link = {
@@ -13,9 +14,10 @@ export const mainLinks: Link[] = [
   {href: '/#what-is-whocards', title: 'About'},
   {href: '/play', title: 'Play', play: true},
   {href: '/print', title: 'Print'},
-  {href: '/app', title: 'Get the App'},
+  // Only surface the /app entry when the funnel is visible (waitlist or launched).
+  ...(APP_VISIBLE ? [{href: '/app', title: 'Get the App'} as Link] : []),
   // {href: donationUrl, title: 'Donate', external: true},
-  {href: '/contact', title: 'Request Cards', button: true},
+  {href: '/request-cards', title: 'Request Cards', button: true},
 ]
 
 // Rendered as the "Events" dropdown. One entry per edition; the landing page is
@@ -27,7 +29,7 @@ export const eventLinks: Link[] = [
 
 export const eventMainLinks: Link[] = [
   // {href: donationUrl, title: 'Donate', external: true},
-  {href: '/contact', title: 'Request Cards', button: true},
+  {href: '/request-cards', title: 'Request Cards', button: true},
 ]
 
 export const socialLinks: Link[] = [

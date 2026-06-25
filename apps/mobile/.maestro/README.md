@@ -3,7 +3,15 @@
 End-to-end flows for the Expo app, run with [Maestro](https://maestro.mobile.dev)
 against a build installed on a booted simulator/emulator.
 
-## Flows (the quality gate — `pnpm -F mobile e2e`)
+## Flows
+
+The flows are shared, but the installed app id differs by platform. Always use the explicit
+platform command so Maestro targets the binary that is actually installed:
+
+```bash
+pnpm -F mobile e2e:ios      # cc.whocards.mobile
+pnpm -F mobile e2e:android  # com.whocards.mobile
+```
 
 - `play-language-share.yaml` — launch → play → swipe forward/back → switch language →
   share. Exercises the landing CTA, the swipe gesture engine, the auto-hiding chrome,
@@ -16,8 +24,27 @@ against a build installed on a booted simulator/emulator.
   before/after, making the switch observable.
 - `rtl-alignment.yaml` — opens a card, screenshots the default (English, LTR) and the
   Hebrew (RTL) card to verify right-alignment. Screenshots land in `.maestro/artifacts/`.
+- `language-modal-inset.yaml` — opens the language sheet and screenshots it so the
+  header can be confirmed clear of the status bar / display cutout on a device **with a
+  cutout** (the Pixel-notch fix, #102). The inset math is also guarded deterministically
+  by `src/__tests__/language-modal.test.tsx`.
+- `share-question-url.yaml` (**android only**) — cold deep-links to `q=1`, taps Share,
+  and asserts the question's web link (`whocards.cc/play…?q=1`) shows in Android's
+  share-sheet preview (the share-link fix, #101). The URL builder itself is unit-tested
+  in `src/__tests__/share-url.test.ts`; iOS doesn't expose the share-sheet text to match.
 
-All four are tagged `ios` + `android` and run on either platform.
+All flows are tagged `ios` + `android` (and run on either platform) except
+`share-question-url.yaml`, which is `android` only — iOS's share sheet doesn't surface
+the URL as matchable text, so the iOS share tap is covered by `play-language-share.yaml`.
+
+### Why the splash fix (#100) has no flow
+
+The Android splash-icon padding fix (#100) can't be asserted with a flow: the native
+splash window is dismissed before Maestro's first command runs, so there's nothing on
+screen to screenshot or match. It's guarded at the config/asset level instead by
+`src/__tests__/splash-config.test.ts` (the `android` image override is set and the asset
+stays near-square), with the final visual confirmation done by a manual cold launch on
+an Android 12+ device.
 
 ### Why no offline-record→drain flow
 
@@ -34,13 +61,49 @@ ordering/trim/flush) and `answer-transport.test.ts`.
 It's tagged `screenshots` so the e2e gate skips it. `?q=1` + waiting for the chrome to
 auto-hide makes the captures reproducible and clean.
 
-Output: `store-assets/<device>/NN-*.png` (gitignored — regenerate on demand). Drive a
-device matrix with the capture script:
+Output: `store-assets/<device>/NN-*.png` (gitignored — regenerate on demand).
+
+**Default (no `DEVICES`)** captures the App Store-required **iOS 6.5" set** — the script
+resolves an available 6.5"-class simulator by name (iPhone 14 Plus → 1284×2778) and writes
+it to `store-assets/iphone-6.5/`, verified against an accepted size:
 
 ```bash
-DEVICES="<udid>:iphone-17-pro-max <udid>:iphone-17-pro emulator-5554:pixel-3a" \
+pnpm -F mobile screenshots
+```
+
+Set `DEVICES` explicitly to drive a full matrix (the folder name still drives the size check):
+
+```bash
+DEVICES="<udid>:iphone-6.5 <udid>:iphone-17-pro emulator-5554:pixel-3a" \
   pnpm -F mobile screenshots
 ```
+
+### Required App Store sizes — the 6.5" set (#111)
+
+App Store Connect **requires** a 6.5" Display screenshot set to submit the iOS app.
+Name the output folder for the slot (`iphone-6.5`) and the capture script verifies each
+PNG is an Apple-accepted size for that slot — a wrong-sized capture fails here instead of
+being rejected at upload.
+
+| Slot folder             | Accepted portrait px           | Simulator that renders it                       |
+| ----------------------- | ------------------------------ | ----------------------------------------------- |
+| `iphone-6.5`            | **1242×2688** or **1284×2778** | iPhone 11 Pro Max / XS Max · **iPhone 14 Plus** |
+| `iphone-6.7`            | 1290×2796                      | iPhone 15 Plus / 15 Pro Max / 14 Pro Max        |
+| `iphone-6.9`            | 1320×2868                      | iPhone 16 Pro Max                               |
+| `ipad-13` / `ipad-12.9` | 2048×2732                      | iPad Pro 13" / 12.9"                            |
+
+The mandatory 6.5" set is the **default** (`pnpm -F mobile screenshots`, see above) — it
+resolves a 6.5"-class simulator (iPhone 14 Plus → 1284×2778) automatically. Install the
+Release `.app` on that sim first (see "Building + installing" below). To pin a specific
+device explicitly:
+
+```bash
+DEVICES="<iphone-14-plus-udid>:iphone-6.5" pnpm -F mobile screenshots
+# → store-assets/iphone-6.5/NN-*.png, each verified ✓ at an accepted 6.5" size
+```
+
+Only `iphone-6.5` / `iphone-6.7` / `iphone-6.9` / `ipad-13` / `ipad-12.9` folder names
+are dimension-checked; any other name (e.g. `pixel-3a`) is captured without a size check.
 
 The framing/compositing step (device frames + marketing copy, e.g. fastlane `frameit` or a
 Sharp/Satori compositor reusing `apps/website/src/server/card-image.ts`) is a follow-up —
@@ -68,6 +131,11 @@ xcrun simctl install <other-sim-udid> \
 # Android — release variant is self-signed with the debug keystore (see android/app/build.gradle):
 pnpm -F mobile exec expo run:android --variant release
 ```
+
+For everyday development, `pnpm -F mobile android` starts Metro and opens an already-installed
+development build. If Expo reports that no development build is installed, run
+`pnpm -F mobile android:build` once for that emulator/device, then use `pnpm -F mobile android` on
+subsequent starts.
 
 ### Android toolchain notes
 
@@ -112,8 +180,9 @@ Getting a local Android **release** build to succeed needs three things:
 ## Running
 
 ```bash
-pnpm -F mobile e2e                         # the gate (all flows, all booted device(s))
-maestro --device <id> test .maestro/deep-link-back.yaml   # a single flow on a device
+pnpm -F mobile e2e:ios
+pnpm -F mobile e2e:android
+maestro --device <id> test .maestro/deep-link-back.yaml -e APP_ID=com.whocards.mobile
 ```
 
 Run against **one booted simulator at a time** unless you pass `--device <udid>` — with

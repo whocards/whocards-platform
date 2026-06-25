@@ -5,7 +5,7 @@
 #
 # Tagged `screenshots` so the e2e quality gate (pnpm -F mobile e2e) skips it; run
 # it via:  pnpm -F mobile screenshots
-appId: cc.whocards.mobile
+appId: ${APP_ID}
 tags:
   - screenshots
 # DEVICE names the per-device output folder; the capture script passes it via

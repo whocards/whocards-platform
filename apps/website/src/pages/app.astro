@@ -5,8 +5,14 @@ import {Icon} from 'astro-icon/components'
 
 import AppShowcase from '~components/App/AppShowcase.astro'
 import Button from '~components/ui/Button.astro'
-import {APP_LAUNCHED, APP_STORE_URL, PLAY_STORE_URL} from '~constants/app'
+import {APP_LAUNCHED, APP_STORE_URL, APP_VISIBLE, PLAY_STORE_URL} from '~constants/app'
 import Layout from '~layouts/Layout.astro'
+
+// Hide the public /app funnel until the waitlist is opened
+// (PUBLIC_APP_WAITLIST_ENABLED) or the app is launched (PUBLIC_APP_LAUNCHED).
+// Both default to false; while the email/consent backend ships, /app temporarily
+// redirects home (302 — not permanent, since the funnel returns at launch).
+if (!APP_VISIBLE) return Astro.redirect('/', 302)
 
 // Device detection — server-side UA sniff so store ordering is personalised.
 // Default: iOS/desktop visitors see App Store first; Android visitors see Google Play first.
