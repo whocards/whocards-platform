@@ -11,9 +11,10 @@ export interface Props {
   submitted?: boolean
   user?: UserSelect
   mode?: 'newsletter' | 'request'
+  siteKey?: string
 }
 
-const {formData, errors, user, submitted = false, mode = 'newsletter'} = Astro.props
+const {formData, errors, user, submitted = false, mode = 'newsletter', siteKey} = Astro.props
 const isRequest = mode === 'request'
 const heading = isRequest ? 'Request WhoCards' : 'Would you like to\nhear from us?'
 const subheading = isRequest ? 'Tell us how many decks you need and where to send them.' : undefined
@@ -160,9 +161,12 @@ const newsletterChecked =
       Yes, I would like to sign up for occasional newsletters from WhoCards.
     </Checkbox>
 
-    <!-- hidden inputs -->
-    <input type='hidden' name='thanks' autocomplete='off' value='youre-welcome' />
-    <input type='text' name='nobot' autocomplete='off' value='' class='hidden' />
+    {siteKey ? <div class='cf-turnstile mt-2 mb-4' data-sitekey={siteKey} data-theme='dark' /> : null}
+    {
+      errors?.['cf-turnstile-response'] && (
+        <p class='text-xs text-red mb-4'>{errors['cf-turnstile-response'].message}</p>
+      )
+    }
     <Button type='submit' class='mt-4 capitalize lg:max-w-xs' full>
       {submitted ? 'update' : isRequest ? 'request cards' : 'submit'}
     </Button>
@@ -187,3 +191,7 @@ const newsletterChecked =
     setIsValid()
   })
 </script>
+
+{siteKey && (
+  <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
+)}

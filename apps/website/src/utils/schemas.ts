@@ -40,9 +40,10 @@ export const contactMessageSchema = z.object({
     .trim()
     .min(10, {message: 'Message must be at least 10 characters'})
     .max(2000, {message: 'Message must be 2000 characters or fewer'}),
-  // Cloudflare Turnstile token — validated server-side.
-  'cf-turnstile-response': z.string().optional().default(''),
 })
+// Note: the Cloudflare Turnstile token (`cf-turnstile-response`) is intentionally
+// NOT part of this schema — it's verified server-side before parsing (see
+// ~server/turnstile), and zod strips the unknown key from the parsed message.
 
 export const cardRequestSchema = thankYouFormSchema.extend({
   name: z.string().min(2, {message: 'Field is required'}),

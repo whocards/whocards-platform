@@ -7,30 +7,50 @@ import type {ZodIssue} from 'zod'
 import {FormSuccess} from '~components/thanks'
 import EmailForm from '~components/thanks/EmailForm.astro'
 import {contactLinks} from '~constants/navigation'
+import {env} from '~env'
 import {Layout} from '~layouts'
 import {insertUser} from '~server/db'
 import {createContactSheetRow} from '~server/gsheet'
+import {verifyTurnstile} from '~server/turnstile'
 import {cardRequestSchema} from '~utils/schemas'
+
+const siteKey = env.PUBLIC_TURNSTILE_SITE_KEY
 
 let formData: Record<string, string> | undefined
 let errors: Record<string, ZodIssue> | undefined
 let confirmed = false
+
+const turnstileError = (message: string): Record<string, ZodIssue> => ({
+  'cf-turnstile-response': {code: 'custom', message, path: ['cf-turnstile-response']} as ZodIssue,
+})
 
 // when form is posted
 if (Astro.request.method === 'POST') {
   try {
     const rawFormData = await Astro.request.formData()
     formData = Object.fromEntries(rawFormData.entries()) as Record<string, string>
-    if (formData['nobot'] !== '' && formData['thanks'] !== 'youre-welcome') {
-      throw new Error('Bot detected')
+
+    // Bot protection: verify the Turnstile token server-side (skipped in dev when
+    // the secret is unset), replacing the old honeypot field.
+    if (env.TURNSTILE_SECRET_KEY) {
+      const result = await verifyTurnstile(
+        formData['cf-turnstile-response'] ?? '',
+        env.TURNSTILE_SECRET_KEY
+      )
+      if (!result.ok) {
+        errors =
+          result.reason === 'missing-token'
+            ? turnstileError('Please complete the security check.')
+            : turnstileError('Security check failed. Please try again.')
+      }
     }
 
-    const parsed = cardRequestSchema.safeParse(formData)
-    if (!parsed.success) {
+    const parsed = errors ? undefined : cardRequestSchema.safeParse(formData)
+    if (parsed && !parsed.success) {
       errors = Object.fromEntries(
         parsed.error.issues.map((issue) => [String(issue.path[0]), issue])
       )
-    } else {
+    } else if (parsed?.success) {
       const request = parsed.data
 
       await insertUser({
@@ -109,7 +129,7 @@ if (Astro.request.method === 'POST') {
           buttonLabel='Submit another request'
         />
       ) : (
-        <EmailForm mode='request' formData={formData} errors={errors} />
+        <EmailForm mode='request' formData={formData} errors={errors} siteKey={siteKey} />
       )
     }
   </div>
