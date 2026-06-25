@@ -12,7 +12,7 @@ import {verifyTurnstile} from '~server/turnstile'
 export const prerender = false
 
 const schema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
   // optional — the landing form is email-only; we derive a name when absent.
   name: z.string().trim().optional(),
 })

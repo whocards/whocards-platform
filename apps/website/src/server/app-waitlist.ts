@@ -7,7 +7,9 @@ import {z} from 'zod'
 // module load. The SSR route composes this with insertUser + Resend.
 
 export const appWaitlistSchema = z.object({
-  email: z.string().email(),
+  // Trim before validating — otherwise a whitespace-padded email is rejected by
+  // safeParse before the route's normalizeEmail ever runs.
+  email: z.string().trim().email(),
   name: z.string().trim().optional(),
   // Optional and defaults to false. Newsletter consent is granted ONLY when the
   // visitor ticks the box — never inferred from the act of joining the waitlist.
