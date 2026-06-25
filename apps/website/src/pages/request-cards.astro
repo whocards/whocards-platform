@@ -26,16 +26,14 @@ if (Astro.request.method === 'POST') {
     const rawFormData = await Astro.request.formData()
     formData = Object.fromEntries(rawFormData.entries()) as Record<string, string>
 
-    // Bot protection: verify the Turnstile token server-side (skipped in dev when
-    // the secret is unset), replacing the old honeypot field.
-    if (env.TURNSTILE_SECRET_KEY) {
-      const result = await verifyTurnstile(
-        formData['cf-turnstile-response'] ?? '',
-        env.TURNSTILE_SECRET_KEY,
-        Astro.clientAddress
-      )
-      if (!result.ok) errors = turnstileErrorFor(result.reason)
-    }
+    // Bot protection: verify the Turnstile token server-side, replacing the old
+    // honeypot. The secret is a required env var, so this always runs.
+    const result = await verifyTurnstile(
+      formData['cf-turnstile-response'] ?? '',
+      env.TURNSTILE_SECRET_KEY,
+      Astro.clientAddress
+    )
+    if (!result.ok) errors = turnstileErrorFor(result.reason)
 
     const parsed = errors ? undefined : cardRequestSchema.safeParse(formData)
     if (parsed && !parsed.success) {

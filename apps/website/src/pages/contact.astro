@@ -24,16 +24,14 @@ if (Astro.request.method === 'POST') {
     const rawFormData = await Astro.request.formData()
     formData = Object.fromEntries(rawFormData.entries()) as Record<string, string>
 
-    // Verify the Turnstile token server-side when a secret key is configured
-    // (skipped in dev when unset). The client widget alone is not trustworthy.
-    if (env.TURNSTILE_SECRET_KEY) {
-      const result = await verifyTurnstile(
-        formData['cf-turnstile-response'] ?? '',
-        env.TURNSTILE_SECRET_KEY,
-        Astro.clientAddress
-      )
-      if (!result.ok) errors = turnstileErrorFor(result.reason)
-    }
+    // Verify the Turnstile token server-side — the client widget alone isn't
+    // trustworthy. The secret is a required env var, so this always runs.
+    const result = await verifyTurnstile(
+      formData['cf-turnstile-response'] ?? '',
+      env.TURNSTILE_SECRET_KEY,
+      Astro.clientAddress
+    )
+    if (!result.ok) errors = turnstileErrorFor(result.reason)
 
     if (!errors) {
       const parsed = contactMessageSchema.safeParse(formData)

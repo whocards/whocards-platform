@@ -44,7 +44,7 @@ const newsletterChecked =
   <form id='email-form' method='POST' class='flex flex-col w-full pb-14'>
     <Input
       name='name'
-      min={2}
+      minlength={2}
       autocomplete='name'
       required
       value={formData?.name ?? user?.name}
