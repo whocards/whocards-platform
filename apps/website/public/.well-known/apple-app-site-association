@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "6RTC67K8CW.cc.whocards.mobile",
+        "paths": ["/play", "/play/*"]
+      }
+    ]
+  }
+}

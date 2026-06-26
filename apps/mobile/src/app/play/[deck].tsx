@@ -90,7 +90,7 @@ export default function PlayScreen() {
   // `q` deep-links to a specific question (e.g. mobile://play/library?q=1): the engine
   // starts there in natural order instead of shuffling, so deep links and screenshot
   // captures are reproducible. Mirrors the web <Play> `?q=` behaviour (ADR-0003).
-  const {deck: slug, q} = useLocalSearchParams<{deck: string; q?: string}>()
+  const {deck: slug, q, lang} = useLocalSearchParams<{deck: string; q?: string; lang?: string}>()
   const deck = getDeck(slug)
 
   if (!deck) {
@@ -110,6 +110,7 @@ export default function PlayScreen() {
       questions={deck.questions}
       languages={deck.languages}
       startId={typeof q === 'string' ? q : undefined}
+      startLanguage={typeof lang === 'string' ? lang : undefined}
     />
   )
 }
@@ -120,9 +121,18 @@ type DeckPlayerProps = {
   questions: QuestionSet
   languages: string[]
   startId?: string
+  /** Language from a shared deep-link (`?lang=`); wins over the stored preference. */
+  startLanguage?: string
 }
 
-const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: DeckPlayerProps) => {
+const DeckPlayer = ({
+  deckSlug,
+  questionIds,
+  questions,
+  languages,
+  startId,
+  startLanguage,
+}: DeckPlayerProps) => {
   const router = useRouter()
   const reduceMotion = useReducedMotion()
 
@@ -132,7 +142,11 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
     getInitialNav(questionIds, startId)
   )
   const defaultLanguage = languages[0]
-  const [language, setLanguage] = useState(defaultLanguage)
+  // A shared link's `?lang=` (if valid for this deck) is the explicit intent of the
+  // person who shared it, so it seeds the initial language and overrides storage below.
+  const linkLanguage =
+    startLanguage && languages.includes(startLanguage) ? startLanguage : undefined
+  const [language, setLanguage] = useState(linkLanguage ?? defaultLanguage)
   // true once the AsyncStorage read has settled — gates the first card paint so
   // the player never shows a visible language flip on launch. The read is a single
   // fast local hit (~1-5 ms); holding the card behind it is the right trade-off
@@ -143,13 +157,18 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
   // Seed language from storage on mount. Only apply a stored value if it is still
   // present in this deck's languages list (guard against decks dropping a language).
   useEffect(() => {
+    // A shared link's language takes precedence — skip the stored value entirely.
+    if (linkLanguage) {
+      setLanguageReady(true)
+      return
+    }
     void getStoredLanguage(deckSlug).then((stored) => {
       if (stored && languages.includes(stored)) {
         setLanguage(stored)
       }
       setLanguageReady(true)
     })
-  }, [deckSlug, languages])
+  }, [deckSlug, languages, linkLanguage])
 
   const questionId = ids[idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''

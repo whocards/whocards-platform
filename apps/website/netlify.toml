@@ -31,7 +31,15 @@
   status = 301
   force = true
 
-# [[plugins]] 
+# Universal Links (iOS) need the association file served as application/json over
+# https with no redirect. It has no file extension, so Netlify would otherwise guess
+# the content type. assetlinks.json already gets the right type from its extension.
+[[headers]]
+  for = "/.well-known/apple-app-site-association"
+  [headers.values]
+    Content-Type = "application/json"
+
+# [[plugins]]
 #   package = "netlify-plugin-cypress"
 
 #   [plugins.inputs.postBuild]
