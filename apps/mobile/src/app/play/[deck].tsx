@@ -46,6 +46,17 @@ const SWIPE_OFF_SCREEN = 400
 // Rubber-band resistance factor when swiping at a boundary (0–1, lower = more resistance)
 const RUBBER_BAND = 0.3
 
+// Card-enter animation durations (ms) and travel offsets (points).
+// Subsequent swipes use CARD_ENTER_MS / CARD_ENTER_TRAVEL — snappy and unchanged.
+// The very first entrance (app open) uses a slower, more deliberate timing on both
+// platforms so it reads as a deal rather than a pop.
+const CARD_ENTER_MS = 260
+const INITIAL_CARD_ENTER_MS = 900
+const CARD_ENTER_TRAVEL = 28
+// Larger travel on the first entrance so the slower 900 ms timing reads as a real
+// slide rather than a long fade-in.
+const INITIAL_CARD_ENTER_TRAVEL = 56
+
 // Per-script question face. golos-text (the brand body face) covers Latin + Cyrillic;
 // Hebrew gets its bundled Noto face; CJK (zh/jp) falls back to the system font — full
 // glyph coverage on device, and the Noto CJK faces are too heavy to bundle (see
@@ -403,13 +414,21 @@ const DeckPlayer = ({
   const navDir = useRef(1)
   // Whether we're at the first card — used in gesture rubber-band check
   const isAtFirst = idx === 0
+  // Flips to false after the very first entrance so only the open sequence gets
+  // the slower, deliberate timing (subsequent swipes stay at CARD_ENTER_MS).
+  const isFirstEnter = useRef(true)
 
   // card-enter animation: when questionId changes, the new card flies in from
   // the appropriate edge. navDir is set by goNext/goPrevious before dispatch.
+  // The first entrance uses a longer duration on Android so it reads as a
+  // deliberate "deal the card" rather than an abrupt pop.
   useEffect(() => {
-    const travel = reduceMotion ? 0 : 28
+    const first = isFirstEnter.current
+    if (first) isFirstEnter.current = false
+    const travel = reduceMotion ? 0 : first ? INITIAL_CARD_ENTER_TRAVEL : CARD_ENTER_TRAVEL
+    const duration = reduceMotion ? 0 : first ? INITIAL_CARD_ENTER_MS : CARD_ENTER_MS
     translateX.set(navDir.current * travel)
-    translateX.set(withTiming(0, {duration: reduceMotion ? 0 : 260}))
+    translateX.set(withTiming(0, {duration}))
   }, [questionId, translateX, reduceMotion])
 
   const cardStyle = useAnimatedStyle(() => {

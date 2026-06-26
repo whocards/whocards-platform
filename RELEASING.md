@@ -1,5 +1,9 @@
 # Releasing the mobile app
 
+> Testing on a physical iPhone or Pixel before release?
+> See **[docs/mobile/device-testing.md](docs/mobile/device-testing.md)** for install steps and
+> the Android App Links verification commands.
+
 A release is a `v*` git tag. Pushing it triggers `.github/workflows/mobile-release.yml`,
 which runs the quality gate, then EAS build → submit (TestFlight + Play internal) → OTA.
 

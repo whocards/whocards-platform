@@ -121,6 +121,10 @@ Manual smoke checklist for every native build (not required for OTA-only pushes)
 Scenarios: launch→play→swipe, language switch + RTL (Hebrew), language persists across relaunch,
 share, offline→reconnect Answer queue drain, deep-link/back.
 
+For install instructions (TestFlight, EAS internal distribution, `adb install`) and the
+Android App Links verification commands, see
+**[docs/mobile/device-testing.md](mobile/device-testing.md)**.
+
 | Platform | OS version | Notes                                  |
 | -------- | ---------- | -------------------------------------- |
 | iOS      | iOS 17     | Latest stable; Simulator + real device |
