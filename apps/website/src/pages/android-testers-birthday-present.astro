@@ -1,0 +1,182 @@
+---
+import {Icon} from 'astro-icon/components'
+
+import Button from '~components/ui/Button.astro'
+import {
+  ANDROID_TESTER_GROUP_URL,
+  ANDROID_TESTER_LINKS_READY,
+  ANDROID_TESTER_OPT_IN_URL,
+} from '~constants/android-testers'
+import Layout from '~layouts/Layout.astro'
+
+const steps = [
+  {
+    title: 'Join the tester group',
+    body: 'Use the Google account you use on your Android phone. This lets Google Play know you are allowed into the test.',
+  },
+  {
+    title: 'Become a tester',
+    body: 'Open the Play testing link, tap “Become a tester”, then install WhoCards from Google Play.',
+  },
+  {
+    title: 'Play one tiny round',
+    body: 'Open the app, draw a few Cards, switch language once if you feel like it, and keep the test installed for the 14-day window.',
+  },
+  {
+    title: 'Send me one Question',
+    body: 'Grab a Question that makes you smile, pause, or think of me, then send it back in a message wherever I shared this link.',
+  },
+]
+---
+
+<Layout
+  title='A Birthday WhoCards Ask'
+  description='For my birthday, help test the WhoCards Android app and send me one Question back.'
+  image='og/android-testers-birthday-present.png'
+  class='overflow-hidden'
+>
+  <section
+    class='relative w-full overflow-hidden px-5 pb-12 pt-14 sm:px-8 lg:px-12 lg:pb-20 lg:pt-18'
+  >
+    <div class='mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center'>
+      <div class='max-w-2xl'>
+        <p
+          class='mb-5 inline-flex items-center gap-2 rounded-full border border-primary-dark/45 bg-primary-dark/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary-light'
+        >
+          <span class='h-1.5 w-1.5 rounded-full bg-primary-dark'></span>
+          Birthday ask
+        </p>
+
+        <h1
+          class='font-title text-[2.75rem] font-bold leading-[0.98] tracking-tight text-white sm:text-6xl lg:text-7xl'
+        >
+          For my birthday, <span class='text-gradient'>test WhoCards with me.</span>
+        </h1>
+
+        <p class='mt-6 max-w-xl text-base leading-7 text-gray-lighter sm:text-lg sm:leading-8'>
+          I am trying to get the Android app through its last pre-launch test. The nicest present
+          would be a few minutes of your time: join the test, play a tiny round, and send me one
+          Question you like. Please and thank you.
+        </p>
+
+        {
+          ANDROID_TESTER_LINKS_READY ? (
+            <div class='mt-8 grid w-full max-w-xl gap-3 sm:grid-cols-2'>
+              <Button
+                tag='a'
+                href={ANDROID_TESTER_GROUP_URL}
+                target='_blank'
+                rel='noopener noreferrer'
+                hideIcon
+                class='min-h-14'
+              >
+                Join the group
+              </Button>
+              <Button
+                tag='a'
+                href={ANDROID_TESTER_OPT_IN_URL}
+                target='_blank'
+                rel='noopener noreferrer'
+                variant='secondary'
+                light
+                class='min-h-14'
+              >
+                Open Play test
+              </Button>
+            </div>
+          ) : (
+            <div class='mt-8 max-w-xl rounded-2xl border border-white/15 bg-white/5 p-5'>
+              <p class='text-base font-semibold text-primary-light'>Testing links open soon.</p>
+              <p class='mt-2 leading-7 text-gray-lighter'>
+                I am preparing the Google Group and Play testing link. Check back here before
+                installing.
+              </p>
+            </div>
+          )
+        }
+
+        <p class='mt-4 max-w-xl text-sm leading-6 text-gray-dark'>
+          Use the same Google account in both steps. Staying opted in helps the test count, so
+          please leave it installed until I say the window is done.
+        </p>
+      </div>
+
+      <div
+        class='relative min-h-[35rem] w-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-dark p-6 shadow-2xl shadow-black/30 sm:p-8 lg:min-h-[39rem]'
+      >
+        <Icon
+          name='pattern-mobile'
+          class='pointer-events-none absolute inset-x-0 top-0 h-auto w-full opacity-25'
+          aria-hidden='true'
+        />
+        <div class='relative flex h-full flex-col justify-between gap-8'>
+          <div>
+            <div class='mb-6 flex items-center gap-3'>
+              <span
+                class='flex size-12 items-center justify-center rounded-2xl bg-primary-light text-dark'
+              >
+                <Icon name='mdi:google-play' class='size-7' />
+              </span>
+              <div>
+                <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-light'>
+                  Steps to do
+                </p>
+                <p class='mt-1 text-sm text-gray-dark'>A small birthday favor, app-shaped.</p>
+              </div>
+            </div>
+
+            <div class='space-y-4'>
+              {
+                steps.map((step, index) => (
+                  <article class='rounded-2xl border border-white/10 bg-background/70 p-5'>
+                    <div class='flex gap-4'>
+                      <span class='flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-sm font-bold text-primary-light'>
+                        {index + 1}
+                      </span>
+                      <div>
+                        <h2 class='font-title text-xl font-bold leading-tight text-white'>
+                          {step.title}
+                        </h2>
+                        <p class='mt-2 text-sm leading-6 text-gray-lighter'>{step.body}</p>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              }
+            </div>
+          </div>
+
+          <div class='rounded-2xl border border-primary-light/25 bg-primary-light/10 p-5'>
+            <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-light'>
+              The real present
+            </p>
+            <p class='mt-3 leading-7 text-gray-lighter'>
+              The app test matters, but the message matters more. Send me the Question you would
+              want to answer together.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class='w-full border-y border-white/10 bg-background/70'>
+    <div
+      class='mx-auto grid w-full max-w-7xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-3 lg:px-12 lg:py-16 2xl:px-0'
+    >
+      <div>
+        <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-dark'>
+          Why I am asking
+        </p>
+        <h2 class='mt-3 font-title text-3xl font-bold leading-tight text-white'>
+          Google needs real people before the app can launch.
+        </h2>
+      </div>
+      <p class='leading-7 text-gray-lighter lg:col-span-2'>
+        Android requires a closed test with enough people staying opted in continuously. If you can
+        help, you are doing something genuinely useful for WhoCards — and giving me a birthday
+        present I will actually remember.
+      </p>
+    </div>
+  </section>
+</Layout>
