@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["6RTC67K8CW.cc.whocards.mobile"],
+        "components": [
+          {"/": "/play"},
+          {"/": "/play/*"}
+        ]
+      }
+    ]
+  }
+}

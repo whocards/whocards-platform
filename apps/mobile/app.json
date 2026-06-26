@@ -15,12 +15,24 @@
     },
     "ios": {
       "bundleIdentifier": "cc.whocards.mobile",
+      "associatedDomains": ["applinks:whocards.cc"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.whocards.mobile",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {"scheme": "https", "host": "whocards.cc", "path": "/play"},
+            {"scheme": "https", "host": "whocards.cc", "pathPrefix": "/play/"}
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "blockedPermissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
