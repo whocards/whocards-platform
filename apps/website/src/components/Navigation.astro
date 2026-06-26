@@ -14,6 +14,17 @@ const {links} = Astro.props
 const isEventSelected = (href: string) =>
   Astro.url.pathname === href || Astro.url.pathname === `${href}/play`
 const onEventsPage = Astro.url.pathname.startsWith('/events/')
+
+// Desktop nav order: the app CTA takes the prominent first slot (swapped with the
+// Events dropdown), then the inline links, then Events, then the Request Cards
+// button last — all evenly spaced (no divider).
+const isLinkSelected = (link: Link) =>
+  link.play
+    ? Astro.url.pathname === '/play' || Astro.url.pathname.startsWith('/play/')
+    : Astro.url.pathname === link.href
+const appLink = links.find((link) => link.href === '/app')
+const buttonLink = links.find((link) => link.button)
+const inlineLinks = links.filter((link) => link.href !== '/app' && !link.button)
 ---
 
 <div class='drawer drawer-end'>
@@ -33,41 +44,59 @@ const onEventsPage = Astro.url.pathname.startsWith('/events/')
       <div
         class:list={['flex-none hidden flex-row items-center gap-2', {'lg:flex': !isQuestionPage}]}
       >
-        <ul class='menu menu-horizontal'>
-          <!-- Navbar menu content here -->
+        <ul class='menu menu-horizontal items-center gap-1'>
+          {/* App CTA first — the prominent slot, swapped with the Events dropdown. */}
+          {
+            appLink && (
+              <NavLink
+                {...appLink}
+                selected={isLinkSelected(appLink)}
+                class='menu-title text-white'
+                hideIcon
+                size='sm'
+              />
+            )
+          }
+          {
+            inlineLinks.map((link) => (
+              <NavLink
+                {...link}
+                selected={isLinkSelected(link)}
+                class='menu-title text-white'
+                hideIcon
+                size='sm'
+              />
+            ))
+          }
           <li>
             <details open={onEventsPage}>
               <summary class='text-white text-lg font-bold'>Events</summary>
               <ul class='bg-darkest rounded-xl z-20'>
-                {eventLinks.map((link) => (
-                  <NavLink
-                    {...link}
-                    selected={isEventSelected(link.href)}
-                    class='text-white'
-                    hideIcon
-                    size='sm'
-                  />
-                ))}
+                {
+                  eventLinks.map((link) => (
+                    <NavLink
+                      {...link}
+                      selected={isEventSelected(link.href)}
+                      class='text-white'
+                      hideIcon
+                      size='sm'
+                    />
+                  ))
+                }
               </ul>
             </details>
           </li>
-          <li class='divider-horizontal w-0.5 bg-white/20'></li>
           {
-            links.map((link) => (
+            buttonLink && (
               <NavLink
-                {...link}
-                selected={
-                  link.play
-                    ? Astro.url.pathname === '/play' || Astro.url.pathname.startsWith('/play/')
-                    : Astro.url.pathname === link.href
-                }
+                {...buttonLink}
+                selected={isLinkSelected(buttonLink)}
                 class='menu-title text-white'
                 hideIcon
                 size='sm'
-                dark={link.button}
-                class:list={[link.play && 'play']}
+                dark
               />
-            ))
+            )
           }
         </ul>
       </div>
@@ -103,16 +132,18 @@ const onEventsPage = Astro.url.pathname.startsWith('/events/')
         <details open={onEventsPage}>
           <summary class='text-white text-lg font-bold'>Events</summary>
           <ul>
-            {eventLinks.map((link) => (
-              <NavLink
-                button
-                variant='secondary'
-                light
-                size='sm'
-                {...link}
-                selected={isEventSelected(link.href)}
-              />
-            ))}
+            {
+              eventLinks.map((link) => (
+                <NavLink
+                  button
+                  variant='secondary'
+                  light
+                  size='sm'
+                  {...link}
+                  selected={isEventSelected(link.href)}
+                />
+              ))
+            }
           </ul>
         </details>
       </li>
