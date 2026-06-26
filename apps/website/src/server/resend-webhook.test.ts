@@ -6,7 +6,7 @@
 import {PGlite} from '@electric-sql/pglite'
 import {eq} from 'drizzle-orm'
 import {drizzle} from 'drizzle-orm/pglite'
-import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest'
 import {Webhook} from 'svix'
 import * as schema from './db/schema'
 import {upsertConsent} from './db/upsert'
@@ -54,12 +54,21 @@ const CREATE_TABLES = `
   );
 `
 
+let client: PGlite
 let db: ReturnType<typeof drizzle<typeof schema>>
 
-beforeEach(async () => {
-  const client = new PGlite()
+// One PGlite (WASM) instance is shared across the file. Instantiating a fresh
+// one per test paid the cold WASM-compile cost on every `it`, which pushed the
+// first hook past vitest's 10s default hookTimeout on CI's slower runners.
+// Tables are truncated between tests for isolation instead.
+beforeAll(async () => {
+  client = new PGlite()
   db = drizzle(client, {schema})
   await client.exec(CREATE_TABLES)
+})
+
+beforeEach(async () => {
+  await client.exec('TRUNCATE "email_consent", "user" RESTART IDENTITY CASCADE;')
 })
 
 // ---------------------------------------------------------------------------

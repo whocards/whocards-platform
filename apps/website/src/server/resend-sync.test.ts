@@ -6,7 +6,7 @@
 import {PGlite} from '@electric-sql/pglite'
 import {eq} from 'drizzle-orm'
 import {drizzle} from 'drizzle-orm/pglite'
-import {beforeEach, describe, expect, it, vi} from 'vitest'
+import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import * as schema from './db/schema'
 import {upsertConsent, upsertUser} from './db/upsert'
@@ -56,12 +56,21 @@ const CREATE_TABLES = `
   );
 `
 
+let client: PGlite
 let db: ReturnType<typeof drizzle<typeof schema>>
 
-beforeEach(async () => {
-  const client = new PGlite()
+// One PGlite (WASM) instance is shared across the file. Instantiating a fresh
+// one per test paid the cold WASM-compile cost on every `it`, which pushed the
+// first hook past vitest's 10s default hookTimeout on CI's slower runners.
+// Tables are truncated between tests for isolation instead.
+beforeAll(async () => {
+  client = new PGlite()
   db = drizzle(client, {schema})
   await client.exec(CREATE_TABLES)
+})
+
+beforeEach(async () => {
+  await client.exec('TRUNCATE "email_consent", "user" RESTART IDENTITY CASCADE;')
 })
 
 // ---------------------------------------------------------------------------
@@ -87,9 +96,7 @@ function makeFakeContacts(overrides: Partial<ResendContactsPort> = {}): ResendCo
     addCalls,
     create: async (payload) => {
       createCalls.push(payload)
-      return overrides.create
-        ? overrides.create(payload)
-        : {data: {id: 'contact-123'}, error: null}
+      return overrides.create ? overrides.create(payload) : {data: {id: 'contact-123'}, error: null}
     },
     get: async (options) => {
       getCalls.push(options)
@@ -316,8 +323,16 @@ describe('dual-segment consent', () => {
       logger: silentLogger,
     }
 
-    await upsertConsent(db, {email: 'dual@example.com', consentType: 'app_launch', consentSource: 'app_page'})
-    await upsertConsent(db, {email: 'dual@example.com', consentType: 'newsletter', consentSource: 'app_page'})
+    await upsertConsent(db, {
+      email: 'dual@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    await upsertConsent(db, {
+      email: 'dual@example.com',
+      consentType: 'newsletter',
+      consentSource: 'app_page',
+    })
 
     const summaries = await syncEmailConsents(db, 'dual@example.com', deps)
 
@@ -344,8 +359,16 @@ describe('dual-segment consent', () => {
       logger: silentLogger,
     }
 
-    await upsertConsent(db, {email: 'dual2@example.com', consentType: 'app_launch', consentSource: 'app_page'})
-    await upsertConsent(db, {email: 'dual2@example.com', consentType: 'newsletter', consentSource: 'app_page'})
+    await upsertConsent(db, {
+      email: 'dual2@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
+    await upsertConsent(db, {
+      email: 'dual2@example.com',
+      consentType: 'newsletter',
+      consentSource: 'app_page',
+    })
 
     const summaries = await syncEmailConsents(db, 'dual2@example.com', deps)
     expect(summaries).toHaveLength(2)
@@ -465,8 +488,12 @@ describe('needsSync', () => {
   it('returns true when providerSyncedAt is null', () => {
     expect(
       needsSync({
-        id: 1, email: 'x@y.com', name: null, consentType: 'newsletter',
-        providerSyncedAt: null, providerSyncError: null,
+        id: 1,
+        email: 'x@y.com',
+        name: null,
+        consentType: 'newsletter',
+        providerSyncedAt: null,
+        providerSyncError: null,
       })
     ).toBe(true)
   })
@@ -474,8 +501,12 @@ describe('needsSync', () => {
   it('returns true when providerSyncError is set', () => {
     expect(
       needsSync({
-        id: 1, email: 'x@y.com', name: null, consentType: 'newsletter',
-        providerSyncedAt: '2026-01-01T00:00:00Z', providerSyncError: 'some error',
+        id: 1,
+        email: 'x@y.com',
+        name: null,
+        consentType: 'newsletter',
+        providerSyncedAt: '2026-01-01T00:00:00Z',
+        providerSyncError: 'some error',
       })
     ).toBe(true)
   })
@@ -483,8 +514,12 @@ describe('needsSync', () => {
   it('returns false when already synced with no error', () => {
     expect(
       needsSync({
-        id: 1, email: 'x@y.com', name: null, consentType: 'newsletter',
-        providerSyncedAt: '2026-01-01T00:00:00Z', providerSyncError: null,
+        id: 1,
+        email: 'x@y.com',
+        name: null,
+        consentType: 'newsletter',
+        providerSyncedAt: '2026-01-01T00:00:00Z',
+        providerSyncError: null,
       })
     ).toBe(false)
   })
@@ -515,8 +550,16 @@ function makeUpsertConsentFn(database: PgDatabase<PgQueryResultHKT, typeof schem
 describe('reconcile() — dry-run', () => {
   it('makes ZERO Resend create/add calls and ZERO provider-column DB writes', async () => {
     // Insert two consent rows that need sync (provider_synced_at IS NULL).
-    await upsertConsent(db, {email: 'a@example.com', consentType: 'newsletter', consentSource: 'app_page'})
-    await upsertConsent(db, {email: 'b@example.com', consentType: 'app_launch', consentSource: 'app_page'})
+    await upsertConsent(db, {
+      email: 'a@example.com',
+      consentType: 'newsletter',
+      consentSource: 'app_page',
+    })
+    await upsertConsent(db, {
+      email: 'b@example.com',
+      consentType: 'app_launch',
+      consentSource: 'app_page',
+    })
 
     const fakeContacts = makeFakeContacts()
     const deps: SyncDeps = {
@@ -552,7 +595,11 @@ describe('reconcile() — dry-run', () => {
   })
 
   it('counts as skipped rows whose consent type has no segment configured', async () => {
-    await upsertConsent(db, {email: 'c@example.com', consentType: 'newsletter', consentSource: 'app_page'})
+    await upsertConsent(db, {
+      email: 'c@example.com',
+      consentType: 'newsletter',
+      consentSource: 'app_page',
+    })
 
     const fakeContacts = makeFakeContacts()
     const deps: SyncDeps = {
