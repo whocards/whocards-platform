@@ -4,9 +4,10 @@ Use this guide to get a build onto a real iPhone or Pixel before promoting to th
 store — particularly when the change is native (splash, universal/app links, haptics, any
 new native module) and cannot be tested in Expo Go.
 
-**Do not run `eas build` or `eas submit` as part of this doc** — the EAS jobs are
-intentionally guarded by the `EAS_RELEASE_ENABLED` repo variable. The commands below
-are for reference; execute them only when explicitly ready to build.
+**The commands below are real** — running `pnpm mobile:rebuild:ios` locally with
+`EXPO_TOKEN` set will immediately trigger an EAS production build and TestFlight
+submit. The `EAS_RELEASE_ENABLED` guard lives only in the CI workflow; it does not
+protect local runs. Execute these commands only when explicitly ready to build.
 
 ---
 

@@ -53,8 +53,8 @@ const RUBBER_BAND = 0.3
 const CARD_ENTER_MS = 260
 const INITIAL_CARD_ENTER_MS_ANDROID = 900
 const CARD_ENTER_TRAVEL = 28
-// Slightly larger travel on the first entrance so the slower Android timing reads
-// as a real slide rather than a long fade-in.
+// Slightly larger travel on the first Android entrance so the slower 900 ms timing
+// reads as a real slide rather than a long fade-in. iOS is unaffected.
 const INITIAL_CARD_ENTER_TRAVEL = 56
 
 // Per-script question face. golos-text (the brand body face) covers Latin + Cyrillic;
@@ -405,7 +405,11 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
   useEffect(() => {
     const first = isFirstEnter.current
     if (first) isFirstEnter.current = false
-    const travel = reduceMotion ? 0 : first ? INITIAL_CARD_ENTER_TRAVEL : CARD_ENTER_TRAVEL
+    const travel = reduceMotion
+      ? 0
+      : first && Platform.OS === 'android'
+        ? INITIAL_CARD_ENTER_TRAVEL
+        : CARD_ENTER_TRAVEL
     const duration = reduceMotion
       ? 0
       : first && Platform.OS === 'android'
