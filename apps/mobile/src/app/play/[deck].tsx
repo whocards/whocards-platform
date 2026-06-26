@@ -159,6 +159,7 @@ const DeckPlayer = ({
   useEffect(() => {
     // A shared link's language takes precedence — skip the stored value entirely.
     if (linkLanguage) {
+      setLanguage(linkLanguage)
       setLanguageReady(true)
       return
     }

@@ -15,7 +15,12 @@ export function redirectSystemPath({path}: {path: string; initial: boolean}): st
     // `path` may be a full URL (https/scheme) or a bare path — the base only
     // applies to the latter, so both parse correctly.
     const url = new URL(path, 'https://whocards.cc')
-    if (url.pathname === '/play') {
+    // Custom-scheme links (mobile://play…) put the first segment in `host`, not
+    // `pathname`; reconstruct a path-style string so the same match works for both
+    // https://whocards.cc/play and mobile://play.
+    const isHttp = url.protocol === 'http:' || url.protocol === 'https:'
+    const pathname = isHttp ? url.pathname : `/${url.host}${url.pathname}`
+    if (pathname === '/play' || pathname === '/play/') {
       return `/play/${DEFAULT_DECK_SLUG}${url.search}`
     }
   } catch {

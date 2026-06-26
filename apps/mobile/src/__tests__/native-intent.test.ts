@@ -31,4 +31,28 @@ describe('redirectSystemPath', () => {
   it('leaves unrelated paths untouched', () => {
     expect(redirect('https://whocards.cc/about')).toBe('https://whocards.cc/about')
   })
+
+  it('rewrites bare /play with no query to the default deck', () => {
+    expect(redirect('/play')).toBe(`/play/${DEFAULT_DECK_SLUG}`)
+  })
+
+  it('rewrites /play/ (trailing slash) to the default deck', () => {
+    expect(redirect('/play/')).toBe(`/play/${DEFAULT_DECK_SLUG}`)
+  })
+
+  it('rewrites custom-scheme mobile://play to the default deck', () => {
+    expect(redirect('mobile://play')).toBe(`/play/${DEFAULT_DECK_SLUG}`)
+  })
+
+  it('rewrites custom-scheme mobile://play?q=1 preserving query', () => {
+    expect(redirect('mobile://play?q=1')).toBe(`/play/${DEFAULT_DECK_SLUG}?q=1`)
+  })
+
+  it('leaves custom-scheme mobile://play/library?q=1 untouched (explicit deck)', () => {
+    expect(redirect('mobile://play/library?q=1')).toBe('mobile://play/library?q=1')
+  })
+
+  it('leaves https://whocards.cc/playground untouched', () => {
+    expect(redirect('https://whocards.cc/playground')).toBe('https://whocards.cc/playground')
+  })
 })
