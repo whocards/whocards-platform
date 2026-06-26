@@ -104,10 +104,15 @@ next send, not turn “coming this week” into an apology email.
 The mandatory Closed Test is a separate engagement journey, not a footnote inside the general
 buildup email:
 
-1. **Recruitment — “help unlock the Android launch.”** Send the dedicated #82 template once the
-   Play Closed Testing opt-in URL exists. Send it to the consented newsletter audience and support
-   it with personal outreach; invite forwarding to Android friends. Recruit 18–20 people into one
-   Google Group so at least 12 remain continuously opted in.
+1. **Recruitment — “help unlock the Android launch.”** Send the dedicated #82 template once both
+   the tester Google Group URL and the Play Closed Testing opt-in URL exist. Send it to the consented newsletter audience and support
+   it with personal outreach; invite forwarding to Android friends. Link to a dedicated
+   `/android-testers` instruction page rather than the public `/app` funnel, because testers are
+   joining a beta cohort, not asking for the public launch notification. Start with the fewest
+   possible interactions: clear steps and direct links to join the tester Google Group and Play
+   Closed Test. Add a form, newsletter checkbox, or invite-only gate later only if recruitment needs
+   more control. Recruit 18–20 people into one Google Group so at least 12 remain continuously
+   opted in.
 2. **Onboarding — “your testing mission.”** After each tester joins, send the opt-in/install steps
    plus a short mission: first play, swipe, change language, share, background/reopen, and report
    one confusing or delightful moment.
@@ -117,8 +122,11 @@ buildup email:
 4. **Completion.** After the continuous 14-day gate, thank testers, tell them the production
    application is submitted, and keep them as the first feedback cohort for future releases.
 
-Tester lifecycle emails go only to the tester cohort; they do not count as the general newsletter
-buildup sequence.
+If a tester form is added later, tester signups should grant a dedicated `android_beta_test`
+consent, not `app_launch`. The tester signup can offer the same optional, unchecked newsletter
+checkbox used elsewhere, but tester consent and newsletter consent must remain separate rows. For
+the first page, there is no form and therefore no newsletter consent capture. Tester lifecycle
+emails go only to the tester cohort; they do not count as the general newsletter buildup sequence.
 
 ---
 
