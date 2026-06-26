@@ -104,8 +104,8 @@ next send, not turn “coming this week” into an apology email.
 The mandatory Closed Test is a separate engagement journey, not a footnote inside the general
 buildup email:
 
-1. **Recruitment — “help unlock the Android launch.”** Send the dedicated #82 template once the
-   Play Closed Testing opt-in URL exists. Send it to the consented newsletter audience and support
+1. **Recruitment — “help unlock the Android launch.”** Send the dedicated #82 template once both
+   the tester Google Group URL and the Play Closed Testing opt-in URL exist. Send it to the consented newsletter audience and support
    it with personal outreach; invite forwarding to Android friends. Link to a dedicated
    `/android-testers` instruction page rather than the public `/app` funnel, because testers are
    joining a beta cohort, not asking for the public launch notification. Start with the fewest

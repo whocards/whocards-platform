@@ -23,6 +23,7 @@ export const env = createEnv({
     RESEND_SEGMENT_NEWSLETTER_ID: z.string().optional(),
     RESEND_SEGMENT_APP_WAITLIST_ID: z.string().optional(),
     // Android Closed Test links used by /android-testers and tester lifecycle emails.
+    ANDROID_TESTER_SIGNUP_URL: optionalUrl,
     ANDROID_TESTER_GROUP_URL: optionalUrl,
     ANDROID_TESTER_OPT_IN_URL: optionalUrl,
     ANDROID_TESTER_FEEDBACK_URL: optionalUrl,
