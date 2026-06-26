@@ -108,26 +108,34 @@ const inlineLinks = links.filter((link) => link.href !== '/app' && !link.button)
     <label for='who-drawer' class='drawer-overlay'></label>
     <ul class='menu h-full w-full md:w-80 bg-darkest pt-20 gap-3 md:px-5 flex-nowrap'>
       <!-- Sidebar content here -->
+      {/* App CTA first — the prominent slot, swapped with the Events dropdown. */}
       {
-        links.map((link) => (
+        appLink && (
           <NavLink
-            {...link}
-            selected={
-              link.play
-                ? Astro.url.pathname === '/play' || Astro.url.pathname.startsWith('/play/')
-                : Astro.url.pathname === link.href
-            }
+            {...appLink}
+            selected={isLinkSelected(appLink)}
             size='lg'
             button
-            variant={link.button ? 'primary' : 'secondary'}
-            light={!link.button}
-            dark={link.button}
-            hideIcon={!link.button}
-            class:list={[link.button && 'mt-5 menu-title', link.play && 'play']}
+            variant='secondary'
+            light
+            hideIcon
+          />
+        )
+      }
+      {
+        inlineLinks.map((link) => (
+          <NavLink
+            {...link}
+            selected={isLinkSelected(link)}
+            size='lg'
+            button
+            variant='secondary'
+            light
+            hideIcon
+            class:list={[link.play && 'play']}
           />
         ))
       }
-      <li class='divider-horizontal w-0.5 bg-white/20'></li>
       <li>
         <details open={onEventsPage}>
           <summary class='text-white text-lg font-bold'>Events</summary>
@@ -147,6 +155,19 @@ const inlineLinks = links.filter((link) => link.href !== '/app' && !link.button)
           </ul>
         </details>
       </li>
+      {
+        buttonLink && (
+          <NavLink
+            {...buttonLink}
+            selected={isLinkSelected(buttonLink)}
+            size='lg'
+            button
+            variant='primary'
+            dark
+            class:list={['menu-title']}
+          />
+        )
+      }
       <NavLink
         selected={false}
         title='Login'
