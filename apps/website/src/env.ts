@@ -41,13 +41,18 @@ export const env = createEnv({
     PUBLIC_POSTHOG_KEY: z.string().optional(),
     PUBLIC_POSTHOG_HOST: z.string().url().optional().default('https://eu.i.posthog.com'),
     PUBLIC_POSTHOG_UI_HOST: z.string().url().optional().default('https://eu.posthog.com'),
-    // Set to "true" to flip /app from waitlist mode to download mode on launch day.
-    PUBLIC_APP_LAUNCHED: z.stringbool().default(false),
-    // Set to "true" to expose the pre-launch /app waitlist funnel before launch.
-    // Safe default: false — keeps /app and its nav/homepage entry points hidden
-    // (/app redirects home) while the email/consent backend ships. Ignored once
-    // PUBLIC_APP_LAUNCHED is true (launch/download mode is always visible).
-    PUBLIC_APP_WAITLIST_ENABLED: z.stringbool().default(false),
+    // iOS and Android launch on separate timelines: iOS is approved and public,
+    // Android trails by Google's mandatory 12-tester / 14-day Closed Test. Each
+    // store has its own switch so /app can offer a real download for one platform
+    // while routing the other into the closed test.
+    //
+    // Set to "true" once the iOS App Store listing is live (default true — iOS is
+    // approved and the public download surface today).
+    PUBLIC_APP_IOS_LAUNCHED: z.stringbool().default(true),
+    // Set to "true" once the Google Play listing is public (default false — Android
+    // is still in Closed Testing; until then /app sends Android visitors to the
+    // /android-testers funnel instead of a Play badge).
+    PUBLIC_APP_ANDROID_LAUNCHED: z.stringbool().default(false),
     // Cloudflare Turnstile — client-side site key for the form widgets. Required
     // (build fails without it) so the widget always renders. Use Cloudflare's
     // always-passing test keys for local dev.

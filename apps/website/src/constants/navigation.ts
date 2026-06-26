@@ -8,14 +8,17 @@ export type Link = {
   icon?: string
   play?: boolean
   external?: boolean
+  /** Give a plain nav link a subtle on-brand "pop" (used for the app CTA). */
+  pop?: boolean
 }
 
 export const mainLinks: Link[] = [
   {href: '/#what-is-whocards', title: 'About'},
   {href: '/play', title: 'Play', play: true},
   {href: '/print', title: 'Print'},
-  // Only surface the /app entry when the funnel is visible (waitlist or launched).
-  ...(APP_VISIBLE ? [{href: '/app', title: 'Get the App'} as Link] : []),
+  // Only surface the /app entry when the funnel is visible (a store is live or the
+  // waitlist is open). `pop` gives it a tasteful on-brand glow in the nav.
+  ...(APP_VISIBLE ? [{href: '/app', title: 'Get the App', pop: true} as Link] : []),
   // {href: donationUrl, title: 'Donate', external: true},
   {href: '/request-cards', title: 'Request Cards', button: true},
 ]
