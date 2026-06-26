@@ -12,16 +12,20 @@ import Layout from '~layouts/Layout.astro'
 
 const steps = [
   {
-    title: 'Join the tester group',
-    body: 'Use the Google account you use on your Android phone. This is what gives Google Play permission to show you the test.',
+    title: 'Join the group',
+    body: 'Use the Google account on your Android phone.',
   },
   {
-    title: 'Become a tester',
-    body: 'Open the Play testing link, choose “Become a tester”, then install WhoCards from Google Play.',
+    title: 'Open the Play test',
+    body: 'Tap “Become a tester”, then install WhoCards.',
   },
   {
-    title: 'Play once and stay opted in',
-    body: 'Draw a few Cards, switch language once, share a Card, and keep the test installed for the full 14-day window.',
+    title: 'Play for a minute',
+    body: 'Draw a few Cards. Leave the app installed for now.',
+  },
+  {
+    title: 'Send one note',
+    body: 'Tell us what felt confusing, broken, or surprisingly nice.',
   },
 ]
 ---
@@ -41,19 +45,18 @@ const steps = [
           class='mb-5 inline-flex items-center gap-2 rounded-full border border-primary-dark/45 bg-primary-dark/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary-light'
         >
           <span class='h-1.5 w-1.5 rounded-full bg-primary-dark'></span>
-          Android closed test
+          Android test
         </p>
 
         <h1
           class='font-title text-[2.75rem] font-bold leading-[0.98] tracking-tight text-white sm:text-6xl lg:text-7xl'
         >
-          Help unlock the <span class='text-gradient'>Android launch.</span>
+          Help test <span class='text-gradient'>WhoCards on Android.</span>
         </h1>
 
         <p class='mt-6 max-w-xl text-base leading-7 text-gray-lighter sm:text-lg sm:leading-8'>
-          We need a small crew of Android people to try WhoCards before the public release. No
-          technical experience needed: just install it, play a Deck, and tell us what feels
-          confusing.
+          If you have an Android phone, this takes five minutes: join the test, install the app,
+          play one tiny round, and send us one note.
         </p>
 
         {
@@ -93,13 +96,12 @@ const steps = [
         }
 
         <p class='mt-4 max-w-xl text-sm leading-6 text-gray-dark'>
-          Use the same Google account in both steps. Leaving the test resets your qualifying time,
-          so please stay opted in until we confirm the test is complete.
+          Same Google account for both links. Leave the app installed for now.
         </p>
       </div>
 
       <div
-        class='relative min-h-[31rem] w-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-dark p-6 shadow-2xl shadow-black/30 sm:p-8 lg:min-h-[36rem]'
+        class='relative min-h-[35rem] w-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-dark p-6 shadow-2xl shadow-black/30 sm:p-8 lg:min-h-[39rem]'
       >
         <Icon
           name='pattern-mobile'
@@ -116,9 +118,9 @@ const steps = [
               </span>
               <div>
                 <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-light'>
-                  Your mission
+                  What to do
                 </p>
-                <p class='mt-1 text-sm text-gray-dark'>About five minutes, one useful test.</p>
+                <p class='mt-1 text-sm text-gray-dark'>Five minutes. Big help.</p>
               </div>
             </div>
 
@@ -145,11 +147,11 @@ const steps = [
 
           <div class='rounded-2xl border border-primary-light/25 bg-primary-light/10 p-5'>
             <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-light'>
-              What to report
+              What to send
             </p>
             <p class='mt-3 leading-7 text-gray-lighter'>
-              Send the moment that felt confusing, broken, or surprisingly delightful. One honest
-              note is more useful than a formal bug report.
+              One honest note is enough. A confusing moment, a broken button, or one Question you
+              liked.
             </p>
             <a
               href={ANDROID_TESTER_FEEDBACK_URL}
@@ -177,9 +179,8 @@ const steps = [
         </h2>
       </div>
       <p class='leading-7 text-gray-lighter lg:col-span-2'>
-        Android requires a closed test with enough people staying opted in continuously. Your test
-        helps us catch rough edges and gives WhoCards the best chance of reaching the public Play
-        Store smoothly.
+        Android makes small apps prove they have real testers. You joining helps WhoCards get to the
+        Play Store.
       </p>
     </div>
   </section>
