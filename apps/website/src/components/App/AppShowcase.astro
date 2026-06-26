@@ -1,0 +1,75 @@
+---
+import {Image} from 'astro:assets'
+
+import landingScreen from '../../assets/images/app/home-screen.webp'
+import questionScreen from '../../assets/images/app/question-screen.webp'
+---
+
+<div class='app-showcase relative mx-auto h-[25rem] w-full max-w-[31rem] sm:h-[31rem] lg:h-[38rem]'>
+  <div
+    class='absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-dark/25 blur-3xl sm:h-96 sm:w-96'
+    aria-hidden='true'
+  >
+  </div>
+
+  <figure
+    class='phone phone-home absolute left-[7%] top-8 w-[45%] -rotate-6 sm:left-[9%] sm:top-10 lg:top-12'
+  >
+    <div
+      class='overflow-hidden rounded-[1.8rem] border-[5px] border-[#21183d] bg-darkest shadow-2xl shadow-black/60 sm:rounded-[2.4rem] sm:border-[7px]'
+    >
+      <Image
+        src={landingScreen}
+        alt='WhoCards mobile app home screen'
+        widths={[240, 360, 480]}
+        sizes='(min-width: 1024px) 240px, (min-width: 640px) 210px, 42vw'
+        quality={88}
+        class='block h-auto w-full'
+      />
+    </div>
+  </figure>
+
+  <figure class='phone phone-question absolute right-[5%] top-0 w-[47%] rotate-6 sm:right-[7%]'>
+    <div
+      class='overflow-hidden rounded-[1.8rem] border-[5px] border-[#21183d] bg-darkest shadow-2xl shadow-black/60 sm:rounded-[2.4rem] sm:border-[7px]'
+    >
+      <Image
+        src={questionScreen}
+        alt='A question displayed in the WhoCards mobile app'
+        widths={[240, 360, 480]}
+        sizes='(min-width: 1024px) 250px, (min-width: 640px) 220px, 44vw'
+        quality={88}
+        class='block h-auto w-full'
+      />
+    </div>
+  </figure>
+
+  <div
+    class='absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-full border border-white/15 bg-darkest/90 px-4 py-2 text-xs font-semibold text-gray-lighter shadow-xl backdrop-blur sm:bottom-8 sm:text-sm'
+  >
+    <span class='h-2 w-2 rounded-full bg-primary-light shadow-[0_0_16px_rgba(249,215,95,0.85)]'
+    ></span>
+    66 questions · 14 languages
+  </div>
+</div>
+
+<style>
+  .phone {
+    transform-origin: 50% 90%;
+    transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .app-showcase:hover .phone-home {
+    transform: rotate(-9deg) translate(-0.4rem, -0.2rem);
+  }
+
+  .app-showcase:hover .phone-question {
+    transform: rotate(9deg) translate(0.4rem, -0.45rem);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .phone {
+      transition: none;
+    }
+  }
+</style>

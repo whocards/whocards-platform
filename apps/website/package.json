@@ -10,6 +10,7 @@
     "build": "pnpm with-env astro build",
     "preview": "pnpm with-env astro preview",
     "typecheck": "astro sync && astro check",
+    "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ssr": "playwright test -c playwright.ssr.config.ts",
     "pretty": "prettier --write . --plugin=prettier-plugin-astro",
@@ -17,7 +18,8 @@
     "db:generate": "pnpm with-env drizzle-kit generate",
     "db:migrate": "pnpm with-env drizzle-kit migrate",
     "db:push": "pnpm with-env drizzle-kit push",
-    "db:studio": "pnpm with-env drizzle-kit studio"
+    "db:studio": "pnpm with-env drizzle-kit studio",
+    "reconcile:resend": "pnpm with-env tsx scripts/reconcile-resend.ts"
   },
   "dependencies": {
     "@whocards/api": "workspace:*",
@@ -40,7 +42,7 @@
     "@nanostores/persistent": "^0.9.1",
     "@nanostores/react": "^0.7.1",
     "@resvg/resvg-js": "^2.6.2",
-    "@t3-oss/env-core": "^0.7.1",
+    "@t3-oss/env-core": "catalog:",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.1",
     "@types/react": "catalog:",
@@ -53,7 +55,6 @@
     "clsx": "^2.1.1",
     "daisyui": "^5.5.23",
     "drizzle-orm": "^0.33.0",
-    "drizzle-zod": "^0.5.1",
     "gsap": "^3.12.2",
     "nanostores": "^0.9.4",
     "object-to-formdata": "^4.5.1",
@@ -65,14 +66,16 @@
     "satori": "^0.26.0",
     "sharp": "^0.34.5",
     "split-text-js": "^1.0.3",
+    "svix": "^1.96.0",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.1",
     "wawoff2": "^2.0.1",
-    "zod": "^3.22.4"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@astrojs/node": "^10.1.4",
+    "@electric-sql/pglite": "^0.5.3",
     "@netlify/functions": "^2.3.0",
     "@playwright/test": "^1.61.1",
     "@types/node": "catalog:",
@@ -82,6 +85,7 @@
     "prettier": "^3.8.4",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

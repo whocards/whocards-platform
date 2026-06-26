@@ -1,0 +1,143 @@
+import type {APIRoute} from 'astro'
+import {Resend} from 'resend'
+import {env} from '~env'
+import {appWaitlistSchema, confirmationEmail, confirmationMessage} from '~server/app-waitlist'
+import {CONSENT_SOURCE, normalizeEmail} from '~server/consent'
+import {db, insertConsent, insertUser} from '~server/db'
+import {makeSegmentIdResolver, syncEmailConsents} from '~server/resend-sync'
+import {verifyTurnstile} from '~server/turnstile'
+
+// SSR endpoint for the /app waitlist and launch-day reminder capture.
+// Modelled on ai-checkin-subscribe.ts — same DB pattern, same error handling.
+export const prerender = false
+
+const json = (body: unknown, status: number) =>
+  new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json'}})
+
+export const POST: APIRoute = async ({request, clientAddress}) => {
+  const body = await request.json().catch(() => null)
+  const parsed = appWaitlistSchema.safeParse(body)
+
+  if (!parsed.success) {
+    return json({message: 'Please enter a valid email address.'}, 400)
+  }
+
+  // Bot protection — this is the most prominent public form, so verify the
+  // Turnstile token server-side before sending any email (a forged/blank token
+  // can't reach Resend). Required, like /contact and /request-cards. The token
+  // is read from the raw body (not a schema field — it's verified separately).
+  const turnstileToken =
+    body &&
+    typeof body === 'object' &&
+    typeof (body as Record<string, unknown>).turnstileToken === 'string'
+      ? ((body as Record<string, unknown>).turnstileToken as string)
+      : ''
+  const turnstile = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY, clientAddress)
+  if (!turnstile.ok) {
+    return json(
+      {
+        message:
+          turnstile.reason === 'missing-token'
+            ? 'Please complete the security check.'
+            : 'Security check failed. Please try again.',
+      },
+      403
+    )
+  }
+
+  const {email: rawEmail, name, newsletter, source} = parsed.data
+  const email = normalizeEmail(rawEmail)
+  const displayName = name && name.length > 0 ? name : email.split('@')[0]
+  // consent_source is a canonical CONSENT_SOURCE value, never the client-supplied
+  // `source` (which is for segmentation only and is logged below, not persisted).
+  const consentSource = CONSENT_SOURCE.appPage
+
+  // Log source for segmentation (full persistence tracked in #92). No email — PII.
+  if (source) {
+    console.info('app-launch-subscribe: source=%s', source)
+  }
+
+  // Persist the lead. Upsert the user row first (keeps user.newsletter OR-merge
+  // compatibility), then write consent rows: app_launch always, newsletter only
+  // when the visitor opted in. The durable consent row is the point of the form —
+  // if it fails, fail the request rather than telling the visitor they're on the
+  // list with no record to back it (and nothing for the Resend sync to reconcile).
+  try {
+    const user = await insertUser({
+      email,
+      name: displayName,
+      newsletter,
+    })
+    const userId = user?.id ?? null
+
+    await insertConsent({
+      email,
+      name: displayName,
+      userId,
+      consentType: 'app_launch',
+      consentSource,
+    })
+
+    if (newsletter) {
+      await insertConsent({
+        email,
+        name: displayName,
+        userId,
+        consentType: 'newsletter',
+        consentSource,
+      })
+    }
+  } catch (error) {
+    console.error('app-launch-subscribe: failed to store lead', error)
+    return json({message: "We couldn't save your signup. Please try again."}, 503)
+  }
+
+  if (!env.RESEND_API_KEY) {
+    console.error('app-launch-subscribe: RESEND_API_KEY not configured')
+    return json({message: 'Email is not configured yet. Please try again later.'}, 503)
+  }
+
+  const resend = new Resend(env.RESEND_API_KEY)
+
+  const email_ = confirmationEmail({newsletter})
+
+  try {
+    const {error} = await resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
+      to: email,
+      subject: email_.subject,
+      html: email_.html,
+    })
+
+    if (error) {
+      console.error('app-launch-subscribe: resend error', error)
+      return json({message: "We couldn't send the confirmation email. Please try again."}, 502)
+    }
+  } catch (error) {
+    console.error('app-launch-subscribe: send threw', error)
+    return json({message: "We couldn't send the confirmation email. Please try again."}, 502)
+  }
+
+  // Best-effort Resend Contacts/Segments sync (#120). Runs AFTER the
+  // confirmation email so a sync failure never blocks a successful signup.
+  // Wrap in try/catch — provider failures are recorded in provider_sync_error
+  // for reconciliation; they must NOT erase the consent rows.
+  try {
+    const segmentIdFor = makeSegmentIdResolver(
+      env.RESEND_SEGMENT_NEWSLETTER_ID,
+      env.RESEND_SEGMENT_APP_WAITLIST_ID
+    )
+    const resendContacts = {
+      create: (payload: Parameters<typeof resend.contacts.create>[0]) =>
+        resend.contacts.create(payload),
+      get: (options: {email: string}) => resend.contacts.get(options),
+      addToSegment: (options: {email: string; segmentId: string}) =>
+        resend.contacts.segments.add(options),
+    }
+    await syncEmailConsents(db, email, {resendContacts, segmentIdFor})
+  } catch (syncErr) {
+    console.error('app-launch-subscribe: resend sync threw (non-fatal)', syncErr)
+  }
+
+  return json({message: confirmationMessage({newsletter})}, 200)
+}

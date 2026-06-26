@@ -1,3 +1,4 @@
+import {APP_VISIBLE} from './app'
 import {websiteNextUrl} from './urls'
 
 export type Link = {
@@ -13,6 +14,8 @@ export const mainLinks: Link[] = [
   {href: '/#what-is-whocards', title: 'About'},
   {href: '/play', title: 'Play', play: true},
   {href: '/print', title: 'Print'},
+  // Only surface the /app entry when the funnel is visible (waitlist or launched).
+  ...(APP_VISIBLE ? [{href: '/app', title: 'Get the App'} as Link] : []),
   // {href: donationUrl, title: 'Donate', external: true},
   {href: '/request-cards', title: 'Request Cards', button: true},
 ]

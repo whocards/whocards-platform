@@ -49,7 +49,16 @@ export default defineConfig({
     react(),
     icon({
       include: {
-        mdi: ['twitter', 'linkedin', 'instagram', 'github', 'email', 'arrow-up'],
+        mdi: [
+          'twitter',
+          'linkedin',
+          'instagram',
+          'github',
+          'email',
+          'arrow-up',
+          'apple',
+          'google-play',
+        ],
         'fa-solid': ['clone', 'external-link-alt'],
         ic: [
           'outline-arrow-back',

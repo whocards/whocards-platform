@@ -1,0 +1,393 @@
+---
+export const prerender = false
+
+import {Icon} from 'astro-icon/components'
+
+import AppShowcase from '~components/App/AppShowcase.astro'
+import Button from '~components/ui/Button.astro'
+import {APP_LAUNCHED, APP_STORE_URL, APP_VISIBLE, PLAY_STORE_URL} from '~constants/app'
+import {env} from '~env'
+import Layout from '~layouts/Layout.astro'
+
+// Hide the public /app funnel until the waitlist is opened
+// (PUBLIC_APP_WAITLIST_ENABLED) or the app is launched (PUBLIC_APP_LAUNCHED).
+// Both default to false; while the email/consent backend ships, /app temporarily
+// redirects home (302 — not permanent, since the funnel returns at launch).
+if (!APP_VISIBLE) return Astro.redirect('/', 302)
+
+// Device detection — server-side UA sniff so store ordering is personalised.
+// Default: iOS/desktop visitors see App Store first; Android visitors see Google Play first.
+const ua = Astro.request.headers.get('user-agent') ?? ''
+const isAndroid = /android/i.test(ua)
+
+// Cloudflare Turnstile site key for the form widget — bot protection, required
+// (server verifies the token in /api/app-launch-subscribe). Same pattern as the
+// /contact and /request-cards forms.
+const siteKey = env.PUBLIC_TURNSTILE_SITE_KEY
+
+const stores = [
+  {
+    name: 'App Store',
+    label: 'Download on the',
+    href: APP_STORE_URL,
+    icon: 'mdi:apple',
+  },
+  {
+    name: 'Google Play',
+    label: 'Get it on',
+    href: PLAY_STORE_URL,
+    icon: 'mdi:google-play',
+  },
+]
+
+if (isAndroid) stores.reverse()
+
+const features = [
+  {
+    icon: 'group-chat',
+    title: 'Bring it anywhere',
+    description: 'A date, a long walk, dinner with friends, or the five minutes before a meeting.',
+  },
+  {
+    icon: 'group',
+    title: 'Speak your language',
+    description: 'Fourteen languages let everyone answer in the words that feel closest to home.',
+  },
+  {
+    icon: 'star-circle',
+    title: 'Start in one tap',
+    description: 'No account, no setup, no cards to carry. Open the app and ask the next question.',
+  },
+]
+---
+
+<Layout
+  title='WhoCards — Get the App'
+  description='Download WhoCards for iOS and Android. Meaningful conversations in your pocket — wherever you go.'
+  class='scrollbar-hide'
+>
+  <section
+    class='relative grid min-h-[calc(100svh-4rem)] w-full max-w-7xl items-center gap-6 overflow-hidden px-5 pb-10 pt-16 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-8 lg:px-12 lg:py-16 2xl:px-0'
+  >
+    <div class='relative z-[1] flex max-w-xl flex-col items-start text-left'>
+      <p
+        class='mb-6 inline-flex items-center gap-2 rounded-full border border-primary-dark/45 bg-primary-dark/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary-light'
+      >
+        <span class='h-1.5 w-1.5 rounded-full bg-primary-dark'></span>
+        {APP_LAUNCHED ? 'Available now · iOS + Android' : 'Launching soon · iOS + Android'}
+      </p>
+
+      <h1
+        class='font-title text-[2.75rem] font-bold leading-[0.98] tracking-tight text-white sm:text-6xl lg:text-7xl xl:text-[5rem]'
+      >
+        {
+          APP_LAUNCHED ? (
+            <>
+              Better questions, <span class='text-gradient'>wherever you are.</span>
+            </>
+          ) : (
+            <>
+              Skip the small talk. <span class='text-gradient'>Keep the questions close.</span>
+            </>
+          )
+        }
+      </h1>
+
+      <p class='mt-6 max-w-lg text-base leading-7 text-gray-lighter sm:text-lg sm:leading-8'>
+        WhoCards puts 66 conversation-opening questions in your pocket. Draw one when the moment
+        could use a little more honesty, curiosity, or surprise.
+      </p>
+
+      {
+        APP_LAUNCHED ? (
+          <>
+            <div class='mt-8 grid w-full max-w-lg gap-3 sm:grid-cols-2'>
+              {stores.map((store, index) => (
+                <a
+                  href={store.href}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  data-store={store.name === 'App Store' ? 'ios' : 'android'}
+                  class:list={[
+                    'group flex min-h-16 items-center gap-3 rounded-2xl border px-5 py-3 text-left transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light',
+                    index === 0
+                      ? 'border-primary-light bg-primary-light text-dark hover:bg-yellow-500'
+                      : 'border-white/25 bg-white/5 text-white hover:border-white/50 hover:bg-white/10',
+                  ]}
+                >
+                  <Icon name={store.icon} class='h-7 w-7 shrink-0' />
+                  <span class='leading-none'>
+                    <span class='block text-[0.65rem] font-semibold uppercase tracking-wide opacity-70'>
+                      {store.label}
+                    </span>
+                    <span class='mt-1 block text-base font-bold'>{store.name}</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+
+            <div class='mt-8 w-full max-w-lg border-t border-white/10 pt-6'>
+              <p class='mb-3 text-sm text-gray-lighter'>
+                On a computer? Send the download links to your inbox.
+              </p>
+              <form id='waitlist-form' class='flex flex-col gap-3'>
+                <div class='flex flex-col gap-3 sm:flex-row'>
+                  <label class='sr-only' for='waitlist-email'>
+                    Email address
+                  </label>
+                  <input
+                    id='waitlist-email'
+                    type='email'
+                    name='email'
+                    required
+                    autocomplete='email'
+                    inputmode='email'
+                    placeholder='you@example.com'
+                    class='min-h-12 w-full rounded-xl border border-white/25 bg-white/5 px-4 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light/20'
+                  />
+                  <input type='hidden' name='source' value='app-page-launch-fallback' />
+                  <Button type='submit' tag='button' size='md' hideIcon class='shrink-0 sm:w-auto'>
+                    Send links
+                  </Button>
+                </div>
+                {/* Optional, unchecked by default — newsletter consent is never assumed (#87) */}
+                <label class='flex cursor-pointer items-start gap-2 text-left text-xs text-gray-lighter'>
+                  <input
+                    type='checkbox'
+                    name='newsletter'
+                    class='mt-0.5 size-4 shrink-0 accent-primary-light'
+                  />
+                  <span>
+                    Also send me the occasional WhoCards email — a good question now and then, plus
+                    product news. <span class='text-gray-dark'>Optional.</span>
+                  </span>
+                </label>
+                {siteKey && <div class='cf-turnstile' data-sitekey={siteKey} data-theme='dark' />}
+              </form>
+              <p
+                id='waitlist-status'
+                class='mt-2 min-h-5 text-sm text-primary-light'
+                role='status'
+                aria-live='polite'
+              />
+            </div>
+          </>
+        ) : (
+          <div class='mt-8 w-full max-w-lg'>
+            <form id='waitlist-form' class='flex flex-col gap-3'>
+              <div class='flex flex-col gap-3 sm:flex-row'>
+                <label class='sr-only' for='waitlist-email'>
+                  Email address
+                </label>
+                <input
+                  id='waitlist-email'
+                  type='email'
+                  name='email'
+                  required
+                  autocomplete='email'
+                  inputmode='email'
+                  placeholder='you@example.com'
+                  class='min-h-14 w-full rounded-2xl border border-white/25 bg-white/5 px-5 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light/20'
+                />
+                <input type='hidden' name='source' value='app-waitlist' />
+                <Button
+                  type='submit'
+                  tag='button'
+                  size='lg'
+                  hideIcon
+                  class='shrink-0 whitespace-nowrap sm:w-auto'
+                >
+                  Tell me when it’s live
+                </Button>
+              </div>
+              {/* Optional, unchecked by default — newsletter consent is never assumed (#87) */}
+              <label class='flex cursor-pointer items-start gap-2 text-left text-xs text-gray-lighter'>
+                <input
+                  type='checkbox'
+                  name='newsletter'
+                  class='mt-0.5 size-4 shrink-0 accent-primary-light'
+                />
+                <span>
+                  Also send me the occasional WhoCards email — a good question now and then, plus
+                  product news. <span class='text-gray-dark'>Optional.</span>
+                </span>
+              </label>
+              {siteKey && <div class='cf-turnstile' data-sitekey={siteKey} data-theme='dark' />}
+            </form>
+            <p
+              id='waitlist-status'
+              class='mt-2 min-h-5 text-sm text-primary-light'
+              role='status'
+              aria-live='polite'
+            />
+            <p class='mt-1 text-xs text-gray-dark'>One launch email. No noise in between.</p>
+          </div>
+        )
+      }
+    </div>
+
+    <div class='relative -mx-2 self-end sm:mx-0 lg:self-center'>
+      <AppShowcase />
+    </div>
+  </section>
+
+  <section id='why-the-app' class='w-full border-y border-white/10 bg-background/70'>
+    <div class='mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 lg:px-12 lg:py-24 2xl:px-0'>
+      <div class='grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20'>
+        <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-dark'>
+          Why the app?
+        </p>
+        <h2 class='font-title text-3xl font-bold leading-tight text-white sm:text-5xl lg:-mt-2'>
+          Made for the moment between hello and honest.
+        </h2>
+      </div>
+
+      <div class='mt-12 grid gap-9 md:grid-cols-3 md:gap-0 lg:mt-16'>
+        {
+          features.map((feature) => (
+            <article class='group md:border-l md:border-white/10 md:px-8 md:first:border-l-0 md:first:pl-0 md:last:pr-0'>
+              <Icon
+                name={feature.icon}
+                class='h-8 w-8 text-primary-light transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110'
+              />
+              <h3 class='mt-5 font-title text-2xl font-bold text-white'>{feature.title}</h3>
+              <p class='mt-3 max-w-sm leading-7 text-gray-lighter'>{feature.description}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class='w-full px-5 py-12 sm:px-8 lg:px-12 lg:py-20'>
+    <div
+      class='relative mx-auto grid w-full max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 bg-dark px-6 py-10 sm:px-10 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-12 lg:px-14 lg:py-14'
+    >
+      <Icon
+        name='pattern-mobile'
+        class='pointer-events-none absolute inset-x-0 top-0 opacity-30 lg:hidden'
+        aria-hidden='true'
+      />
+      <div class='relative'>
+        <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-light'>
+          Your first card
+        </p>
+        <h2
+          class='mt-4 max-w-4xl font-title text-3xl font-bold leading-tight text-white sm:text-5xl'
+        >
+          What is the most interesting thing you have learned recently?
+        </h2>
+        <p class='mt-3 text-sm text-gray-dark'>(About yourself or in general.)</p>
+      </div>
+      <div class='relative mt-8 lg:mt-0'>
+        {
+          APP_LAUNCHED ? (
+            <Button
+              tag='a'
+              href={stores[0].href}
+              hideIcon
+              target='_blank'
+              rel='noopener noreferrer'
+              data-store={stores[0].name === 'App Store' ? 'ios' : 'android'}
+            >
+              Open the app
+            </Button>
+          ) : (
+            <Button tag='a' href='#waitlist-email'>
+              Join the waitlist
+            </Button>
+          )
+        }
+      </div>
+    </div>
+  </section>
+</Layout>
+
+{
+  siteKey && (
+    <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
+  )
+}
+
+<script>
+  // --- #92 launch funnel instrumentation ---------------------------------
+  // Never attach raw email to events. window.posthog is initialised in <head>.
+  const ua = navigator.userAgent
+  const platform = /android/i.test(ua)
+    ? 'android'
+    : /iphone|ipad|ipod/i.test(ua)
+      ? 'ios'
+      : 'desktop'
+  const params = new URLSearchParams(location.search)
+  const pageSource =
+    params.get('utm_source') ??
+    (document.querySelector('input[name="source"]') as HTMLInputElement | null)?.value ??
+    'app-page'
+  const campaign = params.get('utm_campaign') ?? 'launch'
+
+  window.posthog?.capture('app_page_viewed', {platform, source: pageSource})
+
+  document.querySelectorAll<HTMLAnchorElement>('a[data-store]').forEach((link) => {
+    link.addEventListener('click', () => {
+      window.posthog?.capture('app_store_clicked', {
+        store: link.dataset.store,
+        source: pageSource,
+        campaign,
+      })
+    })
+  })
+
+  const form = document.getElementById('waitlist-form') as HTMLFormElement | null
+  const status = document.getElementById('waitlist-status')
+  const submit = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null
+
+  const setStatus = (message: string, ok: boolean) => {
+    if (!status) return
+    status.textContent = message
+    status.classList.toggle('text-primary-light', ok)
+    status.classList.toggle('text-red-400', !ok)
+  }
+
+  // Turnstile resets its single-use token after each attempt so a second submit
+  // (e.g. after an error) gets a fresh one.
+  const resetTurnstile = () =>
+    (window as unknown as {turnstile?: {reset: () => void}}).turnstile?.reset()
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    const data = new FormData(form)
+    const email = data.get('email')?.toString().trim()
+    // Persist the same acquisition source analytics records (utm_source-aware),
+    // not just the static hidden input, so UTM-driven signups segment correctly.
+    const source = pageSource
+    // Unchecked native checkboxes are absent from FormData, so this is false by
+    // default — newsletter consent is only sent when the visitor opts in (#87).
+    const newsletter = data.get('newsletter') === 'on'
+    const turnstileToken = data.get('cf-turnstile-response')?.toString() ?? ''
+    if (!email) return
+
+    if (submit) submit.disabled = true
+    setStatus('Sending…', true)
+
+    try {
+      const res = await fetch('/api/app-launch-subscribe', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email, source, newsletter, turnstileToken}),
+      })
+      const json = (await res.json().catch(() => ({}))) as {message?: string}
+      if (res.ok) {
+        window.posthog?.capture('app_waitlist_signup', {source, newsletter_opt_in: newsletter})
+        form.reset()
+        setStatus(json.message || 'You’re on the list — we’ll email you when it’s live.', true)
+      } else {
+        setStatus(json.message || 'Something went wrong. Please try again.', false)
+      }
+    } catch {
+      setStatus('Something went wrong. Please try again.', false)
+    } finally {
+      if (submit) submit.disabled = false
+      resetTurnstile()
+    }
+  })
+</script>

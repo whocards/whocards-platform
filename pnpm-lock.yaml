@@ -6,6 +6,9 @@ settings:
 
 catalogs:
   default:
+    '@t3-oss/env-core':
+      specifier: ^0.13.8
+      version: 0.13.11
     '@trpc/client':
       specifier: ^11.7.2
       version: 11.17.0
@@ -320,8 +323,8 @@ importers:
         specifier: ^2.6.2
         version: 2.6.2
       '@t3-oss/env-core':
-        specifier: ^0.7.1
-        version: 0.7.3(typescript@5.9.3)(zod@3.25.76)
+        specifier: 'catalog:'
+        version: 0.13.11(typescript@5.9.3)(zod@4.4.3)
       '@tailwindcss/typography':
         specifier: ^0.5.20
         version: 0.5.20(tailwindcss@4.3.1)
@@ -375,10 +378,7 @@ importers:
         version: 5.5.23
       drizzle-orm:
         specifier: ^0.33.0
-        version: 0.33.0(@electric-sql/pglite@0.3.16)(@opentelemetry/api@1.9.0)(@types/react@19.2.17)(pg@8.21.0)(postgres@3.4.9)(react@19.2.3)
-      drizzle-zod:
-        specifier: ^0.5.1
-        version: 0.5.1(drizzle-orm@0.33.0(@electric-sql/pglite@0.3.16)(@opentelemetry/api@1.9.0)(@types/react@19.2.17)(pg@8.21.0)(postgres@3.4.9)(react@19.2.3))(zod@3.25.76)
+        version: 0.33.0(@electric-sql/pglite@0.5.3)(@opentelemetry/api@1.9.0)(@types/react@19.2.17)(pg@8.21.0)(postgres@3.4.9)(react@19.2.3)
       gsap:
         specifier: ^3.12.2
         version: 3.15.0
@@ -412,6 +412,9 @@ importers:
       split-text-js:
         specifier: ^1.0.3
         version: 1.0.3
+      svix:
+        specifier: ^1.96.0
+        version: 1.96.0
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
@@ -422,8 +425,8 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       zod:
-        specifier: ^3.22.4
-        version: 3.25.76
+        specifier: 'catalog:'
+        version: 4.4.3
     devDependencies:
       '@astrojs/check':
         specifier: ^0.9.9
@@ -431,6 +434,9 @@ importers:
       '@astrojs/node':
         specifier: ^10.1.4
         version: 10.1.4(astro@6.4.7(@netlify/blobs@10.7.9)(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.62.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+      '@electric-sql/pglite':
+        specifier: ^0.5.3
+        version: 0.5.3
       '@netlify/functions':
         specifier: ^2.3.0
         version: 2.8.2
@@ -461,6 +467,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.9(@opentelemetry/api@1.9.0)(@types/node@24.13.2)(jsdom@20.0.3)(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/api:
     dependencies:
@@ -1134,6 +1143,9 @@ packages:
 
   '@electric-sql/pglite@0.3.16':
     resolution: {integrity: sha512-mZkZfOd9OqTMHsK+1cje8OSzfAQcpD7JmILXTl5ahdempjUDdmg4euf1biDex5/LfQIDJ3gvCu6qDgdnDxfJmA==}
+
+  '@electric-sql/pglite@0.5.3':
+    resolution: {integrity: sha512-iTTYbA5Uesrl+N7zss0J5LopT7KE4j9aymYo+EZZh+rZbARQCUQOs+n2pay64JRUpc3fCkpfrniTNJnvYzOE+g==}
 
   '@emmetio/abbreviation@2.3.3':
     resolution: {integrity: sha512-mgv58UrU3rh4YgbE/TzgLQwJ3pFsHHhCLqY20aJq+9comytTXUDNGG/SMtSeMJdkpxgXSXunBGLD8Boka3JyVA==}
@@ -3853,13 +3865,21 @@ packages:
     peerDependencies:
       acorn: ^8.9.0
 
-  '@t3-oss/env-core@0.7.3':
-    resolution: {integrity: sha512-hhtj59TKC6TKVdwJ0CcbKsvkr9R8Pc/SNKd4IgGUIC9T9X6moB8EZZ3FTJdABA/h9UABCK4J+KsF8gzmvMvHPg==}
+  '@t3-oss/env-core@0.13.11':
+    resolution: {integrity: sha512-sM7GYY+KL7H/Hl0BE0inWfk3nRHZOLhmVn7sHGxaZt9FAR6KqREXAE+6TqKfiavfXmpRxO/OZ2QgKRd+oiBYRQ==}
     peerDependencies:
-      typescript: '>=4.7.2'
-      zod: ^3.0.0
+      arktype: ^2.1.0
+      typescript: '>=5.0.0'
+      valibot: ^1.0.0-beta.7 || ^1.0.0
+      zod: ^3.24.0 || ^4.0.0
     peerDependenciesMeta:
+      arktype:
+        optional: true
       typescript:
+        optional: true
+      valibot:
+        optional: true
+      zod:
         optional: true
 
   '@tailwindcss/node@4.3.1':
@@ -5636,12 +5656,6 @@ packages:
         optional: true
       sqlite3:
         optional: true
-
-  drizzle-zod@0.5.1:
-    resolution: {integrity: sha512-C/8bvzUH/zSnVfwdSibOgFjLhtDtbKYmkbPbUCq46QZyZCH6kODIMSOgZ8R7rVjoI+tCj3k06MRJMDqsIeoS4A==}
-    peerDependencies:
-      drizzle-orm: '>=0.23.13'
-      zod: '*'
 
   dset@3.1.4:
     resolution: {integrity: sha512-2QF/g9/zTaPDc3BjNcVTGoBbXBgYfMTTceLaYcFJ/W9kggFUkhxD/hMEeuLKbugyef9SqAx8cpgwlIP/jinUTA==}
@@ -9756,6 +9770,9 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
+  svix@1.96.0:
+    resolution: {integrity: sha512-bypvS7RhYYysD/AAnQzV7EIM08rP9aI394VPr2LGb63K17n4hYFfZPWCpFCFs7ZhYEfdO6Rtci16zxfw14ygCg==}
+
   symbol-tree@3.2.4:
     resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
 
@@ -11590,6 +11607,8 @@ snapshots:
       '@types/hammerjs': 2.0.46
 
   '@electric-sql/pglite@0.3.16': {}
+
+  '@electric-sql/pglite@0.5.3': {}
 
   '@emmetio/abbreviation@2.3.3':
     dependencies:
@@ -14271,11 +14290,10 @@ snapshots:
     dependencies:
       acorn: 8.17.0
 
-  '@t3-oss/env-core@0.7.3(typescript@5.9.3)(zod@3.25.76)':
-    dependencies:
-      zod: 3.25.76
+  '@t3-oss/env-core@0.13.11(typescript@5.9.3)(zod@4.4.3)':
     optionalDependencies:
       typescript: 5.9.3
+      zod: 4.4.3
 
   '@tailwindcss/node@4.3.1':
     dependencies:
@@ -16243,19 +16261,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.33.0(@electric-sql/pglite@0.3.16)(@opentelemetry/api@1.9.0)(@types/react@19.2.17)(pg@8.21.0)(postgres@3.4.9)(react@19.2.3):
+  drizzle-orm@0.33.0(@electric-sql/pglite@0.5.3)(@opentelemetry/api@1.9.0)(@types/react@19.2.17)(pg@8.21.0)(postgres@3.4.9)(react@19.2.3):
     optionalDependencies:
-      '@electric-sql/pglite': 0.3.16
+      '@electric-sql/pglite': 0.5.3
       '@opentelemetry/api': 1.9.0
       '@types/react': 19.2.17
       pg: 8.21.0
       postgres: 3.4.9
       react: 19.2.3
-
-  drizzle-zod@0.5.1(drizzle-orm@0.33.0(@electric-sql/pglite@0.3.16)(@opentelemetry/api@1.9.0)(@types/react@19.2.17)(pg@8.21.0)(postgres@3.4.9)(react@19.2.3))(zod@3.25.76):
-    dependencies:
-      drizzle-orm: 0.33.0(@electric-sql/pglite@0.3.16)(@opentelemetry/api@1.9.0)(@types/react@19.2.17)(pg@8.21.0)(postgres@3.4.9)(react@19.2.3)
-      zod: 3.25.76
 
   dset@3.1.4: {}
 
@@ -21524,6 +21537,10 @@ snapshots:
       csso: 5.0.5
       picocolors: 1.1.1
       sax: 1.6.0
+
+  svix@1.96.0:
+    dependencies:
+      standardwebhooks: 1.0.0
 
   symbol-tree@3.2.4: {}
 

@@ -5,10 +5,6 @@ import {render, toPlainText} from '@react-email/render'
 import {createElement} from 'react'
 
 import {
-  AndroidTesterRecruitmentEmail,
-  androidTesterRecruitmentText,
-} from '../src/templates/android-tester-recruitment'
-import {
   AndroidTesterCheckInEmail,
   AndroidTesterCompletionEmail,
   AndroidTesterOnboardingEmail,
@@ -16,6 +12,16 @@ import {
   androidTesterCompletionText,
   androidTesterOnboardingText,
 } from '../src/templates/android-tester-lifecycle'
+import {
+  AndroidTesterRecruitmentEmail,
+  androidTesterRecruitmentText,
+} from '../src/templates/android-tester-recruitment'
+import {
+  AppLaunchAnnouncementEmail,
+  appLaunchAnnouncementText,
+} from '../src/templates/app-launch-announcement'
+import {BetaValidatedEmail, betaValidatedText} from '../src/templates/buildup-beta-validated'
+import {WaitlistLiveEmail, waitlistLiveText} from '../src/templates/buildup-waitlist-live'
 
 // Non-production placeholders so a preview rendered without env never embeds a
 // real (or real-looking, not-yet-live) tester link. Set the ANDROID_TESTER_*
@@ -26,24 +32,57 @@ const groupUrl =
 const optInUrl =
   process.env.ANDROID_TESTER_OPT_IN_URL ?? 'https://play.google.com/apps/testing/example.package'
 const feedbackUrl = process.env.ANDROID_TESTER_FEEDBACK_URL ?? 'https://example.com/feedback'
+// Real store listings (iOS App Store id 6782853824 / Android com.whocards.mobile).
+// Override via APP_STORE_URL / PLAY_STORE_URL env vars when rendering the blast.
+const appStoreUrl =
+  process.env.APP_STORE_URL ??
+  'https://apps.apple.com/app/whocards/id6782853824?utm_source=email&utm_medium=launch_blast&utm_campaign=launch'
+const playStoreUrl =
+  process.env.PLAY_STORE_URL ??
+  'https://play.google.com/store/apps/details?id=com.whocards.mobile&utm_source=email&utm_medium=launch_blast&utm_campaign=launch'
+
 const outputDirectory = resolve('dist')
-const recruitmentHtml = await render(createElement(AndroidTesterRecruitmentEmail, {signupUrl}))
+await mkdir(outputDirectory, {recursive: true})
+
+// --- Android tester recruitment ---
+const androidHtml = await render(createElement(AndroidTesterRecruitmentEmail, {signupUrl}))
+const androidText = androidTesterRecruitmentText({signupUrl})
+
+// --- Android tester lifecycle (#115) ---
 const onboardingHtml = await render(
   createElement(AndroidTesterOnboardingEmail, {groupUrl, optInUrl, feedbackUrl})
 )
 const checkInHtml = await render(createElement(AndroidTesterCheckInEmail, {feedbackUrl}))
 const completionHtml = await render(createElement(AndroidTesterCompletionEmail))
 
-await mkdir(outputDirectory, {recursive: true})
+// --- App launch announcement ---
+const launchHtml = await render(
+  createElement(AppLaunchAnnouncementEmail, {appStoreUrl, playStoreUrl})
+)
+const launchText = appLaunchAnnouncementText({
+  appStoreUrl,
+  playStoreUrl,
+  greeting: 'Hi there,',
+})
+
+// --- Pre-launch buildup (#96) ---
+const waitlistLiveHtml = await render(createElement(WaitlistLiveEmail, {greeting: 'Hi there,'}))
+const waitlistLiveTxt = waitlistLiveText({
+  appUrl: 'https://whocards.cc/app?utm_source=email&utm_medium=buildup&utm_campaign=launch',
+  greeting: 'Hi there,',
+})
+const betaValidatedHtml = await render(createElement(BetaValidatedEmail, {greeting: 'Hi there,'}))
+const betaValidatedTxt = betaValidatedText({
+  playUrl: 'https://whocards.cc/play?utm_source=email&utm_medium=buildup&utm_campaign=launch',
+  greeting: 'Hi there,',
+})
+
 await Promise.all([
-  writeFile(resolve(outputDirectory, 'android-tester-recruitment.html'), recruitmentHtml),
-  writeFile(
-    resolve(outputDirectory, 'android-tester-recruitment.txt'),
-    androidTesterRecruitmentText({signupUrl})
-  ),
+  writeFile(resolve(outputDirectory, 'android-tester-recruitment.html'), androidHtml),
+  writeFile(resolve(outputDirectory, 'android-tester-recruitment.txt'), androidText),
   writeFile(
     resolve(outputDirectory, 'android-tester-recruitment.generated.txt'),
-    toPlainText(recruitmentHtml)
+    toPlainText(androidHtml)
   ),
   writeFile(resolve(outputDirectory, 'android-tester-onboarding.html'), onboardingHtml),
   writeFile(
@@ -60,6 +99,16 @@ await Promise.all([
     resolve(outputDirectory, 'android-tester-completion.txt'),
     androidTesterCompletionText()
   ),
+  writeFile(resolve(outputDirectory, 'app-launch-announcement.html'), launchHtml),
+  writeFile(resolve(outputDirectory, 'app-launch-announcement.txt'), launchText),
+  writeFile(
+    resolve(outputDirectory, 'app-launch-announcement.generated.txt'),
+    toPlainText(launchHtml)
+  ),
+  writeFile(resolve(outputDirectory, 'buildup-waitlist-live.html'), waitlistLiveHtml),
+  writeFile(resolve(outputDirectory, 'buildup-waitlist-live.txt'), waitlistLiveTxt),
+  writeFile(resolve(outputDirectory, 'buildup-beta-validated.html'), betaValidatedHtml),
+  writeFile(resolve(outputDirectory, 'buildup-beta-validated.txt'), betaValidatedTxt),
 ])
 
-console.log(`Rendered Android tester lifecycle emails to ${outputDirectory}`)
+console.log(`Rendered emails to ${outputDirectory}`)
