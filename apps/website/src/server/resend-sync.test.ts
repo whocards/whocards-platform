@@ -3,13 +3,12 @@
 // All Resend interaction is mocked — no network calls.
 // DB assertions use PGlite (same pattern as upsert.test.ts).
 
-import {PGlite} from '@electric-sql/pglite'
 import {eq} from 'drizzle-orm'
-import {drizzle} from 'drizzle-orm/pglite'
-import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import * as schema from './db/schema'
 import {upsertConsent, upsertUser} from './db/upsert'
+import {resetTestDb, type TestDb} from './db/test-helpers'
 import {
   applyProviderSyncResult,
   makeSegmentIdResolver,
@@ -22,55 +21,13 @@ import {
 } from './resend-sync'
 
 // ---------------------------------------------------------------------------
-// PGlite DB setup (mirrors upsert.test.ts)
+// DB setup — one shared PGlite instance for the whole run (see ./db/test-helpers).
 // ---------------------------------------------------------------------------
 
-const CREATE_TABLES = `
-  CREATE TABLE "user" (
-    "id" serial PRIMARY KEY,
-    "email" text NOT NULL UNIQUE,
-    "name" text NOT NULL,
-    "newsletter" boolean DEFAULT false NOT NULL,
-    "oc_slug" text
-  );
-
-  CREATE TABLE "email_consent" (
-    "id" serial PRIMARY KEY,
-    "user_id" integer REFERENCES "user"("id"),
-    "email" text NOT NULL,
-    "name" text,
-    "consent_type" text NOT NULL,
-    "consented_at" timestamptz DEFAULT now() NOT NULL,
-    "consent_source" text NOT NULL,
-    "unsubscribed_at" timestamptz,
-    "unsubscribe_source" text,
-    "fulfilled_at" timestamptz,
-    "provider_name" text DEFAULT 'resend' NOT NULL,
-    "provider_contact_id" text,
-    "provider_segment_id" text,
-    "provider_synced_at" timestamptz,
-    "provider_sync_error" text,
-    "created_at" timestamptz DEFAULT now() NOT NULL,
-    "updated_at" timestamptz,
-    CONSTRAINT "email_consent_email_consent_type_unique" UNIQUE ("email", "consent_type")
-  );
-`
-
-let client: PGlite
-let db: ReturnType<typeof drizzle<typeof schema>>
-
-// One PGlite (WASM) instance is shared across the file. Instantiating a fresh
-// one per test paid the cold WASM-compile cost on every `it`, which pushed the
-// first hook past vitest's 10s default hookTimeout on CI's slower runners.
-// Tables are truncated between tests for isolation instead.
-beforeAll(async () => {
-  client = new PGlite()
-  db = drizzle(client, {schema})
-  await client.exec(CREATE_TABLES)
-})
+let db: TestDb
 
 beforeEach(async () => {
-  await client.exec('TRUNCATE "email_consent", "user" RESTART IDENTITY CASCADE;')
+  db = await resetTestDb()
 })
 
 // ---------------------------------------------------------------------------

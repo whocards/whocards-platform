@@ -1,48 +1,17 @@
-import {PGlite} from '@electric-sql/pglite'
 import {eq} from 'drizzle-orm'
-import {drizzle} from 'drizzle-orm/pglite'
 import {beforeEach, describe, expect, it} from 'vitest'
 import * as schema from './schema'
+import {resetTestDb, type TestDb} from './test-helpers'
 import {upsertConsent, upsertUser} from './upsert'
 
 // Exercises the real ON CONFLICT OR-merge SQL against an in-process Postgres
 // (pglite) — the pure-TS consent tests in app-waitlist.test.ts can't catch a
-// wrong SQL expression.
-let db: ReturnType<typeof drizzle<typeof schema>>
+// wrong SQL expression. One shared PGlite instance for the whole run, truncated
+// between tests (see ./test-helpers).
+let db: TestDb
 
 beforeEach(async () => {
-  const client = new PGlite()
-  db = drizzle(client, {schema})
-  await client.exec(`
-    CREATE TABLE "user" (
-      "id" serial PRIMARY KEY,
-      "email" text NOT NULL UNIQUE,
-      "name" text NOT NULL,
-      "newsletter" boolean DEFAULT false NOT NULL,
-      "oc_slug" text
-    );
-
-    CREATE TABLE "email_consent" (
-      "id" serial PRIMARY KEY,
-      "user_id" integer REFERENCES "user"("id"),
-      "email" text NOT NULL,
-      "name" text,
-      "consent_type" text NOT NULL,
-      "consented_at" timestamptz DEFAULT now() NOT NULL,
-      "consent_source" text NOT NULL,
-      "unsubscribed_at" timestamptz,
-      "unsubscribe_source" text,
-      "fulfilled_at" timestamptz,
-      "provider_name" text DEFAULT 'resend' NOT NULL,
-      "provider_contact_id" text,
-      "provider_segment_id" text,
-      "provider_synced_at" timestamptz,
-      "provider_sync_error" text,
-      "created_at" timestamptz DEFAULT now() NOT NULL,
-      "updated_at" timestamptz,
-      CONSTRAINT "email_consent_email_consent_type_unique" UNIQUE ("email", "consent_type")
-    );
-  `)
+  db = await resetTestDb()
 })
 
 describe('upsertUser — non-destructive newsletter consent merge (#87)', () => {
