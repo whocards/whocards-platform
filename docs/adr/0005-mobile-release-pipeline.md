@@ -55,3 +55,13 @@ tag, runs the gate → `eas build` → `eas submit` (beta track) → `eas update
   **removed**: iOS and Android build/submit together under the single `EAS_RELEASE_ENABLED` switch.
   Remaining Android prerequisite (outside the pipeline): create the Play app record and hand-upload
   the first AAB, which Google requires before `eas submit -p android` succeeds.
+- **Amendment (2026-06-27) — split public release (iOS first).** The CI pipeline still builds and
+  submits **both** platforms to their test tracks together; this amendment governs only the _public_
+  release. We drop the earlier "hold approved iOS until Android clears its gate" rule: iOS is approved
+  and goes public now, while Android completes Google's mandatory 12-tester / 14-day Closed Test and
+  production-access review (a minimum of ~14 days, and we do not yet have 12 testers). **Trade-off:**
+  two launch moments and two announcements instead of one, accepted because holding a finished,
+  approved iOS build for weeks costs real retention for no benefit. The website encodes this with
+  per-platform flags (`PUBLIC_APP_IOS_LAUNCHED`, `PUBLIC_APP_ANDROID_LAUNCHED`): `/app` shows a real
+  iOS download and routes Android visitors to `/android-testers` until the Android flag flips. See
+  `docs/growth/04-app-launch-plan.md` for the launch/campaign side.

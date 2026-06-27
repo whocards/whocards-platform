@@ -141,16 +141,19 @@ For the first mobile release, this specification is subordinate to `docs/RELEASE
 
 - The v1 journey is landing → the single WhoCards Deck → Global Game. Do not imply that Library
   browsing, accounts, purchases, Custom Decks, Personal Game, or Facilitation already exist.
-- `/app` is gated by `APP_VISIBLE` (`PUBLIC_APP_WAITLIST_ENABLED` OR `PUBLIC_APP_LAUNCHED`) and is
-  hidden by default — both flags off redirects it home. Opening the waitlist
-  (`PUBLIC_APP_WAITLIST_ENABLED=true`) collects a one-time public-download notification; launch mode
-  (`PUBLIC_APP_LAUNCHED=true`) leads with both store badges, ordered for the visitor's device. Never
-  show placeholder store links or claim availability early.
+- `/app` is gated by `APP_VISIBLE` — visible whenever a store is live
+  (`PUBLIC_APP_IOS_LAUNCHED` / `PUBLIC_APP_ANDROID_LAUNCHED`); with both off it redirects home. iOS
+  launches first (flag default **on**); Android trails through its Closed Test (flag default
+  **off**), so the Android tile routes to `/android-testers` until Google grants production access.
+  Each platform's store link is shown only once its flag is on — never show a placeholder store link
+  or claim availability early.
 - App-notification and newsletter consent are separate. Newsletter consent is optional, unchecked,
   and described plainly; confirmation copy must reflect exactly what the person selected.
-- iOS and Android are one launch promise. Do not visually privilege one platform except by
-  device-aware badge ordering. Public binaries complete a 24-hour quiet soak before `/app` flips,
-  launch CTAs activate, or the launch Broadcast is sent.
+- iOS and Android launch on separate timelines: iOS is public now, Android follows after its Closed
+  Test. The Android tile leads to `/android-testers` (not a Play badge) until `PUBLIC_APP_ANDROID_LAUNCHED`
+  flips. Don't imply Android is downloadable before then, and don't hold the approved iOS build for
+  it. Each public binary completes a ~24-hour quiet soak before that platform's CTAs and announcement
+  go live.
 - Optimize every acquisition surface for the next meaningful step: `/app` → signup or store click;
   install → first play. Keep store, email, homepage, and in-product CTA wording consistent.
 - The native review request may appear only after the documented happy-moment eligibility gate.

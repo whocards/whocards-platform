@@ -32,9 +32,7 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    // Open the /app waitlist funnel for the SSR suite. It's hidden by default
-    // (PUBLIC_APP_WAITLIST_ENABLED=false → /app redirects home), so the waitlist
-    // tests need the flag on; PUBLIC_APP_LAUNCHED stays unset → waitlist mode.
-    env: {...process.env, PUBLIC_APP_WAITLIST_ENABLED: 'true'},
+    // /app renders in download mode under the default flags (PUBLIC_APP_IOS_LAUNCHED
+    // defaults on, Android off), which is exactly what the SSR /app suite asserts.
   },
 })

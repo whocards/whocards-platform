@@ -1,8 +1,18 @@
 # WhoCards — Mobile App Launch Plan
 
-_The concrete launch playbook for the first WhoCards mobile release (iOS + Android together).
-Sits on top of [`03-growth-strategy.md`](./03-growth-strategy.md) (which says **fix retention
-first**) and turns the app launch into the moment we actually start keeping people. 2026-06-24._
+_The concrete launch playbook for the first WhoCards mobile release. **iOS ships first** (it is
+approved and is the public download today); **Android follows** after Google's mandatory 12-tester /
+14-day Closed Test and production-access review. Sits on top of
+[`03-growth-strategy.md`](./03-growth-strategy.md) (which says **fix retention first**) and turns the
+app launch into the moment we actually start keeping people. 2026-06-24; split-launch update
+2026-06-27._
+
+> **Why the launch is split.** We originally planned to hold iOS until Android could ship the same
+> day. iOS is now approved while Android is a minimum of ~14 days out and does not yet have its 12
+> testers. Holding a finished, approved iOS build hostage to Android's testing gate buys nothing and
+> costs weeks of retention. So iOS goes public now; Android visitors are routed into the Closed Test
+> at `/android-testers` until Google grants production access, at which point the second store flips
+> on with no further code change.
 
 > **One-line thesis.** The app launch is not a traffic event — it is our first real chance to
 > convert anonymous web players and an event spike into an **owned, re-engageable audience**.
@@ -54,13 +64,17 @@ no review is a vanity number.
 
 The campaign has two distinct sends:
 
-1. **Pre-launch buildup:** publish `/app` in waitlist mode and invite the existing, consented
+1. **Pre-launch buildup:** publish `/app` and invite the existing, consented
    newsletter audience to follow the app's progress. New app-notification signups only join the
    buildup when they also check the optional newsletter box. Use the buildup to raise engagement
    before asking for a download.
-2. **Campaign launch:** after both public store listings are live and verified, send the dedicated
-   launch announcement to the app-notification list and the newsletter audience, segmented by
-   source and deduplicated.
+2. **Campaign launch (iOS):** once the iOS App Store listing is live and verified, send the
+   dedicated launch announcement to the app-notification list and the newsletter audience, segmented
+   by source and deduplicated. Copy says WhoCards is on iOS today and Android is coming — Android
+   readers get a one-line "want to help us get there sooner?" link to `/android-testers`.
+3. **Android-available send:** a smaller second announcement when `PUBLIC_APP_ANDROID_LAUNCHED`
+   flips (Google grants production access and the Play listing is public). Prioritise the testers
+   and the Android segment; do not re-blast iOS users who already installed.
 
 The channel portfolio is ranked by ROI:
 
@@ -92,12 +106,16 @@ package (PR #84 / #82). It is not the pre-launch buildup email.
    gate, including Google's mandatory 12-testers-for-14-continuous-days Closed Testing gate.
    Share one Question and a behind-the-scenes detail; invite people to play it now and forward it
    to someone. Primary goal: engagement and anticipation.
-3. **Campaign launch — “it's live.”** Send only after both public store listings and their URLs
-   are verified. App-notification subscribers receive this send even without newsletter consent;
+3. **Campaign launch — “it's live on iOS.”** Send once the iOS App Store listing and its URL are
+   verified. App-notification subscribers receive this send even without newsletter consent;
    newsletter subscribers receive it as a product update; deduplicate contacts in both Segments.
+   The Android line points at `/android-testers`, not a store.
+4. **Android-available — “now on Android too.”** A separate, smaller send when Android goes public.
+   Lead with the tester cohort and Android subscribers; don't re-announce to iOS users.
 
 Do not use a date-based countdown until store review is complete. Store delays should postpone the
-next send, not turn “coming this week” into an apology email.
+next send, not turn “coming this week” into an apology email. The same rule applies to Android: its
+availability send waits for `PUBLIC_APP_ANDROID_LAUNCHED`, never a guessed date.
 
 ### Android tester email journey
 
@@ -136,14 +154,16 @@ A dedicated **`/app`** download landing page (linked from the homepage hero and 
 badges bolted onto the homepage. Rationale: one page we can point every channel at, A/B and
 instrument cleanly, and flip between two modes with a single switch.
 
-**Two modes behind `APP_VISIBLE`** (`PUBLIC_APP_WAITLIST_ENABLED` OR `PUBLIC_APP_LAUNCHED`; both
-default off, so `/app` is hidden and redirects home until one is flipped):
-
-- **Pre-launch (waitlist mode):** hero + value prop + screenshots + **"Notify me when it's
-  live"** email capture. Builds the owned audience the launch email needs.
-- **Launch mode:** same page, store **badges** front-and-center, **device-aware ordering** (iOS
-  visitor sees the App Store badge first, Android sees Google Play first — detected from UA),
-  waitlist demoted to a "not on your phone? we'll remind you" fallback.
+**`/app` behind `APP_VISIBLE`** — gated by two per-store flags: `PUBLIC_APP_IOS_LAUNCHED` (default
+**on** — iOS is public) and `PUBLIC_APP_ANDROID_LAUNCHED` (default **off** — Android is in Closed
+Testing). `/app` is visible whenever either store is live (both off → redirects home). It renders
+one **download mode**: store **tiles** front-and-centre, **device-aware ordering** that leads with
+the visitor's own platform. iOS is a real App Store download. Android is a real Play download **once
+`PUBLIC_APP_ANDROID_LAUNCHED` flips**; until then the Android tile reads "Android · in testing →
+Become a tester" and routes to `/android-testers` instead of a dead Play badge. An inbox fallback
+("send the download link to your computer") stays as a desktop affordance and is the email-capture
+surface. (The earlier pre-launch waitlist mode was removed once iOS shipped — it was unreachable
+with a store permanently live.)
 
 **Options considered & rejected:**
 
@@ -152,13 +172,16 @@ default off, so `/app` is hidden and redirects home until one is flipped):
 - _Separate pre-launch and post-launch pages_ — two URLs to migrate, loses accrued SEO/links.
   One page that flips wins.
 
-**Why both stores at once:** confirmed launch posture is iOS + Android together, so the page must
-carry both badges and detect platform rather than hardcode one store.
+**Why one page, two platform states:** a single instrumentable funnel carries both platforms and
+detects the visitor's device rather than hardcoding one store. The Android tile changes shape based
+on `PUBLIC_APP_ANDROID_LAUNCHED` (Closed Test funnel → real Play badge) with no page rewrite.
 
-**Coordinated-release rule:** submit iOS for App Review during Android's mandatory Closed Testing
-window, but select manual release and hold the approved iOS version. Publicly release iOS and
-Android together only after Google grants production access. This keeps one launch promise, one
-campaign date, and two working badges.
+**Split-release rule:** iOS is approved and public now (`PUBLIC_APP_IOS_LAUNCHED=true`). Do **not**
+hold it for Android. Android runs its mandatory Closed Test in parallel; while it does, `/app` and
+the tester emails send Android visitors to `/android-testers`. The moment Google grants production
+access and the Play listing is live, flip `PUBLIC_APP_ANDROID_LAUNCHED=true` — the Android tile
+becomes a real download and the second-platform announcement can go out. Two launch moments, one
+page, no broken badge in between.
 
 ---
 
@@ -263,24 +286,25 @@ channel earned the installs.
 
 ## 8. Phased roadmap
 
-| Phase                               | When            | Ships                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **0 — Pre-launch**                  | now             | Merge the campaign code; publish the app-notification banner and `/app` in **waitlist mode** with optional newsletter consent; add the permanent footer newsletter signup; invite the existing newsletter audience into the buildup; capture + confirm new subscribers; sync Resend Segments/Topic (#87/#97); source tagging and instrumentation; store-listing copy + screenshots (#17/#34); ASO keywords; Smart App Banner prep. **Build and warm the list.** |
-| **1 — Beta + Play eligibility**     | minimum 14 days | TestFlight + Android Closed Testing in parallel; recruit 18–20 Android testers so 12 remain continuously opted in for 14 days; run the release/device gates; fix feedback; submit iOS for App Review with manual release; apply for Google production access and allow up to 7 more days for review (#98).                                                                                                                                                      |
-| **2 — Public release + quiet soak** | after approval  | Promote the validated iOS + Android binaries together, keep `/app` in waitlist mode, and run a 24-hour public-production soak. Testers reinstall from the stores; verify both listings, badges/deep links, PostHog, Answer recording, and support. No unresolved P0/P1 issue.                                                                                                                                                                                   |
-| **3 — Campaign launch**             | after soak      | flip `/app` to **download mode**; **launch announcement** (segmented); social posts; homepage + `/play` CTAs; Smart App Banner live.                                                                                                                                                                                                                                                                                                                            |
-| **4 — Post-launch (wk 1–4)**        | after           | Monitor the **native in-app review prompt** eligibility/request rate; launch funnel/scoreboard (#54); fix the largest activation friction.                                                                                                                                                                                                                                                                                                                      |
-| **5 — Engagement cadence**          | ongoing         | push prompts (#71); question/deck of the week (#52/#56); share card (#76/#53); what's-new per release.                                                                                                                                                                                                                                                                                                                                                          |
+| Phase                                | When           | Ships                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **0 — Pre-launch** _(done)_          | before iOS     | Merged the campaign code; published the app-notification banner and `/app` (waitlist mode pre-iOS-launch, now iOS download mode) with optional newsletter consent; permanent footer newsletter signup; invited the existing newsletter audience into the buildup; capture + confirm new subscribers; Resend Segments/Topic (#87/#97); source tagging and instrumentation; store-listing copy + screenshots (#17/#34); ASO keywords; Smart App Banner prep. **Built and warmed the list.** |
+| **1 — iOS public + quiet soak**      | now (approved) | iOS is approved: release it. Promote the validated iOS binary to the App Store, flip `PUBLIC_APP_IOS_LAUNCHED=true`, and run a ~24-hour quiet soak. Verify the listing, App Store badge/deep links, Smart App Banner, PostHog, Answer recording, and support. No unresolved P0/P1 issue. **Do not wait for Android.**                                                                                                                                                                     |
+| **2 — iOS campaign launch**          | after soak     | `/app` is in **download mode** (iOS tile = real download; Android tile = "Become a tester" → `/android-testers`); send the **iOS launch announcement** (segmented); social posts; homepage + `/play` CTAs.                                                                                                                                                                                                                                                                                |
+| **3 — Android Closed Test → public** | ~14+ days      | In parallel with 1–2: recruit 18–20 Android testers so 12 remain continuously opted in for 14 days; run the release/device gates; fix feedback; apply for Google production access and allow up to 7 more days (#98). When granted and the Play listing is live, flip `PUBLIC_APP_ANDROID_LAUNCHED=true` (Android tile becomes a real download) and send the smaller **Android-available** announcement.                                                                                  |
+| **4 — Post-launch (wk 1–4)**         | after          | Monitor the **native in-app review prompt** eligibility/request rate; launch funnel/scoreboard (#54), including the `android_tester_clicked` step; fix the largest activation friction.                                                                                                                                                                                                                                                                                                   |
+| **5 — Engagement cadence**           | ongoing        | push prompts (#71); question/deck of the week (#52/#56); share card (#76/#53); what's-new per release.                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ---
 
-## 9. What is being built now (code, behind review, **merged before public release**)
+## 9. What this plan built (code, merged)
 
-This vertical slice lands with `/app` in waitlist mode so Phase 0 can build the audience while the
-store binaries move through beta and review:
+The vertical slice that landed before the iOS public release, with `/app` first in waitlist mode to
+build the audience and now in iOS download mode:
 
-- **`/app` download/launch landing page** — waitlist mode now, launch mode flag-ready, device-aware
-  store badges.
+- **`/app` download/launch landing page** — per-platform flags (`PUBLIC_APP_IOS_LAUNCHED` /
+  `PUBLIC_APP_ANDROID_LAUNCHED`); device-aware tiles; iOS real download, Android routed to
+  `/android-testers` until its store flag flips.
 - **App-notification capture + confirmation email** — separate one-time app notification from
   optional newsletter consent; source-tagged and projected to Resend through #87/#97.
 - **Campaign launch announcement email template** — branded React Email in `@whocards/emails` (lands

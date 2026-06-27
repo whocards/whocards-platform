@@ -14,9 +14,10 @@ A PostHog-grounded analytics review, SEO/AEO audit, and business/marketing growt
    growth levers, instrumentation, current→historical→projected stats (3 scenarios with
    assumptions), and a 90-day plan.
 4. **[04-app-launch-plan.md](./04-app-launch-plan.md)** — the concrete mobile-app launch playbook
-   (iOS + Android): launch notification channels, the `/app` page, waitlist email capture, the
-   review/ratings flywheel, the re-engagement cadence, instrumentation, and a phased roadmap that
-   threads the existing growth tickets together.
+   (**iOS first, Android after its Closed Test**): launch notification channels, the `/app` page
+   (iOS download + Android → `/android-testers`), waitlist email capture, the review/ratings
+   flywheel, the re-engagement cadence, instrumentation, and a phased roadmap that threads the
+   existing growth tickets together.
 
 ## TL;DR
 

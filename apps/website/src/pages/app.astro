@@ -5,18 +5,24 @@ import {Icon} from 'astro-icon/components'
 
 import AppShowcase from '~components/App/AppShowcase.astro'
 import Button from '~components/ui/Button.astro'
-import {APP_LAUNCHED, APP_STORE_URL, APP_VISIBLE, PLAY_STORE_URL} from '~constants/app'
+import {
+  APP_ANDROID_LAUNCHED,
+  APP_IOS_LAUNCHED,
+  APP_STORE_URL,
+  APP_VISIBLE,
+  PLAY_STORE_URL,
+} from '~constants/app'
+import {ANDROID_TESTER_SIGNUP_URL} from '~constants/android-testers'
 import {env} from '~env'
 import Layout from '~layouts/Layout.astro'
 
-// Hide the public /app funnel until the waitlist is opened
-// (PUBLIC_APP_WAITLIST_ENABLED) or the app is launched (PUBLIC_APP_LAUNCHED).
-// Both default to false; while the email/consent backend ships, /app temporarily
-// redirects home (302 — not permanent, since the funnel returns at launch).
+// /app is visible once a store is live (PUBLIC_APP_IOS_LAUNCHED, default on /
+// PUBLIC_APP_ANDROID_LAUNCHED). If neither is, the route redirects home (302).
 if (!APP_VISIBLE) return Astro.redirect('/', 302)
 
-// Device detection — server-side UA sniff so store ordering is personalised.
-// Default: iOS/desktop visitors see App Store first; Android visitors see Google Play first.
+// Device detection — server-side UA sniff so the page leads with the visitor's
+// own platform: iOS/desktop see the App Store first; Android sees their next step
+// first (Google Play once live, the Closed Test funnel until then).
 const ua = Astro.request.headers.get('user-agent') ?? ''
 const isAndroid = /android/i.test(ua)
 
@@ -25,22 +31,62 @@ const isAndroid = /android/i.test(ua)
 // /contact and /request-cards forms.
 const siteKey = env.PUBLIC_TURNSTILE_SITE_KEY
 
-const stores = [
-  {
-    name: 'App Store',
-    label: 'Download on the',
-    href: APP_STORE_URL,
-    icon: 'mdi:apple',
-  },
-  {
-    name: 'Google Play',
-    label: 'Get it on',
-    href: PLAY_STORE_URL,
-    icon: 'mdi:google-play',
-  },
-]
+// Platform tiles. Each platform's tile shows only when that store is actually
+// live: iOS once PUBLIC_APP_IOS_LAUNCHED is on, Android once PUBLIC_APP_ANDROID_LAUNCHED
+// flips. While Android is in testing its tile routes into the mandatory Closed Test
+// at /android-testers — never a dead Play badge. (Both flags off can't reach here:
+// APP_VISIBLE already redirected home.)
+type StoreKind = 'ios' | 'android' | 'android-test'
+type Tile = {
+  kind: StoreKind
+  name: string
+  label: string
+  href: string
+  icon: string
+  external: boolean
+}
 
-if (isAndroid) stores.reverse()
+const appStoreTile: Tile = {
+  kind: 'ios',
+  name: 'App Store',
+  label: 'Download on the',
+  href: APP_STORE_URL,
+  icon: 'mdi:apple',
+  external: true,
+}
+
+// Android always has a tile: a real Play download once launched, otherwise the
+// Closed Test recruitment route.
+const androidTile: Tile = APP_ANDROID_LAUNCHED
+  ? {
+      kind: 'android',
+      name: 'Google Play',
+      label: 'Get it on',
+      href: PLAY_STORE_URL,
+      icon: 'mdi:google-play',
+      external: true,
+    }
+  : {
+      kind: 'android-test',
+      name: 'Become a tester',
+      label: 'Android · in testing',
+      href: ANDROID_TESTER_SIGNUP_URL,
+      icon: 'mdi:google-play',
+      external: ANDROID_TESTER_SIGNUP_URL.startsWith('http'),
+    }
+
+// Only surface the iOS tile when iOS is actually live; lead with the visitor's
+// own platform (Android users can't install the iOS build).
+const baseTiles: Tile[] = [...(APP_IOS_LAUNCHED ? [appStoreTile] : []), androidTile]
+const tiles: Tile[] = isAndroid ? [...baseTiles].reverse() : baseTiles
+const primaryTile = tiles[0]
+
+const pillText =
+  APP_IOS_LAUNCHED && APP_ANDROID_LAUNCHED
+    ? 'Available now · iOS + Android'
+    : APP_IOS_LAUNCHED
+      ? 'Available now on iOS · Android in testing'
+      : 'Available now on Android'
 
 const features = [
   {
@@ -63,7 +109,7 @@ const features = [
 
 <Layout
   title='WhoCards — Get the App'
-  description='Download WhoCards for iOS and Android. Meaningful conversations in your pocket — wherever you go.'
+  description='Download WhoCards on iOS today. Android is in testing — meaningful conversations in your pocket, wherever you go.'
   class='scrollbar-hide'
 >
   <section
@@ -74,23 +120,13 @@ const features = [
         class='mb-6 inline-flex items-center gap-2 rounded-full border border-primary-dark/45 bg-primary-dark/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary-light'
       >
         <span class='h-1.5 w-1.5 rounded-full bg-primary-dark'></span>
-        {APP_LAUNCHED ? 'Available now · iOS + Android' : 'Launching soon · iOS + Android'}
+        {pillText}
       </p>
 
       <h1
         class='font-title text-[2.75rem] font-bold leading-[0.98] tracking-tight text-white sm:text-6xl lg:text-7xl xl:text-[5rem]'
       >
-        {
-          APP_LAUNCHED ? (
-            <>
-              Better questions, <span class='text-gradient'>wherever you are.</span>
-            </>
-          ) : (
-            <>
-              Skip the small talk. <span class='text-gradient'>Keep the questions close.</span>
-            </>
-          )
-        }
+        Better questions, <span class='text-gradient'>wherever you are.</span>
       </h1>
 
       <p class='mt-6 max-w-lg text-base leading-7 text-gray-lighter sm:text-lg sm:leading-8'>
@@ -98,132 +134,89 @@ const features = [
         could use a little more honesty, curiosity, or surprise.
       </p>
 
-      {
-        APP_LAUNCHED ? (
-          <>
-            <div class='mt-8 grid w-full max-w-lg gap-3 sm:grid-cols-2'>
-              {stores.map((store, index) => (
-                <a
-                  href={store.href}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  data-store={store.name === 'App Store' ? 'ios' : 'android'}
-                  class:list={[
-                    'group flex min-h-16 items-center gap-3 rounded-2xl border px-5 py-3 text-left transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light',
-                    index === 0
-                      ? 'border-primary-light bg-primary-light text-dark hover:bg-yellow-500'
-                      : 'border-white/25 bg-white/5 text-white hover:border-white/50 hover:bg-white/10',
-                  ]}
-                >
-                  <Icon name={store.icon} class='h-7 w-7 shrink-0' />
-                  <span class='leading-none'>
-                    <span class='block text-[0.65rem] font-semibold uppercase tracking-wide opacity-70'>
-                      {store.label}
-                    </span>
-                    <span class='mt-1 block text-base font-bold'>{store.name}</span>
-                  </span>
-                </a>
-              ))}
-            </div>
-
-            <div class='mt-8 w-full max-w-lg border-t border-white/10 pt-6'>
-              <p class='mb-3 text-sm text-gray-lighter'>
-                On a computer? Send the download links to your inbox.
-              </p>
-              <form id='waitlist-form' class='flex flex-col gap-3'>
-                <div class='flex flex-col gap-3 sm:flex-row'>
-                  <label class='sr-only' for='waitlist-email'>
-                    Email address
-                  </label>
-                  <input
-                    id='waitlist-email'
-                    type='email'
-                    name='email'
-                    required
-                    autocomplete='email'
-                    inputmode='email'
-                    placeholder='you@example.com'
-                    class='min-h-12 w-full rounded-xl border border-white/25 bg-white/5 px-4 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light/20'
-                  />
-                  <input type='hidden' name='source' value='app-page-launch-fallback' />
-                  <Button type='submit' tag='button' size='md' hideIcon class='shrink-0 sm:w-auto'>
-                    Send links
-                  </Button>
-                </div>
-                {/* Optional, unchecked by default — newsletter consent is never assumed (#87) */}
-                <label class='flex cursor-pointer items-start gap-2 text-left text-xs text-gray-lighter'>
-                  <input
-                    type='checkbox'
-                    name='newsletter'
-                    class='mt-0.5 size-4 shrink-0 accent-primary-light'
-                  />
-                  <span>
-                    Also send me the occasional WhoCards email — a good question now and then, plus
-                    product news. <span class='text-gray-dark'>Optional.</span>
-                  </span>
-                </label>
-                {siteKey && <div class='cf-turnstile' data-sitekey={siteKey} data-theme='dark' />}
-              </form>
-              <p
-                id='waitlist-status'
-                class='mt-2 min-h-5 text-sm text-primary-light'
-                role='status'
-                aria-live='polite'
-              />
-            </div>
-          </>
-        ) : (
-          <div class='mt-8 w-full max-w-lg'>
-            <form id='waitlist-form' class='flex flex-col gap-3'>
-              <div class='flex flex-col gap-3 sm:flex-row'>
-                <label class='sr-only' for='waitlist-email'>
-                  Email address
-                </label>
-                <input
-                  id='waitlist-email'
-                  type='email'
-                  name='email'
-                  required
-                  autocomplete='email'
-                  inputmode='email'
-                  placeholder='you@example.com'
-                  class='min-h-14 w-full rounded-2xl border border-white/25 bg-white/5 px-5 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light/20'
-                />
-                <input type='hidden' name='source' value='app-waitlist' />
-                <Button
-                  type='submit'
-                  tag='button'
-                  size='lg'
-                  hideIcon
-                  class='shrink-0 whitespace-nowrap sm:w-auto'
-                >
-                  Tell me when it’s live
-                </Button>
-              </div>
-              {/* Optional, unchecked by default — newsletter consent is never assumed (#87) */}
-              <label class='flex cursor-pointer items-start gap-2 text-left text-xs text-gray-lighter'>
-                <input
-                  type='checkbox'
-                  name='newsletter'
-                  class='mt-0.5 size-4 shrink-0 accent-primary-light'
-                />
-                <span>
-                  Also send me the occasional WhoCards email — a good question now and then, plus
-                  product news. <span class='text-gray-dark'>Optional.</span>
+      <div class='mt-8 grid w-full max-w-lg gap-3 sm:grid-cols-2'>
+        {
+          tiles.map((tile, index) => (
+            <a
+              href={tile.href}
+              target={tile.external ? '_blank' : undefined}
+              rel={tile.external ? 'noopener noreferrer' : undefined}
+              data-store={tile.kind}
+              class:list={[
+                'group flex min-h-16 items-center gap-3 rounded-2xl border px-5 py-3 text-left transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light',
+                index === 0
+                  ? 'border-primary-light bg-primary-light text-dark hover:bg-yellow-500'
+                  : 'border-white/25 bg-white/5 text-white hover:border-white/50 hover:bg-white/10',
+              ]}
+            >
+              <Icon name={tile.icon} class='h-7 w-7 shrink-0' />
+              <span class='leading-none'>
+                <span class='block text-[0.65rem] font-semibold uppercase tracking-wide opacity-70'>
+                  {tile.label}
                 </span>
-              </label>
-              {siteKey && <div class='cf-turnstile' data-sitekey={siteKey} data-theme='dark' />}
-            </form>
-            <p
-              id='waitlist-status'
-              class='mt-2 min-h-5 text-sm text-primary-light'
-              role='status'
-              aria-live='polite'
-            />
-            <p class='mt-1 text-xs text-gray-dark'>One launch email. No noise in between.</p>
-          </div>
+                <span class='mt-1 block text-base font-bold'>{tile.name}</span>
+              </span>
+              {tile.kind === 'android-test' && (
+                <Icon name='chevron' class='ml-auto h-5 w-5 shrink-0 opacity-70' />
+              )}
+            </a>
+          ))
+        }
+      </div>
+
+      {
+        !APP_ANDROID_LAUNCHED && (
+          <p class='mt-3 max-w-lg text-xs leading-5 text-gray-dark'>
+            On Android? WhoCards is finishing Google's required test — join in a couple of taps and
+            you'll be among the first to play.
+          </p>
         )
       }
+
+      <div class='mt-8 w-full max-w-lg border-t border-white/10 pt-6'>
+        <p class='mb-3 text-sm text-gray-lighter'>
+          On a computer? Send the download link to your inbox.
+        </p>
+        <form id='waitlist-form' class='flex flex-col gap-3'>
+          <div class='flex flex-col gap-3 sm:flex-row'>
+            <label class='sr-only' for='waitlist-email'> Email address </label>
+            <input
+              id='waitlist-email'
+              type='email'
+              name='email'
+              required
+              autocomplete='email'
+              inputmode='email'
+              placeholder='you@example.com'
+              class='min-h-12 w-full rounded-xl border border-white/25 bg-white/5 px-4 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light/20'
+            />
+            <input type='hidden' name='source' value='app-page-launch-fallback' />
+            <Button type='submit' tag='button' size='md' hideIcon class='shrink-0 sm:w-auto'>
+              Send links
+            </Button>
+          </div>
+          {/* Optional, unchecked by default — newsletter consent is never assumed (#87) */}
+          <label class='flex cursor-pointer items-start gap-2 text-left text-xs text-gray-lighter'>
+            <input
+              type='checkbox'
+              name='newsletter'
+              class='mt-0.5 size-4 shrink-0 accent-primary-light'
+            />
+            <span>
+              Also send me the occasional WhoCards email — a good question now and then, plus
+              product news. <span class='text-gray-dark'>Optional.</span>
+            </span>
+          </label>
+          {siteKey && <div class='cf-turnstile' data-sitekey={siteKey} data-theme='dark' />}
+        </form>
+        <p
+          id='waitlist-status'
+          class='mt-2 min-h-5 text-sm text-primary-light'
+          role='status'
+          aria-live='polite'
+        >
+        </p>
+      </div>
     </div>
 
     <div class='relative -mx-2 self-end sm:mx-0 lg:self-center'>
@@ -280,24 +273,16 @@ const features = [
         <p class='mt-3 text-sm text-gray-dark'>(About yourself or in general.)</p>
       </div>
       <div class='relative mt-8 lg:mt-0'>
-        {
-          APP_LAUNCHED ? (
-            <Button
-              tag='a'
-              href={stores[0].href}
-              hideIcon
-              target='_blank'
-              rel='noopener noreferrer'
-              data-store={stores[0].name === 'App Store' ? 'ios' : 'android'}
-            >
-              Open the app
-            </Button>
-          ) : (
-            <Button tag='a' href='#waitlist-email'>
-              Join the waitlist
-            </Button>
-          )
-        }
+        <Button
+          tag='a'
+          href={primaryTile.href}
+          hideIcon
+          target={primaryTile.external ? '_blank' : undefined}
+          rel={primaryTile.external ? 'noopener noreferrer' : undefined}
+          data-store={primaryTile.kind}
+        >
+          {primaryTile.kind === 'android-test' ? 'Help test on Android' : 'Open the app'}
+        </Button>
       </div>
     </div>
   </section>
@@ -329,11 +314,14 @@ const features = [
 
   document.querySelectorAll<HTMLAnchorElement>('a[data-store]').forEach((link) => {
     link.addEventListener('click', () => {
-      window.posthog?.capture('app_store_clicked', {
-        store: link.dataset.store,
-        source: pageSource,
-        campaign,
-      })
+      const store = link.dataset.store
+      // The Android "Become a tester" tile routes into the Closed Test funnel, not
+      // a store — track it as its own step so the launch funnel stays honest.
+      if (store === 'android-test') {
+        window.posthog?.capture('android_tester_clicked', {source: pageSource, campaign})
+      } else {
+        window.posthog?.capture('app_store_clicked', {store, source: pageSource, campaign})
+      }
     })
   })
 

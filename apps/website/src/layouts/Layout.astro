@@ -5,7 +5,7 @@ import PostHog from '~components/PostHog.astro'
 import Head from './Head.astro'
 
 import BackgroundImages from '~components/ui/BackgroundImages.astro'
-import {APP_LAUNCHED, APP_STORE_APP_ID} from '~constants/app'
+import {APP_IOS_LAUNCHED, APP_STORE_APP_ID} from '~constants/app'
 import {mainLinks, type Link} from '~constants/navigation'
 import '~styles/base.css'
 import Footer from './Footer.astro'
@@ -51,8 +51,10 @@ const {
       id={id}
       language={lang}
     />
-    {/* iOS Smart App Banner — surfaces install/open on iOS Safari sitewide once launched (#90) */}
-    {APP_LAUNCHED && <meta name='apple-itunes-app' content={`app-id=${APP_STORE_APP_ID}`} />}
+    {
+      /* iOS Smart App Banner — surfaces install/open on iOS Safari sitewide once the App Store listing is live (#90) */
+    }
+    {APP_IOS_LAUNCHED && <meta name='apple-itunes-app' content={`app-id=${APP_STORE_APP_ID}`} />}
     <PostHog />
   </head>
   <body

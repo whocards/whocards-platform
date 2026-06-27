@@ -18,15 +18,18 @@ additional mandatory Closed Testing gate before Google grants production access.
 - **Beta release:** the production binary is available to testers through TestFlight and Google
   Play testing. For the first Android release, the qualifying cohort must use **Closed Testing**;
   Internal Testing does not satisfy Google's production-access requirement.
-- **Public release:** that validated binary is promoted to the public App Store and Google Play.
-- **Campaign launch:** the coordinated audience moment after both public listings have been
-  verified: `/app` flips to download mode, the announcement email goes out, and the website and
-  social campaign turn on.
+- **Public release:** that validated binary is promoted to its public store. **iOS and Android
+  release separately** — iOS is approved and public now; Android follows after its Closed Test and
+  production-access review. Do not hold the approved iOS build for Android.
+- **Campaign launch:** the audience moment after a platform's public listing is verified. iOS has its
+  launch announcement once iOS is live; Android gets a smaller "now on Android" send when
+  `PUBLIC_APP_ANDROID_LAUNCHED` flips. `/app` is already in download mode for the live platform; the
+  Android tile routes to `/android-testers` until that flag flips.
 
-The launch campaign code lands **before** the public release with `/app` in waitlist mode. This
-builds the email audience during the beta/review window. Public availability and the campaign
-launch are deliberately separate checkpoints; do not send the announcement merely because a
-binary was submitted.
+The launch campaign code landed **before** the iOS public release to build the email audience during
+the review window. Public availability and the campaign launch are
+deliberately separate checkpoints; do not send a platform's announcement merely because a binary was
+submitted.
 
 **v1.0 scope:** landing → single WhoCards Deck → Global Game (swipe nav, 14 languages + RTL,
 language persistence, share, offline Answer recording, branded splash/handoff). Out: Library
@@ -123,8 +126,8 @@ These make the binary correct; the app is broken or unshippable without them.
       opting out resets that tester's continuous-day count
 - [ ] After day 14, apply for Google Play production access and answer the testing/readiness
       questionnaire; budget up to another 7 days for Google's review (#98)
-- [ ] In parallel, submit the iOS release candidate for App Review with **manual release** selected;
-      keep the approved version pending developer release while Android completes its gate
+- [x] Submit the iOS release candidate for App Review — **approved.** Release it now; do **not** hold
+      it for Android (the old "manual release, wait for Android" rule is dropped — see ADR-0005)
 - [ ] **Device matrix smoke**: 2 iOS + 2 Android OS versions — launch, splash→landing handoff, play/swipe, language switch + RTL (Hebrew right-aligned), language persists across relaunch, share, **offline → reconnect drains the Answer queue**, deep-link/back
 - [ ] File and fix anything found as `v1.0.x` (OTA if JS-only, rebuild if native)
 
@@ -135,21 +138,26 @@ These make the binary correct; the app is broken or unshippable without them.
 - [ ] **App Privacy (Apple) + Data Safety (Play)** forms filled to match (device id, usage/analytics; no tracking SDK unless added)
 - [ ] **Store assets** — name, subtitle, description, keywords, category, support URL, and per-device-size screenshots (raw captures via `pnpm -F mobile screenshots`, #34; then frame/compose)
 - [ ] **Permissions** — confirm only what's used (network, haptics); no stray permission pulled in by a dep
-- [ ] Promote the **same** validated builds to the public App Store + Google Play in one coordinated
-      release window; do not publish iOS early while Android is waiting for production access
+- [ ] Promote each validated build to its store **as soon as that platform is ready** — iOS now
+      (approved), Android after Google grants production access. Do not couple the two release windows.
 
-## Phase 4 — Quiet production soak and campaign handoff
+## Phase 4 — Quiet production soak and campaign handoff (per platform)
 
-- [ ] Keep `PUBLIC_APP_LAUNCHED=false`; public availability is not yet the Campaign launch
-- [ ] Confirm both public store pages and final IDs/URLs resolve on real iOS and Android devices
-- [ ] Have the tester cohort install the **public** builds and repeat the critical journey: store →
+Run this per platform, in step with whichever store just went public — iOS now, Android when its flag
+flips. A platform's soak and campaign do not wait for the other.
+
+- [ ] Set the launched platform's flag (`PUBLIC_APP_IOS_LAUNCHED=true` now; `PUBLIC_APP_ANDROID_LAUNCHED=true`
+      when Android is granted production access). Soak before sending that platform's announcement.
+- [ ] Confirm the **live** store page and final IDs/URLs resolve on real devices for that platform
+- [ ] Have the tester cohort install the **public** build and repeat the critical journey: store →
       install → first play → language → share → background/reopen
-- [ ] Verify website badges, device-aware ordering, Smart App Banner/app links, PostHog events and
-      errors, Answer recording, privacy/support URLs, and the contact path
-- [ ] Soak for 24 hours with no unresolved P0/P1 issue; fix with OTA only when the fingerprint is
-      compatible, otherwise hold the campaign for a corrected binary
-- [ ] Hand off to the Campaign launch runbook (#94): flip `/app`, enable CTAs, send the segmented
-      launch Broadcast, and publish social posts
+- [ ] Verify website tiles, device-aware ordering (Android tile → `/android-testers` until Android is
+      live), Smart App Banner/app links, PostHog events and errors, Answer recording, privacy/support
+      URLs, and the contact path
+- [ ] Soak for ~24 hours with no unresolved P0/P1 issue; fix with OTA only when the fingerprint is
+      compatible, otherwise hold that platform's campaign for a corrected binary
+- [ ] Hand off to the Campaign launch runbook (#94): enable that platform's CTAs, send the segmented
+      announcement, and publish social posts
 
 ## Ongoing — the per-release loop
 

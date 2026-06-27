@@ -12,7 +12,7 @@ import Accordion from '~components/ui/Accordion.astro'
 import Button from '~components/ui/Button.astro'
 import RoundedImage from '~components/ui/RoundedImage.astro'
 import WhoCard from '~components/ui/WhoCard.astro'
-import {APP_LAUNCHED, APP_VISIBLE} from '~constants/app'
+import {APP_VISIBLE} from '~constants/app'
 import {faqs} from '~constants/faqs'
 import Layout from '~layouts/Layout.astro'
 import {Image} from 'astro:assets'
@@ -39,15 +39,25 @@ import bgLeftImage from '~assets/images/bg-left-large.svg'
       class='grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-8 w-full md:max-w-xl py-5 lg:pt-8 mx-auto'
     >
       <Button tag='a' class='play' size='lg' full>Play Online</Button>
-      <Button tag='a' href='/request-cards' full hideIcon variant='secondary'>Request Cards</Button>
+      {
+        APP_VISIBLE ? (
+          <Button tag='a' href='/app' full hideIcon variant='secondary'>
+            Get the App
+          </Button>
+        ) : (
+          <Button tag='a' href='/request-cards' full hideIcon variant='secondary'>
+            Request Cards
+          </Button>
+        )
+      }
     </div>
     {
       APP_VISIBLE && (
         <a
-          href='/app'
+          href='/request-cards'
           class='text-sm font-semibold text-gray-lighter underline-offset-4 transition-colors hover:text-primary-light hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light'
         >
-          {APP_LAUNCHED ? 'Get the app →' : 'Join the app waitlist →'}
+          Request cards →
         </a>
       )
     }
