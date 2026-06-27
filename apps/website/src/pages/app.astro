@@ -5,7 +5,13 @@ import {Icon} from 'astro-icon/components'
 
 import AppShowcase from '~components/App/AppShowcase.astro'
 import Button from '~components/ui/Button.astro'
-import {APP_ANDROID_LAUNCHED, APP_STORE_URL, APP_VISIBLE, PLAY_STORE_URL} from '~constants/app'
+import {
+  APP_ANDROID_LAUNCHED,
+  APP_IOS_LAUNCHED,
+  APP_STORE_URL,
+  APP_VISIBLE,
+  PLAY_STORE_URL,
+} from '~constants/app'
 import {ANDROID_TESTER_SIGNUP_URL} from '~constants/android-testers'
 import {env} from '~env'
 import Layout from '~layouts/Layout.astro'
@@ -25,9 +31,11 @@ const isAndroid = /android/i.test(ua)
 // /contact and /request-cards forms.
 const siteKey = env.PUBLIC_TURNSTILE_SITE_KEY
 
-// Platform tiles. iOS is a public download today. Android is either a public
-// download (once PUBLIC_APP_ANDROID_LAUNCHED flips) or a route into the mandatory
-// Closed Test at /android-testers — never a dead Play badge while it is in testing.
+// Platform tiles. Each platform's tile shows only when that store is actually
+// live: iOS once PUBLIC_APP_IOS_LAUNCHED is on, Android once PUBLIC_APP_ANDROID_LAUNCHED
+// flips. While Android is in testing its tile routes into the mandatory Closed Test
+// at /android-testers — never a dead Play badge. (Both flags off can't reach here:
+// APP_VISIBLE already redirected home.)
 type StoreKind = 'ios' | 'android' | 'android-test'
 type Tile = {
   kind: StoreKind
@@ -47,6 +55,8 @@ const appStoreTile: Tile = {
   external: true,
 }
 
+// Android always has a tile: a real Play download once launched, otherwise the
+// Closed Test recruitment route.
 const androidTile: Tile = APP_ANDROID_LAUNCHED
   ? {
       kind: 'android',
@@ -65,14 +75,18 @@ const androidTile: Tile = APP_ANDROID_LAUNCHED
       external: ANDROID_TESTER_SIGNUP_URL.startsWith('http'),
     }
 
-// Lead with the visitor's own platform. Android users can't install the iOS
-// build, so their real next step (the Closed Test, or Play once live) comes first.
-const tiles: Tile[] = isAndroid ? [androidTile, appStoreTile] : [appStoreTile, androidTile]
+// Only surface the iOS tile when iOS is actually live; lead with the visitor's
+// own platform (Android users can't install the iOS build).
+const baseTiles: Tile[] = [...(APP_IOS_LAUNCHED ? [appStoreTile] : []), androidTile]
+const tiles: Tile[] = isAndroid ? [...baseTiles].reverse() : baseTiles
 const primaryTile = tiles[0]
 
-const pillText = APP_ANDROID_LAUNCHED
-  ? 'Available now · iOS + Android'
-  : 'Available now on iOS · Android in testing'
+const pillText =
+  APP_IOS_LAUNCHED && APP_ANDROID_LAUNCHED
+    ? 'Available now · iOS + Android'
+    : APP_IOS_LAUNCHED
+      ? 'Available now on iOS · Android in testing'
+      : 'Available now on Android'
 
 const features = [
   {

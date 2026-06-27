@@ -26,9 +26,26 @@ test.describe('/app download mode (iOS live, Android in testing)', () => {
     // While Android is in Closed Testing the Play store link must not appear.
     expect(html).not.toContain('play.google.com')
 
-    const androidTile = page.locator('a[data-store="android-test"]').first()
-    await expect(androidTile).toBeVisible()
-    await expect(androidTile).toHaveAttribute('href', '/android-testers')
+    // The android-test tile is the tester-funnel route (its href is the configured
+    // ANDROID_TESTER_SIGNUP_URL, which may be overridden per environment, so we only
+    // assert the tile is present rather than a hardcoded path).
+    await expect(page.locator('a[data-store="android-test"]').first()).toBeVisible()
+  })
+
+  test('leads Android visitors with the tester tile (UA-aware ordering)', async ({browser}) => {
+    // Exercise the server-side UA branch: an Android visitor's first tile must be
+    // the tester route, not the iOS App Store badge they can't use.
+    const context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/124 Mobile',
+    })
+    const page = await context.newPage()
+    await page.goto('/app')
+
+    await expect(page.locator('a[data-store]').first()).toHaveAttribute(
+      'data-store',
+      'android-test'
+    )
+    await context.close()
   })
 
   test('keeps the newsletter opt-in unchecked — consent is never assumed', async ({page}) => {
