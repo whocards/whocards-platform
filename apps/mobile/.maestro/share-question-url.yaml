@@ -21,12 +21,19 @@ tags:
 - openLink: mobile://play/library?q=1
 - assertVisible: '(?s).*most interesting thing you have learned recently.*'
 
-# Reveal the auto-hiding chrome, then fire the share action.
-- tapOn:
-    point: '50%,45%'
-- assertVisible: 'change language'
-- tapOn: 'share question'
-
-# Android's share sheet previews the shared text, which now carries the web link.
-- assertVisible: '(?s).*whocards\.cc/play.*q=1.*'
+# Reveal the auto-hiding chrome, fire the share, and confirm the link shows in the share
+# sheet preview. A freshly booted emulator can drop the very first ACTION_SEND before the
+# system share sheet (com.android.intentresolver) has indexed its targets — the sheet just
+# never appears — so retry the whole reveal → share → assert sequence; the second attempt
+# lands once the resolver is warm. (The chrome auto-hides between attempts, hence the
+# re-reveal tap inside the retry.)
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          point: '50%,45%'
+      - assertVisible: 'change language'
+      - tapOn: 'share question'
+      # Android's share sheet previews the shared text, which now carries the web link.
+      - assertVisible: '(?s).*whocards\.cc/play.*q=1.*'
 - takeScreenshot: .maestro/artifacts/share-question-url
