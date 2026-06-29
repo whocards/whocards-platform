@@ -113,7 +113,7 @@ function ensureAndroidBooted() {
   child.unref()
 
   try {
-    execSync('adb wait-for-device', {stdio: 'inherit'})
+    execSync('adb wait-for-device', {stdio: 'inherit', timeout: 120_000})
   } catch {
     console.warn('   pre-release: adb wait-for-device failed — continuing anyway.')
     return
