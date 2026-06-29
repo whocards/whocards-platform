@@ -2,7 +2,7 @@
   "expo": {
     "name": "WhoCards",
     "slug": "whocards-app",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
@@ -27,8 +27,16 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            {"scheme": "https", "host": "whocards.cc", "path": "/play"},
-            {"scheme": "https", "host": "whocards.cc", "pathPrefix": "/play/"}
+            {
+              "scheme": "https",
+              "host": "whocards.cc",
+              "path": "/play"
+            },
+            {
+              "scheme": "https",
+              "host": "whocards.cc",
+              "pathPrefix": "/play/"
+            }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
         }

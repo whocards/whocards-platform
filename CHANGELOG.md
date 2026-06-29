@@ -1,0 +1,73 @@
+# Changelog
+
+Mobile app releases (the `v*` tags that drive `mobile-release.yml`). Only commits that touched the mobile app or shared packages are listed.
+
+## 1.0.1 (2026-06-29)
+
+### Features
+
+- add @whocards/observability package (errors + events + identity) ([8da9147](https://github.com/whocards/whocards-platform/commit/8da91474612199804615084831d68980edd7640e))
+- **api:** add @whocards/api host-agnostic tRPC router ([25b8e0d](https://github.com/whocards/whocards-platform/commit/25b8e0dd587e4489f04af9f1d7141619ce56670f))
+- **api:** suppress Answer recording in dev behind an opt-in env (web + mobile) ([89a89cb](https://github.com/whocards/whocards-platform/commit/89a89cb745c8b5a6fa8ee01dbbd846b814681e0e))
+- **decks:** add @whocards/decks Pool + typed deck model ([acf281b](https://github.com/whocards/whocards-platform/commit/acf281b53b3929d8922e82b8d36b87e9d0d474bb))
+- **decks:** add headless play engine + deck registry ([eaec33d](https://github.com/whocards/whocards-platform/commit/eaec33d53030c6eb5bb9723c031c6999b7827766))
+- integrate Answer record + DB baseline (0003 + 0005) ([00820e8](https://github.com/whocards/whocards-platform/commit/00820e82469fd3c7fbf94de6f21dafb92902aba0))
+- **logger:** add @whocards/logger; wire web sink + mobile console swap (closes [#0004](https://github.com/whocards/whocards-platform/issues/0004)) ([f3ec037](https://github.com/whocards/whocards-platform/commit/f3ec037c1b71e744c877a440ca9130eab19c1500))
+- **mobile:** add platform to app_review_requested event ([#92](https://github.com/whocards/whocards-platform/issues/92)) ([#116](https://github.com/whocards/whocards-platform/issues/116)) ([34332c6](https://github.com/whocards/whocards-platform/commit/34332c6e0eccab16404fbf62f46fdc8fae82458a))
+- **mobile:** animate the splash → landing logo handoff ([3dcce31](https://github.com/whocards/whocards-platform/commit/3dcce317902824d8432b656e552a2a9ec5a7241c))
+- **mobile:** app identity + prod API fallback + root error boundary ([#0013](https://github.com/whocards/whocards-platform/issues/0013), [#0014](https://github.com/whocards/whocards-platform/issues/0014)) ([827427b](https://github.com/whocards/whocards-platform/commit/827427b2f08317583e7851eba2e4da4a2f95088b))
+- **mobile:** App Store 6.5" screenshot capture + size verification ([#111](https://github.com/whocards/whocards-platform/issues/111)) ([#112](https://github.com/whocards/whocards-platform/issues/112)) ([a57f1ea](https://github.com/whocards/whocards-platform/commit/a57f1ea87c413b4ae5fd2723d7a7c8422cd940b6))
+- **mobile:** auto-hide the player chrome, reveal on touch ([84f3bad](https://github.com/whocards/whocards-platform/commit/84f3bad00dfaaa437e24fdfcf7707c89c806ba6c))
+- **mobile:** branded splash screen (WHO?CARDS wordmark on dark) ([1ffbcc4](https://github.com/whocards/whocards-platform/commit/1ffbcc48838c1b70e4253f78f4f42a973216e5e1)), closes [#208AEF](https://github.com/whocards/whocards-platform/issues/208AEF) [#08001a](https://github.com/whocards/whocards-platform/issues/08001a)
+- **mobile:** bundle Noto Sans Hebrew for Hebrew questions ([0ceecc3](https://github.com/whocards/whocards-platform/commit/0ceecc3a877febee30439516e3f09856bbb022a5))
+- **mobile:** declutter player — close top-right + bottom action bar ([751012f](https://github.com/whocards/whocards-platform/commit/751012fd8ba644a9fdb2603fc366fec5b524df16))
+- **mobile:** default screenshots to the App Store-required iOS 6.5" set ([#113](https://github.com/whocards/whocards-platform/issues/113)) ([b34afdb](https://github.com/whocards/whocards-platform/commit/b34afdbd4ee162cec20005192d46882968848bff))
+- **mobile:** EAS build config + CI workflows (closes [#11](https://github.com/whocards/whocards-platform/issues/11), closes [#16](https://github.com/whocards/whocards-platform/issues/16)) ([1f14b78](https://github.com/whocards/whocards-platform/commit/1f14b78d8cadc591c6f5565c60275d22789f9b23)), closes [#12](https://github.com/whocards/whocards-platform/issues/12) [#12](https://github.com/whocards/whocards-platform/issues/12)
+- **mobile:** expand Maestro suite + store-screenshot capture ([#15](https://github.com/whocards/whocards-platform/issues/15), [#34](https://github.com/whocards/whocards-platform/issues/34)) ([a079594](https://github.com/whocards/whocards-platform/commit/a0795948afe26bb736dc4520850d54ab8b77face))
+- **mobile:** EXPO_PUBLIC_POSTHOG_DEBUG to force PostHog on in dev ([338e05c](https://github.com/whocards/whocards-platform/commit/338e05c17299635bccaa517dded2c032540a018c))
+- **mobile:** immersive landing splash + quiet swipe-first player ([053aaba](https://github.com/whocards/whocards-platform/commit/053aababe81f7d7c49c59ddeef99bd19533195aa))
+- **mobile:** load brand fonts (golos-text + aptly) via expo-font ([634fd9f](https://github.com/whocards/whocards-platform/commit/634fd9f79fe185d9e3778a285351d49f61c2454b))
+- **mobile:** match close chip to bar + add prev/next to player bar ([d79686e](https://github.com/whocards/whocards-platform/commit/d79686e23aec30aa8cfb5f81b48e03faef200596))
+- **mobile:** native in-app review prompt after proven value ([#110](https://github.com/whocards/whocards-platform/issues/110)) ([5b669d0](https://github.com/whocards/whocards-platform/commit/5b669d06694ed12309424e19f569ee4fbb3fe8b0)), closes [#89](https://github.com/whocards/whocards-platform/issues/89)
+- **mobile:** native language modal, swipe nav, auto-hiding controls, web bg ([caa3e87](https://github.com/whocards/whocards-platform/commit/caa3e87c6e4b1ca3d4fdb9a5abce325538ac34a1)), closes [#08001A](https://github.com/whocards/whocards-platform/issues/08001A)
+- **mobile:** native player bottom bar with consistent controls + exit ([ebcb4c9](https://github.com/whocards/whocards-platform/commit/ebcb4c9fbc82d66c4d20d19580f8fbeb0fdd7d7e))
+- **mobile:** native touch & motion — interactive gesture, Reanimated, haptics, press-scale ([2597ce1](https://github.com/whocards/whocards-platform/commit/2597ce1b60a9b5c8667dae13d630a0be144c6f5a)), closes [#7](https://github.com/whocards/whocards-platform/issues/7)
+- **mobile:** persist selected language across reloads ([#0009](https://github.com/whocards/whocards-platform/issues/0009)) ([c96c716](https://github.com/whocards/whocards-platform/commit/c96c716ea2a8c649fd2772ed8728e96703396a60))
+- **mobile:** platform conventions & chrome polish (closes [#0008](https://github.com/whocards/whocards-platform/issues/0008)) ([0ce688e](https://github.com/whocards/whocards-platform/commit/0ce688e82d4c81c1682da6b9f510bd3ad32da485))
+- **mobile:** question text auto-sizes to fill its box (landscape included) ([d102c46](https://github.com/whocards/whocards-platform/commit/d102c4664c5cdbb258eb53366fb6fd01a7bb560a))
+- **mobile:** scaffold Expo + NativeWind app on the shared packages ([1bcb4b2](https://github.com/whocards/whocards-platform/commit/1bcb4b2f10b034f037e7149bb9f8f2b14cccbf91))
+- **mobile:** set WhoCards app icon (dark "?" mark) ([3751df8](https://github.com/whocards/whocards-platform/commit/3751df806aa90a1670364de6c68967d84db493aa)), closes [#08001A](https://github.com/whocards/whocards-platform/issues/08001A)
+- **mobile:** slow Android open animation + device-testing doc ([#127](https://github.com/whocards/whocards-platform/issues/127)) ([225c0d1](https://github.com/whocards/whocards-platform/commit/225c0d1c8dbef554909504ad0b75de7365a13c8a)), closes [#125](https://github.com/whocards/whocards-platform/issues/125) [#125](https://github.com/whocards/whocards-platform/issues/125) [#126](https://github.com/whocards/whocards-platform/issues/126) [#126](https://github.com/whocards/whocards-platform/issues/126)
+- **mobile:** stand up jest test harness + unit/component tests (closes [#0015](https://github.com/whocards/whocards-platform/issues/0015)) ([0e8b037](https://github.com/whocards/whocards-platform/commit/0e8b0375d46a98b031f206a61d71dc0a86f313c3))
+- **mobile:** web background texture + subtle question-change animation ([e54e568](https://github.com/whocards/whocards-platform/commit/e54e5687820158200e48c5118484fe475e0290eb))
+- **mobile:** wire @whocards/observability to console provider ([5a659a4](https://github.com/whocards/whocards-platform/commit/5a659a4a15c65045fa3ae8ba30f7e6ac61eeaf57)), closes [#4](https://github.com/whocards/whocards-platform/issues/4)
+- **mobile:** wire iOS submit creds, defer Android release ([#12](https://github.com/whocards/whocards-platform/issues/12), [#27](https://github.com/whocards/whocards-platform/issues/27)) ([7d98642](https://github.com/whocards/whocards-platform/commit/7d98642dda7fff869c1c59b1293ba3f02b724f95))
+- **mobile:** wire posthog-react-native transport ([#4](https://github.com/whocards/whocards-platform/issues/4)) ([a28f000](https://github.com/whocards/whocards-platform/commit/a28f00044f68e33af01963b1ee0b1a89c87ef0e9))
+- **tokens:** add @whocards/tokens design-token package ([407ab62](https://github.com/whocards/whocards-platform/commit/407ab62511625429ad8cbc5d3ff3be41fa4e0eb0))
+- Universal Links / App Links so shared question URLs open the app ([#124](https://github.com/whocards/whocards-platform/issues/124)) ([6b917d2](https://github.com/whocards/whocards-platform/commit/6b917d2b43fdd6a69718b48e467b951911a234fc))
+- **website:** split Hajnalig into 2025/2026 editions + Events nav dropdown ([#18](https://github.com/whocards/whocards-platform/issues/18)) ([b8d0ccf](https://github.com/whocards/whocards-platform/commit/b8d0ccf6f233673fadaa2fcbae04e4b2bd7464f6))
+
+### Bug Fixes
+
+- **decks:** resolve 2 engine type errors blocking the CI gate ([739a05c](https://github.com/whocards/whocards-platform/commit/739a05c6391238293dc8ca170f84b92c81baf70c))
+- **mobile:** add workflow_call trigger + wire real EAS projectId ([ef04f59](https://github.com/whocards/whocards-platform/commit/ef04f59a745271e385ba48bd66b3aecf46ecdff4))
+- **mobile:** address PR [#31](https://github.com/whocards/whocards-platform/issues/31) review ([58ac7f9](https://github.com/whocards/whocards-platform/commit/58ac7f9128606c8f0a8f6a2d1fff9af5d65b2fa2))
+- **mobile:** allow landscape orientation ([83c473c](https://github.com/whocards/whocards-platform/commit/83c473cc4c761faa265ed38e5d90f3906ee83661))
+- **mobile:** disable broken PostHog screen-autocapture ([ea827b1](https://github.com/whocards/whocards-platform/commit/ea827b1e66ff5e56b7347a17b79772a526f04327))
+- **mobile:** gate react-compiler babel plugin to test env only ([60d2774](https://github.com/whocards/whocards-platform/commit/60d2774d811e7f0b4364693763ac5a4c81e964ba))
+- **mobile:** make the play progress bar legible ([87d6ff7](https://github.com/whocards/whocards-platform/commit/87d6ff7e51001ae9b6a1f83e669010e3a85383ed))
+- **mobile:** merge caller style with scale spring in PressableScale ([d667531](https://github.com/whocards/whocards-platform/commit/d667531a410d89a4085b80c45f3484c266390ddd))
+- **mobile:** more breathing room around the question text ([48e4fe1](https://github.com/whocards/whocards-platform/commit/48e4fe16d3b426422163d85ea7ec2bb3f32f791f))
+- **mobile:** pin logo height so native doesn't size it to intrinsic pixels ([09ab6c9](https://github.com/whocards/whocards-platform/commit/09ab6c9ace9157f46276ee5fd28425e4f752f4c9))
+- **mobile:** prevent splash logo clipping on Android 12+ (closes [#100](https://github.com/whocards/whocards-platform/issues/100)) ([#105](https://github.com/whocards/whocards-platform/issues/105)) ([c4b4c20](https://github.com/whocards/whocards-platform/commit/c4b4c203e41197d901922bd326944671b7e95260))
+- **mobile:** push language-modal header below status bar on Android ([#104](https://github.com/whocards/whocards-platform/issues/104)) ([d350ad6](https://github.com/whocards/whocards-platform/commit/d350ad6fb02e55c59d64ae9d1177906bf674565b)), closes [#102](https://github.com/whocards/whocards-platform/issues/102)
+- **mobile:** repair aptly.ttf name table so font-title renders (was tofu) ([6d21619](https://github.com/whocards/whocards-platform/commit/6d21619ca418279192d1d9f4920664d18e91207e))
+- **mobile:** resolve Metro module resolution under pnpm ([cc66d77](https://github.com/whocards/whocards-platform/commit/cc66d77effae4e307146950e50b0d4c954c1ae5d))
+- **mobile:** right-align RTL (Hebrew) question text ([dbf6d0c](https://github.com/whocards/whocards-platform/commit/dbf6d0c21fab3c0d1cae461a58b66404cea8f268))
+- **mobile:** share a question URL instead of raw text ([#101](https://github.com/whocards/whocards-platform/issues/101)) ([#103](https://github.com/whocards/whocards-platform/issues/103)) ([dbf6b75](https://github.com/whocards/whocards-platform/commit/dbf6b7573505c25a01ff346117f309d72e39a4c0)), closes [#99](https://github.com/whocards/whocards-platform/issues/99)
+- **mobile:** slide play chrome in/out and make the whole screen tap-to-reveal ([9000da1](https://github.com/whocards/whocards-platform/commit/9000da1c0af523653cbdbcf602d8aec2cc9e9c20))
+- **observability:** emit nav events from real post-dispatch state (PR [#30](https://github.com/whocards/whocards-platform/issues/30) review) ([6d5bdf1](https://github.com/whocards/whocards-platform/commit/6d5bdf1b0a87c814ceb0f9565a6fc0e1e0047229))
+
+### Performance Improvements
+
+- **mobile:** apply React Native skills audit (expo-image, React Compiler, fonts, gestures) ([249543f](https://github.com/whocards/whocards-platform/commit/249543fd156d180407da534be07b793592eda1ea)), closes [#1](https://github.com/whocards/whocards-platform/issues/1) [#2](https://github.com/whocards/whocards-platform/issues/2) [#3](https://github.com/whocards/whocards-platform/issues/3) [#4](https://github.com/whocards/whocards-platform/issues/4) [#5](https://github.com/whocards/whocards-platform/issues/5)
