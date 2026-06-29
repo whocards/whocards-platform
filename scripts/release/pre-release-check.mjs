@@ -64,13 +64,25 @@ function revisionKey() {
     const head = execSync('git rev-parse HEAD', {encoding: 'utf8'}).trim()
     const status = execSync('git status --porcelain', {encoding: 'utf8'})
     const diff = status ? execSync('git diff HEAD', {encoding: 'utf8'}) : ''
-    return createHash('sha1')
+    const hash = createHash('sha1')
       .update(head)
       .update('\0')
       .update(status)
       .update('\0')
       .update(diff)
-      .digest('hex')
+    // `git diff HEAD` covers tracked changes but not untracked files, which `status` only
+    // names — fold their contents in too so editing an untracked file busts the cache.
+    const untracked = execSync('git ls-files --others --exclude-standard -z', {encoding: 'utf8'})
+      .split('\0')
+      .filter(Boolean)
+    for (const file of untracked) {
+      try {
+        hash.update('\0').update(file).update('\0').update(readFileSync(file))
+      } catch {
+        // unreadable (e.g. removed mid-run) — skip
+      }
+    }
+    return hash.digest('hex')
   } catch {
     return null // not a git checkout — disable caching
   }
@@ -190,11 +202,27 @@ function ensureAndroidBooted() {
   })
   child.unref()
 
+  // Register teardown for the process we just spawned right away. Every path below this
+  // point (wait-for-device failure, boot never confirmed, no serial) must still return
+  // this handle, or we'd leak the emulator we started. The adb serial — preferred for a
+  // graceful `emu kill` — is filled in once the device registers; the pid is the fallback.
+  const handle = {kind: 'android', id: null, pid: child.pid}
+  const captureSerial = () => {
+    try {
+      handle.id =
+        /(emulator-\d+)\s+device/.exec(
+          execSync(`"${ADB}" devices`, {encoding: 'utf8', timeout: 5_000})
+        )?.[1] ?? handle.id
+    } catch {
+      // adb unavailable — keep whatever serial we already had (maybe none; pid covers it)
+    }
+  }
+
   try {
     execSync(`"${ADB}" wait-for-device`, {stdio: 'inherit', timeout: 120_000})
   } catch {
     console.warn('   pre-release: adb wait-for-device failed — continuing anyway.')
-    return null
+    return handle
   }
 
   const timeoutMs = 180_000
@@ -214,15 +242,14 @@ function ensureAndroidBooted() {
     if (prop === '1') {
       console.log('   Android emulator booted.')
       warmUpAndroidShareSheet()
-      const serial = /(emulator-\d+)\s+device/.exec(
-        execSync(`"${ADB}" devices`, {encoding: 'utf8', timeout: 5_000})
-      )?.[1]
-      return serial ? {kind: 'android', id: serial} : null
+      captureSerial()
+      return handle
     }
     sleep(2)
   }
   console.warn('   pre-release: Android boot not confirmed within 3m — continuing anyway.')
-  return null
+  captureSerial()
+  return handle
 }
 
 // A freshly booted emulator isn't ready to render the system share sheet: the first
@@ -274,8 +301,21 @@ function teardown(handle) {
       console.log('   Shutting down iOS simulator we booted…')
       execSync(`xcrun simctl shutdown ${handle.id}`, {stdio: 'ignore'})
     } else if (handle.kind === 'android') {
-      console.log(`   Shutting down Android emulator we booted (${handle.id})…`)
-      execSync(`"${ADB}" -s ${handle.id} emu kill`, {stdio: 'ignore'})
+      console.log(
+        `   Shutting down Android emulator we booted${handle.id ? ` (${handle.id})` : ''}…`
+      )
+      if (handle.id) {
+        // Graceful console kill once the device registered with adb.
+        execSync(`"${ADB}" -s ${handle.id} emu kill`, {stdio: 'ignore', timeout: 10_000})
+      } else if (handle.pid) {
+        // Boot never got far enough for a serial — kill the detached process group we
+        // spawned (negative pid; the emulator is its own group leader via detached:true).
+        try {
+          process.kill(-handle.pid)
+        } catch {
+          process.kill(handle.pid)
+        }
+      }
     }
   } catch {
     console.warn('   pre-release: device shutdown failed — leaving it running.')
