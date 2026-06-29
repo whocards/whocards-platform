@@ -44,6 +44,7 @@
     "lint:ws": "pnpm dlx sherif@latest",
     "release": "release-it",
     "release:dry": "release-it --dry-run",
+    "release:check": "node scripts/release/pre-release-check.mjs",
     "prepare": "husky"
   },
   "lint-staged": {
