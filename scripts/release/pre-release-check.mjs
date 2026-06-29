@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Maestro e2e gate. Run by release-it's before:init hook (both platforms) and by the
-// mobile:rebuild:* scripts (one platform).
+// Maestro e2e gate. Run by release-it's before:init hook (both platforms), by the
+// mobile:rebuild:* scripts (one platform), and standalone via `pnpm release:check`.
 //
 // CI (mobile-gate.yml) already covers lint + typecheck + unit tests on every push to
 // main, so by the time you ship, those are green. What CI does NOT run is the Maestro
@@ -8,9 +8,15 @@
 // as the last gate before a build/tag goes out.
 //
 // Usage:
-//   node scripts/release/pre-release-check.mjs          # both platforms (release)
+//   pnpm release:check                                  # both platforms, e2e only (no version bump)
+//   pnpm release:check android                          # one platform, e2e only (no version bump)
+//   node scripts/release/pre-release-check.mjs          # both platforms (release before:init hook)
 //   node scripts/release/pre-release-check.mjs ios      # iOS only (rebuild)
 //   node scripts/release/pre-release-check.mjs android  # Android only (rebuild)
+//
+// `pnpm release:check` runs this gate on its own — the device boot/warm-up/teardown and
+// the full e2e suite, but none of release-it's version bump / commit / tag. Use it to
+// dry-run the gate without cutting a release.
 //
 // The relevant simulator/emulator is booted automatically before its suite runs (set
 // RELEASE_SKIP_BOOT=1 to boot them yourself). Skip the whole gate with RELEASE_SKIP_E2E=1
