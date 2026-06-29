@@ -146,7 +146,10 @@ function ensureIosBooted() {
   } catch {
     // headless boot still works for Maestro even if the UI doesn't open
   }
-  return {kind: 'ios', id: udid ?? 'booted'}
+  // Only offer a teardown handle when we know exactly which device we booted. Without a
+  // udid we'd have to fall back to `simctl shutdown booted`, which kills every booted
+  // simulator — including any the user opened — so leave it running instead.
+  return udid ? {kind: 'ios', id: udid} : null
 }
 
 // Boot an Android emulator if none is running. Picks the first AVD, launches it
@@ -199,15 +202,20 @@ function ensureAndroidBooted() {
   while (Date.now() - start < timeoutMs) {
     let prop = ''
     try {
-      prop = execSync(`"${ADB}" shell getprop sys.boot_completed`, {encoding: 'utf8'}).trim()
+      // Bound each poll: `adb shell` can hang while the adb daemon respawns during a cold
+      // boot, and a hung call would freeze the loop past its outer 3m ceiling.
+      prop = execSync(`"${ADB}" shell getprop sys.boot_completed`, {
+        encoding: 'utf8',
+        timeout: 5_000,
+      }).trim()
     } catch {
-      // device not ready yet
+      // device not ready yet (or the poll timed out) — try again
     }
     if (prop === '1') {
       console.log('   Android emulator booted.')
       warmUpAndroidShareSheet()
       const serial = /(emulator-\d+)\s+device/.exec(
-        execSync(`"${ADB}" devices`, {encoding: 'utf8'})
+        execSync(`"${ADB}" devices`, {encoding: 'utf8', timeout: 5_000})
       )?.[1]
       return serial ? {kind: 'android', id: serial} : null
     }
@@ -224,24 +232,32 @@ function ensureAndroidBooted() {
 // dismiss a throwaway share chooser so the resolver is warm before the suite runs.
 // Best-effort — any failure here must not block the gate.
 function warmUpAndroidShareSheet() {
+  // Every adb call here is bounded — they run during an unstable boot window where a hung
+  // `adb shell` would otherwise stall the gate.
   try {
     const animDeadline = Date.now() + 60_000
     while (Date.now() < animDeadline) {
-      const anim = execSync(`"${ADB}" shell getprop init.svc.bootanim`, {
-        encoding: 'utf8',
-      }).trim()
+      let anim = ''
+      try {
+        anim = execSync(`"${ADB}" shell getprop init.svc.bootanim`, {
+          encoding: 'utf8',
+          timeout: 5_000,
+        }).trim()
+      } catch {
+        // not ready / timed out — retry until the deadline
+      }
       if (anim === 'stopped') break
       sleep(2)
     }
-    execSync(`"${ADB}" shell wm dismiss-keyguard`, {stdio: 'ignore'})
+    execSync(`"${ADB}" shell wm dismiss-keyguard`, {stdio: 'ignore', timeout: 5_000})
     console.log('   Warming up the Android share sheet…')
     execSync(
       `"${ADB}" shell am start -a android.intent.action.SEND -t text/plain --es android.intent.extra.TEXT warmup`,
-      {stdio: 'ignore'}
+      {stdio: 'ignore', timeout: 10_000}
     )
     sleep(2)
-    execSync(`"${ADB}" shell input keyevent KEYCODE_BACK`, {stdio: 'ignore'})
-    execSync(`"${ADB}" shell input keyevent KEYCODE_HOME`, {stdio: 'ignore'})
+    execSync(`"${ADB}" shell input keyevent KEYCODE_BACK`, {stdio: 'ignore', timeout: 5_000})
+    execSync(`"${ADB}" shell input keyevent KEYCODE_HOME`, {stdio: 'ignore', timeout: 5_000})
   } catch {
     // warm-up is best-effort; the suite still runs if it fails
   }
