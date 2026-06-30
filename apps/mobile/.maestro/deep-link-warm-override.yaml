@@ -7,6 +7,11 @@
 # so a new target remounts it on the linked question. q=1/q=2/q=5 are pinned to
 # Pool questions in natural order (no shuffle), so the assertions are deterministic.
 #
+# The asserts match on each question's body text (q=1/q=2/q=5 English), the same
+# content-coupled pattern the other deep-link flows use (deep-link-back.yaml,
+# share-question-url.yaml). Editing those Pool questions' wording will break this flow —
+# update the expected substrings here in lock-step.
+#
 # Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}
 tags:
@@ -34,6 +39,7 @@ tags:
 - tapOn:
     text: 'Open'
     optional: true
+- waitForAnimationToEnd # the remount replays the ~900ms card entrance
 # Before the fix this stayed on q=2; now it routes to q=5.
 - assertVisible: '(?s).*What do you fear most at the moment.*'
 - assertNotVisible: '(?s).*something that makes you feel small.*'
