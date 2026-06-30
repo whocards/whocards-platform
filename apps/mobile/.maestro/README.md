@@ -19,6 +19,10 @@ pnpm -F mobile e2e:android  # com.whocards.mobile
 - `deep-link-back.yaml` — cold deep-link (`mobile://play/library?q=1`) straight to a
   question, then exit back to the landing. `?q=` pins the engine to a question in
   natural order (no shuffle), so the deep link is reproducible.
+- `deep-link-warm-override.yaml` — a **warm** deep-link (fired while the player is
+  already foregrounded on another card) must route to its `?q=` question, not stay put
+  (#137). Opens `q=1`, swipes to `q=2`, then warm deep-links to `q=5` and asserts `q=5`
+  shows while `q=2` doesn't. Guards the keyed `DeckPlayer` remount in `play/[deck].tsx`.
 - `language-persist.yaml` — a chosen language survives an app relaunch (the
   `language-store` persistence, ticket 0009). Uses `?q=1` so the same card renders
   before/after, making the switch observable.
