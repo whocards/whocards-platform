@@ -1,0 +1,39 @@
+# Regression for the warm deep-link fix: a deep link must route to its `?q=`
+# question even when the player is ALREADY open on another question.
+#
+# expo-router reuses the mounted `play/[deck]` screen and only updates the route
+# params, so the engine — seeded once from `startId` — used to keep showing the
+# open card and ignore the new link. The player is now keyed on deck+`q`+`lang`,
+# so a new target remounts it on the linked question. q=1/q=2/q=5 are pinned to
+# Pool questions in natural order (no shuffle), so the assertions are deterministic.
+#
+# Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- launchApp:
+    clearState: true # default language (en) so the Pool questions render their English text
+- stopApp # cold deep-link so q=1 starts in natural order (no shuffle)
+
+# Open the player on q=1, then swipe to q=2 — natural order, so "next" is deterministic.
+- openLink: mobile://play/library?q=1
+- tapOn:
+    text: 'Open' # accept the iOS "Open in WhoCards?" confirm if a version still shows it
+    optional: true
+- assertVisible: '(?s).*most interesting thing you have learned recently.*'
+- swipe:
+    direction: LEFT
+- waitForAnimationToEnd
+- assertVisible: '(?s).*something that makes you feel small.*' # q=2 is now the open card
+
+# Warm deep-link to a DIFFERENT question while the player is foregrounded on q=2.
+# A foregrounded app makes iOS show an "Open in WhoCards?" confirm — accept it.
+- openLink: mobile://play/library?q=5
+- tapOn:
+    text: 'Open'
+    optional: true
+# Before the fix this stayed on q=2; now it routes to q=5.
+- assertVisible: '(?s).*What do you fear most at the moment.*'
+- assertNotVisible: '(?s).*something that makes you feel small.*'

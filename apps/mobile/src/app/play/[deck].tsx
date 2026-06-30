@@ -114,8 +114,16 @@ export default function PlayScreen() {
     )
   }
 
+  // Key on the linked target (deck + `?q=` + `?lang=`) so a deep link that arrives
+  // while the player is already mounted routes to the linked question. expo-router
+  // reuses this `play/[deck]` screen and only updates the route params, so without a
+  // changing key the engine's `useReducer` (seeded once from `startId`) would keep
+  // showing whatever card was open. Re-keying remounts the player fresh on the new
+  // target; it stays constant through normal play (mobile never writes `q`/`lang`
+  // back to the route), so swiping never remounts.
   return (
     <DeckPlayer
+      key={`${deck.slug}:${typeof q === 'string' ? q : ''}:${typeof lang === 'string' ? lang : ''}`}
       deckSlug={deck.slug}
       questionIds={deck.questionIds}
       questions={deck.questions}
