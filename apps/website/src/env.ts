@@ -35,6 +35,11 @@ export const env = createEnv({
     // /request-cards forms. Required: the build fails without it (incl. dev) so bot
     // protection can never be silently dropped by a missing env var.
     TURNSTILE_SECRET_KEY: z.string().min(1),
+    // Anthropic API key for the dev-only Question Lab (/dev/question-lab), which
+    // benchmarks AI Check-In question-generation prompts against several Claude
+    // models. Optional — the route is dev-gated anyway, and without a key it
+    // returns a clear "no key configured" error instead of failing the build.
+    ANTHROPIC_API_KEY: z.string().optional(),
   },
   clientPrefix: 'PUBLIC_',
   client: {

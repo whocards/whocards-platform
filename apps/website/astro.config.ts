@@ -42,7 +42,12 @@ export default defineConfig({
     sitemap({
       filter: (page) => {
         const {pathname} = new URL(page)
-        return !pathname.endsWith('/images') && !langRoutes.has(pathname)
+        // /dev/* (e.g. the Question Lab) is a dev-only tool gated to 404 in
+        // production — astro-sitemap otherwise lists every SSR route
+        // regardless of the runtime DEV gate, so exclude it explicitly.
+        return (
+          !pathname.endsWith('/images') && !langRoutes.has(pathname) && !pathname.startsWith('/dev')
+        )
       },
     }),
     robotsTxt(),
