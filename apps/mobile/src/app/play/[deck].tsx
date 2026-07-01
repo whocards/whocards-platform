@@ -1,5 +1,6 @@
 import {Ionicons} from '@expo/vector-icons'
 import * as Application from 'expo-application'
+import * as Linking from 'expo-linking'
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import * as StoreReview from 'expo-store-review'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
@@ -37,6 +38,7 @@ import {
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, setStoredLanguage} from '@/lib/language-store'
+import {parsePlayLink} from '@/lib/play-link'
 import {buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
@@ -114,16 +116,8 @@ export default function PlayScreen() {
     )
   }
 
-  // Key on the linked target (deck + `?q=` + `?lang=`) so a deep link that arrives
-  // while the player is already mounted routes to the linked question. expo-router
-  // reuses this `play/[deck]` screen and only updates the route params, so without a
-  // changing key the engine's `useReducer` (seeded once from `startId`) would keep
-  // showing whatever card was open. Re-keying remounts the player fresh on the new
-  // target; it stays constant through normal play (mobile never writes `q`/`lang`
-  // back to the route), so swiping never remounts.
   return (
     <DeckPlayer
-      key={`${deck.slug}:${typeof q === 'string' ? q : ''}:${typeof lang === 'string' ? lang : ''}`}
       deckSlug={deck.slug}
       questionIds={deck.questionIds}
       questions={deck.questions}
@@ -189,6 +183,23 @@ const DeckPlayer = ({
       setLanguageReady(true)
     })
   }, [deckSlug, languages, linkLanguage])
+
+  // A deep link that arrives while this deck is already open can't ride the route
+  // params: expo-router de-dupes a same-route link (e.g. `play/library?q=5` while
+  // already on `play/library`) and never updates `useLocalSearchParams`, so the card
+  // wouldn't move. Listen for the raw incoming URL instead and re-seed the engine when
+  // the link targets THIS deck. A link to a *different* deck changes the `[deck]`
+  // segment and is handled by expo-router's own navigation (a fresh mount), so it's
+  // ignored here. (`dispatch`/`setLanguage` are stable, so they stay out of the deps.)
+  useEffect(() => {
+    const sub = Linking.addEventListener('url', ({url}) => {
+      const link = parsePlayLink(url)
+      if (!link || link.deck !== deckSlug) return
+      if (link.lang && languages.includes(link.lang)) setLanguage(link.lang)
+      if (link.q && questionIds.includes(link.q)) dispatch({type: 'reset', startId: link.q})
+    })
+    return () => sub.remove()
+  }, [deckSlug, languages, questionIds])
 
   const questionId = ids[idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''
