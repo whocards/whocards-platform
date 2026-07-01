@@ -26,13 +26,23 @@ const QUESTION_DESCRIPTION_SUFFIX: Record<string, string> = {
 
 const MAX_DESCRIPTION_LENGTH = 160
 
-const truncate = (text: string, max: number): string =>
-  text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`
+// Word-boundary truncation — never cut mid-word. Used only on the question
+// text itself so the (short, fixed) per-language suffix always survives; see
+// buildQuestionDescription.
+const truncateAtWordBoundary = (text: string, max: number): string => {
+  if (text.length <= max) return text
+  const cut = text.slice(0, max)
+  const lastSpace = cut.lastIndexOf(' ')
+  return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`
+}
 
 const buildQuestionDescription = (questionText: string, language?: string): string => {
   const suffix =
     (language && QUESTION_DESCRIPTION_SUFFIX[language]) || QUESTION_DESCRIPTION_SUFFIX.en
-  return truncate(`${questionText} — ${suffix}`, MAX_DESCRIPTION_LENGTH)
+  // Reserve room for " — " + the suffix so long questions truncate instead of
+  // pushing the suffix out of the description entirely.
+  const budget = Math.max(0, MAX_DESCRIPTION_LENGTH - suffix.length - 3)
+  return `${truncateAtWordBoundary(questionText, budget)} — ${suffix}`
 }
 
 export interface Props {
@@ -79,8 +89,20 @@ if (propTitle) {
 // (id, language) pair (#46) instead of the old "Question #N" / "Dare to be
 // Curious?" duplicate content. Hoisted above the `if` so the JSON-LD block
 // below can also read it.
+//
+// `~data/questions.json` is the WhoCards library pool — it is NOT the source
+// of question text for every id-bearing page. /play and /play/[deck] also
+// pass an `id` (from ?q=), but that id is scoped to whichever deck is being
+// played (e.g. the "hajnalig" deck has its own question #1, unrelated to
+// library question #1) — see `~data/decks`. Looking the id up in the global
+// pool there would silently show the wrong question's text. Only the
+// restored `/[language]/question/[id]` static page's id is guaranteed to
+// index the library pool, so gate the lookup on that route specifically.
+const isQuestionPageRoute = /\/question\/[^/]+\/?$/.test(Astro.url.pathname)
 const rawText =
-  id && language ? (questions as Record<string, Record<string, string>>)[id]?.[language] : undefined
+  isQuestionPageRoute && id && language
+    ? (questions as Record<string, Record<string, string>>)[id]?.[language]
+    : undefined
 // Split on the blank line questions.json uses to separate the main question
 // from its parenthetical context — only the main line belongs in the title.
 const mainLine = rawText?.split('\n\n')[0]?.replace(/\s+/g, ' ').trim()
