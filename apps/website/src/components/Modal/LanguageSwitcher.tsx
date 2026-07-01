@@ -1,24 +1,32 @@
 import {Icon as _Icon, type IconifyIconProps} from '@iconify-icon/react'
 import {useStore} from '@nanostores/react'
-import {useEffect, useRef, type ComponentType, type PropsWithChildren} from 'react'
+import {useEffect, useMemo, useRef, type ComponentType, type PropsWithChildren} from 'react'
 import {idsStore} from '~stores/Game.store'
 import {$langStore, setLang} from '~stores/Language.store'
 import type {Language} from '~types'
-import {LANGUAGES, cn, getCurrentLanguage, isPrintPage} from '~utils'
+import {LANG_KEYS, LANGUAGES, cn, getCurrentLanguage, isPrintPage} from '~utils'
 import {getCurrentQuestionUrl} from '~utils/urls'
+import {getDisabledLanguageCodes} from '~components/print/print-ui'
+import {PRINT_LANGUAGES} from '~server/print/params'
 
 // @types/react 18 doesn't include bigint in ReactNode, but iconify-icon's
 // ForwardRefExoticComponent return type does. Double-cast via unknown is type-only,
 // no runtime effect.
 const Icon = _Icon as unknown as ComponentType<IconifyIconProps>
 
-const comingSoon: string[] = []
-
 // TODO get current language perhaps from url, query param, or persistant store
 export const LanguageSwitcher = () => {
   const shouldUseStore = isPrintPage()
   const store = useStore($langStore)
   const ref = useRef<HTMLDialogElement>(null)
+
+  // On the print page, he/zh/jp aren't renderable by the PDF endpoint yet (#41) — show
+  // them as disabled "coming soon" tiles rather than hiding them. Elsewhere (site nav)
+  // every language stays enabled.
+  const disabledCodes = useMemo(
+    () => new Set(shouldUseStore ? getDisabledLanguageCodes(LANG_KEYS, PRINT_LANGUAGES) : []),
+    [shouldUseStore]
+  )
 
   useEffect(() => {
     // capture the node so the cleanup removes the listener from the same element
@@ -59,24 +67,28 @@ export const LanguageSwitcher = () => {
           className='grid grid-cols-1 overflow-y-auto pb-4 md:grid-flow-col md:grid-cols-3 md:grid-rows-5 md:pb-2'
           style={{maxHeight: 'calc(100vh - 4rem)'}}
         >
-          {Object.entries(LANGUAGES).map(([key, name]) => (
-            <QuestionLink
-              key={key}
-              lang={key as Language}
-              selected={key === store.lang}
-              useButton={shouldUseStore}
-            >
-              {name}
-              {key === store.lang && <Icon icon='zondicons:checkmark' className='ml-2 h-4 w-4' />}
-            </QuestionLink>
-          ))}
-          {comingSoon.map((newLang) => (
-            <div className='flex h-16 flex-col justify-center px-4 opacity-50'>
-              {newLang}
-              <br />
-              <span className='text-sm'>coming soon&hellip;</span>
-            </div>
-          ))}
+          {Object.entries(LANGUAGES).map(([key, name]) =>
+            disabledCodes.has(key) ? (
+              <div
+                key={key}
+                className='flex h-16 flex-col justify-center px-4 opacity-50'
+                aria-disabled='true'
+              >
+                {name}
+                <span className='text-sm'>coming soon&hellip;</span>
+              </div>
+            ) : (
+              <QuestionLink
+                key={key}
+                lang={key as Language}
+                selected={key === store.lang}
+                useButton={shouldUseStore}
+              >
+                {name}
+                {key === store.lang && <Icon icon='zondicons:checkmark' className='ml-2 h-4 w-4' />}
+              </QuestionLink>
+            )
+          )}
         </section>
       </form>
     </dialog>
