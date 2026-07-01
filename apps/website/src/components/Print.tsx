@@ -42,7 +42,7 @@ export default function Print() {
   const downloadUrl = preset
     ? buildPrintDownloadUrl('library', store.lang, preset, offsetX, offsetY)
     : undefined
-  const calibrationUrl = preset ? buildCalibrationDownloadUrl(preset, offsetX, offsetY) : undefined
+  const testPrintUrl = preset ? buildCalibrationDownloadUrl(preset, offsetX, offsetY) : undefined
 
   const updateOffset = (axis: 'offsetX' | 'offsetY', value: number) => {
     if (!preset) return
@@ -97,83 +97,80 @@ export default function Print() {
         )}
       </div>
 
+      <AlignmentSection
+        offsetX={offsetX}
+        offsetY={offsetY}
+        onChangeOffset={updateOffset}
+        disabled={!preset}
+      />
+
       <div className='flex flex-col items-center gap-3 text-center'>
         <p className='max-w-md font-bold text-amber-300'>
           Print at 100% / actual size — turn off &ldquo;Fit to page&rdquo; so the cards line up with
           your precut sheet.
         </p>
-        <a
-          className={cn('btn btn-primary', {
-            'btn-disabled pointer-events-none opacity-50': !canDownload,
-          })}
-          aria-disabled={!canDownload}
-          href={downloadUrl}
-        >
-          Download
-        </a>
+        <div className='flex flex-wrap items-center justify-center gap-3'>
+          <a
+            className={cn('btn btn-primary', {
+              'btn-disabled pointer-events-none opacity-50': !canDownload,
+            })}
+            aria-disabled={!canDownload}
+            href={downloadUrl}
+          >
+            Download
+          </a>
+          <a
+            className={cn('btn btn-outline', {
+              'btn-disabled pointer-events-none opacity-50': !preset,
+            })}
+            aria-disabled={!preset}
+            href={testPrintUrl}
+            title='A single plain-paper page with card outlines and corner marks, for checking alignment before you print the full deck'
+          >
+            Test print
+          </a>
+        </div>
       </div>
-
-      <CalibrationSection
-        preset={preset}
-        offsetX={offsetX}
-        offsetY={offsetY}
-        onChangeOffset={updateOffset}
-        calibrationUrl={calibrationUrl}
-      />
     </>
   )
 }
 
-interface CalibrationSectionProps {
-  preset: LayoutId | undefined
+interface AlignmentSectionProps {
   offsetX: number
   offsetY: number
   onChangeOffset: (axis: 'offsetX' | 'offsetY', value: number) => void
-  calibrationUrl: string | undefined
+  disabled: boolean
 }
 
-// "Alignment / calibrate" (#40): most printers add a small (sub-cm) offset even at
-// 100% scale, which can ruin a whole precut sheet. Collapsed by default so it doesn't
-// compete with the main download flow — the calibration sheet + nudge are only needed
-// once per printer/sheet combo.
-function CalibrationSection({
-  preset,
-  offsetX,
-  offsetY,
-  onChangeOffset,
-  calibrationUrl,
-}: CalibrationSectionProps) {
+// Inline alignment nudge (#40, promoted out of a collapsed <details> in #139): most
+// printers add a small (sub-cm) offset even at 100% scale, which can ruin a whole
+// precut sheet, so this sits in the main flow rather than behind a disclosure —
+// right where a "test print" (below) would prompt someone to use it.
+function AlignmentSection({offsetX, offsetY, onChangeOffset, disabled}: AlignmentSectionProps) {
   return (
-    <details className='w-full max-w-md rounded-lg border-2 border-white/20 p-4 text-center'>
-      <summary className='cursor-pointer font-bold tracking-wide'>Alignment / calibrate</summary>
-      <div className='mt-4 flex flex-col items-center gap-4'>
-        <p className='text-sm text-slate-300'>
-          Download the calibration sheet, print it at 100%, and lay it over your precut sheet. Read
-          off any drift in mm against the rulers, enter it below, then re-download your cards.
-        </p>
-        <a
-          className={cn('btn btn-outline btn-sm', {
-            'btn-disabled pointer-events-none opacity-50': !preset,
-          })}
-          aria-disabled={!preset}
-          href={calibrationUrl}
-        >
-          Download calibration sheet
-        </a>
-        <div className='flex items-center gap-4'>
-          <OffsetInput
-            label='X offset (mm)'
-            value={offsetX}
-            onChange={(value) => onChangeOffset('offsetX', value)}
-          />
-          <OffsetInput
-            label='Y offset (mm)'
-            value={offsetY}
-            onChange={(value) => onChangeOffset('offsetY', value)}
-          />
-        </div>
+    <div className='flex w-full max-w-md flex-col items-center gap-3 text-center'>
+      <h2 className='font-title text-center text-5xl'>Fine-tune alignment</h2>
+      <p className='text-sm text-slate-300'>
+        Download the test print below, print it at 100% on plain paper, and hold it over your precut
+        sheet (or up to the light). If the outlines and corner marks don&rsquo;t sit on the
+        perforations, nudge X/Y here in mm until they do, then download your deck — the offset
+        carries over.
+      </p>
+      <div className='flex items-center gap-4'>
+        <OffsetInput
+          label='X offset (mm)'
+          value={offsetX}
+          disabled={disabled}
+          onChange={(value) => onChangeOffset('offsetX', value)}
+        />
+        <OffsetInput
+          label='Y offset (mm)'
+          value={offsetY}
+          disabled={disabled}
+          onChange={(value) => onChangeOffset('offsetY', value)}
+        />
       </div>
-    </details>
+    </div>
   )
 }
 
@@ -181,9 +178,10 @@ interface OffsetInputProps {
   label: string
   value: number
   onChange: (value: number) => void
+  disabled?: boolean
 }
 
-function OffsetInput({label, value, onChange}: OffsetInputProps) {
+function OffsetInput({label, value, onChange, disabled}: OffsetInputProps) {
   return (
     <label className='flex flex-col items-center gap-1 text-xs text-slate-300'>
       {label}
@@ -193,6 +191,7 @@ function OffsetInput({label, value, onChange}: OffsetInputProps) {
         min={-20}
         max={20}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.valueAsNumber)}
         className='input input-bordered input-sm w-24 text-center text-darker'
       />

@@ -1,12 +1,13 @@
-// Per-preset calibration sheet renderer (epic #19, ticket #40). Draws the exact
+// Per-preset "test print" renderer (epic #19, tickets #40/#139). Draws the exact
 // card grid outlines from `layoutFor()` (the same geometry #38's print.pdf renders
-// cards onto) plus mm ruler ticks along the page edges and a short "how to
-// calibrate" instructions block, so a user can print it, lay it over their precut
-// sheet, and read off any drift as an X/Y mm offset.
+// cards onto), corner registration marks (standard print-shop crosshairs), mm ruler
+// ticks along the page edges, and a short instructions block, so a user can print
+// it on plain paper, lay it over their precut sheet (or hold it to the light), and
+// read off any drift as an X/Y mm offset before spending a real sheet on the deck.
 //
 // Deliberately independent of ./render's custom font/logo loading (the aptly/
 // golos/Noto woff2 files + logo-plain.svg rasterised via resvg, read from disk at
-// request time) — a calibration sheet is pure vector geometry + labels, so it only
+// request time) — a test print is pure vector geometry + labels, so it only
 // needs pdf-lib's built-in Helvetica (StandardFonts), no font-file reads and
 // therefore no dependency on that Netlify file-bundling path at all.
 
@@ -21,6 +22,7 @@ const RULER_COLOR = rgb(0.35, 0.35, 0.4)
 const TEXT_COLOR = rgb(0.06, 0.06, 0.09)
 
 const HAIRLINE_WIDTH = 0.5 // pt, card outlines + ruler baselines
+const REG_MARK_LEN_MM = 3 // mm, each arm's half-length from the corner point
 const RULER_MINOR_MM = 5 // minor tick every 5mm
 const RULER_MAJOR_MM = 10 // numbered tick every 10mm
 const RULER_MINOR_LEN = 3 // pt
@@ -34,10 +36,10 @@ const TEXT_LINE_HEIGHT_MULTIPLIER = 1.3
 const TEXT_MARGIN = 8 // pt, inset for the header/instructions block
 
 const INSTRUCTIONS =
-  'Print at 100% ("actual size" — turn off "Fit to page"). Lay this sheet over your ' +
-  'precut sheet and compare the card outlines to the mm rulers along the top and left ' +
-  'edges; enter any drift you read off as the X/Y offset (mm) and re-download to confirm ' +
-  'it lines up.'
+  'Print at 100% ("actual size" — turn off "Fit to page") on plain paper. Hold it over your ' +
+  'precut sheet, or up to the light, and compare the card outlines and corner marks to the ' +
+  'mm rulers along the top and left edges; enter any drift you read off as the X/Y offset ' +
+  '(mm), then download your deck with the same offset.'
 
 /** One card slot outline, in the same top-down coordinate space as `layoutFor`'s rects. */
 const drawCardOutline = (page: PDFPage, rect: Rect, pageHeight: number): void => {
@@ -48,6 +50,44 @@ const drawCardOutline = (page: PDFPage, rect: Rect, pageHeight: number): void =>
     height: rect.height,
     borderColor: GRID_COLOR,
     borderWidth: HAIRLINE_WIDTH,
+  })
+}
+
+/**
+ * The four corners of a card rect, converted to pdf-lib's bottom-up page space with
+ * the same `pageHeight - y` flip `drawCardOutline` uses, so a registration mark lands
+ * exactly on its outline's corner.
+ */
+const rectCorners = (rect: Rect, pageHeight: number): Array<{x: number; y: number}> => {
+  const top = pageHeight - rect.y
+  const bottom = pageHeight - rect.y - rect.height
+  return [
+    {x: rect.x, y: top},
+    {x: rect.x + rect.width, y: top},
+    {x: rect.x, y: bottom},
+    {x: rect.x + rect.width, y: bottom},
+  ]
+}
+
+/**
+ * A small hairline crosshair centred on (x, y) — the standard print-shop registration
+ * mark. Drawn once per *unique* grid corner (adjacent, gutter-less cards share a
+ * corner, so an interior intersection gets one mark, not two overlapping ones) and at
+ * the same (offset) coordinates as the outlines, so the marks move with the nudge.
+ */
+const drawRegistrationMark = (page: PDFPage, x: number, y: number): void => {
+  const len = mm(REG_MARK_LEN_MM)
+  page.drawLine({
+    start: {x: x - len, y},
+    end: {x: x + len, y},
+    thickness: HAIRLINE_WIDTH,
+    color: GRID_COLOR,
+  })
+  page.drawLine({
+    start: {x, y: y - len},
+    end: {x, y: y + len},
+    thickness: HAIRLINE_WIDTH,
+    color: GRID_COLOR,
   })
 }
 
@@ -121,7 +161,7 @@ const drawLeftRuler = (page: PDFPage, pageSize: Size, font: PDFFont): void => {
 }
 
 /**
- * Preset id + offsets, then the "how to calibrate" copy, stacked top-down in the
+ * Preset id + offsets, then the "how to test print" copy, stacked top-down in the
  * page's bottom margin (the same margin `layoutFor` derives above the grid, since
  * the centred grid makes the top and bottom margins equal).
  */
@@ -149,9 +189,9 @@ const drawFooterText = (
 }
 
 /**
- * Render the calibration sheet for already-validated `params`. Throws if the preset
- * can't resolve — callers are expected to have run `parseCalibrationParams` first,
- * so that should only happen if the two modules drift out of sync.
+ * Render the test print for already-validated `params`. Throws if the preset can't
+ * resolve — callers are expected to have run `parseCalibrationParams` first, so
+ * that should only happen if the two modules drift out of sync.
  */
 export const renderCalibrationPdf = async (params: CalibrationPdfParams): Promise<Uint8Array> => {
   const layout = layoutFor(params.preset)
@@ -165,9 +205,23 @@ export const renderCalibrationPdf = async (params: CalibrationPdfParams): Promis
 
   const offsetXPt = mm(params.offsetX)
   const offsetYPt = mm(params.offsetY)
-  for (const rect of cardRects) {
-    drawCardOutline(page, {...rect, x: rect.x + offsetXPt, y: rect.y + offsetYPt}, pageSize.height)
+  const offsetRects = cardRects.map((rect) => ({
+    ...rect,
+    x: rect.x + offsetXPt,
+    y: rect.y + offsetYPt,
+  }))
+
+  for (const rect of offsetRects) drawCardOutline(page, rect, pageSize.height)
+
+  // Registration marks: one crosshair per unique grid-corner point (dedup by
+  // coordinate), drawn from the same offset rects as the outlines above.
+  const corners = new Map<string, {x: number; y: number}>()
+  for (const rect of offsetRects) {
+    for (const corner of rectCorners(rect, pageSize.height)) {
+      corners.set(`${corner.x.toFixed(3)}:${corner.y.toFixed(3)}`, corner)
+    }
   }
+  for (const corner of corners.values()) drawRegistrationMark(page, corner.x, corner.y)
 
   drawTopRuler(page, pageSize, font)
   drawLeftRuler(page, pageSize, font)
