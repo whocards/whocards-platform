@@ -1,5 +1,5 @@
 import {PDFDocument} from 'pdf-lib'
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
 
 import {layoutFor} from './presets'
 import {libraryCardsFor, renderPrintPdf} from './render'
@@ -137,5 +137,36 @@ describe('renderPrintPdf', () => {
     })
     const doc = await PDFDocument.load(bytes)
     expect(doc.getPageCount()).toBe(7)
+  }, 20_000)
+
+  // Regression test for a real bug found on the Netlify deploy preview: the
+  // font/logo loader used to resolve bundled assets via `process.cwd()`
+  // alone, which matches the astro project root in dev/build/tests but NOT
+  // at Netlify Function runtime (there, cwd is the function bundle root, one
+  // level above where `includeFiles` actually land). `vi.resetModules()`
+  // forces a fresh copy of ./render (so its cached resolved base dir can't
+  // leak in from an earlier, correct-cwd test) before simulating a cwd that
+  // doesn't match the astro project root — that forces the loader's other
+  // resolution strategies (this module's own compiled location via
+  // `import.meta.url`, `LAMBDA_TASK_ROOT`) to do the work instead of cwd.
+  it('resolves fonts/logo even when process.cwd() is not the astro project root', async () => {
+    const originalCwd = process.cwd()
+    vi.resetModules()
+    process.chdir('/tmp')
+    try {
+      const {renderPrintPdf: freshRenderPrintPdf} = await import('./render')
+      const bytes = await freshRenderPrintPdf({
+        deck: 'library',
+        lang: 'en',
+        preset: 'avery-5371',
+        offsetX: 0,
+        offsetY: 0,
+      })
+      expect(bytes.byteLength).toBeGreaterThan(5_000)
+      const doc = await PDFDocument.load(bytes)
+      expect(doc.getPageCount()).toBe(7)
+    } finally {
+      process.chdir(originalCwd)
+    }
   }, 20_000)
 })

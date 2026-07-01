@@ -8,9 +8,11 @@
 // WhoCards wordmark bottom-right. `CardContent.imageUrl` is a reserved slot
 // for a future per-question image (not rendered yet — see epic "Later").
 
+import {existsSync} from 'node:fs'
 import {readFile} from 'node:fs/promises'
-import {join} from 'node:path'
+import {dirname, join} from 'node:path'
 import process from 'node:process'
+import {fileURLToPath} from 'node:url'
 
 import fontkit from '@pdf-lib/fontkit'
 import {Resvg} from '@resvg/resvg-js'
@@ -69,16 +71,73 @@ const toVisualOrder = (line: string): string => {
 // Fonts live in /public, the logo in /src/icons. This endpoint runs on-demand
 // (`prerender = false`, a Netlify function), so both are declared in
 // astro.config.ts's `netlify({includeFiles: [...]})` to be bundled with the
-// function — resolving them from `process.cwd()` mirrors card-image.ts.
-const fontDir = join(process.cwd(), 'public', 'fonts')
-const iconsDir = join(process.cwd(), 'src', 'icons')
+// function.
+//
+// `process.cwd()` alone is NOT a reliable base at runtime: it matches the
+// astro project root (apps/website) in dev/build/tests (card-image.ts's
+// build-time-only precedent relies on exactly that), but the deployed
+// Netlify Function's cwd is the function bundle root — one level above
+// where `includeFiles` actually land, since their paths are relative to the
+// astro project root, not the function root (confirmed locally: a build
+// puts them at `.netlify/v1/functions/ssr/apps/website/public/fonts/...`,
+// nested under `apps/website`, while the function's own entry sits at
+// `.netlify/v1/functions/ssr/`). So instead of assuming one base, probe a
+// short list of candidates and cache whichever one actually has the files.
+let resolvedBaseDir: string | undefined
+
+const candidateBaseDirs = (): string[] => {
+  const bases = new Set<string>()
+  bases.add(process.cwd())
+  try {
+    // This module's own compiled location. Walking a few levels up from
+    // there works regardless of how the bundler nests chunks, and doesn't
+    // depend on cwd being set to anything in particular.
+    let dir = dirname(fileURLToPath(import.meta.url))
+    for (let i = 0; i < 8; i += 1) {
+      bases.add(dir)
+      const parent = dirname(dir)
+      if (parent === dir) break
+      dir = parent
+    }
+  } catch {
+    // import.meta.url isn't always a resolvable file: URL in every runtime —
+    // cwd/LAMBDA_TASK_ROOT are tried regardless.
+  }
+  // Netlify Functions run on AWS Lambda, which exposes the function's
+  // extraction root via LAMBDA_TASK_ROOT.
+  if (process.env['LAMBDA_TASK_ROOT']) bases.add(process.env['LAMBDA_TASK_ROOT'])
+  // Each base might already BE the astro project root, or might be the
+  // function/monorepo root one level above it — try both.
+  return [...bases].flatMap((base) => [base, join(base, 'apps', 'website')])
+}
+
+// Resolve (and cache) the astro project root by probing for a file we know
+// ships in every build — the always-present Aptly font.
+const resolveBaseDir = (): string => {
+  if (resolvedBaseDir) return resolvedBaseDir
+  const probed: string[] = []
+  for (const base of candidateBaseDirs()) {
+    const probe = join(base, 'public', 'fonts', FONT_FILES.aptly)
+    probed.push(probe)
+    if (existsSync(probe)) {
+      resolvedBaseDir = base
+      return base
+    }
+  }
+  throw new Error(
+    `print renderer: couldn't locate bundled fonts under any candidate base dir. Probed:\n${probed.join('\n')}`
+  )
+}
+
+const fontDir = (): string => join(resolveBaseDir(), 'public', 'fonts')
+const iconsDir = (): string => join(resolveBaseDir(), 'src', 'icons')
 
 const ttfCache = new Map<FontKey, Promise<Buffer>>()
 const loadTtf = (key: FontKey): Promise<Buffer> => {
   let cached = ttfCache.get(key)
   if (!cached) {
     cached = (async () => {
-      const woff2 = await readFile(join(fontDir, FONT_FILES[key]))
+      const woff2 = await readFile(join(fontDir(), FONT_FILES[key]))
       return Buffer.from(await decompress(woff2))
     })()
     ttfCache.set(key, cached)
@@ -94,7 +153,7 @@ let logoPngPromise: Promise<Buffer> | undefined
 const loadLogoPng = (): Promise<Buffer> => {
   if (!logoPngPromise) {
     logoPngPromise = (async () => {
-      const svg = await readFile(join(iconsDir, 'logo-plain.svg'), 'utf8')
+      const svg = await readFile(join(iconsDir(), 'logo-plain.svg'), 'utf8')
       const resvg = new Resvg(svg, {fitTo: {mode: 'width', value: 900}})
       return Buffer.from(resvg.render().asPng())
     })()
