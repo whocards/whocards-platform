@@ -30,6 +30,28 @@ describe('wrapToWidth', () => {
     const lines = wrapToWidth('supercalifragilisticexpialidocious', monoFont, 10, 5)
     expect(lines).toEqual(['supercalifragilisticexpialidocious'])
   })
+
+  // CJK text has no spaces, so 'word' mode (splitting on whitespace) would
+  // treat a whole paragraph as one unbreakable "word" and never wrap it (#41).
+  it('(word mode) never breaks a space-less CJK line, even though it overflows', () => {
+    const lines = wrapToWidth('你最近學到最有趣的事物是什麼', monoFont, 10, 20)
+    expect(lines).toEqual(['你最近學到最有趣的事物是什麼'])
+  })
+
+  it("('cjk' mode) wraps per character within the width budget", () => {
+    const text = '你最近學到最有趣的事物是什麼'
+    const lines = wrapToWidth(text, monoFont, 10, 20, 'cjk')
+    expect(lines.length).toBeGreaterThan(1)
+    for (const line of lines) {
+      expect(monoFont.widthOfTextAtSize(line, 10)).toBeLessThanOrEqual(20)
+    }
+    expect(lines.join('')).toBe(text)
+  })
+
+  it("('cjk' mode) still respects existing newlines as hard breaks", () => {
+    const lines = wrapToWidth('短い\n\n二番目の部分', monoFont, 10, 1000, 'cjk')
+    expect(lines).toEqual(['短い', '', '二番目の部分'])
+  })
 })
 
 describe('fitText', () => {
@@ -68,5 +90,23 @@ describe('fitText', () => {
       lineHeightMultiplier: 1.2,
     })
     expect(size).toBe(6)
+  })
+
+  it("shrinks and wraps a space-less CJK question in 'cjk' mode (#41)", () => {
+    const text = '你最近學到最有趣的事物是什麼'.repeat(3)
+    const {size, lines, lineHeight} = fitText(text, monoFont, {
+      maxWidth: 200,
+      maxHeight: 150,
+      minSize: 6,
+      maxSize: 40,
+      lineHeightMultiplier: 1.2,
+      mode: 'cjk',
+    })
+    expect(lines.length).toBeGreaterThan(1)
+    expect(lines.length * lineHeight).toBeLessThanOrEqual(150)
+    for (const line of lines) {
+      expect(monoFont.widthOfTextAtSize(line, size)).toBeLessThanOrEqual(200)
+    }
+    expect(lines.join('')).toBe(text)
   })
 })

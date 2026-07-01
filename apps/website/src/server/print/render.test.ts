@@ -21,6 +21,17 @@ describe('libraryCardsFor', () => {
     expect(cards).toHaveLength(66)
     expect(cards[0]?.text).toMatch(/[Ѐ-ӿ]/)
   })
+
+  it('returns Hebrew text for he (#41 RTL)', () => {
+    const cards = libraryCardsFor('he')
+    expect(cards).toHaveLength(66)
+    expect(cards[0]?.text).toMatch(/[֐-׿]/)
+  })
+
+  it('returns CJK text for zh/jp (#41)', () => {
+    expect(libraryCardsFor('zh')[0]?.text).toMatch(/[一-鿿]/)
+    expect(libraryCardsFor('jp')[0]?.text).toMatch(/[぀-ヿ一-鿿]/)
+  })
 })
 
 describe('renderPrintPdf', () => {
@@ -81,6 +92,48 @@ describe('renderPrintPdf', () => {
       preset: 'avery-5371',
       offsetX: 3,
       offsetY: -2,
+    })
+    const doc = await PDFDocument.load(bytes)
+    expect(doc.getPageCount()).toBe(7)
+  }, 20_000)
+
+  it('renders Hebrew (RTL, bidi-reordered) without throwing, same page geometry (#41)', async () => {
+    const bytes = await renderPrintPdf({
+      deck: 'library',
+      lang: 'he',
+      preset: 'avery-5371',
+      offsetX: 0,
+      offsetY: 0,
+    })
+    expect(bytes.byteLength).toBeGreaterThan(5_000)
+    const doc = await PDFDocument.load(bytes)
+    expect(doc.getPageCount()).toBe(7)
+    const layout = layoutFor('avery-5371')!
+    const {width, height} = doc.getPage(0).getSize()
+    expect(width).toBeCloseTo(layout.pageSize.width)
+    expect(height).toBeCloseTo(layout.pageSize.height)
+  }, 20_000)
+
+  it('renders Japanese (CJK per-character wrap) without throwing, same page geometry (#41)', async () => {
+    const bytes = await renderPrintPdf({
+      deck: 'library',
+      lang: 'jp',
+      preset: 'avery-5371',
+      offsetX: 0,
+      offsetY: 0,
+    })
+    expect(bytes.byteLength).toBeGreaterThan(5_000)
+    const doc = await PDFDocument.load(bytes)
+    expect(doc.getPageCount()).toBe(7)
+  }, 20_000)
+
+  it('renders Mandarin (CJK per-character wrap) without throwing (#41)', async () => {
+    const bytes = await renderPrintPdf({
+      deck: 'library',
+      lang: 'zh',
+      preset: 'avery-5371',
+      offsetX: 0,
+      offsetY: 0,
     })
     const doc = await PDFDocument.load(bytes)
     expect(doc.getPageCount()).toBe(7)

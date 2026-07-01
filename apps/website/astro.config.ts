@@ -82,6 +82,14 @@ export default defineConfig({
     includeFiles: [
       './public/fonts/aptly_regular.woff2',
       './public/fonts/golos_text.woff2',
+      // Hebrew/Mandarin/Japanese script fonts (#41) — regular weight only,
+      // the print PDF never uses bold. ~2.7MB added to the function bundle;
+      // pdf-lib's `embedFont(..., {subset: true})` (see render.ts) still
+      // subsets the *output* PDF down to only the glyphs each deck actually
+      // uses, so this only affects the deployed function size, not download size.
+      './public/fonts/noto-sans-hebrew_regular.woff2',
+      './public/fonts/noto-sans-chinese_regular.woff2',
+      './public/fonts/noto-sans-japanese_regular.woff2',
       './src/icons/logo-plain.svg',
     ],
   }),

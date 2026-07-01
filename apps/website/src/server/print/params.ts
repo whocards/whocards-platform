@@ -7,14 +7,15 @@ import {LANGUAGE_CODES} from '@whocards/decks'
 import {resolveLayout} from './presets'
 
 /**
- * Scripts not yet supported by the print renderer: Hebrew is RTL, Mandarin
- * and Japanese are CJK. All three are tracked in #41. Every other Pool
- * language is Latin or Cyrillic and is enabled here.
+ * Every Pool language is supported by the print renderer. Hebrew (RTL) and
+ * Mandarin/Japanese (CJK) were the last gap — closed in #41 by bundling Noto
+ * Sans Hebrew/Chinese/Japanese and adding bidi reordering + a CJK-aware wrap
+ * mode in ./render and ./text-fit.
+ *
+ * This is the single source of truth the print UI (#39) derives its
+ * enabled-language list from.
  */
-const UNSUPPORTED_LANGUAGES = new Set(['he', 'zh', 'jp'])
-
-/** The ~11 Latin/Cyrillic language codes the print endpoint accepts today. */
-export const PRINT_LANGUAGES: string[] = LANGUAGE_CODES.filter((code) => !UNSUPPORTED_LANGUAGES.has(code))
+export const PRINT_LANGUAGES: string[] = [...LANGUAGE_CODES]
 
 /** Only the `library` deck (full 66-question Pool) is in scope for #38. */
 export const PRINT_DECKS = ['library'] as const
@@ -37,11 +38,17 @@ export type ParsePrintParamsResult = {ok: true; value: PrintPdfParams} | {ok: fa
 
 const describeRaw = (raw: string | null): string => (raw === null ? 'missing' : JSON.stringify(raw))
 
-const parseOffset = (raw: string | null, name: 'offsetX' | 'offsetY'): {ok: true; value: number} | {ok: false; error: string} => {
+const parseOffset = (
+  raw: string | null,
+  name: 'offsetX' | 'offsetY'
+): {ok: true; value: number} | {ok: false; error: string} => {
   if (raw === null || raw === '') return {ok: true, value: 0}
   const value = Number(raw)
   if (!Number.isFinite(value)) {
-    return {ok: false, error: `${name} must be a finite number of millimetres (got ${describeRaw(raw)})`}
+    return {
+      ok: false,
+      error: `${name} must be a finite number of millimetres (got ${describeRaw(raw)})`,
+    }
   }
   if (Math.abs(value) > OFFSET_LIMIT_MM) {
     return {ok: false, error: `${name} must be within ±${OFFSET_LIMIT_MM}mm (got ${value})`}
@@ -53,7 +60,10 @@ const parseOffset = (raw: string | null, name: 'offsetX' | 'offsetY'): {ok: true
 export const parsePrintParams = (search: URLSearchParams): ParsePrintParamsResult => {
   const deck = search.get('deck')
   if (deck !== 'library') {
-    return {ok: false, error: `deck must be "library" (got ${describeRaw(deck)}) — other decks aren't supported yet`}
+    return {
+      ok: false,
+      error: `deck must be "library" (got ${describeRaw(deck)}) — other decks aren't supported yet`,
+    }
   }
 
   const lang = search.get('lang')

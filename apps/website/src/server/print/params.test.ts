@@ -50,18 +50,20 @@ describe('parsePrintParams', () => {
     expect(result.ok).toBe(false)
   })
 
-  it('exposes ~11 Latin/Cyrillic languages and excludes he/zh/jp', () => {
+  it('exposes all 14 Pool languages, including he/zh/jp (RTL + CJK, #41)', () => {
     expect(PRINT_LANGUAGES).toContain('en')
     expect(PRINT_LANGUAGES).toContain('sr') // Cyrillic
-    expect(PRINT_LANGUAGES).not.toContain('he')
-    expect(PRINT_LANGUAGES).not.toContain('zh')
-    expect(PRINT_LANGUAGES).not.toContain('jp')
-    expect(PRINT_LANGUAGES.length).toBeGreaterThanOrEqual(10)
+    expect(PRINT_LANGUAGES).toContain('he') // RTL
+    expect(PRINT_LANGUAGES).toContain('zh') // CJK
+    expect(PRINT_LANGUAGES).toContain('jp') // CJK
+    expect(PRINT_LANGUAGES).toHaveLength(14)
   })
 
-  it('rejects an unsupported language (Hebrew is RTL, tracked in #41)', () => {
-    const result = parsePrintParams(search({...valid, lang: 'he'}))
-    expect(result).toEqual({ok: false, error: expect.stringContaining('lang must be one of')})
+  it('accepts Hebrew, Mandarin and Japanese (RTL/CJK support landed in #41)', () => {
+    for (const lang of ['he', 'zh', 'jp']) {
+      const result = parsePrintParams(search({...valid, lang}))
+      expect(result.ok).toBe(true)
+    }
   })
 
   it('rejects an unknown lang code', () => {
@@ -95,11 +97,17 @@ describe('parsePrintParams', () => {
 
   it('rejects an offsetX/offsetY that is not a finite number', () => {
     const result = parsePrintParams(search({...valid, offsetX: 'nope'}))
-    expect(result).toEqual({ok: false, error: expect.stringContaining('offsetX must be a finite number')})
+    expect(result).toEqual({
+      ok: false,
+      error: expect.stringContaining('offsetX must be a finite number'),
+    })
   })
 
   it('rejects an offset beyond the ±20mm calibration range', () => {
     const result = parsePrintParams(search({...valid, offsetY: '100'}))
-    expect(result).toEqual({ok: false, error: expect.stringContaining('offsetY must be within ±20mm')})
+    expect(result).toEqual({
+      ok: false,
+      error: expect.stringContaining('offsetY must be within ±20mm'),
+    })
   })
 })

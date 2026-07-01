@@ -15,12 +15,13 @@ import process from 'node:process'
 import fontkit from '@pdf-lib/fontkit'
 import {Resvg} from '@resvg/resvg-js'
 import {getDeck} from '@whocards/decks'
+import bidiFactory from 'bidi-js'
 import {PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage} from 'pdf-lib'
 import {decompress} from 'wawoff2'
 
 import type {PrintPdfParams} from './params'
 import {layoutFor, mm, type Rect} from './presets'
-import {fitText} from './text-fit'
+import {fitText, type WrapMode} from './text-fit'
 
 const TEXT_COLOR = rgb(0.06, 0.06, 0.09) // near-black; renders on white print stock
 const ID_COLOR = rgb(0.45, 0.45, 0.5)
@@ -29,14 +30,41 @@ const ID_COLOR = rgb(0.45, 0.45, 0.5)
 // on Latin-script cards. It has no Cyrillic glyphs (verified against
 // public/fonts/aptly_regular.woff2 with @pdf-lib/fontkit — missing glyphs
 // don't throw, they silently render as blank), so Serbian falls back to Golos
-// Text, the same body font src/server/card-image.ts uses for non-Latin scripts.
-type FontKey = 'aptly' | 'golos'
+// Text, the same body font src/server/card-image.ts uses for non-Latin
+// scripts. Hebrew/Mandarin/Japanese (#41) need their own Noto Sans subsets —
+// same regular-weight files src/server/card-image.ts already embeds for the
+// OG social cards, so no new font assets, just reuse for the print PDF.
+type FontKey = 'aptly' | 'golos' | 'hebrew' | 'chinese' | 'japanese'
 const FONT_FILES: Record<FontKey, string> = {
   aptly: 'aptly_regular.woff2',
   golos: 'golos_text.woff2',
+  hebrew: 'noto-sans-hebrew_regular.woff2',
+  chinese: 'noto-sans-chinese_regular.woff2',
+  japanese: 'noto-sans-japanese_regular.woff2',
 }
 const CYRILLIC_LANGUAGES = new Set(['sr'])
-const fontKeyFor = (lang: string): FontKey => (CYRILLIC_LANGUAGES.has(lang) ? 'golos' : 'aptly')
+const SCRIPT_FONT: Partial<Record<string, FontKey>> = {he: 'hebrew', zh: 'chinese', jp: 'japanese'}
+const fontKeyFor = (lang: string): FontKey =>
+  SCRIPT_FONT[lang] ?? (CYRILLIC_LANGUAGES.has(lang) ? 'golos' : 'aptly')
+
+// Hebrew is the only RTL Pool language; Mandarin/Japanese are CJK (no spaces,
+// so word-wrap never breaks a line — see ./text-fit's 'cjk' mode).
+const RTL_LANGUAGES = new Set(['he'])
+const CJK_LANGUAGES = new Set(['zh', 'jp'])
+const isRtl = (lang: string): boolean => RTL_LANGUAGES.has(lang)
+const wrapModeFor = (lang: string): WrapMode => (CJK_LANGUAGES.has(lang) ? 'cjk' : 'word')
+
+// pdf-lib/fontkit lay out glyphs strictly in logical string order — no bidi
+// reordering, unlike a browser or a shaping-aware layout engine. Hebrew text
+// must therefore be reordered into visual order before `drawText`, the same
+// approach src/server/card-image.ts already uses (via bidi-js) for the OG
+// social cards' Satori/SVG pipeline, which has the identical problem.
+const bidi = bidiFactory()
+const toVisualOrder = (line: string): string => {
+  if (!line) return line
+  const levels = bidi.getEmbeddingLevels(line, 'rtl')
+  return bidi.getReorderedString(line, levels)
+}
 
 // Fonts live in /public, the logo in /src/icons. This endpoint runs on-demand
 // (`prerender = false`, a Netlify function), so both are declared in
@@ -106,8 +134,9 @@ const drawCard = (
   rect: Rect,
   pageHeight: number,
   content: CardContent,
+  lang: string,
   font: PDFFont,
-  logo: PDFImage,
+  logo: PDFImage
 ): void => {
   // `rect` is in the same top-down coordinate space as presets.ts's
   // `cardRects`; pdf-lib pages are bottom-origin, so flip once here.
@@ -124,13 +153,23 @@ const drawCard = (
     height: rect.height - footerHeight - padding,
   }
 
-  const {lines, size, lineHeight} = fitText(content.text, font, {
+  const {
+    lines: logicalLines,
+    size,
+    lineHeight,
+  } = fitText(content.text, font, {
     maxWidth: textBox.width,
     maxHeight: textBox.height,
     minSize: MIN_FONT_PT,
     maxSize: MAX_FONT_PT,
     lineHeightMultiplier: LINE_HEIGHT_MULTIPLIER,
+    mode: wrapModeFor(lang),
   })
+  // Wrapping/measurement happens in logical (reading) order — reordering a
+  // line doesn't change its glyphs or width, only their draw order — so only
+  // the final lines need flipping to visual order for RTL before drawing.
+  // The block stays centred either way: centring doesn't care about direction.
+  const lines = isRtl(lang) ? logicalLines.map(toVisualOrder) : logicalLines
 
   const blockHeight = lines.length * lineHeight
   // Baseline of the first line, with the whole block vertically centred in textBox.
@@ -209,7 +248,7 @@ export const renderPrintPdf = async (params: PrintPdfParams): Promise<Uint8Array
         width: rect.width,
         height: rect.height,
       }
-      drawCard(page, shifted, pageSize.height, content, font, logo)
+      drawCard(page, shifted, pageSize.height, content, params.lang, font, logo)
     })
   }
 
