@@ -34,6 +34,10 @@ export type FitTextResult = {
   lineHeight: number
 }
 
+// Some Pool languages write a real space before terminal punctuation (French
+// "… ?", Hebrew "… ?"), which `split(/\s+/)` turns into a standalone token.
+const PURE_PUNCTUATION = /^[\p{P}\p{S}]+$/u
+
 const wrapWordParagraph = (
   paragraph: string,
   font: FontMetrics,
@@ -45,7 +49,11 @@ const wrapWordParagraph = (
   let current = ''
   for (const word of words) {
     const candidate = current ? `${current} ${word}` : word
-    if (current && font.widthOfTextAtSize(candidate, size) > maxWidth) {
+    // A pure-punctuation token never starts a line of its own — glue it to the
+    // previous word even past maxWidth; `fitText`'s width check absorbs the
+    // overflow by shrinking the size.
+    const glue = current !== '' && PURE_PUNCTUATION.test(word)
+    if (current && !glue && font.widthOfTextAtSize(candidate, size) > maxWidth) {
       out.push(current)
       current = word
     } else {

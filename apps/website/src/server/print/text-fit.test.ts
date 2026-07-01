@@ -31,6 +31,32 @@ describe('wrapToWidth', () => {
     expect(lines).toEqual(['supercalifragilisticexpialidocious'])
   })
 
+  // French (all 66 cards) and Hebrew put a real space before terminal
+  // punctuation, so `?` is its own token — it must glue to the previous word
+  // instead of ever starting a wrapped line alone.
+  it('never strands trailing punctuation on its own line (French spacing)', () => {
+    // Width budget chosen so "religion" fits but "religion ?" would overflow.
+    const width = monoFont.widthOfTextAtSize('rapport à la', 10)
+    const lines = wrapToWidth('Quel est ton rapport à la religion ?', monoFont, 10, width)
+    expect(lines[lines.length - 1]).toBe('religion ?')
+    for (const line of lines) expect(line).not.toMatch(/^[?!.;:]+$/)
+  })
+
+  it('never strands trailing punctuation on its own line (Hebrew spacing)', () => {
+    const width = monoFont.widthOfTextAtSize('ממה אתה הכי', 10)
+    const lines = wrapToWidth('ממה אתה הכי מפחד כרגע ?', monoFont, 10, width)
+    expect(lines[lines.length - 1]).toBe('מפחד כרגע ?')
+  })
+
+  it('still wraps a punctuation-free line at the same points as before', () => {
+    expect(wrapToWidth('one two three four five six', monoFont, 10, 48)).toEqual([
+      'one two',
+      'three',
+      'four',
+      'five six',
+    ])
+  })
+
   // CJK text has no spaces, so 'word' mode (splitting on whitespace) would
   // treat a whole paragraph as one unbreakable "word" and never wrap it (#41).
   it('(word mode) never breaks a space-less CJK line, even though it overflows', () => {
