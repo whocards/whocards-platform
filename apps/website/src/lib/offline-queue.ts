@@ -91,7 +91,9 @@ export const createOfflineQueue = (send: Send) => {
         } catch (error) {
           if (head._attempts + 1 >= MAX_RETRIES) {
             // give up on this poison event, log it, and keep the rest moving
-            logError('[answer-queue] dropping Answer after repeated failures', error, {attempts: head._attempts + 1})
+            logError('[answer-queue] dropping Answer after repeated failures', error, {
+              attempts: head._attempts + 1,
+            })
             pending = rest
             write(pending)
           } else {

@@ -44,8 +44,8 @@ import {Icon} from 'astro-icon/components'
         > was born in order to explore radical collaboration and emergence for our future humanity. Amanitas
         was inspired by the superpowers and patterns of the natural world. Throughout a series of retreats,
         a community house and co-created events, we learnt, played and experimented around a core belief:
-        That positive change does not originate from any single individual, rather it ebbs and flows
-        as a force which guides a living system.
+        That positive change does not originate from any single individual, rather it ebbs and flows as
+        a force which guides a living system.
       </p>
       <div class='flex items-center justify-center'>img</div>
       <div class='flex items-center justify-center'>img</div>
@@ -213,22 +213,23 @@ import {Icon} from 'astro-icon/components'
 
 <!-- scroll to top script -->
 <script>
-  const scrollButton = document.getElementById('btn-back-to-top')!
-  const container = document.getElementById('main')!
-  const TOP = 100
-  let visible = false
+  const scrollButton = document.getElementById('btn-back-to-top')
+  const container = document.getElementById('main')
 
-  const scrollEvent = () => {
-    if (container.scrollTop > TOP !== visible) {
-      visible = container.scrollTop > TOP
-      scrollButton.classList.toggle('-bottom-14')
-      scrollButton.classList.toggle('bottom-4')
-    }
-  }
+  if (scrollButton && container) {
+    const TOP = 100
+    let visible = false
 
-  container.addEventListener('scroll', scrollEvent)
+    container.addEventListener('scroll', () => {
+      if (container.scrollTop > TOP !== visible) {
+        visible = container.scrollTop > TOP
+        scrollButton.classList.toggle('-bottom-14')
+        scrollButton.classList.toggle('bottom-4')
+      }
+    })
 
-  scrollButton.onclick = () => {
-    container.scrollTo({top: 0})
+    scrollButton.addEventListener('click', () => {
+      container.scrollTo({top: 0})
+    })
   }
 </script>

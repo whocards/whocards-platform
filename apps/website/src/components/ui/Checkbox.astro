@@ -2,11 +2,11 @@
 import type {HTMLAttributes} from 'astro/types'
 import type {ZodIssue} from 'zod'
 
-interface Props extends HTMLAttributes<'input'> {
+type Props = {
   name: string
   class?: string
   error?: ZodIssue
-}
+} & HTMLAttributes<'input'>
 const {name, required, class: classes, error, ...props} = Astro.props
 const id = `checkbox-${name}`
 ---

@@ -65,7 +65,7 @@ import {mainLinks, socialLinks, legalLinks} from '~constants/navigation'
 </footer>
 
 <script>
-  if (!!navigator.share) {
+  if (navigator.share) {
     const share = document.getElementById('share') as HTMLButtonElement
     share.classList.remove('hidden')
     share.classList.add('flex')

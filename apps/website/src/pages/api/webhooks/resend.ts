@@ -1,11 +1,9 @@
+import {logError, logWarn} from '@whocards/observability'
 import type {APIRoute} from 'astro'
 import {env} from '~env'
 import {db} from '~server/db'
-import {
-  verifyResendSignature,
-  dispatchResendEvent,
-  type WebhookHeaders,
-} from '~server/resend-webhook'
+import {verifyResendSignature, dispatchResendEvent} from '~server/resend-webhook'
+import type {WebhookHeaders} from '~server/resend-webhook'
 
 // SSR-only — never pre-render a webhook receiver.
 export const prerender = false
@@ -24,7 +22,7 @@ export const POST: APIRoute = async ({request}) => {
   // Without the signing secret we cannot verify; return 500 so Resend retries
   // later (the secret should be configured once the endpoint is set up).
   if (!env.RESEND_WEBHOOK_SECRET) {
-    console.error('resend-webhook: RESEND_WEBHOOK_SECRET is not configured')
+    logError('resend-webhook: RESEND_WEBHOOK_SECRET is not configured')
     return new Response(JSON.stringify({error: 'Webhook secret not configured'}), {
       status: 500,
       headers: {'Content-Type': 'application/json'},
@@ -41,7 +39,7 @@ export const POST: APIRoute = async ({request}) => {
     })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'invalid signature'
-    console.warn('resend-webhook: signature verification failed —', msg)
+    logWarn('resend-webhook: signature verification failed', undefined, {reason: msg})
     return new Response(JSON.stringify({error: 'Invalid signature'}), {
       status: 400,
       headers: {'Content-Type': 'application/json'},
@@ -66,7 +64,7 @@ export const POST: APIRoute = async ({request}) => {
       headers: {'Content-Type': 'application/json'},
     })
   } catch (err) {
-    console.error(
+    logError(
       'resend-webhook: dispatch failed applying a verified event — returning 500 so Resend retries',
       err
     )

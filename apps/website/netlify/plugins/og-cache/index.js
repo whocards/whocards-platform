@@ -12,7 +12,7 @@ export const onPreBuild = async ({utils}) => {
   console.log(
     restored
       ? 'og-cache: restored .cache/og from the Netlify build cache'
-      : 'og-cache: no cache yet — cards render fresh this build',
+      : 'og-cache: no cache yet — cards render fresh this build'
   )
 }
 

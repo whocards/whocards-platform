@@ -45,7 +45,7 @@ const buildQuestionDescription = (questionText: string, language?: string): stri
   return `${truncateAtWordBoundary(questionText, budget)} — ${suffix}`
 }
 
-export interface Props {
+export type Props = {
   title?: string
   description?: string
   image?: string

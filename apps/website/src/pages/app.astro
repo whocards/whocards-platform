@@ -78,7 +78,7 @@ const androidTile: Tile = APP_ANDROID_LAUNCHED
 // Only surface the iOS tile when iOS is actually live; lead with the visitor's
 // own platform (Android users can't install the iOS build).
 const baseTiles: Tile[] = [...(APP_IOS_LAUNCHED ? [appStoreTile] : []), androidTile]
-const tiles: Tile[] = isAndroid ? [...baseTiles].reverse() : baseTiles
+const tiles: Tile[] = isAndroid ? [...baseTiles].toReversed() : baseTiles
 const primaryTile = tiles[0]
 
 const pillText =

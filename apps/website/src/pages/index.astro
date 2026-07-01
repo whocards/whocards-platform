@@ -266,7 +266,6 @@ import bgLeftImage from '~assets/images/bg-left-large.svg'
   if (button) {
     button.addEventListener('click', () => {
       document.getElementById('description-extra')?.classList.toggle('hidden')
-      console.log(document.getElementById('description-extra')?.classList.contains('hidden'))
       button.innerHTML = document.getElementById('description-extra')?.classList.contains('hidden')
         ? 'Read more'
         : 'Read less'

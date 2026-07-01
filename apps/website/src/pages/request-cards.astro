@@ -1,6 +1,7 @@
 ---
 export const prerender = false
 
+import {logError} from '@whocards/observability'
 import {Icon} from 'astro-icon/components'
 import type {Icon as IconName} from 'virtual:astro-icon'
 import type {ZodIssue} from 'zod'
@@ -69,7 +70,7 @@ if (Astro.request.method === 'POST') {
       confirmed = true
     }
   } catch (error) {
-    console.error(error)
+    logError('request-cards: unexpected error', error)
     errors ??= {}
   }
 }

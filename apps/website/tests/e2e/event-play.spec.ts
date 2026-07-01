@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs'
 import {fileURLToPath} from 'node:url'
 import {expect, test} from '@playwright/test'
+import type {Page} from '@playwright/test'
 
 // Loaded via fs (rather than a JSON import) so the older repo Prettier/ESLint
 // toolchain doesn't trip on import attributes.
@@ -25,7 +26,7 @@ const questions: Record<string, {en: string; hu: string}> = JSON.parse(
 const q1 = questions['1']
 const q2 = questions['2']
 
-const heading = (page: import('@playwright/test').Page) => page.getByRole('heading', {level: 1})
+const heading = (page: Page) => page.getByRole('heading', {level: 1})
 
 test.beforeEach(async ({page}) => {
   // Fresh localStorage so language defaults to Hungarian deterministically.
