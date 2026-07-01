@@ -22,15 +22,6 @@
   status = 301
   force = true
 
-# #43: old per-question urls now live on the generalized play screen.
-# Redirect /<lang>/question/<id> -> /play?lang=<lang>&q=<id> with a real 301 so
-# previously shared & indexed links keep working.
-[[redirects]]
-  from = "/:language/question/:id"
-  to = "/play?lang=:language&q=:id"
-  status = 301
-  force = true
-
 # Universal Links (iOS) need the association file served as application/json over
 # https with no redirect. It has no file extension, so Netlify would otherwise guess
 # the content type. assetlinks.json already gets the right type from its extension.
