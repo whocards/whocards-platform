@@ -93,6 +93,8 @@ type NavContext = {deck_id: string; language: string; game: string}
  *
  * - `next`: emits `question_next`; also `deck_cycled` when ids grew (cycle).
  * - `previous`: emits `question_previous` (empty when clamped at idx 0).
+ * - `reset`: emits nothing — a deep-link jump into the deck isn't a nav step (the
+ *   new card's `question_shown` is emitted by the caller's question effect).
  * - `question_viewed` is NOT emitted here — that's the view tracker's job.
  */
 export const eventsFor = (
@@ -150,6 +152,10 @@ export const eventsFor = (
         },
       ]
     }
+
+    case 'reset':
+      // A deep-link jump into the open deck — not a next/previous nav step.
+      return []
   }
 }
 

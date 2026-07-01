@@ -2,13 +2,14 @@ import type {QuestionId} from '../types'
 import {shuffle} from './shuffle'
 
 export type NavState = {ids: QuestionId[]; idx: number}
-export type NavAction = {type: 'next'} | {type: 'previous'}
+export type NavAction = {type: 'next'} | {type: 'previous'} | {type: 'reset'; startId?: string}
 
 /**
  * The play navigation reducer. `next` walks forward, appending a fresh shuffle of
  * the deck whenever it runs off the end (so play is endless); `previous` steps
- * back, clamped at the first card. Pure — no React, no DOM — so web (`useReducer`)
- * and mobile drive the exact same behaviour.
+ * back, clamped at the first card; `reset` re-seeds the deck from a `startId` (a
+ * fresh deep link into the already-open deck — see `getInitialNav`). Pure — no
+ * React, no DOM — so web (`useReducer`) and mobile drive the exact same behaviour.
  */
 export const navReducer =
   (questionIds: QuestionId[]) =>
@@ -21,6 +22,8 @@ export const navReducer =
           state.idx >= state.ids.length - 1 ? [...state.ids, ...shuffle(questionIds)] : state.ids
         return {ids, idx: state.idx + 1}
       }
+      case 'reset':
+        return getInitialNav(questionIds, action.startId)
     }
   }
 
