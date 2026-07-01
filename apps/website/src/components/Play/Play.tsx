@@ -28,7 +28,18 @@ export type PlayProps = {
 /** One queue per island, recording each serve to the Answer record via tRPC. */
 const answerQueue = createOfflineQueue(sendAnswer)
 
-// Static nav glyphs — hoisted so they aren't re-created on every render (rendering-hoist-jsx)
+// Static nav glyphs, hand-written as inline JSX <svg> rather than astro-icon's
+// <Icon>. astro-icon's <Icon> is an *Astro* component — it resolves `virtual:astro-icon`
+// and reads from src/icons at build/render time, which only works inside .astro files.
+// It can't be rendered from a React island like this one. `@iconify-icon/react` (used
+// in LanguageSwitcher.tsx / Print.tsx) doesn't solve this either — that's a web-component
+// wrapper around Iconify's *remote* API/collections (e.g. `mdi:`, `zondicons:`), not a
+// bridge to our local src/icons SVGs.
+//
+// So for one-off glyphs in a React island, the simplest safe pattern is a hoisted inline
+// JSX <svg> const (hoisted so it isn't re-created on every render, rendering-hoist-jsx).
+// If a React island ever needs several of these, promote them to small colocated
+// components instead of copy-pasting more one-offs — see src/icons/README.md.
 const PrevArrowIcon = (
   <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' className='h-10 w-10'>
     <path fill='currentColor' d='M20 11H7.83l5.59-5.59L12 4l-8 8l8 8l1.41-1.41L7.83 13H20z' />
@@ -184,17 +195,26 @@ export const Play = ({
     const prev = prevNavRef.current
     if (prev && prev.idx !== idx) {
       const action = idx > prev.idx ? ({type: 'next'} as const) : ({type: 'previous'} as const)
-      for (const event of eventsFor(action, prev, {ids, idx}, {
-        deck_id: deckSlug ?? '',
-        language: language ?? '',
-        game: GAMES.WH,
-      })) {
+      for (const event of eventsFor(
+        action,
+        prev,
+        {ids, idx},
+        {
+          deck_id: deckSlug ?? '',
+          language: language ?? '',
+          game: GAMES.WH,
+        }
+      )) {
         track(event)
       }
     }
 
     // dwell: start the new view (end is fired by the nav handlers / lifecycle)
-    viewTracker.startView({deck_id: deckSlug ?? '', question_id: questionId, language: language ?? ''})
+    viewTracker.startView({
+      deck_id: deckSlug ?? '',
+      question_id: questionId,
+      language: language ?? '',
+    })
 
     // always-on catalog tracking
     track({
@@ -306,7 +326,9 @@ export const Play = ({
 
   const direction = getDirection(language ?? '')
   const questionText =
-    questions[ids[idx] ?? '']?.[language ?? ''] ?? questions[ids[idx] ?? '']?.[defaultLanguage ?? ''] ?? ''
+    questions[ids[idx] ?? '']?.[language ?? ''] ??
+    questions[ids[idx] ?? '']?.[defaultLanguage ?? ''] ??
+    ''
 
   return (
     <>
