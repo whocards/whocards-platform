@@ -25,7 +25,18 @@ export const GET: APIRoute = async ({url}) => {
   }
 
   // Buffer (not the raw Uint8Array pdf-lib returns) so this satisfies `BodyInit`.
-  const pdf = Buffer.from(await renderPrintPdf(parsed.value))
+  // Rendering reads bundled font/logo files off disk, so it can fail for reasons
+  // outside user input — surface a clean 500 instead of the platform error page.
+  let pdf: Buffer<ArrayBuffer>
+  try {
+    pdf = Buffer.from(await renderPrintPdf(parsed.value))
+  } catch (err) {
+    console.error('print.pdf render failed:', err)
+    return new Response(JSON.stringify({error: 'PDF rendering failed'}), {
+      status: 500,
+      headers: {'content-type': 'application/json'},
+    })
+  }
   const filename = `whocards-${parsed.value.lang}-${parsed.value.preset}.pdf`
 
   return new Response(pdf, {

@@ -23,6 +23,12 @@ describe('resolveLayout', () => {
     expect(resolveLayout('not-a-real-sheet')).toBeUndefined()
   })
 
+  it('returns undefined for Object.prototype key names', () => {
+    expect(resolveLayout('constructor')).toBeUndefined()
+    expect(resolveLayout('hasOwnProperty')).toBeUndefined()
+    expect(resolveLayout('__proto__')).toBeUndefined()
+  })
+
   it('every seeded SKU alias points at a real layout', () => {
     for (const [sku, id] of Object.entries(SKU_ALIASES)) {
       expect(PHYSICAL_LAYOUTS[id], `alias ${sku}`).toBeDefined()

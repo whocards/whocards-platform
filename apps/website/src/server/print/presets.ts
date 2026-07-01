@@ -165,8 +165,11 @@ export type Layout = {
 
 /** Resolve a preset id or a SKU alias to a physical layout, or `undefined`. */
 export const resolveLayout = (presetOrAlias: string): PhysicalLayout | undefined => {
-  if (presetOrAlias in PHYSICAL_LAYOUTS) return PHYSICAL_LAYOUTS[presetOrAlias as LayoutId]
-  const aliased = SKU_ALIASES[presetOrAlias]
+  // `Object.hasOwn`, not `in`/bare indexing: these are plain objects, so inherited
+  // keys like "constructor" would otherwise resolve to Object.prototype members.
+  if (Object.hasOwn(PHYSICAL_LAYOUTS, presetOrAlias))
+    return PHYSICAL_LAYOUTS[presetOrAlias as LayoutId]
+  const aliased = Object.hasOwn(SKU_ALIASES, presetOrAlias) ? SKU_ALIASES[presetOrAlias] : undefined
   return aliased ? PHYSICAL_LAYOUTS[aliased] : undefined
 }
 
