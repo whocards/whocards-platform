@@ -18,6 +18,7 @@
       {"prefer": "type-imports", "fixStyle": "separate-type-imports"}
     ],
     "typescript/no-non-null-assertion": "warn",
+    "no-underscore-dangle": ["warn", {"allow": ["_attempts", "_u", "__dirname"]}],
     "import/no-default-export": "error",
     "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
     "import/no-unassigned-import": ["error", {"allow": ["**/*.css", "server-only"]}]
@@ -30,17 +31,20 @@
         "**/*.test.ts",
         "**/*.test.tsx",
         "**/e2e/**",
-        "**/tests/**"
+        "**/e2e-ssr/**",
+        "**/tests/**",
+        "**/netlify/plugins/**"
       ],
       "rules": {
         "no-console": "off",
         "no-unsafe-finally": "off",
         "import/no-unassigned-import": "off",
-        "node/no-process-env": "off"
+        "node/no-process-env": "off",
+        "typescript/no-non-null-assertion": "off"
       }
     },
     {
-      "files": ["**/env.ts", "**/env.test.ts"],
+      "files": ["**/env.ts", "**/env.node.ts", "**/env.test.ts"],
       "rules": {
         "node/no-process-env": "off"
       }
@@ -62,6 +66,14 @@
       "rules": {
         "import/no-default-export": "off"
       }
+    },
+    {
+      "files": ["**/*.d.ts"],
+      "rules": {
+        "typescript/triple-slash-reference": "off",
+        "typescript/consistent-type-imports": "off",
+        "typescript/consistent-type-definitions": "off"
+      }
     }
   ],
   "ignorePatterns": [
@@ -71,7 +83,6 @@
     "**/.netlify/**",
     "**/.expo/**",
     "**/.turbo/**",
-    "**/drizzle/**",
-    "apps/website/**"
+    "**/drizzle/**"
   ]
 }
