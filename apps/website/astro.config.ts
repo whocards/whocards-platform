@@ -59,7 +59,17 @@ export default defineConfig({
     }),
   ],
   output: 'static',
-  adapter: netlify(),
+  adapter: netlify({
+    // `/api/print.pdf` (#38) is `prerender = false` (a real Netlify function),
+    // so the font/logo files it reads at request time via `process.cwd()`
+    // (see src/server/print/render.ts) must be force-bundled — the SSR
+    // bundler otherwise only picks up statically-imported assets.
+    includeFiles: [
+      './public/fonts/aptly_regular.woff2',
+      './public/fonts/golos_text.woff2',
+      './src/icons/logo-plain.svg',
+    ],
+  }),
   redirects: {
     '/preorder': '/contact',
     '/gift': '/contact',
