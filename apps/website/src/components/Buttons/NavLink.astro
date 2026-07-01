@@ -14,6 +14,7 @@ const {
   selected,
   size = 'md',
   play = false,
+  pop = false,
   full = false,
   external = false,
   class: classes,
@@ -48,7 +49,7 @@ const {
         href={href}
         target={external ? '_blank' : '_self'}
         class='text-lg font-bold rounded-xl hover:text-primary-light transition-colors duration-300'
-        class:list={[play && 'play', classes]}
+        class:list={[play && 'play', pop && 'app-cta', classes]}
       >
         {title}
       </a>

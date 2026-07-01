@@ -1,3 +1,4 @@
+import {APP_VISIBLE} from './app'
 import {websiteNextUrl} from './urls'
 
 export type Link = {
@@ -7,14 +8,19 @@ export type Link = {
   icon?: string
   play?: boolean
   external?: boolean
+  /** Give a plain nav link a subtle on-brand "pop" (used for the app CTA). */
+  pop?: boolean
 }
 
 export const mainLinks: Link[] = [
   {href: '/#what-is-whocards', title: 'About'},
   {href: '/play', title: 'Play', play: true},
   {href: '/print', title: 'Print'},
+  // Only surface the /app entry when the funnel is visible (a store is live).
+  // `pop` gives it a tasteful on-brand glow in the nav.
+  ...(APP_VISIBLE ? [{href: '/app', title: 'Get the App', pop: true} as Link] : []),
   // {href: donationUrl, title: 'Donate', external: true},
-  {href: '/contact', title: 'Request Cards', button: true},
+  {href: '/request-cards', title: 'Request Cards', button: true},
 ]
 
 // Rendered as the "Events" dropdown. One entry per edition; the landing page is
@@ -26,7 +32,7 @@ export const eventLinks: Link[] = [
 
 export const eventMainLinks: Link[] = [
   // {href: donationUrl, title: 'Donate', external: true},
-  {href: '/contact', title: 'Request Cards', button: true},
+  {href: '/request-cards', title: 'Request Cards', button: true},
 ]
 
 export const socialLinks: Link[] = [

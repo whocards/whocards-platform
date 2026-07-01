@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.whocards.mobile",
+      "sha256_cert_fingerprints": [
+        "24:C4:CA:87:E0:99:C3:7B:51:F1:36:6C:FD:1C:10:5B:77:0A:E5:37:1B:06:2F:1E:D1:38:15:FE:1D:A6:79:A7",
+        "7A:37:82:D1:64:16:6E:0E:95:AC:C9:51:E1:33:38:34:2E:1E:47:52:EE:75:A2:81:20:9F:D7:17:E8:5F:F0:E5"
+      ]
+    }
+  }
+]

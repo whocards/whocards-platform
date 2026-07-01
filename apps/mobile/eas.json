@@ -18,7 +18,9 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://whocards.cc"
+        "EXPO_PUBLIC_API_URL": "https://whocards.cc",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_CHdF4pG74xK4g3sfYUxHik4FuFZWNnbnVWvrNJYYU2oM",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://eu.i.posthog.com"
       }
     }
   },
@@ -29,7 +31,7 @@
         "appleTeamId": "6RTC67K8CW"
       },
       "android": {
-        "serviceAccountKeyPath": "TODO: path to Play service-account JSON"
+        "track": "alpha"
       }
     }
   }

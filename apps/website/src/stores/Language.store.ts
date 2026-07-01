@@ -1,4 +1,4 @@
-import {action, computed, atom} from 'nanostores'
+import {action, atom} from 'nanostores'
 import type {Language} from '~types'
 import {DEFAULT_LANGUAGE} from '~utils'
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "WhoCards",
     "slug": "whocards-app",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
@@ -14,10 +14,37 @@
       "url": "https://u.expo.dev/70c97b4d-b05c-4839-a6a3-054bb0625e1f"
     },
     "ios": {
-      "bundleIdentifier": "cc.whocards.mobile"
+      "bundleIdentifier": "cc.whocards.mobile",
+      "associatedDomains": ["applinks:whocards.cc"],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "cc.whocards.mobile",
+      "package": "com.whocards.mobile",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "whocards.cc",
+              "path": "/play"
+            },
+            {
+              "scheme": "https",
+              "host": "whocards.cc",
+              "pathPrefix": "/play/"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#08001A",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -37,7 +64,11 @@
           "backgroundColor": "#08001a",
           "image": "./assets/images/logo.png",
           "imageWidth": 280,
-          "resizeMode": "contain"
+          "resizeMode": "contain",
+          "android": {
+            "image": "./assets/images/splash-logo-android.png",
+            "imageWidth": 280
+          }
         }
       ],
       "expo-image",

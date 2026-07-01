@@ -14,6 +14,14 @@
 [[plugins]]
   package = "/netlify/plugins/og-cache"
 
+# Keep the retired calmly hostname working, but consolidate every request onto
+# the canonical production domain. Netlify preserves the original query string.
+[[redirects]]
+  from = "https://calmly.whocards.cc/*"
+  to = "https://whocards.cc/:splat"
+  status = 301
+  force = true
+
 # #43: old per-question urls now live on the generalized play screen.
 # Redirect /<lang>/question/<id> -> /play?lang=<lang>&q=<id> with a real 301 so
 # previously shared & indexed links keep working.
@@ -23,7 +31,15 @@
   status = 301
   force = true
 
-# [[plugins]] 
+# Universal Links (iOS) need the association file served as application/json over
+# https with no redirect. It has no file extension, so Netlify would otherwise guess
+# the content type. assetlinks.json already gets the right type from its extension.
+[[headers]]
+  for = "/.well-known/apple-app-site-association"
+  [headers.values]
+    Content-Type = "application/json"
+
+# [[plugins]]
 #   package = "netlify-plugin-cypress"
 
 #   [plugins.inputs.postBuild]

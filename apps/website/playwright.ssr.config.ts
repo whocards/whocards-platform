@@ -32,5 +32,7 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // /app renders in download mode under the default flags (PUBLIC_APP_IOS_LAUNCHED
+    // defaults on, Android off), which is exactly what the SSR /app suite asserts.
   },
 })

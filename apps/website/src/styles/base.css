@@ -196,3 +196,62 @@ html {
 .text-gradient {
   @apply from-primary-light to-primary-dark bg-gradient-to-r bg-clip-text pb-2 text-transparent;
 }
+
+/*
+ * App CTA — a tasteful, on-brand "pop" for the nav "Get the App" link. A soft
+ * pill that breathes a warm glow, led by a small pulsing dot. Subtle enough to
+ * sit next to the plain nav links; loud enough to draw the eye to the new app.
+ * Honours prefers-reduced-motion (static pill, no animation).
+ */
+.app-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.85rem;
+  border-radius: 9999px;
+  color: var(--color-primary-light);
+  border: 1px solid color-mix(in srgb, var(--color-primary-light) 35%, transparent);
+  background: color-mix(in srgb, var(--color-primary-light) 8%, transparent);
+  animation: app-cta-breathe 3.4s ease-in-out infinite;
+}
+
+.app-cta:hover {
+  color: var(--color-yellow-300);
+  border-color: color-mix(in srgb, var(--color-primary-light) 65%, transparent);
+}
+
+.app-cta::before {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: var(--color-primary-light);
+  animation: app-cta-ping 2.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes app-cta-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary-light) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 16px -2px color-mix(in srgb, var(--color-primary-light) 45%, transparent);
+  }
+}
+
+@keyframes app-cta-ping {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary-light) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 0.5rem transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-cta,
+  .app-cta::before {
+    animation: none;
+  }
+}

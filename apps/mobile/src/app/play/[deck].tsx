@@ -1,8 +1,10 @@
 import {Ionicons} from '@expo/vector-icons'
+import * as Application from 'expo-application'
 import {useLocalSearchParams, useRouter} from 'expo-router'
+import * as StoreReview from 'expo-store-review'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Platform, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -25,9 +27,17 @@ import {PlayerBar} from '@/components/player-bar'
 import {ScreenBackground} from '@/components/screen-background'
 import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
+import {
+  getReviewState,
+  incrementCardCount,
+  incrementSessionCount,
+  isReviewEligible,
+  markReviewAttempted,
+} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, setStoredLanguage} from '@/lib/language-store'
+import {buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
 const CHROME_HIDE_MS = 3000
@@ -35,6 +45,17 @@ const CHROME_HIDE_MS = 3000
 const SWIPE_OFF_SCREEN = 400
 // Rubber-band resistance factor when swiping at a boundary (0–1, lower = more resistance)
 const RUBBER_BAND = 0.3
+
+// Card-enter animation durations (ms) and travel offsets (points).
+// Subsequent swipes use CARD_ENTER_MS / CARD_ENTER_TRAVEL — snappy and unchanged.
+// The very first entrance (app open) uses a slower, more deliberate timing on both
+// platforms so it reads as a deal rather than a pop.
+const CARD_ENTER_MS = 260
+const INITIAL_CARD_ENTER_MS = 900
+const CARD_ENTER_TRAVEL = 28
+// Larger travel on the first entrance so the slower 900 ms timing reads as a real
+// slide rather than a long fade-in.
+const INITIAL_CARD_ENTER_TRAVEL = 56
 
 // Per-script question face. golos-text (the brand body face) covers Latin + Cyrillic;
 // Hebrew gets its bundled Noto face; CJK (zh/jp) falls back to the system font — full
@@ -80,7 +101,7 @@ export default function PlayScreen() {
   // `q` deep-links to a specific question (e.g. mobile://play/library?q=1): the engine
   // starts there in natural order instead of shuffling, so deep links and screenshot
   // captures are reproducible. Mirrors the web <Play> `?q=` behaviour (ADR-0003).
-  const {deck: slug, q} = useLocalSearchParams<{deck: string; q?: string}>()
+  const {deck: slug, q, lang} = useLocalSearchParams<{deck: string; q?: string; lang?: string}>()
   const deck = getDeck(slug)
 
   if (!deck) {
@@ -93,13 +114,22 @@ export default function PlayScreen() {
     )
   }
 
+  // Key on the linked target (deck + `?q=` + `?lang=`) so a deep link that arrives
+  // while the player is already mounted routes to the linked question. expo-router
+  // reuses this `play/[deck]` screen and only updates the route params, so without a
+  // changing key the engine's `useReducer` (seeded once from `startId`) would keep
+  // showing whatever card was open. Re-keying remounts the player fresh on the new
+  // target; it stays constant through normal play (mobile never writes `q`/`lang`
+  // back to the route), so swiping never remounts.
   return (
     <DeckPlayer
+      key={`${deck.slug}:${typeof q === 'string' ? q : ''}:${typeof lang === 'string' ? lang : ''}`}
       deckSlug={deck.slug}
       questionIds={deck.questionIds}
       questions={deck.questions}
       languages={deck.languages}
       startId={typeof q === 'string' ? q : undefined}
+      startLanguage={typeof lang === 'string' ? lang : undefined}
     />
   )
 }
@@ -110,9 +140,18 @@ type DeckPlayerProps = {
   questions: QuestionSet
   languages: string[]
   startId?: string
+  /** Language from a shared deep-link (`?lang=`); wins over the stored preference. */
+  startLanguage?: string
 }
 
-const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: DeckPlayerProps) => {
+const DeckPlayer = ({
+  deckSlug,
+  questionIds,
+  questions,
+  languages,
+  startId,
+  startLanguage,
+}: DeckPlayerProps) => {
   const router = useRouter()
   const reduceMotion = useReducedMotion()
 
@@ -122,7 +161,11 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
     getInitialNav(questionIds, startId)
   )
   const defaultLanguage = languages[0]
-  const [language, setLanguage] = useState(defaultLanguage)
+  // A shared link's `?lang=` (if valid for this deck) is the explicit intent of the
+  // person who shared it, so it seeds the initial language and overrides storage below.
+  const linkLanguage =
+    startLanguage && languages.includes(startLanguage) ? startLanguage : undefined
+  const [language, setLanguage] = useState(linkLanguage ?? defaultLanguage)
   // true once the AsyncStorage read has settled — gates the first card paint so
   // the player never shows a visible language flip on launch. The read is a single
   // fast local hit (~1-5 ms); holding the card behind it is the right trade-off
@@ -133,13 +176,19 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
   // Seed language from storage on mount. Only apply a stored value if it is still
   // present in this deck's languages list (guard against decks dropping a language).
   useEffect(() => {
+    // A shared link's language takes precedence — skip the stored value entirely.
+    if (linkLanguage) {
+      setLanguage(linkLanguage)
+      setLanguageReady(true)
+      return
+    }
     void getStoredLanguage(deckSlug).then((stored) => {
       if (stored && languages.includes(stored)) {
         setLanguage(stored)
       }
       setLanguageReady(true)
     })
-  }, [deckSlug, languages])
+  }, [deckSlug, languages, linkLanguage])
 
   const questionId = ids[idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''
@@ -173,6 +222,55 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageReady])
 
+  // Counts this session for review eligibility on its FIRST served card (below), so a
+  // session that never showed a card isn't counted — matches the session-count doc.
+  const sessionCountedRef = useRef(false)
+
+  // --- In-app review: check eligibility and fire the native OS prompt ---
+  // Called after play (on exit or background), never mid-card or on launch.
+  // Fails silently; emits app_review_eligible and app_review_requested via track().
+  // An in-flight ref dedupes concurrent calls (AppState background + exit can both
+  // fire) so two callers can't pass the eligibility check before the first persists.
+  const reviewRequestInFlightRef = useRef(false)
+  const maybeRequestReview = useCallback(async () => {
+    if (reviewRequestInFlightRef.current) return
+    reviewRequestInFlightRef.current = true
+    try {
+      const appVersion = Application.nativeApplicationVersion ?? '0'
+      const state = await getReviewState()
+      if (!isReviewEligible(state, appVersion)) return
+
+      track({
+        name: EVENTS.APP_REVIEW_ELIGIBLE,
+        props: {
+          app_version: appVersion,
+          card_count: state.cardCount,
+          session_count: state.sessionCount,
+        },
+      })
+
+      const available = await StoreReview.isAvailableAsync()
+      if (!available) return
+      const hasAction = await StoreReview.hasAction()
+      if (!hasAction) return
+
+      // Persist before calling so a background/crash after this point doesn't
+      // allow a second attempt on the same version.
+      await markReviewAttempted(appVersion)
+
+      track({
+        name: EVENTS.APP_REVIEW_REQUESTED,
+        props: {app_version: appVersion, platform: Platform.OS},
+      })
+
+      await StoreReview.requestReview()
+    } catch {
+      // Fail silently — store review is best-effort.
+    } finally {
+      reviewRequestInFlightRef.current = false
+    }
+  }, [])
+
   // --- Answer record: every serve enqueues an Answer; the queue sends it (or
   // retries offline). Recording is wired here, not in the engine, so the shared
   // headless engine stays pure (ADR-0003). ---
@@ -185,16 +283,20 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
       if (state === 'active') void flush(send)
       if (state === 'background' || state === 'inactive') {
         viewTracker.endView('backgrounded')
+        // After a play session ends (app backgrounded), check for review eligibility.
+        void maybeRequestReview()
       }
     })
     return () => sub.remove()
-  }, [viewTracker])
+  }, [viewTracker, maybeRequestReview])
 
   // one Answer per Question served (keyed on questionId, so re-renders don't
   // double-record); also a flush trigger via enqueue's opportunistic send.
   // TODO(answered=served): `language` in the deps re-records when the language is
   // switched on the same card (an over-count vs "answered = served"); revisit when
   // the "answered" definition gains a dwell timer.
+  // Card count for in-app review eligibility increments on the same questionId key
+  // (same over-count caveat as above).
   useEffect(() => {
     if (!questionId) return
     let cancelled = false
@@ -202,6 +304,12 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
       if (cancelled) return
       void enqueue({deviceId, deckSlug, questionId, language}, send)
     })
+    void incrementCardCount()
+    // First served card of this session → count the session for review eligibility.
+    if (!sessionCountedRef.current) {
+      sessionCountedRef.current = true
+      void incrementSessionCount()
+    }
     return () => {
       cancelled = true
     }
@@ -314,13 +422,21 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
   const navDir = useRef(1)
   // Whether we're at the first card — used in gesture rubber-band check
   const isAtFirst = idx === 0
+  // Flips to false after the very first entrance so only the open sequence gets
+  // the slower, deliberate timing (subsequent swipes stay at CARD_ENTER_MS).
+  const isFirstEnter = useRef(true)
 
   // card-enter animation: when questionId changes, the new card flies in from
   // the appropriate edge. navDir is set by goNext/goPrevious before dispatch.
+  // The first entrance uses a longer duration on Android so it reads as a
+  // deliberate "deal the card" rather than an abrupt pop.
   useEffect(() => {
-    const travel = reduceMotion ? 0 : 28
+    const first = isFirstEnter.current
+    if (first) isFirstEnter.current = false
+    const travel = reduceMotion ? 0 : first ? INITIAL_CARD_ENTER_TRAVEL : CARD_ENTER_TRAVEL
+    const duration = reduceMotion ? 0 : first ? INITIAL_CARD_ENTER_MS : CARD_ENTER_MS
     translateX.set(navDir.current * travel)
-    translateX.set(withTiming(0, {duration: reduceMotion ? 0 : 260}))
+    translateX.set(withTiming(0, {duration}))
   }, [questionId, translateX, reduceMotion])
 
   const cardStyle = useAnimatedStyle(() => {
@@ -370,13 +486,18 @@ const DeckPlayer = ({deckSlug, questionIds, questions, languages, startId}: Deck
 
   // leave the player — back to wherever we came from, falling back to the landing
   const handleExit = useCallback(() => {
+    void maybeRequestReview()
     if (router.canGoBack()) router.back()
     else router.replace('/')
-  }, [router])
+  }, [router, maybeRequestReview])
 
   const handleShare = useCallback(() => {
-    if (text) void Share.share({message: `${text}\n\n— WhoCards`})
-  }, [text])
+    if (!text) return
+    const url = buildShareUrl(deckSlug, language, questionId)
+    // `url` is read by iOS share sheet; `message` carries the link on Android (which
+    // ignores the `url` field) and provides a fallback for any platform.
+    void Share.share({message: `${text}\n\n${url}`, url})
+  }, [text, deckSlug, language, questionId])
 
   const openLanguage = useCallback(() => setLangModalOpen(true), [])
 

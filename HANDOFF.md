@@ -1,14 +1,12 @@
-# Handoff — 0004 (logger) + 0006 (parity) + 0007/0008 (mobile native-feel) SHIPPED; remaining work mostly user-gated
+# Handoff — 0004 (logger) + 0007/0008 (mobile native-feel) SHIPPED; remaining work mostly user-gated
 
 Branch **`main`** at `/Users/avi/code/whocards/app`, clean at **`0ce688e`**. Done & merged: the
 unified-play + Answer-record work (0003), the monorepo DB-migration takeover (0005 baseline), the
-**`@whocards/logger`** package (0004 — shared + web + mobile-console-swap), the **visual-parity
-suite** (0006 — v1 static routes + v2 SSR/play), and the **mobile native-feel** pair (**0007**
-interactive Reanimated swipe + haptics + press-springs + Reduce-Motion; **0008** Android predictive
-back + per-surface status bar + sheet/splash polish). All shipped via the `coder` → `reviewer` →
-orchestrator-merge workflow. The parity run was executed against the live site and
-**the repo is at-or-ahead of the deployed site** (see the 0006 progress note). Remaining open work
-now needs a user decision or a device — see Next Steps. **0007/0008 still need an on-device pass**
+**`@whocards/logger`** package (0004 — shared + web + mobile-console-swap), and the **mobile
+native-feel** pair (**0007** interactive Reanimated swipe + haptics + press-springs + Reduce-Motion;
+**0008** Android predictive back + per-surface status bar + sheet/splash polish). All shipped via
+the `coder` → `reviewer` → orchestrator-merge workflow. Remaining open work now needs a user
+decision or a device — see Next Steps. **0007/0008 still need an on-device pass**
 (haptics, 60/120fps swipe feel, predictive-back peek, status-bar contrast, splash fade).
 
 ## Goal
@@ -51,19 +49,6 @@ from the currently-deployed site to this repo.
   `pnpm check` green modulo the 12 known website errors. **Engine untouched (ADR-0003).** iOS sheet
   grabber/detents deferred (`pageSheet` already gives native swipe-to-dismiss). **On-device pass still
   owed** — see Next Steps.
-- **Visual-parity suite (0006)** — v1 `38df274`, v2 `d4a6aaf`. Screenshots each route on the deployed
-  site (`DEPLOYED_URL`, default `https://whocards.cc`) vs a local build and pixel-diffs into an HTML
-  report — a cutover **triage tool**, not a CI gate. **v1** (`test:parity`): static routes via
-  `tests/static-server.mjs`. **v2** (`test:parity:ssr`): SSR/play routes via `astro dev`, with
-  deterministic `?lang=&q=` deep links (`Play.tsx` honours `?q=` → no shuffle); shared capture/diff in
-  `tests/parity/_capture.ts`; dev toolbar disabled via `astro.config devToolbar` (gated on
-  `DISABLE_DEV_TOOLBAR`). Stabilises by blocking PostHog/consent, freezing CSS motion, masking the
-  GSAP `.rotate` hero. **Run findings vs the live site:** marketing already matches (5 routes
-  pixel-perfect; `/` + `/images` diffs were image-capture artifacts — **no images were deleted in the
-  migration**, byte-identical to the old `website` repo); **`ai-at-work` the repo is AHEAD** (deployed
-  still shows `TODO(copy)` placeholders); SSR/play **10/10 <2%**. **Still deferred:** `/purchase` +
-  `/thanks` (Stripe state), `/events/hajnalig/play` (shuffle masking), and hardening v1's lazy-image
-  capture.
 - **Logger (0004)** — merged **`f3ec037`**. `@whocards/logger` (TS-source package, no build):
   `logWarn`/`logError`, dev→`console` / prod→injected `LogSink`, `try/catch` so it never throws,
   PII-safe (`Record<string, unknown>` — ids + messages only). **Web** wires a sink to
@@ -85,9 +70,8 @@ from the currently-deployed site to this repo.
 - **Tickets → GitHub Issues** (`whocards/whocards-platform`, **`#N` == old `000N`**); `docs/tickets/`
   removed in the 2026-06-21 migration. **Closed:** #3, #4 (mobile PostHog transport — merged via
   PR #31), #7, #8, #9, #10, #13, #14, #18, #20, #21, #22, #23.
-  **Open:** #1 CJK fonts, #2 Convex (backlog/parked), #5 DB reconcile/drops, #6 parity leftovers,
-  #11/#12/#16/#17 release + store-listing/Expo accounts (blocked), #15 Maestro + device matrix,
-  #19 web print (need-decision), #24 Hajnalig review (~2026-07-22), #27 Android store account.
+  **Open:** #1 CJK fonts, #2 Convex (backlog/parked), #5 DB reconcile/drops, #16/#17 release +
+  store listing, #19 web print, #24 Hajnalig review (~2026-07-22), #27 Android store account.
 - **Website is LIVE on Netlify** (2026-06-21, #20 closed): `whocards.cc` serves the monorepo build,
   **prod API `https://whocards.cc/api/trpc` is live** (`decks.manifest`/`pool.languages` → `200`),
   OG social cards render via a deploy-persistent cache (`0cad542`). Netlify **Base directory must be
@@ -95,19 +79,14 @@ from the currently-deployed site to this repo.
 
 ## Next Steps (ordered)
 
-1. **0006 leftovers (optional polish, low priority — the meaty work is done).** `/purchase` +
-   `/thanks` parity (needs real Stripe session/keys), `/events/hajnalig/play` (client shuffle — mask
-   the question region or add `?q=` to the event deck), and hardening v1's lazy-image capture
-   (scroll-to-load before the fullPage screenshot) so image-heavy-page numbers are trustworthy.
-   Populate the README's known-acceptable-diffs table from a real run (e.g. `ai-at-work` = repo-ahead).
-2. **Mobile PostHog transport (0004 remainder) — DONE** (merged PR #31): `posthog-react-native`
+1. **Mobile PostHog transport (0004 remainder) — DONE** (merged PR #31): `posthog-react-native`
    provider + sink wired in `apps/mobile/src/lib/observability.ts`. Still owes an **on-device pass**
    (a dev-client rebuild) to confirm real events land in PostHog.
-3. **Auth decision → cleanup migrations (0005).** Blocked: needs the user's auth choice
+2. **Auth decision → cleanup migrations (0005).** Blocked: needs the user's auth choice
    (`auth_*` vs `account_*` vs drop) **and** explicit authorization to touch prod.
-4. **CJK question fonts (0001)** — mobile; needs the user's subset/bundle/system choice.
-5. **Pool-data dedup** — surface the type-widening tradeoff (below) to the user first.
-6. **Mobile device verification** — run Answer-record + offline flush on a rebuilt dev client, and do
+3. **CJK question fonts (0001)** — mobile; needs the user's subset/bundle/system choice.
+4. **Pool-data dedup** — surface the type-widening tradeoff (below) to the user first.
+5. **Mobile device verification** — run Answer-record + offline flush on a rebuilt dev client, and do
    the **0007/0008 on-device pass**: haptics firing at the right moments, the finger-tracking swipe at
    60/120fps + rubber-band feel, Android predictive-back peek, status-bar contrast over the white
    language sheet, and the 300 ms splash fade. (None of these are statically verifiable.)
@@ -158,16 +137,6 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
   fixed in a small follow-up pass and amended into a single clean commit.
 - Surfacing the one outward-facing, brief-contradicting decision (the PostHog event name) to the
   user via a quick question rather than silently overriding the written brief.
-- For 0006, the **hermetic self-diff smoke test** (point `DEPLOYED_URL` at the local server) paid off
-  twice: it runs with no network, and it **caught non-determinism** — flagged the shuffled
-  `/events/hajnalig/play` at ~4% (dropped from v1). The `reviewer` then caught that the GSAP hero
-  animation is immune to `animation:none` (JS/rAF-driven) → fixed by masking `.rotate`.
-- The real parity run answered the cutover question directly: most pages already match, and the
-  exceptions were diagnosable — `ai-at-work` is the **repo improving on** deployed (`TODO(copy)`
-  placeholders still live there), and the home/`images` "missing images" were a **capture artifact**,
-  not deleted assets (proven by a byte-identical old-vs-new file comparison: counts 12/12 + 37/37,
-  same sizes). Checking the user's "deleted in migration" hunch against the actual files prevented a
-  pointless copy.
 
 ## What Didn't Work / Gotchas
 
@@ -180,7 +149,7 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
 - **Git remote NOW EXISTS** — `origin` = `https://github.com/whocards/whocards-platform.git` (public),
   and `gh` works (issues/PRs). Earlier sessions had no remote. The user's flow still stands: coder
   works branch-local, **push/PR only with explicit user OK** (public repo — never commit `.env`).
-- **A `coder` subagent can die mid-run** — the 0006 coder crashed after ~13 min (`API Error:
+- **A `coder` subagent can die mid-run** — a previous coder crashed after ~13 min (`API Error:
 ConnectionRefused`; safety classifier also down) with **no report**, leaving uncommitted files on
   its branch. Recovery: inspect `git status` + the branch, then run the verification the coder
   skipped and commit the output yourself — don't assume a silent/dead agent finished cleanly.
@@ -204,6 +173,5 @@ pnpm install
 pnpm -F website dev      # needs apps/website/.env for full run (placeholders ok for build)
 pnpm -F mobile start     # Expo
 pnpm check               # oxfmt --check && oxlint --deny-warnings && turbo typecheck test
-pnpm -F @whocards/logger test   # 12 tests, the logger package
-DEPLOYED_URL=http://localhost:4321 pnpm -F website test:parity   # 0006 self-diff smoke (no network)
+pnpm -F @whocards/observability test   # observability events + logger behavior
 ```

@@ -3,6 +3,7 @@ import {Icon} from 'astro-icon/components'
 import Button from '~components/ui/Button.astro'
 import PreorderSection from '~components/Purchase/PreorderSection.astro'
 import WhatCard from '~components/Purchase/WhatCard.astro'
+import {env} from '~env'
 import Layout from '~layouts/Layout.astro'
 
 // AI Check-In marketing landing page (Tier 0 "lead magnet" wedge).
@@ -11,6 +12,11 @@ import Layout from '~layouts/Layout.astro'
 
 // The AI Check-In deck is live at /play/ai-at-work (#57).
 const deckHref = '/play/ai-at-work'
+
+// Cloudflare Turnstile site key — bot protection for the lead-magnet form
+// (server verifies the token in /api/ai-checkin-subscribe). Required, same
+// pattern as the /contact and /request-cards forms.
+const siteKey = env.PUBLIC_TURNSTILE_SITE_KEY
 
 // TODO(OG): give this page its own dedicated OG card. For now it falls back to
 // the site default social.png (handled by Head.astro when `image` is omitted).
@@ -60,9 +66,7 @@ const stats = [
     >
       The AI Check-In
     </h3>
-    <h1
-      class='font-title text-4xl font-bold leading-tight text-white lg:text-7xl lg:leading-tight'
-    >
+    <h1 class='font-title text-4xl font-bold leading-tight text-white lg:text-7xl lg:leading-tight'>
       Your AI rollout isn't stalling on the tech. It's stalling on the
       <span class='text-gradient'>people</span>.
     </h1>
@@ -90,16 +94,16 @@ const stats = [
   <PreorderSection subtitle='why a check-in?' title='The part every AI rollout skips'>
     <div class='grid grid-flow-row gap-8 lg:grid-flow-col lg:grid-cols-3 lg:gap-12'>
       <WhatCard icon='group-chat' title='An honest conversation, not a survey'>
-        People won't put their real AI fears in a feedback form. They'll say them out loud when
-        it's safe to. The check-in creates that room — and gets the quiet stuff on the table.
+        People won't put their real AI fears in a feedback form. They'll say them out loud when it's
+        safe to. The check-in creates that room — and gets the quiet stuff on the table.
       </WhatCard>
       <WhatCard icon='group' title="About 20 minutes. That's the whole ask.">
         No workshop, no consultant, no slide deck to prep. Draw a card, ask the question, listen.
         One team meeting is all it takes to start.
       </WhatCard>
       <WhatCard icon='star-circle' title='Free, and built for real teams'>
-        Works in person or remote, across languages and time zones. No login, no install, nothing
-        to buy. Just open the deck and begin.
+        Works in person or remote, across languages and time zones. No login, no install, nothing to
+        buy. Just open the deck and begin.
       </WhatCard>
     </div>
   </PreorderSection>
@@ -109,8 +113,7 @@ const stats = [
     <h2
       class='mb-8 px-5 text-center font-title text-2xl font-bold leading-snug text-white lg:text-4xl'
     >
-      The gap isn't capability. It's the <span class='text-gradient'>conversation</span> no one's
-      started.
+      The gap isn't capability. It's the <span class='text-gradient'>conversation</span> no one's started.
     </h2>
     <div
       class='grid grid-cols-2 gap-6 rounded-3xl border border-gray-dark bg-background px-6 py-10 lg:grid-cols-4 lg:gap-8 lg:px-12 lg:py-14'
@@ -142,19 +145,22 @@ const stats = [
     title='Not ready to gather the team? Start with ten questions.'
     description="Ten questions to get your team talking honestly about AI. We'll email them to you — no spam, unsubscribe anytime."
   >
-    <form id='lead-magnet-form' class='flex w-full max-w-xl flex-col gap-4 sm:flex-row'>
-      <label class='sr-only' for='lead-magnet-email'>Email address</label>
-      <input
-        id='lead-magnet-email'
-        type='email'
-        name='email'
-        required
-        placeholder='you@company.com'
-        class='w-full rounded-xl border border-gray-dark bg-background px-5 py-3 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none'
-      />
-      <Button type='submit' tag='button' size='lg' hideIcon class='shrink-0'>
-        Get the 10-question starter
-      </Button>
+    <form id='lead-magnet-form' class='flex w-full max-w-xl flex-col gap-4'>
+      <div class='flex w-full flex-col gap-4 sm:flex-row'>
+        <label class='sr-only' for='lead-magnet-email'>Email address</label>
+        <input
+          id='lead-magnet-email'
+          type='email'
+          name='email'
+          required
+          placeholder='you@company.com'
+          class='w-full rounded-xl border border-gray-dark bg-background px-5 py-3 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none'
+        />
+        <Button type='submit' tag='button' size='lg' hideIcon class='shrink-0'>
+          Get the 10-question starter
+        </Button>
+      </div>
+      {siteKey && <div class='cf-turnstile' data-sitekey={siteKey} data-theme='dark' />}
     </form>
     <p
       id='lead-magnet-status'
@@ -189,6 +195,12 @@ const stats = [
   </div>
 </Layout>
 
+{
+  siteKey && (
+    <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
+  )
+}
+
 <script>
   const form = document.getElementById('lead-magnet-form') as HTMLFormElement | null
   const status = document.getElementById('lead-magnet-status')
@@ -201,9 +213,16 @@ const stats = [
     status.classList.toggle('text-red-400', !ok)
   }
 
+  // Turnstile resets its single-use token after each attempt so a second submit
+  // (e.g. after an error) gets a fresh one.
+  const resetTurnstile = () =>
+    (window as unknown as {turnstile?: {reset: () => void}}).turnstile?.reset()
+
   form?.addEventListener('submit', async (event) => {
     event.preventDefault()
-    const email = new FormData(form).get('email')?.toString().trim()
+    const data = new FormData(form)
+    const email = data.get('email')?.toString().trim()
+    const turnstileToken = data.get('cf-turnstile-response')?.toString() ?? ''
     if (!email) return
 
     if (submit) submit.disabled = true
@@ -213,19 +232,20 @@ const stats = [
       const res = await fetch('/api/ai-checkin-subscribe', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email}),
+        body: JSON.stringify({email, turnstileToken}),
       })
-      const data = (await res.json().catch(() => ({}))) as {message?: string}
+      const json = (await res.json().catch(() => ({}))) as {message?: string}
       if (res.ok) {
         form.reset()
-        setStatus(data.message || 'Check your inbox — your 10 questions are on the way.', true)
+        setStatus(json.message || 'Check your inbox — your 10 questions are on the way.', true)
       } else {
-        setStatus(data.message || 'Something went wrong. Please try again.', false)
+        setStatus(json.message || 'Something went wrong. Please try again.', false)
       }
     } catch {
       setStatus('Something went wrong. Please try again.', false)
     } finally {
       if (submit) submit.disabled = false
+      resetTurnstile()
     }
   })
 </script>

@@ -1,0 +1,185 @@
+---
+import {Icon} from 'astro-icon/components'
+
+import Button from '~components/ui/Button.astro'
+import {
+  ANDROID_TESTER_GROUP_URL,
+  ANDROID_TESTER_LINKS_READY,
+  ANDROID_TESTER_OPT_IN_URL,
+} from '~constants/android-testers'
+import Layout from '~layouts/Layout.astro'
+
+// Kept as a separate page so the personal birthday copy can change independently
+// from the evergreen Android tester instructions.
+const steps = [
+  {
+    title: 'Join the group',
+    body: 'Use the Google account on your Android phone.',
+  },
+  {
+    title: 'Open the Play test',
+    body: 'Tap “Become a tester”, then install WhoCards.',
+  },
+  {
+    title: 'Play for a minute',
+    body: 'Draw a few Cards. Leave the app installed for now.',
+  },
+  {
+    title: 'Send me one Question',
+    body: 'Pick one you like and message it back to me.',
+  },
+]
+---
+
+<Layout
+  title='A Birthday WhoCards Ask'
+  description='For my birthday, help test WhoCards on Android and send me one Question back.'
+  image='og/android-testers-birthday-present.png'
+  noindex
+  class='overflow-hidden'
+>
+  <section
+    class='relative w-full overflow-hidden px-5 pb-12 pt-14 sm:px-8 lg:px-12 lg:pb-20 lg:pt-18'
+  >
+    <div class='mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center'>
+      <div class='max-w-2xl'>
+        <p
+          class='mb-5 inline-flex items-center gap-2 rounded-full border border-primary-dark/45 bg-primary-dark/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary-light'
+        >
+          <span class='h-1.5 w-1.5 rounded-full bg-primary-dark'></span>
+          Birthday ask
+        </p>
+
+        <h1
+          class='font-title text-[2.75rem] font-bold leading-[0.98] tracking-tight text-white sm:text-6xl lg:text-7xl'
+        >
+          For my birthday, <span class='text-gradient'>can I ask you one good Question?</span>
+        </h1>
+
+        <p class='mt-6 max-w-xl text-base leading-7 text-gray-lighter sm:text-lg sm:leading-8'>
+          If you have an Android phone, this takes five minutes: join the test, install the app,
+          play one tiny round, and send me one Question you like.
+        </p>
+
+        <p class='mt-4 max-w-xl text-base leading-7 text-gray-lighter sm:text-lg sm:leading-8'>
+          I keep thinking being human is mostly learning how to ask a better question. Help me put a
+          few more good ones into the world.
+        </p>
+
+        {
+          ANDROID_TESTER_LINKS_READY ? (
+            <div class='mt-8 grid w-full max-w-xl gap-3 sm:grid-cols-2'>
+              <Button
+                tag='a'
+                href={ANDROID_TESTER_GROUP_URL}
+                target='_blank'
+                rel='noopener noreferrer'
+                class='min-h-14'
+              >
+                Join the group
+              </Button>
+              <Button
+                tag='a'
+                href={ANDROID_TESTER_OPT_IN_URL}
+                target='_blank'
+                rel='noopener noreferrer'
+                variant='secondary'
+                light
+                class='min-h-14'
+              >
+                Open Play test
+              </Button>
+            </div>
+          ) : (
+            <div class='mt-8 max-w-xl rounded-2xl border border-white/15 bg-white/5 p-5'>
+              <p class='text-base font-semibold text-primary-light'>Testing links open soon.</p>
+              <p class='mt-2 leading-7 text-gray-lighter'>
+                I am preparing the Google Group and Play testing link. Check back here before
+                installing.
+              </p>
+            </div>
+          )
+        }
+
+        <p class='mt-4 max-w-xl text-sm leading-6 text-gray-dark'>
+          Same Google account for both links. Then send me one Question you like.
+        </p>
+      </div>
+
+      <div
+        class='relative min-h-[35rem] w-full overflow-hidden rounded-[1.75rem] border border-white/10 bg-dark p-6 shadow-2xl shadow-black/30 sm:p-8 lg:min-h-[39rem]'
+      >
+        <Icon
+          name='pattern-mobile'
+          class='pointer-events-none absolute inset-x-0 top-0 h-auto w-full opacity-25'
+          aria-hidden='true'
+        />
+        <div class='relative flex h-full flex-col justify-between gap-8'>
+          <div>
+            <div class='mb-6 flex items-center gap-3'>
+              <span
+                class='flex size-12 items-center justify-center rounded-2xl bg-primary-light text-dark'
+              >
+                <Icon name='mdi:google-play' class='size-7' />
+              </span>
+              <div>
+                <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-light'>
+                  What to do
+                </p>
+                <p class='mt-1 text-sm text-gray-dark'>Tiny favor. Big help.</p>
+              </div>
+            </div>
+
+            <div class='space-y-4'>
+              {
+                steps.map((step, index) => (
+                  <article class='rounded-2xl border border-white/10 bg-background/70 p-5'>
+                    <div class='flex gap-4'>
+                      <span class='flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-sm font-bold text-primary-light'>
+                        {index + 1}
+                      </span>
+                      <div>
+                        <h2 class='font-title text-xl font-bold leading-tight text-white'>
+                          {step.title}
+                        </h2>
+                        <p class='mt-2 text-sm leading-6 text-gray-lighter'>{step.body}</p>
+                      </div>
+                    </div>
+                  </article>
+                ))
+              }
+            </div>
+          </div>
+
+          <div class='rounded-2xl border border-primary-light/25 bg-primary-light/10 p-5'>
+            <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-light'>
+              The real present
+            </p>
+            <p class='mt-3 leading-7 text-gray-lighter'>
+              Send me the Question you would want to answer together. Tiny portal, big universe.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class='w-full border-y border-white/10 bg-background/70'>
+    <div
+      class='mx-auto grid w-full max-w-7xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-3 lg:px-12 lg:py-16 2xl:px-0'
+    >
+      <div>
+        <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-dark'>
+          Why this helps
+        </p>
+        <h2 class='mt-3 font-title text-3xl font-bold leading-tight text-white'>
+          Google needs real testers before launch.
+        </h2>
+      </div>
+      <p class='leading-7 text-gray-lighter lg:col-span-2'>
+        Android makes small apps prove they have real testers. You joining helps WhoCards get to the
+        Play Store.
+      </p>
+    </div>
+  </section>
+</Layout>

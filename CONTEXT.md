@@ -67,3 +67,7 @@ _Avoid_: user, account (neither exists yet), session (a Device persists across s
 **Answer record**:
 The permanent, append-only history of Answers — one entry each time a Device answers a Question (which Deck, which Question, which language, when). The single source of truth from which the `questions_answered` and `games_played` counts, the Global cycle, and any future per-player coverage are all derived. The existing **conference question tracking** is this same concept in its first, event-scoped form (keyed by a conference); the Answer record generalizes it across the whole app (keyed by Device + Deck), and the conference tracker is expected to fold into it.
 _Avoid_: analytics (this is durable product state and the source of truth, not an aggregate metrics pipeline)
+
+**Android Tester**:
+A person who helps validate the Android app before public launch. An Android Tester is part of the beta cohort, not a public app waitlist subscriber or general newsletter subscriber.
+_Avoid_: beta tester (too vague), app waitlist subscriber

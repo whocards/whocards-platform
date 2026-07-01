@@ -7,18 +7,17 @@ import icon from 'astro-icon'
 import robotsTxt from 'astro-robots-txt'
 import {defineConfig, passthroughImageService} from 'astro/config'
 import {SITE_URL as site} from './src/constants/env'
+import languages from './src/data/languages.json'
+
+// `/[language]` routes are 301 redirects to `/` (see src/pages/[language]/index.astro),
+// so keep them — and the noindexed image-preview pages — out of the sitemap.
+const langRoutes = new Set(Object.keys(languages).map((lang) => `/${lang}`))
 
 // https://astro.build/config
 export default defineConfig({
   site,
   build: {
     format: 'file',
-  },
-  // Disable the dev toolbar only when explicitly requested (the visual-parity SSR
-  // harness sets this so `astro dev` screenshots don't capture the toolbar). Normal
-  // `pnpm dev` keeps it. https://docs.astro.build/en/guides/dev-toolbar/#per-project
-  devToolbar: {
-    enabled: process.env.DISABLE_DEV_TOOLBAR !== 'true',
   },
   image: {
     service: passthroughImageService(),
@@ -38,12 +37,28 @@ export default defineConfig({
   trailingSlash: 'never',
   integrations: [
     mdx(),
-    sitemap(),
+    // Keep noindexed utility pages (/images, /[language]/images) out of the
+    // sitemap so we don't advertise pages we ask crawlers not to index.
+    sitemap({
+      filter: (page) => {
+        const {pathname} = new URL(page)
+        return !pathname.endsWith('/images') && !langRoutes.has(pathname)
+      },
+    }),
     robotsTxt(),
     react(),
     icon({
       include: {
-        mdi: ['twitter', 'linkedin', 'instagram', 'github', 'email', 'arrow-up'],
+        mdi: [
+          'twitter',
+          'linkedin',
+          'instagram',
+          'github',
+          'email',
+          'arrow-up',
+          'apple',
+          'google-play',
+        ],
         'fa-solid': ['clone', 'external-link-alt'],
         ic: [
           'outline-arrow-back',

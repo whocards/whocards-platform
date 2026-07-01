@@ -4,9 +4,32 @@ How `apps/mobile` (the WhoCards Expo app) gets built, tested, and shipped. Decis
 their trade-offs live in [ADR-0005](./adr/0005-mobile-release-pipeline.md); this is the
 operational checklist.
 
-**Pipeline at a glance:** EAS Build + Submit · **beta-first** (TestFlight + Play Internal →
+**Tracking:** [#99](https://github.com/whocards/whocards-platform/issues/99) is the ordered v1.0
+release epic. [#85](https://github.com/whocards/whocards-platform/issues/85) owns the audience and
+post-launch growth workstream.
+
+**Pipeline at a glance:** EAS Build + Submit · **beta-first** (TestFlight + Play testing →
 promote to public) · OTA via EAS Update on a `fingerprint` runtime version · build numbers
-auto-incremented by EAS · fully automated in CI on `v*` tags.
+auto-incremented by EAS · fully automated in CI on `v*` tags. The first Android release has an
+additional mandatory Closed Testing gate before Google grants production access.
+
+## Release vocabulary
+
+- **Beta release:** the production binary is available to testers through TestFlight and Google
+  Play testing. For the first Android release, the qualifying cohort must use **Closed Testing**;
+  Internal Testing does not satisfy Google's production-access requirement.
+- **Public release:** that validated binary is promoted to its public store. **iOS and Android
+  release separately** — iOS is approved and public now; Android follows after its Closed Test and
+  production-access review. Do not hold the approved iOS build for Android.
+- **Campaign launch:** the audience moment after a platform's public listing is verified. iOS has its
+  launch announcement once iOS is live; Android gets a smaller "now on Android" send when
+  `PUBLIC_APP_ANDROID_LAUNCHED` flips. `/app` is already in download mode for the live platform; the
+  Android tile routes to `/android-testers` until that flag flips.
+
+The launch campaign code landed **before** the iOS public release to build the email audience during
+the review window. Public availability and the campaign launch are
+deliberately separate checkpoints; do not send a platform's announcement merely because a binary was
+submitted.
 
 **v1.0 scope:** landing → single WhoCards Deck → Global Game (swipe nav, 14 languages + RTL,
 language persistence, share, offline Answer recording, branded splash/handoff). Out: Library
@@ -14,25 +37,64 @@ browse, Custom Decks, Personal Game, accounts/purchases, Facilitation (all futur
 
 ---
 
+## Local development — use a dev build, not Expo Go
+
+This app uses custom native modules (`expo-dev-client`, `expo-updates`, `posthog-react-native`,
+etc.) that Expo Go cannot load. **Do not use Expo Go for local development.** The `start` /
+`ios` / `android` scripts already pass `--dev-client` so Metro targets the installed dev client.
+
+### First time
+
+Build and install a `development`-profile binary once per device/simulator. EAS builds it in the
+cloud and distributes via internal distribution (no App Store):
+
+```bash
+pnpx eas-cli@latest build -p ios --profile development
+pnpx eas-cli@latest build -p android --profile development
+```
+
+Or build locally with Xcode / Gradle:
+
+```bash
+pnpm -F mobile exec expo run:ios
+pnpm -F mobile exec expo run:android
+```
+
+### Day-to-day
+
+With the dev build installed, start Metro and connect:
+
+```bash
+pnpm -F mobile start        # opens the dev-client launcher
+pnpm -F mobile ios          # boots the iOS simulator and connects
+pnpm -F mobile android      # boots an Android emulator and connects
+```
+
+The dev-client launcher QR/URL connects to Metro just like Expo Go would, but uses the custom
+native runtime that matches what ships in production.
+
 ## Phase 0 — One-time foundation
 
-> **Android is deferred for the v1 launch** ([#27](https://github.com/whocards/whocards-platform/issues/27)) — the
-> Google Play account is blocked, so iOS ships first. The release workflow gates every Android build/submit step
-> behind the `MOBILE_ANDROID_ENABLED` repo variable; flip it on once #27 lands a working account + service-account secret.
+> **Android is back in the release** ([#27](https://github.com/whocards/whocards-platform/issues/27)) — a fresh Google
+> Play account + service-account JSON are set up, and the release verified rendering on device. iOS and Android now
+> build/submit together under the single `EAS_RELEASE_ENABLED` switch (the old `MOBILE_ANDROID_ENABLED` gate is removed).
+> Remaining Android prerequisite: create the Play app record and hand-upload the first AAB (Google requires this before
+> `eas submit -p android` works).
 
-- [ ] **Accounts** — Apple done; Google Play deferred (#27)
+- [ ] **Accounts** — store accounts exist; the Play app record + first AAB remain (#27)
   - [x] Apple Developer Program ($99/yr) — enrolled; App Store Connect app record created (`ascAppId 6782853824`, Team ID `6RTC67K8CW`)
-  - [ ] Google Play Console ($25 one-time) — **deferred to #27** (prior account closed for inactivity; re-registration under a fresh dedicated Google account pending)
+  - [x] Google Play Console ($25 one-time) — fresh dedicated account + service-account JSON set up
+  - [ ] Google Play app record + Internal Testing track; hand-upload the first AAB before `eas submit -p android`
   - [x] Expo account / org (free) — projectId `70c97b4d…` wired into `app.json`; `EXPO_TOKEN` set as an Actions secret
 - [x] **EAS init** — `projectId` committed to `app.json` (`extra.eas.projectId`)
 - [x] **Credentials** — EAS-managed signing: iOS distribution cert + provisioning done (Android keystore deferred → #27). Local `credentials.json` is gitignored (it holds a plaintext cert password)
-- [x] **Submit creds** — App Store Connect API key stored on EAS; push it to CI with `apps/mobile/scripts/set-mobile-ci-secrets.sh`. Play service-account JSON deferred → #27
+- [x] **Submit creds** — both stored on EAS and pulled by `eas submit` via `EXPO_TOKEN`, so neither is a CI secret: iOS App Store Connect API key (`eas credentials` → iOS → App Store Connect API Key) and Android Play service-account key (`eas credentials` → Android → Google Service Account) — no `serviceAccountKeyPath`
 - [x] **`eas.json`** — `cli.appVersionSource: "remote"`; profiles `development` / `preview` / `production`; `autoIncrement` on `production`; per-profile `env` (`EXPO_PUBLIC_API_URL`); channels `preview` / `production`
 - [x] **OTA** — `expo-updates` added; `runtimeVersion: { "policy": "fingerprint" }` set in `app.json`
 - [x] **CI** (GitHub Actions, `.github/workflows/`)
   - [x] PR/main workflow: the quality gate (`mobile-gate.yml`)
-  - [x] Tag (`v*`) workflow: gate → `eas build` → `eas submit` (beta) → `eas update` (`mobile-release.yml`) — **inert until `EAS_RELEASE_ENABLED=true`**; Android steps additionally gated on `MOBILE_ANDROID_ENABLED`
-  - [x] Secrets: `EXPO_TOKEN` set; iOS ASC API key via the script above; Play JSON pending (#27)
+  - [x] Tag (`v*`) workflow: gate → `eas build` → `eas submit` (beta) → `eas update` (`mobile-release.yml`) — **inert until `EAS_RELEASE_ENABLED=true`** (iOS + Android together)
+  - [x] Secrets: `EXPO_TOKEN` is the only CI secret; both the iOS ASC API key and Android Play key live on EAS (`eas credentials`), pulled by `eas submit`
 - [ ] **`docs/mobile/README` / this runbook** linked from the repo README
 
 ## Phase 1 — Blockers before the first build
@@ -40,27 +102,62 @@ browse, Custom Decks, Personal Game, accounts/purchases, Facilitation (all futur
 These make the binary correct; the app is broken or unshippable without them.
 
 - [x] **Prod API URL** — `production` (and `preview`) profile sets `EXPO_PUBLIC_API_URL=https://whocards.cc` in `eas.json` (app calls `/api/trpc`); without it the build falls back to `localhost:4321`. Prod API verified live 2026-06-21 (`/api/trpc/decks.manifest` & `pool.languages` → `200`, see #20).
-- [x] **App display name** — `app.json` `name` is **WhoCards**; `slug` is `whocards-app` (matches the EAS project); bundle IDs `cc.whocards.mobile` correct. (`scheme` stays `mobile` — that's the deep-link scheme, unrelated.)
+- [x] **App display name** — `app.json` `name` is **WhoCards**; `slug` is `whocards-app` (matches the EAS project); iOS bundle ID is `cc.whocards.mobile` and Android package is `com.whocards.mobile`. (`scheme` stays `mobile` — that's the deep-link scheme, unrelated.)
 - [x] **App icon** — WhoCards dark `?` mark (`icon.png` + Android adaptive icons); intentionally dark-only
 - [x] **Version fields** — `version: "1.0.0"`; build numbers via EAS remote auto-increment (no manual `buildNumber`/`versionCode`)
 - [x] **Error boundary** — root error boundary with recovery in `src/components/error-boundary.tsx`, mounted in `src/app/_layout.tsx`
+- [ ] **Native review prompt in the v1 binary** — add `expo-store-review` before cutting the release
+      candidate; direct native prompt after ≥10 answered Cards across ≥2 sessions, with no custom
+      pre-prompt/review gating (#89)
 - [ ] **Quality gate green** (see below)
 
 ## Phase 2 — Cut the first beta
 
-- [ ] `eas build -p ios --profile production` (Android `-p android` deferred → #27)
-- [ ] `eas submit -p ios` → TestFlight (Android `-p android` → Play Internal Testing deferred → #27; first Android AAB must be hand-uploaded once unblocked)
+- [ ] `eas build -p ios --profile production` and `eas build -p android --profile production`
+- [ ] `eas submit -p ios` → TestFlight
+- [ ] Hand-upload the first Android AAB to the Play app record and smoke it through Internal
+      Testing (#27)
+- [ ] Create the Android **Closed Testing** track and promote the validated AAB into it
+- [ ] Recruit 18–20 Android testers through a dedicated #82/#96 tester Broadcast plus personal
+      outreach; manage the cohort through one Google Group tied to the Closed Testing track
+- [ ] Enrol the buffer cohort so **12 remain continuously opted in for 14 days** (the minimum
+      required by Google); testers need Google accounts (#98)
+- [ ] Send tester onboarding instructions, a day-7 feedback check-in, and a completion thank-you;
+      opting out resets that tester's continuous-day count
+- [ ] After day 14, apply for Google Play production access and answer the testing/readiness
+      questionnaire; budget up to another 7 days for Google's review (#98)
+- [x] Submit the iOS release candidate for App Review — **approved.** Release it now; do **not** hold
+      it for Android (the old "manual release, wait for Android" rule is dropped — see ADR-0005)
 - [ ] **Device matrix smoke**: 2 iOS + 2 Android OS versions — launch, splash→landing handoff, play/swipe, language switch + RTL (Hebrew right-aligned), language persists across relaunch, share, **offline → reconnect drains the Answer queue**, deep-link/back
 - [ ] File and fix anything found as `v1.0.x` (OTA if JS-only, rebuild if native)
 
 ## Phase 3 — Before promoting to public
 
-- [ ] **Observability live** — finish #4 (`posthog-react-native` sink + product events); confirm events + JS errors arrive in PostHog
-- [ ] **Privacy Policy** — `whocards.cc/legal/pp` updated to disclose the app's data: Device id, the Answer record, PostHog analytics
+- [ ] **Observability live** — production EAS builds include the PostHog EU project key; confirm events + JS errors arrive from the beta build
+- [x] **Privacy Policy** — `whocards.cc/legal/pp` discloses the app's data: Device id, the Answer record, PostHog analytics
 - [ ] **App Privacy (Apple) + Data Safety (Play)** forms filled to match (device id, usage/analytics; no tracking SDK unless added)
 - [ ] **Store assets** — name, subtitle, description, keywords, category, support URL, and per-device-size screenshots (raw captures via `pnpm -F mobile screenshots`, #34; then frame/compose)
 - [ ] **Permissions** — confirm only what's used (network, haptics); no stray permission pulled in by a dep
-- [ ] Promote the **same** validated build to the public App Store + Google Play
+- [ ] Promote each validated build to its store **as soon as that platform is ready** — iOS now
+      (approved), Android after Google grants production access. Do not couple the two release windows.
+
+## Phase 4 — Quiet production soak and campaign handoff (per platform)
+
+Run this per platform, in step with whichever store just went public — iOS now, Android when its flag
+flips. A platform's soak and campaign do not wait for the other.
+
+- [ ] Set the launched platform's flag (`PUBLIC_APP_IOS_LAUNCHED=true` now; `PUBLIC_APP_ANDROID_LAUNCHED=true`
+      when Android is granted production access). Soak before sending that platform's announcement.
+- [ ] Confirm the **live** store page and final IDs/URLs resolve on real devices for that platform
+- [ ] Have the tester cohort install the **public** build and repeat the critical journey: store →
+      install → first play → language → share → background/reopen
+- [ ] Verify website tiles, device-aware ordering (Android tile → `/android-testers` until Android is
+      live), Smart App Banner/app links, PostHog events and errors, Answer recording, privacy/support
+      URLs, and the contact path
+- [ ] Soak for ~24 hours with no unresolved P0/P1 issue; fix with OTA only when the fingerprint is
+      compatible, otherwise hold that platform's campaign for a corrected binary
+- [ ] Hand off to the Campaign launch runbook (#94): enable that platform's CTAs, send the segmented
+      announcement, and publish social posts
 
 ## Ongoing — the per-release loop
 
@@ -74,7 +171,7 @@ These make the binary correct; the app is broken or unshippable without them.
 
 - [ ] `pnpm check` green (tsc + oxlint + oxfmt + `decks`/`api` unit tests + **mobile jest suite**)
 - [ ] **Mobile unit/component tests** — `pnpm --filter mobile test` (jest + RN Testing Library; covers language-store, answer-queue, device-id, getBaseUrl, ErrorBoundary)
-- [ ] **Maestro suite** — `pnpm --filter mobile e2e` (flows: `play-language-share`, `deep-link-back`, `language-persist`, `rtl-alignment`; see `.maestro/README.md`). Offline-record→drain has no observable UI signal and is covered by the `answer-queue`/`answer-transport` jest tests instead.
+- [ ] **Maestro suite** — run `pnpm --filter mobile e2e:ios` and `pnpm --filter mobile e2e:android` (see `.maestro/README.md`). Offline-record→drain has no observable UI signal and is covered by the `answer-queue`/`answer-transport` jest tests instead.
 - [ ] Manual smoke on the **device matrix** (native builds — see below)
 
 ## Device matrix
@@ -82,6 +179,10 @@ These make the binary correct; the app is broken or unshippable without them.
 Manual smoke checklist for every native build (not required for OTA-only pushes).
 Scenarios: launch→play→swipe, language switch + RTL (Hebrew), language persists across relaunch,
 share, offline→reconnect Answer queue drain, deep-link/back.
+
+For install instructions (TestFlight, EAS internal distribution, `adb install`) and the
+Android App Links verification commands, see
+**[docs/mobile/device-testing.md](mobile/device-testing.md)**.
 
 | Platform | OS version | Notes                                  |
 | -------- | ---------- | -------------------------------------- |

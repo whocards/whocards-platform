@@ -1,6 +1,6 @@
 {
   "name": "whocards",
-  "version": "0.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "engines": {
@@ -14,6 +14,18 @@
     "dev": "turbo dev",
     "dev:web": "turbo dev --filter=website",
     "dev:mobile": "pnpm --filter mobile start",
+    "email:dev": "pnpm --filter @whocards/emails dev",
+    "email:export": "pnpm --filter @whocards/emails export",
+    "email:render": "pnpm --filter @whocards/emails render",
+    "email:test-send": "pnpm --filter @whocards/emails test-send",
+    "mobile:eas": "pnpm --filter mobile eas",
+    "mobile:build:ios": "pnpm --filter mobile eas:build:ios",
+    "mobile:build:android": "pnpm --filter mobile eas:build:android",
+    "mobile:submit:ios": "pnpm --filter mobile eas:submit:ios",
+    "mobile:submit:android": "pnpm --filter mobile eas:submit:android",
+    "mobile:ota": "pnpm --filter mobile eas:update",
+    "mobile:rebuild:ios": "node scripts/release/pre-release-check.mjs ios && pnpm mobile:build:ios && pnpm mobile:submit:ios",
+    "mobile:rebuild:android": "node scripts/release/pre-release-check.mjs android && pnpm mobile:build:android && pnpm mobile:submit:android",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "test:e2e": "pnpm --filter website test:e2e",
@@ -30,23 +42,31 @@
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo run clean",
     "lint:ws": "pnpm dlx sherif@latest",
+    "release": "release-it",
+    "release:dry": "release-it --dry-run",
+    "release:check": "node scripts/release/pre-release-check.mjs",
     "prepare": "husky"
   },
   "lint-staged": {
-    "{packages,tooling,apps/mobile}/**/*.{ts,tsx,js,jsx,mjs,cjs}": [
-      "oxlint --fix",
-      "oxfmt --no-error-on-unmatched-pattern"
+    "**/*.{ts,tsx,js,jsx,mjs,cjs}": [
+      "oxlint --fix --no-error-on-unmatched-pattern",
+      "oxfmt --write --no-error-on-unmatched-pattern"
+    ],
+    "apps/website/**/*.{ts,tsx,js,jsx,mjs,cjs,astro}": [
+      "pnpm --filter website exec prettier --write --plugin=prettier-plugin-astro"
     ],
     "*.{json,md,yaml,yml}": [
-      "oxfmt --no-error-on-unmatched-pattern"
+      "oxfmt --write --no-error-on-unmatched-pattern"
     ]
   },
   "devDependencies": {
+    "@release-it/conventional-changelog": "^11.0.1",
     "dotenv-cli": "^11.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.0",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.69.0",
+    "release-it": "^20.2.0",
     "turbo": "^2.6.3",
     "typescript": "catalog:"
   }

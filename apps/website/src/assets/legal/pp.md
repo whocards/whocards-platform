@@ -60,7 +60,7 @@ Answers are queued on the device when there is no network connection and flushed
 
 **Analytics and product usage (PostHog)**
 
-The app is planned to send product usage events to PostHog, a privacy-conscious product analytics service. When active, this may include:
+The app sends product usage events to PostHog, a privacy-conscious product analytics service. This may include:
 
 - Feature interactions (e.g. language changes, share actions, screen navigation).
 - Technical events (e.g. app start, question swipe, error occurrence).

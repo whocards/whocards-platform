@@ -3,8 +3,21 @@ name: Mobile gate
 on:
   pull_request:
     branches: [main]
+    # Docs-only changes don't affect the mobile app or shared packages, so skip the
+    # gate entirely for them (no install / typecheck / test). Markdown formatting is
+    # still enforced locally by the husky pre-commit hook (lint-staged → oxfmt).
+    # paths-ignore only skips when *every* changed file matches, so a PR touching both
+    # docs and code still runs the full gate.
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  # workflow_call has no path filter on purpose: the release pipeline calls this gate
+  # and must always run the full checks regardless of what changed.
   workflow_call: {}
 
 jobs:
@@ -12,13 +25,13 @@ jobs:
     name: Quality gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node from .nvmrc
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: pnpm
@@ -26,19 +39,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # apps/website is intentionally excluded from this gate's typecheck. Its `astro check`
-      # needs astro-icon's build-time type generation (.astro/icon.d.ts), which only a full
-      # `astro build` produces — and that build needs DB secrets (with-env). The website is
-      # validated by its own Netlify build on deploy. This gate covers the mobile app + the
-      # shared packages it depends on, which is what mobile releases gate on.
       - name: Format check
         run: pnpm format
 
       - name: Lint
         run: pnpm lint
 
-      - name: Typecheck + unit tests (mobile + shared packages)
-        run: pnpm exec turbo run typecheck test --filter='!website'
+      - name: Typecheck + unit tests
+        run: pnpm exec turbo run typecheck test
 
-      # TODO(#maestro): add Maestro e2e suite once a simulator is available in CI.
-      # When ready: install maestro, start the dev server, run `pnpm --filter mobile e2e`.
+      # Maestro e2e is intentionally NOT run here: it needs a built binary on a booted
+      # simulator/emulator, which is slow, flaky, and costs a build per run — a poor fit
+      # for a per-PR gate. Instead it runs locally as a hard gate in the release command
+      # (`pnpm release` → scripts/release/pre-release-check.mjs) right before a tag goes out.
+      # See RELEASING.md. Revisit CI e2e (Maestro Cloud / EAS Workflows) if cadence grows.
