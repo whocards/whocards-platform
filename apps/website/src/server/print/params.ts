@@ -21,8 +21,12 @@ export const PRINT_LANGUAGES: string[] = [...LANGUAGE_CODES]
 export const PRINT_DECKS = ['library'] as const
 export type PrintDeck = (typeof PRINT_DECKS)[number]
 
-/** Calibration nudge is meant to absorb sub-cm printer drift, not re-lay the page. */
-const OFFSET_LIMIT_MM = 20
+/**
+ * Calibration nudge is meant to absorb sub-cm printer drift, not re-lay the page.
+ * Exported: the calibration sheet endpoint (#40) accepts the same `offsetX`/`offsetY`
+ * range and reuses `parseOffset` below rather than re-deriving the limit.
+ */
+export const OFFSET_LIMIT_MM = 20
 
 export type PrintPdfParams = {
   deck: PrintDeck
@@ -36,9 +40,11 @@ export type PrintPdfParams = {
 
 export type ParsePrintParamsResult = {ok: true; value: PrintPdfParams} | {ok: false; error: string}
 
-const describeRaw = (raw: string | null): string => (raw === null ? 'missing' : JSON.stringify(raw))
+export const describeRaw = (raw: string | null): string =>
+  raw === null ? 'missing' : JSON.stringify(raw)
 
-const parseOffset = (
+/** Shared by print.pdf and calibration.pdf (#40) — both accept the same mm nudge. */
+export const parseOffset = (
   raw: string | null,
   name: 'offsetX' | 'offsetY'
 ): {ok: true; value: number} | {ok: false; error: string} => {
@@ -54,6 +60,22 @@ const parseOffset = (
     return {ok: false, error: `${name} must be within ±${OFFSET_LIMIT_MM}mm (got ${value})`}
   }
   return {ok: true, value}
+}
+
+/**
+ * Shared by print.pdf and calibration.pdf (#40) — both take a `preset` (layout id or
+ * SKU alias) and both must refuse an unknown or un-calibrated ("supported: false") one.
+ */
+export const parsePresetParam = (
+  raw: string | null
+): {ok: true; value: string} | {ok: false; error: string} => {
+  if (!raw) return {ok: false, error: 'preset is required (a layout id or SKU alias)'}
+  const layout = resolveLayout(raw)
+  if (!layout) return {ok: false, error: `unknown preset "${raw}"`}
+  if (!layout.supported) {
+    return {ok: false, error: `preset "${raw}" isn't supported yet (pending print calibration)`}
+  }
+  return {ok: true, value: raw}
 }
 
 /** Parse + validate `?deck=&lang=&preset=&offsetX=&offsetY=` from a request URL. */
@@ -74,13 +96,9 @@ export const parsePrintParams = (search: URLSearchParams): ParsePrintParamsResul
     }
   }
 
-  const preset = search.get('preset')
-  if (!preset) return {ok: false, error: 'preset is required (a layout id or SKU alias)'}
-  const layout = resolveLayout(preset)
-  if (!layout) return {ok: false, error: `unknown preset "${preset}"`}
-  if (!layout.supported) {
-    return {ok: false, error: `preset "${preset}" isn't supported yet (pending print calibration)`}
-  }
+  const parsedPreset = parsePresetParam(search.get('preset'))
+  if (!parsedPreset.ok) return parsedPreset
+  const preset = parsedPreset.value
 
   const offsetX = parseOffset(search.get('offsetX'), 'offsetX')
   if (!offsetX.ok) return offsetX

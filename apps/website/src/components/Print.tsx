@@ -1,9 +1,20 @@
 import {Icon as _Icon, type IconifyIconProps} from '@iconify-icon/react'
 import {useStore} from '@nanostores/react'
 import {useState, type ComponentType} from 'react'
-import {buildPrintDownloadUrl, getDefaultPresetId, layoutUpCount} from '~components/print/print-ui'
+import {
+  buildCalibrationDownloadUrl,
+  buildPrintDownloadUrl,
+  clampOffsetMm,
+  getDefaultPresetId,
+  layoutUpCount,
+} from '~components/print/print-ui'
 import {PRINT_LANGUAGES} from '~server/print/params'
 import {PHYSICAL_LAYOUTS, type LayoutId, type PhysicalLayout} from '~server/print/presets'
+import {
+  $calibrationOffsets,
+  getCalibrationOffset,
+  setCalibrationOffset,
+} from '~stores/CalibrationOffsets.store'
 import {$langStore} from '~stores/Language.store'
 import {LANGUAGES, cn} from '~utils'
 
@@ -20,9 +31,27 @@ export default function Print() {
     getDefaultPresetId(PHYSICAL_LAYOUTS)
   )
 
+  // Calibration nudge (#40) is persisted per preset — a printer's drift is a property
+  // of that printer + sheet, not of any one visit — so switching presets recalls
+  // whatever offset (if any) was dialed in for it last time.
+  const calibrationOffsets = useStore($calibrationOffsets)
+  const {offsetX, offsetY} = getCalibrationOffset(calibrationOffsets, preset)
+
   const langSupported = PRINT_LANGUAGES.includes(store.lang)
   const canDownload = Boolean(preset) && langSupported
-  const downloadUrl = preset ? buildPrintDownloadUrl('library', store.lang, preset) : undefined
+  const downloadUrl = preset
+    ? buildPrintDownloadUrl('library', store.lang, preset, offsetX, offsetY)
+    : undefined
+  const calibrationUrl = preset ? buildCalibrationDownloadUrl(preset, offsetX, offsetY) : undefined
+
+  const updateOffset = (axis: 'offsetX' | 'offsetY', value: number) => {
+    if (!preset) return
+    const clamped = clampOffsetMm(value)
+    setCalibrationOffset(preset, {
+      offsetX: axis === 'offsetX' ? clamped : offsetX,
+      offsetY: axis === 'offsetY' ? clamped : offsetY,
+    })
+  }
 
   return (
     <>
@@ -83,7 +112,91 @@ export default function Print() {
           Download
         </a>
       </div>
+
+      <CalibrationSection
+        preset={preset}
+        offsetX={offsetX}
+        offsetY={offsetY}
+        onChangeOffset={updateOffset}
+        calibrationUrl={calibrationUrl}
+      />
     </>
+  )
+}
+
+interface CalibrationSectionProps {
+  preset: LayoutId | undefined
+  offsetX: number
+  offsetY: number
+  onChangeOffset: (axis: 'offsetX' | 'offsetY', value: number) => void
+  calibrationUrl: string | undefined
+}
+
+// "Alignment / calibrate" (#40): most printers add a small (sub-cm) offset even at
+// 100% scale, which can ruin a whole precut sheet. Collapsed by default so it doesn't
+// compete with the main download flow — the calibration sheet + nudge are only needed
+// once per printer/sheet combo.
+function CalibrationSection({
+  preset,
+  offsetX,
+  offsetY,
+  onChangeOffset,
+  calibrationUrl,
+}: CalibrationSectionProps) {
+  return (
+    <details className='w-full max-w-md rounded-lg border-2 border-white/20 p-4 text-center'>
+      <summary className='cursor-pointer font-bold tracking-wide'>Alignment / calibrate</summary>
+      <div className='mt-4 flex flex-col items-center gap-4'>
+        <p className='text-sm text-slate-300'>
+          Download the calibration sheet, print it at 100%, and lay it over your precut sheet. Read
+          off any drift in mm against the rulers, enter it below, then re-download your cards.
+        </p>
+        <a
+          className={cn('btn btn-outline btn-sm', {
+            'btn-disabled pointer-events-none opacity-50': !preset,
+          })}
+          aria-disabled={!preset}
+          href={calibrationUrl}
+        >
+          Download calibration sheet
+        </a>
+        <div className='flex items-center gap-4'>
+          <OffsetInput
+            label='X offset (mm)'
+            value={offsetX}
+            onChange={(value) => onChangeOffset('offsetX', value)}
+          />
+          <OffsetInput
+            label='Y offset (mm)'
+            value={offsetY}
+            onChange={(value) => onChangeOffset('offsetY', value)}
+          />
+        </div>
+      </div>
+    </details>
+  )
+}
+
+interface OffsetInputProps {
+  label: string
+  value: number
+  onChange: (value: number) => void
+}
+
+function OffsetInput({label, value, onChange}: OffsetInputProps) {
+  return (
+    <label className='flex flex-col items-center gap-1 text-xs text-slate-300'>
+      {label}
+      <input
+        type='number'
+        step={0.5}
+        min={-20}
+        max={20}
+        value={value}
+        onChange={(event) => onChange(event.target.valueAsNumber)}
+        className='input input-bordered input-sm w-24 text-center text-darker'
+      />
+    </label>
   )
 }
 
