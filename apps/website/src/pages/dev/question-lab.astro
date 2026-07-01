@@ -1,0 +1,20 @@
+---
+export const prerender = false
+
+import {QuestionLab} from '~components/QuestionLab'
+import Layout from '~layouts/Layout.astro'
+
+// Dev-only "psychedelic AI benchmark" for the AI Check-In question-generation
+// prompt — never shipped to production. Hard-gated here and in the paired API
+// route (src/pages/api/dev/question-lab.ts): both return a 404 Response when
+// `import.meta.env.DEV` is false, so the page cannot exist in a production
+// build. It's also explicitly excluded from the sitemap (astro.config.ts) and
+// has no nav link anywhere in the site.
+if (!import.meta.env.DEV) {
+  return new Response(null, {status: 404})
+}
+---
+
+<Layout title='Question Lab (dev only)' noindex noFooter>
+  <QuestionLab client:only='react' />
+</Layout>
