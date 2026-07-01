@@ -17,7 +17,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
-import type {QuestionSet} from '@whocards/decks'
+import type {NavAction, QuestionSet} from '@whocards/decks'
 import {getDeck, getDirection, getInitialNav, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
@@ -154,6 +154,15 @@ const DeckPlayer = ({
   const [{ids, idx}, dispatch] = useReducer(reducer, undefined, () =>
     getInitialNav(questionIds, startId)
   )
+  // The REAL last-dispatched nav action, read by the nav-events effect below. The
+  // committed transition alone can't tell a swipe from a deep-link 'reset' (both
+  // change idx), and a reset must not be tracked as a fabricated next/previous —
+  // so every dispatch goes through dispatchNav, which records the action first.
+  const lastNavActionRef = useRef<NavAction | null>(null)
+  const dispatchNav = useCallback((action: NavAction) => {
+    lastNavActionRef.current = action
+    dispatch(action)
+  }, [])
   const defaultLanguage = languages[0]
   // A shared link's `?lang=` (if valid for this deck) is the explicit intent of the
   // person who shared it, so it seeds the initial language and overrides storage below.
@@ -190,15 +199,16 @@ const DeckPlayer = ({
   // wouldn't move. Listen for the raw incoming URL instead and re-seed the engine when
   // the link targets THIS deck. A link to a *different* deck changes the `[deck]`
   // segment and is handled by expo-router's own navigation (a fresh mount), so it's
-  // ignored here. (`dispatch`/`setLanguage` are stable, so they stay out of the deps.)
+  // ignored here. (`dispatchNav`/`setLanguage` are stable, so they stay out of the deps.)
   useEffect(() => {
     const sub = Linking.addEventListener('url', ({url}) => {
       const link = parsePlayLink(url)
       if (!link || link.deck !== deckSlug) return
       if (link.lang && languages.includes(link.lang)) setLanguage(link.lang)
-      if (link.q && questionIds.includes(link.q)) dispatch({type: 'reset', startId: link.q})
+      if (link.q && questionIds.includes(link.q)) dispatchNav({type: 'reset', startId: link.q})
     })
     return () => sub.remove()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckSlug, languages, questionIds])
 
   const questionId = ids[idx]
@@ -330,7 +340,12 @@ const DeckPlayer = ({
   useEffect(() => {
     const prev = prevNavRef.current
     if (prev && prev.idx !== idx) {
-      const action = idx > prev.idx ? ({type: 'next'} as const) : ({type: 'previous'} as const)
+      // The real dispatched action — a deep-link 'reset' yields no nav events
+      // (eventsFor returns []). Inference from the idx delta is only the fallback
+      // for a transition with no recorded action (shouldn't happen in practice).
+      const action =
+        lastNavActionRef.current ??
+        (idx > prev.idx ? ({type: 'next'} as const) : ({type: 'previous'} as const))
       for (const event of eventsFor(
         action,
         prev,
@@ -470,30 +485,30 @@ const DeckPlayer = ({
     navDir.current = 1
     selection()
     viewTracker.endView('advanced')
-    dispatch({type: 'next'})
-  }, [viewTracker])
+    dispatchNav({type: 'next'})
+  }, [viewTracker, dispatchNav])
 
   const dispatchPrevious = useCallback(() => {
     navDir.current = -1
     selection()
     viewTracker.endView('previous')
-    dispatch({type: 'previous'})
-  }, [viewTracker])
+    dispatchNav({type: 'previous'})
+  }, [viewTracker, dispatchNav])
 
   const goNext = useCallback(() => {
     navDir.current = 1
     revealChrome()
     viewTracker.endView('advanced')
-    dispatch({type: 'next'})
-  }, [revealChrome, viewTracker])
+    dispatchNav({type: 'next'})
+  }, [revealChrome, viewTracker, dispatchNav])
 
   // the reducer clamps `previous` at the first card, so no idx guard is needed here
   const goPrevious = useCallback(() => {
     navDir.current = -1
     revealChrome()
     viewTracker.endView('previous')
-    dispatch({type: 'previous'})
-  }, [revealChrome, viewTracker])
+    dispatchNav({type: 'previous'})
+  }, [revealChrome, viewTracker, dispatchNav])
 
   // leave the player — back to wherever we came from, falling back to the landing
   const handleExit = useCallback(() => {
