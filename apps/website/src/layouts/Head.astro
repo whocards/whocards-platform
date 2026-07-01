@@ -1,5 +1,39 @@
 ---
 import {socialLinks} from '~constants/navigation'
+import questions from '~data/questions.json'
+
+// Short, templated per-language line appended after the question text in the
+// meta description (#46) — the question text itself is what makes each of the
+// ~900 (question x language) pages unique; this suffix just gives crawlers/AEO
+// context. Keep translations short; they don't need to be perfect, just correct
+// and on-brand.
+const QUESTION_DESCRIPTION_SUFFIX: Record<string, string> = {
+  en: 'a WhoCards conversation-starter question — play free online in 14 languages.',
+  da: 'et WhoCards-samtalespørgsmål — spil gratis online på 14 sprog.',
+  de: 'eine WhoCards-Gesprächsfrage — kostenlos online in 14 Sprachen spielen.',
+  es: 'una pregunta de conversación de WhoCards — juega gratis online en 14 idiomas.',
+  fr: 'une question de conversation WhoCards — jouez gratuitement en ligne en 14 langues.',
+  he: 'שאלת שיחה של WhoCards — שחקו בחינם באינטרנט ב-14 שפות.',
+  hu: 'egy WhoCards beszélgetésindító kérdés — játssz ingyen online 14 nyelven.',
+  pl: 'pytanie konwersacyjne WhoCards — graj za darmo online w 14 językach.',
+  pt: 'uma pergunta de conversa da WhoCards — joga grátis online em 14 idiomas.',
+  'pt-br': 'uma pergunta de conversa do WhoCards — jogue grátis online em 14 idiomas.',
+  ro: 'o întrebare de conversație WhoCards — joacă gratuit online în 14 limbi.',
+  sr: 'WhoCards питање за разговор — играј бесплатно онлајн на 14 језика.',
+  zh: 'WhoCards 對話破冰問題 — 免費線上遊玩，支援 14 種語言。',
+  jp: 'WhoCardsの会話のきっかけになる質問 — 14言語で無料オンラインプレイ。',
+}
+
+const MAX_DESCRIPTION_LENGTH = 160
+
+const truncate = (text: string, max: number): string =>
+  text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`
+
+const buildQuestionDescription = (questionText: string, language?: string): string => {
+  const suffix =
+    (language && QUESTION_DESCRIPTION_SUFFIX[language]) || QUESTION_DESCRIPTION_SUFFIX.en
+  return truncate(`${questionText} — ${suffix}`, MAX_DESCRIPTION_LENGTH)
+}
 
 export interface Props {
   title?: string
@@ -41,12 +75,22 @@ if (propTitle) {
 }
 
 // question pages
+// Question text (localized) drives unique title/description/JSON-LD per
+// (id, language) pair (#46) instead of the old "Question #N" / "Dare to be
+// Curious?" duplicate content. Hoisted above the `if` so the JSON-LD block
+// below can also read it.
+const rawText =
+  id && language ? (questions as Record<string, Record<string, string>>)[id]?.[language] : undefined
+// Split on the blank line questions.json uses to separate the main question
+// from its parenthetical context — only the main line belongs in the title.
+const mainLine = rawText?.split('\n\n')[0]?.replace(/\s+/g, ' ').trim()
+
 if (id) {
-  titles.push(`Question #${id}`)
+  titles.push(mainLine || `Question #${id}`)
   // Card image is generated programmatically from questions.json at build time
   // (see src/pages/og/[language]/[id].png.ts) — no committed PNG required.
   if (!img) image = `og/${language}/${id}.png`
-  description = 'Dare to be Curious?'
+  description = mainLine ? buildQuestionDescription(mainLine, language) : 'Dare to be Curious?'
 }
 // complete image url
 image = `${site}${site?.toString().endsWith('/') ? '' : '/'}` + image
@@ -131,5 +175,25 @@ const title = titles.join(' | ')
       name: 'WhoCards',
       url: site?.toString(),
     },
+    // Per-question structured data (#46). CreativeWork (not Question) — the
+    // schema.org Question type expects an acceptedAnswer/answerCount for Q&A
+    // rich results, which doesn't apply here (these are conversation-starter
+    // prompts, not answered questions), so Question markup without an answer
+    // would fail the Rich Results test. CreativeWork cleanly models "a short
+    // piece of content, in this language, at this URL" instead.
+    ...(id && mainLine
+      ? [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CreativeWork',
+            '@id': canonicalUrl.toString(),
+            name: mainLine,
+            text: rawText,
+            inLanguage: language,
+            url: canonicalUrl.toString(),
+            isPartOf: {'@type': 'WebSite', name: 'WhoCards', url: site?.toString()},
+          },
+        ]
+      : []),
   ])}
 />
