@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import icon from 'astro-icon'
 import robotsTxt from 'astro-robots-txt'
 import {defineConfig, passthroughImageService} from 'astro/config'
-import {SITE_URL as site} from './src/constants/env'
+import {SITE_URL as site} from './src/env.node'
 import languages from './src/data/languages.json'
 
 // `/[language]` routes are 301 redirects to `/` (see src/pages/[language]/index.astro),
