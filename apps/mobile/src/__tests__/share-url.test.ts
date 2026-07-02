@@ -13,7 +13,7 @@ jest.mock('@/env', () => ({env: {EXPO_PUBLIC_WEB_URL: 'https://whocards.cc'}}))
 // DEFAULT_DECK_SLUG is 'library' — imported from the real package so the test
 // stays in sync if the default ever changes.
 import {DEFAULT_DECK_SLUG} from '@whocards/decks'
-import {buildShareUrl} from '../lib/share-url'
+import {buildShareCardUrl, buildShareUrl} from '../lib/share-url'
 
 describe('buildShareUrl', () => {
   it('uses /play (no slug segment) for the default deck', () => {
@@ -39,5 +39,27 @@ describe('buildShareUrl', () => {
   it('matches the expected URL shape end-to-end for a named deck', () => {
     const url = buildShareUrl('hajnalig', 'fr', 'q-99')
     expect(url).toBe('https://whocards.cc/play/hajnalig?lang=fr&q=q-99')
+  })
+})
+
+/**
+ * Tests for buildShareCardUrl — mirrors the on-demand Share Card endpoint's own
+ * URL shape (apps/website/src/pages/share-card/[size]/[language]/[id].png.ts,
+ * merged in PR #157): `/share-card/{size}/{language}/{id}.png`.
+ */
+describe('buildShareCardUrl', () => {
+  it('builds the story (9:16) Share Card URL', () => {
+    const url = buildShareCardUrl('story', 'en', 'q-42')
+    expect(url).toBe('https://whocards.cc/share-card/story/en/q-42.png')
+  })
+
+  it('builds the post (4:5) Share Card URL', () => {
+    const url = buildShareCardUrl('post', 'es', 'q-7')
+    expect(url).toBe('https://whocards.cc/share-card/post/es/q-7.png')
+  })
+
+  it('has no deck-slug segment — the endpoint identifies a card by (size, language, id) alone', () => {
+    const url = buildShareCardUrl('story', 'fr', 'q-99')
+    expect(url).toBe('https://whocards.cc/share-card/story/fr/q-99.png')
   })
 })

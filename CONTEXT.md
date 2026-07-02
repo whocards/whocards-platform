@@ -76,6 +76,14 @@ _Avoid_: user, account (neither exists yet), session (a Device persists across s
 The permanent, append-only history of Answers — one entry each time a Device answers a Question (which Deck, which Question, which language, when). The single source of truth from which the `questions_answered` and `games_played` counts, the Global cycle, and any future per-player coverage are all derived. The existing **conference question tracking** is this same concept in its first, event-scoped form (keyed by a conference); the Answer record generalizes it across the whole app (keyed by Device + Deck), and the conference tracker is expected to fold into it.
 _Avoid_: analytics (this is durable product state and the source of truth, not an aggregate metrics pipeline)
 
+**Share Card**:
+A Card rendered as a standalone branded image made to travel outside the app — one Question as a picture, sized for where it lands (a link preview, a story, a post). The link-preview (OG) image is the first Share Card; the story and post sizes are the same concept in other shapes. Sharing one never affects play state.
+_Avoid_: og image (one size/use of a Share Card, not the concept), screenshot, share image (unqualified)
+
+**Share**:
+The player action of sending the current Card out of the app, as either the Card's web link or a Share Card image — the player chooses which. A Share is an expression of the player, not a game event: it never draws, answers, or skips anything.
+_Avoid_: post, send (unqualified), invite
+
 **Android Tester**:
 A person who helps validate the Android app before public launch. An Android Tester is part of the beta cohort, not a public app waitlist subscriber or general newsletter subscriber.
 _Avoid_: beta tester (too vague), app waitlist subscriber

@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
 import {poolQuestionIds} from '../pool'
+import {isPoolBacked} from '../types'
 import {DEFAULT_DECK_SLUG, getAllDecks, getDeck, isDeckSlug, resolveDeck} from './registry'
 
 describe('registry', () => {
@@ -39,5 +40,29 @@ describe('registry', () => {
     const before = getAllDecks().length
     expect(getAllDecks().length).toBe(before)
     expect(resolveDeck).toBeTypeOf('function')
+  })
+
+  // isPoolBacked gates any feature (e.g. the Share Card image rows, ADR-0007)
+  // that resolves ids against the global Pool — an inline deck's ids either
+  // don't exist there or collide with an unrelated Pool id.
+  it('isPoolBacked is true for the library deck (source.kind === "library")', () => {
+    const deck = getDeck('library')
+    expect(deck).toBeDefined()
+    expect(deck?.source.kind).toBe('library')
+    expect(isPoolBacked(deck!)).toBe(true)
+  })
+
+  it('isPoolBacked is false for inline decks, even when their ids collide with Pool ids', () => {
+    const aiAtWork = getDeck('ai-at-work')
+    const hajnalig = getDeck('hajnalig')
+    expect(aiAtWork?.source.kind).toBe('inline')
+    expect(hajnalig?.source.kind).toBe('inline')
+    expect(isPoolBacked(aiAtWork!)).toBe(false)
+    expect(isPoolBacked(hajnalig!)).toBe(false)
+  })
+
+  it('isPoolBacked is derived from source.kind alone, not a slug allowlist', () => {
+    expect(isPoolBacked({source: {kind: 'library'}})).toBe(true)
+    expect(isPoolBacked({source: {kind: 'inline', questions: {}}})).toBe(false)
   })
 })

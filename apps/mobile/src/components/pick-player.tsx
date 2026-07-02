@@ -3,7 +3,7 @@ import {Image} from 'expo-image'
 import {useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, Share, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -24,6 +24,8 @@ import {LanguageModal} from '@/components/language-modal'
 import {PlayerBar} from '@/components/player-bar'
 import {PressableScale} from '@/components/pressable-scale'
 import {QuestionText} from '@/components/question-text'
+import type {ShareFormat} from '@/components/share-modal'
+import {ShareModal} from '@/components/share-modal'
 import {usePlayerChrome} from '@/hooks/use-player-chrome'
 import {useReviewPrompt} from '@/hooks/use-review-prompt'
 import {enqueue, flush} from '@/lib/answer-queue'
@@ -37,7 +39,7 @@ import {
   setStoredLanguage,
   setStoredSecondaryLanguages,
 } from '@/lib/language-store'
-import {buildShareUrl} from '@/lib/share-url'
+import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 
 // Full card flip (deal → reveal) duration; DESIGN.md's 200–300 ms band applies to
 // interaction transitions — the deal is the one composed "moment of theatre" per card.
@@ -81,6 +83,9 @@ type PickPlayerProps = {
   questionIds: string[]
   questions: QuestionSet
   languages: string[]
+  /** Is this deck's content resolved from the global Pool (`isPoolBacked`)? Gates the
+   *  Share sheet's image rows — the Share Card endpoint only resolves Pool ids. */
+  poolBacked: boolean
 }
 
 /**
@@ -90,7 +95,13 @@ type PickPlayerProps = {
  * is the same non-repeating shuffle as Classic (the engine's pickReducer
  * composes navReducer); only the reveal ritual differs.
  */
-export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPlayerProps) => {
+export const PickPlayer = ({
+  deckSlug,
+  questionIds,
+  questions,
+  languages,
+  poolBacked,
+}: PickPlayerProps) => {
   const router = useRouter()
   const reduceMotion = useReducedMotion()
 
@@ -105,6 +116,7 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
   // gate the first reveal on the stored-language read, mirroring DeckPlayer
   const [languageReady, setLanguageReady] = useState(false)
   const [langModalOpen, setLangModalOpen] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
 
   useEffect(() => {
     void Promise.all([
@@ -328,9 +340,18 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
 
   const handleShare = useCallback(() => {
     if (!onCard || !text) return
-    const url = buildShareUrl(deckSlug, language, questionId)
-    void Share.share({message: `${text}\n\n${url}`, url})
-  }, [onCard, text, deckSlug, language, questionId])
+    setShareModalOpen(true)
+  }, [onCard, text])
+
+  const handleShareCompleted = useCallback(
+    (format: ShareFormat) => {
+      track({
+        name: EVENTS.SHARE_COMPLETED,
+        props: {deck_id: deckSlug, question_id: questionId, language, game: GAMES.PICK, format},
+      })
+    },
+    [deckSlug, questionId, language]
+  )
 
   const openLanguage = useCallback(() => setLangModalOpen(true), [])
 
@@ -539,6 +560,16 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
             setLangModalOpen(false)
             revealChrome()
           }}
+        />
+
+        <ShareModal
+          visible={shareModalOpen}
+          questionText={text}
+          shareUrl={buildShareUrl(deckSlug, language, questionId)}
+          storyImageUrl={poolBacked ? buildShareCardUrl('story', language, questionId) : undefined}
+          postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
+          onShare={handleShareCompleted}
+          onClose={() => setShareModalOpen(false)}
         />
       </View>
     </View>

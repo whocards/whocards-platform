@@ -3,7 +3,7 @@ import * as Linking from 'expo-linking'
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Pressable, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -16,7 +16,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import type {GameId, NavAction, QuestionSet} from '@whocards/decks'
-import {DEFAULT_GAME, getDeck, getInitialNav, navReducer} from '@whocards/decks'
+import {DEFAULT_GAME, getDeck, getInitialNav, isPoolBacked, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 import {colors} from '@whocards/tokens'
@@ -26,6 +26,8 @@ import {PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
 import {QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
+import type {ShareFormat} from '@/components/share-modal'
+import {ShareModal} from '@/components/share-modal'
 import {usePlayerChrome} from '@/hooks/use-player-chrome'
 import {useReviewPrompt} from '@/hooks/use-review-prompt'
 import {enqueue, flush} from '@/lib/answer-queue'
@@ -41,7 +43,7 @@ import {
   setStoredSecondaryLanguages,
 } from '@/lib/language-store'
 import {parsePlayLink} from '@/lib/play-link'
-import {buildShareUrl} from '@/lib/share-url'
+import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
 // How far off-screen the card travels when a swipe commits (points)
@@ -121,6 +123,7 @@ export default function PlayScreen() {
         questionIds={deck.questionIds}
         questions={deck.questions}
         languages={deck.languages}
+        poolBacked={isPoolBacked(deck)}
       />
     )
   }
@@ -131,6 +134,7 @@ export default function PlayScreen() {
       questionIds={deck.questionIds}
       questions={deck.questions}
       languages={deck.languages}
+      poolBacked={isPoolBacked(deck)}
       startId={linkOverride?.q ?? (typeof q === 'string' ? q : undefined)}
       startLanguage={linkOverride?.lang ?? (typeof lang === 'string' ? lang : undefined)}
     />
@@ -142,6 +146,9 @@ type DeckPlayerProps = {
   questionIds: string[]
   questions: QuestionSet
   languages: string[]
+  /** Is this deck's content resolved from the global Pool (`isPoolBacked`)? Gates the
+   *  Share sheet's image rows — the Share Card endpoint only resolves Pool ids. */
+  poolBacked: boolean
   startId?: string
   /** Language from a shared deep-link (`?lang=`); wins over the stored preference. */
   startLanguage?: string
@@ -152,6 +159,7 @@ const DeckPlayer = ({
   questionIds,
   questions,
   languages,
+  poolBacked,
   startId,
   startLanguage,
 }: DeckPlayerProps) => {
@@ -186,6 +194,7 @@ const DeckPlayer = ({
   // (ticket 0009 first-paint decision).
   const [languageReady, setLanguageReady] = useState(false)
   const [langModalOpen, setLangModalOpen] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
 
   // Seed language + secondaries from storage on mount. Only apply stored values
   // still present in this deck's languages list (guard against decks dropping one).
@@ -445,11 +454,18 @@ const DeckPlayer = ({
 
   const handleShare = useCallback(() => {
     if (!text) return
-    const url = buildShareUrl(deckSlug, language, questionId)
-    // `url` is read by iOS share sheet; `message` carries the link on Android (which
-    // ignores the `url` field) and provides a fallback for any platform.
-    void Share.share({message: `${text}\n\n${url}`, url})
-  }, [text, deckSlug, language, questionId])
+    setShareModalOpen(true)
+  }, [text])
+
+  const handleShareCompleted = useCallback(
+    (format: ShareFormat) => {
+      track({
+        name: EVENTS.SHARE_COMPLETED,
+        props: {deck_id: deckSlug, question_id: questionId, language, game: GAMES.WH, format},
+      })
+    },
+    [deckSlug, questionId, language]
+  )
 
   const openLanguage = useCallback(() => setLangModalOpen(true), [])
 
@@ -642,6 +658,16 @@ const DeckPlayer = ({
             setLangModalOpen(false)
             revealChrome()
           }}
+        />
+
+        <ShareModal
+          visible={shareModalOpen}
+          questionText={text}
+          shareUrl={buildShareUrl(deckSlug, language, questionId)}
+          storyImageUrl={poolBacked ? buildShareCardUrl('story', language, questionId) : undefined}
+          postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
+          onShare={handleShareCompleted}
+          onClose={() => setShareModalOpen(false)}
         />
       </View>
     </ScreenBackground>

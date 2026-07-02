@@ -75,22 +75,29 @@ export default defineConfig({
   ],
   output: 'static',
   adapter: netlify({
-    // `/api/print.pdf` (#38) is `prerender = false` (a real Netlify function),
-    // so the font/logo files it reads at request time via `process.cwd()`
-    // (see src/server/print/render.ts) must be force-bundled — the SSR
-    // bundler otherwise only picks up statically-imported assets.
+    // `/api/print.pdf` (#38) and `/share-card/{size}/{language}/{id}.png`
+    // (#153) are both `prerender = false` (real Netlify functions), so the
+    // font/svg assets they read at request time via runtime-resolved paths
+    // (see src/server/print/render.ts and src/server/card-image.ts) must be
+    // force-bundled — the SSR bundler otherwise only picks up
+    // statically-imported assets.
     includeFiles: [
       './public/fonts/aptly_regular.woff2',
+      // The Share Card wordmark (card-image.ts) uses the medium weight,
+      // distinct from the print PDF's regular weight above.
+      './public/fonts/aptly_medium.woff2',
       './public/fonts/golos_text.woff2',
       // Hebrew/Mandarin/Japanese script fonts (#41) — regular weight only,
-      // the print PDF never uses bold. ~2.7MB added to the function bundle;
-      // pdf-lib's `embedFont(..., {subset: true})` (see render.ts) still
-      // subsets the *output* PDF down to only the glyphs each deck actually
-      // uses, so this only affects the deployed function size, not download size.
+      // neither on-demand renderer uses bold. ~2.7MB added to the function
+      // bundle; pdf-lib's `embedFont(..., {subset: true})` (print) and
+      // Satori/resvg (card-image) both only rasterise the glyphs actually
+      // used, so this only affects the deployed function size, not download size.
       './public/fonts/noto-sans-hebrew_regular.woff2',
       './public/fonts/noto-sans-chinese_regular.woff2',
       './public/fonts/noto-sans-japanese_regular.woff2',
       './src/icons/logo-plain.svg',
+      // The Share Card maze background (card-image.ts's buildMazeDataUri).
+      './public/background.svg',
     ],
   }),
   redirects: {

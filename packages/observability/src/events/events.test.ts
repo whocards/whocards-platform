@@ -235,3 +235,40 @@ describe('catalog — Pick a Card additions', () => {
     expect(events[1]?.props).toEqual({deck_id: 'library', game: 'pick'})
   })
 })
+
+// ---------------------------------------------------------------------------
+// catalog — Share sheet additions (epic #152)
+// ---------------------------------------------------------------------------
+
+describe('catalog — Share sheet additions', () => {
+  it('exposes share_completed, one event shape for web and mobile', () => {
+    expect(EVENTS.SHARE_COMPLETED).toBe('share_completed')
+  })
+
+  it('track() emits share_completed with the chosen format', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    configureObservability({dev: true})
+
+    track({
+      name: EVENTS.SHARE_COMPLETED,
+      props: {
+        deck_id: 'library',
+        question_id: 'q-1',
+        language: 'en',
+        game: GAMES.PICK,
+        format: 'story',
+      },
+    })
+
+    expect(consoleSpy).toHaveBeenCalledOnce()
+    expect(consoleSpy.mock.calls[0]?.[1]).toBe('share_completed')
+    expect(consoleSpy.mock.calls[0]?.[2]).toEqual({
+      deck_id: 'library',
+      question_id: 'q-1',
+      language: 'en',
+      game: GAMES.PICK,
+      format: 'story',
+    })
+    consoleSpy.mockRestore()
+  })
+})

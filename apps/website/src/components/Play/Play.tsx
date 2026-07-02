@@ -7,6 +7,7 @@ import {getDeviceId} from '~lib/device-id'
 import {createOfflineQueue} from '~lib/offline-queue'
 import {sendAnswer} from '~lib/answer-transport'
 import {cn} from '~utils'
+import {ShareSheet} from './ShareSheet'
 
 export type {QuestionSet, TrackingConfig}
 
@@ -23,6 +24,17 @@ export type PlayProps = {
   languageStorageKey?: string
   /** text colour utility for the question, so the deck adapts to its background */
   questionClassName?: string
+  /**
+   * Whether this deck's questions come from the Pool (`source.kind === 'library'`
+   * — see `@whocards/decks`' `DeckSource` and `share-ui.ts`'s `supportsShareImages`).
+   * Gates the Share sheet's Story/Post image rows: the on-demand Share Card
+   * endpoint only knows Pool ids (ADR-0007), so a deck with inline questions
+   * (ai-at-work, hajnalig) would 404 or — worse, for a deck whose inline ids
+   * collide with real Pool ids like hajnalig's — silently render the WRONG
+   * question's card. Defaults to `false` (Share link only) so a caller that
+   * forgets to pass this stays safe rather than silently wrong.
+   */
+  isPoolBacked?: boolean
 }
 
 /** One queue per island, recording each serve to the Answer record via tRPC. */
@@ -50,6 +62,17 @@ const NextArrowIcon = (
     <path fill='currentColor' d='m12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z' />
   </svg>
 )
+// Standard Material "share" glyph — the same icon the site's Footer.astro already
+// uses for its page-level share button (`ic:twotone-share`), kept visually
+// consistent between the two share affordances.
+const ShareIcon = (
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' className='h-6 w-6'>
+    <path
+      fill='currentColor'
+      d='M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z'
+    />
+  </svg>
+)
 
 export const Play = ({
   questions,
@@ -58,6 +81,7 @@ export const Play = ({
   tracking,
   languageStorageKey = 'play-language',
   questionClassName = 'text-darkest',
+  isPoolBacked = false,
 }: PlayProps) => {
   const questionIds = useMemo(() => Object.keys(questions), [questions])
   const defaultLanguage = languages[0]
@@ -90,6 +114,7 @@ export const Play = ({
   // function so it runs once on mount, not on every render (rerender-lazy-state-init)
   const [language, setLanguageState] = useState<string>(getStoredLanguage)
   const [showControls, setShowControls] = useState(true)
+  const [shareOpen, setShareOpen] = useState(false)
 
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const controlsRef = useRef<HTMLDivElement>(null)
@@ -300,6 +325,11 @@ export const Play = ({
     dispatch({type: 'next'})
   }, [viewTracker])
 
+  const handleOpenShare = useCallback(() => setShareOpen(true), [])
+  // Stable identity so ShareSheet's dialog-event-listener effect doesn't tear
+  // down and re-wire its `close`/backdrop-click listeners on every Play render.
+  const handleCloseShare = useCallback(() => setShareOpen(false), [])
+
   const changeLanguage = useCallback(
     (next: string) => {
       if (next === language) return
@@ -365,6 +395,14 @@ export const Play = ({
             {PrevArrowIcon}
           </button>
 
+          <button
+            aria-label='share question'
+            onClick={handleOpenShare}
+            className='hover:text-primary-dark'
+          >
+            {ShareIcon}
+          </button>
+
           {isToggle ? (
             <button
               aria-label='change language'
@@ -408,6 +446,17 @@ export const Play = ({
           </button>
         </div>
       </div>
+
+      <ShareSheet
+        open={shareOpen}
+        onClose={handleCloseShare}
+        deckId={deckSlug ?? ''}
+        game={GAMES.WH}
+        language={language ?? ''}
+        questionId={ids[idx] ?? ''}
+        questionText={questionText}
+        supportsShareImages={isPoolBacked}
+      />
     </>
   )
 }

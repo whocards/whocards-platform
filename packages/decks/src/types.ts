@@ -76,3 +76,17 @@ export type ResolvedDeck = Deck & {
   /** ordered question ids (the keys of `questions`, in deck order) */
   questionIds: QuestionId[]
 }
+
+/**
+ * Is this deck's content backed by the global Pool (`source.kind === 'library'`),
+ * as opposed to an inline, deck-authored {@link QuestionSet}?
+ *
+ * The on-demand Share Card endpoint (ADR-0007) resolves `(language, id)` against
+ * the Pool only — an inline deck's ids either don't exist there (404, e.g.
+ * ai-at-work's `ai-3`) or collide with an unrelated Pool id and silently serve
+ * the WRONG image (e.g. hajnalig's numeric ids overlapping Pool ids 1–66).
+ * Callers must gate any Share Card image offering on this predicate — derived
+ * from the deck's source, never from a hardcoded slug list — until a
+ * deck-aware endpoint lands (ADR-0007 future work).
+ */
+export const isPoolBacked = (deck: {source: DeckSource}): boolean => deck.source.kind === 'library'
