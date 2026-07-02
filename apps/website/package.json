@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@whocards/api": "workspace:*",
+    "@whocards/app-store": "workspace:*",
     "@whocards/decks": "workspace:*",
     "@whocards/emails": "workspace:*",
     "@whocards/observability": "workspace:*",

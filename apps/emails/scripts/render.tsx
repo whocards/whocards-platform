@@ -32,14 +32,20 @@ const groupUrl =
 const optInUrl =
   process.env.ANDROID_TESTER_OPT_IN_URL ?? 'https://play.google.com/apps/testing/example.package'
 const feedbackUrl = process.env.ANDROID_TESTER_FEEDBACK_URL ?? 'https://example.com/feedback'
-// Real store listings (iOS App Store id 6782853824 / Android com.whocards.mobile).
-// Override via APP_STORE_URL / PLAY_STORE_URL env vars when rendering the blast.
-const appStoreUrl =
-  process.env.APP_STORE_URL ??
-  'https://apps.apple.com/app/whocards/id6782853824?utm_source=email&utm_medium=launch_blast&utm_campaign=launch'
-const playStoreUrl =
-  process.env.PLAY_STORE_URL ??
-  'https://play.google.com/store/apps/details?id=com.whocards.mobile&utm_source=email&utm_medium=launch_blast&utm_campaign=launch'
+
+// Store URLs have no fallback: this script produces the HTML that gets sent as
+// the launch blast, so a missing env var must fail the render rather than
+// silently shipping a stale/placeholder CTA (#128). Use `email:dev` (which
+// renders PreviewProps) to iterate on copy without setting these.
+const appStoreUrl = process.env.APP_STORE_URL
+const playStoreUrl = process.env.PLAY_STORE_URL
+if (!appStoreUrl || !playStoreUrl) {
+  throw new Error(
+    'APP_STORE_URL and PLAY_STORE_URL must both be set to render the launch-blast email. ' +
+      'These intentionally have no built-in fallback — set them in the environment before ' +
+      'running `pnpm email:render`. Use `pnpm email:dev` to preview the template instead.'
+  )
+}
 
 const outputDirectory = resolve('dist')
 await mkdir(outputDirectory, {recursive: true})
