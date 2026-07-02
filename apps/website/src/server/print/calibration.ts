@@ -41,8 +41,41 @@ const INSTRUCTIONS =
   'mm rulers along the top and left edges; enter any drift you read off as the X/Y offset ' +
   '(mm), then download your deck with the same offset.'
 
-/** One card slot outline, in the same top-down coordinate space as `layoutFor`'s rects. */
-const drawCardOutline = (page: PDFPage, rect: Rect, pageHeight: number): void => {
+/**
+ * SVG path (in a local top-down coordinate space, origin at the rect's own top-left
+ * corner) for a `width` × `height` rounded rect with corner radius `r` — the standard
+ * four-arc recipe, wound clockwise to match ordinary y-down SVG path conventions.
+ */
+const roundedRectPath = (width: number, height: number, r: number): string =>
+  `M ${r},0 H ${width - r} A ${r},${r} 0 0 1 ${width},${r} V ${height - r} ` +
+  `A ${r},${r} 0 0 1 ${width - r},${height} H ${r} A ${r},${r} 0 0 1 0,${height - r} ` +
+  `V ${r} A ${r},${r} 0 0 1 ${r},0 Z`
+
+/**
+ * One card slot outline, in the same top-down coordinate space as `layoutFor`'s rects.
+ * Kiss-cut label stock (`cornerRadius` set, e.g. Avery L7165 — see ./presets) draws a
+ * true rounded rect via `drawSvgPath`: pdf-lib has no rounded-rect primitive, but
+ * `drawSvgPath` already shells out to a full arc-to-bézier SVG path parser, so reusing
+ * it beats hand-rolling the bézier corners here. `drawSvgPath` flips the path's local
+ * y-axis (SVG convention: y grows downward) and places the path's local origin at
+ * (options.x, options.y) — passing the rect's *top* edge (in pdf-lib's bottom-up space)
+ * as `y` makes the path's own top-down-authored coordinates land in the right place.
+ */
+const drawCardOutline = (
+  page: PDFPage,
+  rect: Rect,
+  pageHeight: number,
+  cornerRadius: number
+): void => {
+  if (cornerRadius > 0) {
+    page.drawSvgPath(roundedRectPath(rect.width, rect.height, cornerRadius), {
+      x: rect.x,
+      y: pageHeight - rect.y,
+      borderColor: GRID_COLOR,
+      borderWidth: HAIRLINE_WIDTH,
+    })
+    return
+  }
   page.drawRectangle({
     x: rect.x,
     y: pageHeight - rect.y - rect.height,
@@ -57,6 +90,13 @@ const drawCardOutline = (page: PDFPage, rect: Rect, pageHeight: number): void =>
  * The four corners of a card rect, converted to pdf-lib's bottom-up page space with
  * the same `pageHeight - y` flip `drawCardOutline` uses, so a registration mark lands
  * exactly on its outline's corner.
+ *
+ * Deliberately unchanged for rounded-corner (kiss-cut) layouts: the mark still lands
+ * on the *nominal* grid corner — the point the straight edges would meet at — not
+ * pulled in to the curve's tangent point. That nominal corner is exactly what the same
+ * grid math (`layoutFor`) derives the margins from, so it's the more useful alignment
+ * reference; the rounded outline drawn alongside it already shows where the real curve
+ * starts.
  */
 const rectCorners = (rect: Rect, pageHeight: number): Array<{x: number; y: number}> => {
   const top = pageHeight - rect.y
@@ -201,6 +241,7 @@ export const renderCalibrationPdf = async (params: CalibrationPdfParams): Promis
   const font = await doc.embedFont(StandardFonts.Helvetica)
 
   const {pageSize, cardRects} = layout
+  const cornerRadius = layout.layout.cornerRadius ?? 0
   const page = doc.addPage([pageSize.width, pageSize.height])
 
   const offsetXPt = mm(params.offsetX)
@@ -211,7 +252,7 @@ export const renderCalibrationPdf = async (params: CalibrationPdfParams): Promis
     y: rect.y + offsetYPt,
   }))
 
-  for (const rect of offsetRects) drawCardOutline(page, rect, pageSize.height)
+  for (const rect of offsetRects) drawCardOutline(page, rect, pageSize.height, cornerRadius)
 
   // Registration marks: one crosshair per unique grid-corner point (dedup by
   // coordinate), drawn from the same offset rects as the outlines above.

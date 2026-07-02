@@ -188,6 +188,21 @@ const MIN_FONT_PT = 7
 const MAX_FONT_PT = 20
 const LINE_HEIGHT_MULTIPLIER = 1.25
 
+// Kiss-cut sticker stock (e.g. Avery L7165, `cornerRadius` set — see ./presets)
+// rounds the card corners. `padding` alone insets everything from the *straight*
+// edges, but the Pool ID (bottom-left) and logo (bottom-right) both anchor right
+// at a corner, which the curve clips into. `r * (1 - 1/√2)` is the setback where
+// a circle of radius `r`, centred on the square corner, crosses that corner's
+// 45° diagonal — i.e. where the rounded curve stops touching the straight edges
+// — plus a small fixed pad so there's a visible hairline of clearance, not just
+// a tangent. Applied on top of `padding`, along the axis that actually sits on
+// the corner (x for the ID, x for the logo — both already vertically recessed
+// into the footer band, well clear of the curve).
+const CORNER_SETBACK_PAD = 1 // pt
+/** Exported for unit testing — see the comment above for what this models. */
+export const cornerInset = (cornerRadius: number): number =>
+  cornerRadius > 0 ? cornerRadius * (1 - 1 / Math.SQRT2) + CORNER_SETBACK_PAD : 0
+
 const drawCard = (
   page: PDFPage,
   rect: Rect,
@@ -195,7 +210,8 @@ const drawCard = (
   content: CardContent,
   lang: string,
   font: PDFFont,
-  logo: PDFImage
+  logo: PDFImage,
+  cornerRadius: number
 ): void => {
   // `rect` is in the same top-down coordinate space as presets.ts's
   // `cardRects`; pdf-lib pages are bottom-origin, so flip once here.
@@ -204,6 +220,7 @@ const drawCard = (
 
   const padding = Math.min(rect.width, rect.height) * PADDING_RATIO
   const footerHeight = rect.height * FOOTER_RATIO
+  const inset = cornerInset(cornerRadius)
 
   const textBox = {
     x: pdfX + padding,
@@ -249,7 +266,7 @@ const drawCard = (
   // Pool ID, bottom-left.
   const idSize = Math.max(MIN_FONT_PT, footerHeight * 0.4)
   page.drawText(content.id, {
-    x: pdfX + padding,
+    x: pdfX + padding + inset,
     y: pdfY + (footerHeight - idSize) / 2,
     size: idSize,
     font,
@@ -260,7 +277,7 @@ const drawCard = (
   const logoHeight = footerHeight * 0.8
   const logoWidth = logoHeight * LOGO_ASPECT
   page.drawImage(logo, {
-    x: pdfX + rect.width - padding - logoWidth,
+    x: pdfX + rect.width - padding - inset - logoWidth,
     y: pdfY + (footerHeight - logoHeight) / 2,
     width: logoWidth,
     height: logoHeight,
@@ -291,6 +308,7 @@ export const renderPrintPdf = async (params: PrintPdfParams): Promise<Uint8Array
   const offsetYPt = mm(params.offsetY)
 
   const {pageSize, perPage, cardRects} = layout
+  const cornerRadius = layout.layout.cornerRadius ?? 0
   const pageCount = Math.ceil(cards.length / perPage)
 
   for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
@@ -307,7 +325,7 @@ export const renderPrintPdf = async (params: PrintPdfParams): Promise<Uint8Array
         width: rect.width,
         height: rect.height,
       }
-      drawCard(page, shifted, pageSize.height, content, params.lang, font, logo)
+      drawCard(page, shifted, pageSize.height, content, params.lang, font, logo, cornerRadius)
     })
   }
 

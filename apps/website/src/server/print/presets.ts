@@ -10,6 +10,17 @@
 // Avery 5371: 0.75" side / 0.5" top margins are exactly the centred residual, gutter 0),
 // so margins are *derived* by centring the grid rather than hand-copied per SKU — fewer
 // magic numbers to get wrong, and the calibration nudge (#40) absorbs any residual.
+//
+// Sticker/label stock (#138) isn't always gutter-0: Avery L7165's own published spec
+// (avery.co.uk/template-l7165, cross-checked against flexilabels.co.uk's mirror of the
+// same numbers) documents a 2.5mm horizontal gap between labels, 0mm vertical gap, a
+// 1.5mm corner radius (kiss-cut), and 4.65mm side / 13.1mm top-bottom margins — but
+// those margins are exactly what centring the grid with *that* gutter already produces
+// ((210 - (2×99.1 + 2.5)) / 2 = 4.65mm, (297 - 4×67.7) / 2 = 13.1mm), so the existing
+// centred-derivation formula holds unchanged; only the gutter needed a real, non-zero
+// value. No seeded layout has needed the asymmetric-margin escape hatch the design
+// notes flagged as a contingency, so it isn't implemented — add it if a future SKU
+// actually documents margins centring can't reproduce.
 
 /** Points per inch / millimetre (1pt = 1/72"). */
 export const PT_PER_IN = 72
@@ -28,6 +39,7 @@ export type LayoutId =
   | 'a4-90x55-10up'
   | 'a4-91x55-10up'
   | 'us-letter-cleanedge-8up'
+  | 'a4-99x67-8up'
 
 export type PhysicalLayout = {
   id: LayoutId
@@ -44,6 +56,14 @@ export type PhysicalLayout = {
   supported: boolean
   /** Short human note (paper, where it's common). */
   note?: string
+  /**
+   * Corner radius in pt, for kiss-cut/label stock that rounds the card corners
+   * (e.g. Avery L7165's 1.5mm). Undefined/0 = square corners (precut business
+   * cards). Consumed by ./render (inset the ID/logo so they clear the curve)
+   * and ./calibration (draw the outline as a rounded rect instead of a plain
+   * rectangle) — both fall back to the old square-corner behaviour when unset.
+   */
+  cornerRadius?: number
 }
 
 // US Letter = 8.5×11"; A4 = 210×297mm.
@@ -119,6 +139,18 @@ export const PHYSICAL_LAYOUTS: Record<LayoutId, PhysicalLayout> = {
     supported: false,
     note: 'Clean-edge (Avery 8859 / 8869) — pending calibration',
   },
+  'a4-99x67-8up': {
+    id: 'a4-99x67-8up',
+    label: 'A4 · 99.1 × 67.7 mm · 8-up (stickers)',
+    page: A4,
+    card: {width: mm(99.1), height: mm(67.7)},
+    cols: 2,
+    rows: 4,
+    gutter: {x: mm(2.5), y: 0},
+    cornerRadius: mm(1.5),
+    supported: true,
+    note: 'Sticker/label sheet, kiss-cut, rounded corners (Avery L7165 / J8165)',
+  },
 }
 
 /** Well-known SKU / product codes → physical layout id. */
@@ -147,6 +179,9 @@ export const SKU_ALIASES: Record<string, LayoutId> = {
   // US Letter clean-edge 8-up
   'avery-8859': 'us-letter-cleanedge-8up',
   'avery-8869': 'us-letter-cleanedge-8up',
+  // A4 99.1×67.7 sticker/label, 8-up (#138) — J8165 is the inkjet twin, same geometry
+  'avery-l7165': 'a4-99x67-8up',
+  'avery-j8165': 'a4-99x67-8up',
 }
 
 export type Layout = {
