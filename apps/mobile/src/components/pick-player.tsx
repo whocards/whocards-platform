@@ -2,7 +2,7 @@ import {Ionicons} from '@expo/vector-icons'
 import {useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Pressable, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -25,6 +25,8 @@ import {PlayerBar} from '@/components/player-bar'
 import {PressableScale} from '@/components/pressable-scale'
 import {QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
+import type {ShareFormat} from '@/components/share-modal'
+import {ShareModal} from '@/components/share-modal'
 import {usePlayerChrome} from '@/hooks/use-player-chrome'
 import {useReviewPrompt} from '@/hooks/use-review-prompt'
 import {enqueue, flush} from '@/lib/answer-queue'
@@ -38,7 +40,7 @@ import {
   setStoredLanguage,
   setStoredSecondaryLanguages,
 } from '@/lib/language-store'
-import {buildShareUrl} from '@/lib/share-url'
+import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
 // How far off-screen the card travels when a swipe commits (points)
@@ -78,6 +80,7 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
   // gate the first reveal on the stored-language read, mirroring DeckPlayer
   const [languageReady, setLanguageReady] = useState(false)
   const [langModalOpen, setLangModalOpen] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
 
   useEffect(() => {
     void Promise.all([
@@ -281,9 +284,18 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
 
   const handleShare = useCallback(() => {
     if (!onCard || !text) return
-    const url = buildShareUrl(deckSlug, language, questionId)
-    void Share.share({message: `${text}\n\n${url}`, url})
-  }, [onCard, text, deckSlug, language, questionId])
+    setShareModalOpen(true)
+  }, [onCard, text])
+
+  const handleShareCompleted = useCallback(
+    (format: ShareFormat) => {
+      track({
+        name: EVENTS.SHARE_COMPLETED,
+        props: {deck_id: deckSlug, question_id: questionId, language, format},
+      })
+    },
+    [deckSlug, questionId, language]
+  )
 
   const openLanguage = useCallback(() => setLangModalOpen(true), [])
 
@@ -493,6 +505,16 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
             setLangModalOpen(false)
             revealChrome()
           }}
+        />
+
+        <ShareModal
+          visible={shareModalOpen}
+          questionText={text}
+          shareUrl={buildShareUrl(deckSlug, language, questionId)}
+          storyImageUrl={buildShareCardUrl('story', language, questionId)}
+          postImageUrl={buildShareCardUrl('post', language, questionId)}
+          onShare={handleShareCompleted}
+          onClose={() => setShareModalOpen(false)}
         />
       </View>
     </ScreenBackground>

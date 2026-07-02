@@ -253,16 +253,22 @@ describe('catalog — Share sheet additions', () => {
       name: EVENTS.SHARE_COMPLETED,
       props: {
         deck_id: 'library',
-        question_id: 'q1',
+        question_id: 'q-1',
         language: 'en',
-        game: GAMES.WH,
+        game: GAMES.PICK,
         format: 'story',
       },
     })
 
     expect(consoleSpy).toHaveBeenCalledOnce()
     expect(consoleSpy.mock.calls[0]?.[1]).toBe('share_completed')
-    expect(consoleSpy.mock.calls[0]?.[2]).toMatchObject({format: 'story'})
+    expect(consoleSpy.mock.calls[0]?.[2]).toEqual({
+      deck_id: 'library',
+      question_id: 'q-1',
+      language: 'en',
+      game: GAMES.PICK,
+      format: 'story',
+    })
     consoleSpy.mockRestore()
   })
 })

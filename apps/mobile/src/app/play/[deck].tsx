@@ -3,7 +3,7 @@ import * as Linking from 'expo-linking'
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Pressable, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -26,6 +26,8 @@ import {PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
 import {QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
+import type {ShareFormat} from '@/components/share-modal'
+import {ShareModal} from '@/components/share-modal'
 import {usePlayerChrome} from '@/hooks/use-player-chrome'
 import {useReviewPrompt} from '@/hooks/use-review-prompt'
 import {enqueue, flush} from '@/lib/answer-queue'
@@ -41,7 +43,7 @@ import {
   setStoredSecondaryLanguages,
 } from '@/lib/language-store'
 import {parsePlayLink} from '@/lib/play-link'
-import {buildShareUrl} from '@/lib/share-url'
+import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
 // How far off-screen the card travels when a swipe commits (points)
@@ -186,6 +188,7 @@ const DeckPlayer = ({
   // (ticket 0009 first-paint decision).
   const [languageReady, setLanguageReady] = useState(false)
   const [langModalOpen, setLangModalOpen] = useState(false)
+  const [shareModalOpen, setShareModalOpen] = useState(false)
 
   // Seed language + secondaries from storage on mount. Only apply stored values
   // still present in this deck's languages list (guard against decks dropping one).
@@ -445,11 +448,18 @@ const DeckPlayer = ({
 
   const handleShare = useCallback(() => {
     if (!text) return
-    const url = buildShareUrl(deckSlug, language, questionId)
-    // `url` is read by iOS share sheet; `message` carries the link on Android (which
-    // ignores the `url` field) and provides a fallback for any platform.
-    void Share.share({message: `${text}\n\n${url}`, url})
-  }, [text, deckSlug, language, questionId])
+    setShareModalOpen(true)
+  }, [text])
+
+  const handleShareCompleted = useCallback(
+    (format: ShareFormat) => {
+      track({
+        name: EVENTS.SHARE_COMPLETED,
+        props: {deck_id: deckSlug, question_id: questionId, language, format},
+      })
+    },
+    [deckSlug, questionId, language]
+  )
 
   const openLanguage = useCallback(() => setLangModalOpen(true), [])
 
@@ -642,6 +652,16 @@ const DeckPlayer = ({
             setLangModalOpen(false)
             revealChrome()
           }}
+        />
+
+        <ShareModal
+          visible={shareModalOpen}
+          questionText={text}
+          shareUrl={buildShareUrl(deckSlug, language, questionId)}
+          storyImageUrl={buildShareCardUrl('story', language, questionId)}
+          postImageUrl={buildShareCardUrl('post', language, questionId)}
+          onShare={handleShareCompleted}
+          onClose={() => setShareModalOpen(false)}
         />
       </View>
     </ScreenBackground>
