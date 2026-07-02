@@ -379,14 +379,19 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
                       <Animated.View style={backStyle} className="absolute inset-0">
                         <CardBack />
                       </Animated.View>
-                      {/* question face — revealed through the second half; styled after
-                          the printed front: near-black, question from the top-left,
-                          small violet ? in the top-right corner */}
+                      {/* question face — revealed through the second half: the question
+                          from the top-left over a whisper of the brand texture, with a
+                          big violet ? anchoring the bottom-right corner */}
                       <Animated.View
                         style={faceStyle}
                         className="bg-darker absolute inset-0 overflow-hidden rounded-[20px] border border-white/10"
                       >
-                        <Text className="text-primary-dark absolute right-5 top-3 font-title text-2xl">
+                        <Image
+                          source={texture}
+                          contentFit="cover"
+                          style={[StyleSheet.absoluteFill, {opacity: 0.4}]}
+                        />
+                        <Text className="text-primary-dark absolute bottom-3 right-5 font-title text-6xl">
                           ?
                         </Text>
                         <View
