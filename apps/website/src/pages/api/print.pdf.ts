@@ -1,3 +1,4 @@
+import {logError} from '@whocards/observability'
 import type {APIRoute} from 'astro'
 
 import {parsePrintParams} from '../../server/print/params'
@@ -31,7 +32,7 @@ export const GET: APIRoute = async ({url}) => {
   try {
     pdf = Buffer.from(await renderPrintPdf(parsed.value))
   } catch (err) {
-    console.error('print.pdf render failed:', err)
+    logError('print.pdf render failed', err)
     return new Response(JSON.stringify({error: 'PDF rendering failed'}), {
       status: 500,
       headers: {'content-type': 'application/json'},

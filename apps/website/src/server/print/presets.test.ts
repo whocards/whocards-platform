@@ -1,14 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
-import {
-  inch,
-  layoutFor,
-  mm,
-  PHYSICAL_LAYOUTS,
-  resolveLayout,
-  SKU_ALIASES,
-  type LayoutId,
-} from './presets'
+import {inch, layoutFor, mm, PHYSICAL_LAYOUTS, resolveLayout, SKU_ALIASES} from './presets'
+import type {LayoutId} from './presets'
 
 describe('resolveLayout', () => {
   it('resolves a physical layout id', () => {
