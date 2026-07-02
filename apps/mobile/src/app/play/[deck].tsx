@@ -99,7 +99,7 @@ export default function PlayScreen() {
 
   if (!deck) {
     return (
-      <ScreenBackground>
+      <ScreenBackground forceDark>
         <SafeAreaView className="flex-1 items-center justify-center">
           <Text className="font-sans text-white">Deck not found.</Text>
         </SafeAreaView>
@@ -111,7 +111,7 @@ export default function PlayScreen() {
   // resolves, so the player never mounts one Game and flips to another.
   if (game === null) {
     return (
-      <ScreenBackground>
+      <ScreenBackground forceDark>
         <View className="flex-1" />
       </ScreenBackground>
     )
@@ -560,7 +560,7 @@ const DeckPlayer = ({
   ])
 
   return (
-    <ScreenBackground>
+    <ScreenBackground forceDark>
       <View className="flex-1">
         {/* full-screen card + gesture layer: tap anywhere reveals the chrome, swipe
             navigates. The bars are overlays on top, so the whole screen — including

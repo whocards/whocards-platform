@@ -1,85 +1,129 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<title>#163 light mode — Play (Classic / Global Game)</title>
-<link rel="stylesheet" href="./assets/theme.css" />
-<style>
-  .content {
-    position: relative;
-    z-index: 1;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  .top-bar {
-    display: flex;
-    justify-content: flex-end;
-    padding: 8px 16px;
-  }
-  .card-area {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    padding: 0 32px;
-  }
-  .question {
-    font-family: 'golos-text';
-    font-weight: 600;
-    font-size: 42px;
-    line-height: 1.15;
-    color: var(--darker);
-  }
-</style>
-</head>
-<body>
-  <div class="frame-label">
-    <span>Play — Classic / Global Game — light</span>
-    <div class="phone">
-      <div class="screen">
-        <div class="notch"></div>
-        <img class="texture" src="./assets/background-light.svg" alt="" />
-        <div class="content">
-          <div class="top-bar" style="padding-top: 54px;">
-            <div class="close-chip">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2.4">
-                <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
-              </svg>
+  <head>
+    <meta charset="utf-8" />
+    <title>#163 light mode — Play (Classic / Global Game) — always dark</title>
+    <link rel="stylesheet" href="./assets/theme.css" />
+    <style>
+      .content {
+        position: relative;
+        z-index: 1;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      .top-bar {
+        display: flex;
+        justify-content: flex-end;
+        padding: 8px 16px;
+      }
+      .card-area {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        padding: 0 32px;
+      }
+      .question {
+        font-family: 'golos-text';
+        font-weight: 600;
+        font-size: 42px;
+        line-height: 1.15;
+        color: var(--white);
+      }
+      .dark-player-bar {
+        display: flex;
+        align-items: stretch;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(17, 21, 22, 0.8);
+        padding: 8px 16px 26px;
+        gap: 4px;
+      }
+      .dark-player-bar .bar-btn svg {
+        stroke: var(--white);
+      }
+      .dark-player-bar .bar-btn span {
+        color: var(--gray-dark);
+      }
+      .dark-close-chip {
+        width: 40px;
+        height: 40px;
+        border-radius: 20px;
+        background: rgba(17, 21, 22, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .dark-close-chip svg {
+        stroke: var(--white);
+      }
+      .amendment-note {
+        font-family: 'golos-text';
+        font-size: 13px;
+        color: #57516c;
+        max-width: 390px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame-label">
+      <span>Play — Classic / Global Game — ALWAYS DARK (amendment 2, both themes)</span>
+      <div class="phone">
+        <div class="screen" style="background: var(--darkest)">
+          <div class="notch"></div>
+          <img class="texture" src="./assets/background-dark.png" alt="" />
+          <div class="content">
+            <div class="top-bar" style="padding-top: 54px">
+              <div class="dark-close-chip">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke-width="2.4">
+                  <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+                </svg>
+              </div>
             </div>
-          </div>
-          <div class="card-area">
-            <p class="question">What is something that makes you feel small?</p>
-          </div>
-          <div class="player-bar">
-            <div class="bar-btn">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
-                <path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <span>Back</span>
+            <div class="card-area">
+              <p class="question">What is something that makes you feel small?</p>
             </div>
-            <div class="bar-btn">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
-                <path d="M4 12v6a2 2 0 002 2h12a2 2 0 002-2v-6M16 6l-4-4-4 4M12 2v14" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <span>Share</span>
-            </div>
-            <div class="bar-btn">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
-                <circle cx="12" cy="12" r="9" />
-                <path d="M3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9s1-6.5 3.5-9z" />
-              </svg>
-              <span>Language</span>
-            </div>
-            <div class="bar-btn">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
-                <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-              <span>Next</span>
+            <div class="dark-player-bar">
+              <div class="bar-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                  <path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Back</span>
+              </div>
+              <div class="bar-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                  <path
+                    d="M4 12v6a2 2 0 002 2h12a2 2 0 002-2v-6M16 6l-4-4-4 4M12 2v14"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span>Share</span>
+              </div>
+              <div class="bar-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path
+                    d="M3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9s1-6.5 3.5-9z"
+                  />
+                </svg>
+                <span>Language</span>
+              </div>
+              <div class="bar-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                  <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>Next</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
+      <p class="amendment-note">
+        Amendment 2: the Card is the brand object and stays dark regardless of the Theme setting.
+        This screen is pixel-identical to today's app in both Light and Dark theme — no code changed
+        here.
+      </p>
     </div>
-  </div>
-</body>
+  </body>
 </html>

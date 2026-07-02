@@ -2,6 +2,7 @@ import {Ionicons} from '@expo/vector-icons'
 import {Image} from 'expo-image'
 import {Link} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
+import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useRef, useState} from 'react'
 import type {View as RNView} from 'react-native'
 import {Text, useWindowDimensions, View} from 'react-native'
@@ -20,6 +21,8 @@ import {colors} from '@whocards/tokens'
 import {GameModal} from '@/components/game-modal'
 import {PressableScale} from '@/components/pressable-scale'
 import {ScreenBackground} from '@/components/screen-background'
+import {ThemeModal} from '@/components/theme-modal'
+import {useThemeSetting} from '@/hooks/use-theme-setting'
 import {getStoredGame, setStoredGame} from '@/lib/game-store'
 import {GAME_CATALOG} from '@/lib/games'
 import {impact, selection} from '@/lib/haptics'
@@ -50,6 +53,17 @@ export default function LandingScreen() {
     void getStoredGame().then(setGame)
   }, [])
   const gameTitle = GAME_CATALOG.find((entry) => entry.id === game)?.title ?? game
+
+  // the Theme Display setting (issue #163) — System-follow by default, with a
+  // manual override; the Library canvas is the one screen that actually
+  // follows it (Play/Pick a Card force dark — the Card stays dark in both
+  // themes). `colorScheme` drives the raw-color props below (Ionicons, the
+  // Play button's play-glyph fill) that can't be expressed as a `dark:` class.
+  const {theme, select: selectTheme} = useThemeSetting()
+  const [themeModalOpen, setThemeModalOpen] = useState(false)
+  const {colorScheme} = useColorScheme()
+  const isDark = colorScheme !== 'light'
+  const chromeColor = isDark ? colors.white : colors.darker
 
   // --- splash → landing handoff ---
   // The native splash centres the logo on screen. We start our (identical) logo at
@@ -129,14 +143,14 @@ export default function LandingScreen() {
           </Animated.View>
           <Animated.Text
             style={contentStyle}
-            className="mt-7 text-center font-sans text-xl font-semibold leading-8 text-white/80"
+            className="text-darker/80 dark:text-white/80 mt-7 text-center font-sans text-xl font-semibold leading-8"
           >
             Change your world,{'\n'}one conversation at a time.
           </Animated.Text>
         </View>
 
         <Animated.View style={contentStyle} className="w-full items-center gap-5">
-          <Text className="text-gray-dark font-sans text-sm">
+          <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
             {cards} cards · {languages} languages
           </Text>
           <Link href={`/play/${DEFAULT_DECK_SLUG}`} asChild>
@@ -150,22 +164,43 @@ export default function LandingScreen() {
               <Text className="text-darker font-sans text-base font-bold">Play</Text>
             </PressableScale>
           </Link>
-          {/* quiet secondary control (outline, never a second filled CTA — DESIGN.md) */}
-          {/* label mirrors the visible text so tests and screen readers see the
-              current Game (an icon-only 'choose game' label would hide it — the
-              accessibility tree collapses a button's children behind its label) */}
-          <PressableScale
-            accessibilityRole="button"
-            accessibilityLabel={`Game: ${gameTitle}`}
-            onPress={() => {
-              impact('light')
-              setGameModalOpen(true)
-            }}
-            className="flex-row items-center gap-1.5 rounded-full border border-white/25 px-4 py-2 active:bg-white/10"
-          >
-            <Text className="font-sans text-sm text-white/80">Game: {gameTitle}</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.white} />
-          </PressableScale>
+          <View className="flex-row items-center gap-2.5">
+            {/* quiet secondary controls (outline, never a second filled CTA — DESIGN.md) */}
+            {/* label mirrors the visible text so tests and screen readers see the
+                current Game (an icon-only 'choose game' label would hide it — the
+                accessibility tree collapses a button's children behind its label) */}
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={`Game: ${gameTitle}`}
+              onPress={() => {
+                impact('light')
+                setGameModalOpen(true)
+              }}
+              className="border-darker/15 dark:border-white/25 active:bg-darker/5 dark:active:bg-white/10 flex-row items-center gap-1.5 rounded-full border px-4 py-2"
+            >
+              <Text className="text-darker/80 dark:text-white/80 font-sans text-sm">
+                Game: {gameTitle}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={chromeColor} />
+            </PressableScale>
+            {/* the Theme Display setting (issue #163) — a per-Device presentation
+                choice (CONTEXT.md), not a Game: never affects which Card is drawn
+                or progress. Separate from the per-deck Language modal's "Display
+                settings" (Tabletop mode, issue #148) — this one is global and
+                reachable before any Deck is open, since it themes this very
+                screen; named "Theme" to avoid colliding with that sheet's name. */}
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel="Theme"
+              onPress={() => {
+                impact('light')
+                setThemeModalOpen(true)
+              }}
+              className="border-darker/15 dark:border-white/25 active:bg-darker/5 dark:active:bg-white/10 h-9 w-9 items-center justify-center rounded-full border"
+            >
+              <Ionicons name="contrast-outline" size={16} color={chromeColor} />
+            </PressableScale>
+          </View>
         </Animated.View>
 
         <GameModal
@@ -178,6 +213,17 @@ export default function LandingScreen() {
             setGameModalOpen(false)
           }}
           onClose={() => setGameModalOpen(false)}
+        />
+
+        <ThemeModal
+          visible={themeModalOpen}
+          current={theme}
+          onSelect={(next) => {
+            selection()
+            selectTheme(next)
+            setThemeModalOpen(false)
+          }}
+          onClose={() => setThemeModalOpen(false)}
         />
       </SafeAreaView>
     </ScreenBackground>

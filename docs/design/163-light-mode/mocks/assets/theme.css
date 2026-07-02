@@ -186,6 +186,11 @@ body {
   padding: 8px 16px;
   color: rgba(17, 21, 22, 0.8);
   font-size: 14px;
+  /* React Native's flexbox defaults flexShrink to 0 (unlike the web's 1), so a
+     row of chips never compresses text like this in the real app — match that
+     here so the mock doesn't show an artifact that can't happen on-device. */
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .sheet {

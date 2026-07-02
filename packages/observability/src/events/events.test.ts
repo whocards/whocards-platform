@@ -297,3 +297,25 @@ describe('catalog — Tabletop mode addition', () => {
     consoleSpy.mockRestore()
   })
 })
+
+// ---------------------------------------------------------------------------
+// catalog — Theme setting addition (issue #163)
+// ---------------------------------------------------------------------------
+
+describe('catalog — Theme setting addition', () => {
+  it('exposes theme_changed', () => {
+    expect(EVENTS.THEME_CHANGED).toBe('theme_changed')
+  })
+
+  it('track() emits theme_changed with the new value, no deck_id', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    configureObservability({dev: true})
+
+    track({name: EVENTS.THEME_CHANGED, props: {theme: 'dark'}})
+
+    expect(consoleSpy).toHaveBeenCalledOnce()
+    expect(consoleSpy.mock.calls[0]?.[1]).toBe('theme_changed')
+    expect(consoleSpy.mock.calls[0]?.[2]).toEqual({theme: 'dark'})
+    consoleSpy.mockRestore()
+  })
+})
