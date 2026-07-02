@@ -77,6 +77,66 @@ describe('renderCalibrationPdf', () => {
     ).rejects.toThrow(/unknown preset/)
   })
 
+  it('produces the right page size for the Avery L7165 sticker sheet (#138)', async () => {
+    const bytes = await renderCalibrationPdf({preset: 'avery-l7165', offsetX: 0, offsetY: 0})
+    const doc = await PDFDocument.load(bytes)
+    expect(doc.getPageCount()).toBe(1)
+
+    const layout = layoutFor('avery-l7165')!
+    const {width, height} = doc.getPage(0).getSize()
+    expect(width).toBeCloseTo(layout.pageSize.width)
+    expect(height).toBeCloseTo(layout.pageSize.height)
+  })
+
+  describe('rounded corners (#138)', () => {
+    it('draws a bezier-curved (rounded-rect) outline for a cornerRadius layout, not a plain rectangle', async () => {
+      const roundedContent = await decodedPageContent(
+        await renderCalibrationPdf({preset: 'avery-l7165', offsetX: 0, offsetY: 0})
+      )
+      const squareContent = await decodedPageContent(
+        await renderCalibrationPdf({preset: 'avery-5371', offsetX: 0, offsetY: 0})
+      )
+
+      // Bezier curve ops (`c`, one per rounded corner => 4 per card outline) only
+      // show up for the cornerRadius layout; the square-corner layout's outlines are
+      // plain `re` (rectangle) ops with none.
+      const curveCount = (content: string): number =>
+        (content.match(/(?:^|\n)[-\d.]+ [-\d.]+ [-\d.]+ [-\d.]+ [-\d.]+ [-\d.]+ c\n/g) ?? []).length
+      expect(curveCount(roundedContent)).toBeGreaterThan(0)
+      expect(curveCount(squareContent)).toBe(0)
+
+      const layout = layoutFor('avery-l7165')!
+      // 4 curve segments per rounded-rect outline, one outline per card.
+      expect(curveCount(roundedContent)).toBe(layout.perPage * 4)
+    })
+
+    it('still draws exactly one stroked path per card outline, same as the delta a square-corner layout would add (#139-style check)', async () => {
+      // avery-l7165 and a4-85x54-10up share the same A4 page (so the ruler tick count
+      // is identical, same trick as the #139 registration-marks test below), so the
+      // stroke-count *delta* between them isolates exactly what changes: the outline
+      // count (perPage — one `S` per card either way, rounded or square) and the
+      // unique-corner count (registration marks, 2 strokes each).
+      const rounded = layoutFor('avery-l7165')! // gutter {x: non-zero, y: 0} — cols don't share corners, rows do
+      const square = layoutFor('a4-85x54-10up')! // gutter {x: 0, y: 0} — every interior corner is shared
+
+      const roundedContent = await decodedPageContent(
+        await renderCalibrationPdf({preset: 'avery-l7165', offsetX: 0, offsetY: 0})
+      )
+      const squareContent = await decodedPageContent(
+        await renderCalibrationPdf({preset: 'a4-85x54-10up', offsetX: 0, offsetY: 0})
+      )
+      expect(rounded.pageSize).toEqual(square.pageSize)
+
+      const roundedCorners = rounded.cols * 2 * (rounded.rows + 1)
+      const squareCorners = (square.cols + 1) * (square.rows + 1)
+      const outlineDelta = rounded.perPage - square.perPage
+      const cornerDelta = roundedCorners - squareCorners
+      const expectedStrokeDelta = outlineDelta + cornerDelta * 2
+
+      expect(strokeCount(roundedContent) - strokeCount(squareContent)).toBe(expectedStrokeDelta)
+    })
+  })
+
   describe('registration marks (#139)', () => {
     it('draws one crosshair (2 strokes) per unique grid corner, on top of the card outlines', async () => {
       // Both presets share the same US Letter page (so the ruler tick count is
