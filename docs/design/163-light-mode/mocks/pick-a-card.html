@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>#163 light mode — Pick a Card</title>
+<link rel="stylesheet" href="./assets/theme.css" />
+<style>
+  .content {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .top-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 16px;
+  }
+  .deck-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  /* card geometry mirrors pick-player.tsx: CARD_ASPECT 0.72 (w/h) */
+  .card-shell {
+    position: relative;
+    width: 246px;
+    height: 342px;
+  }
+  .deck-layer {
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    background: var(--dark-light);
+    border: 1px solid rgba(17, 21, 22, 0.08);
+  }
+  .deck-layer.l1 {
+    transform: rotate(-3deg) translateY(10px);
+  }
+  .deck-layer.l2 {
+    transform: rotate(2deg) translateY(5px);
+  }
+  .card-back,
+  .card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(17, 21, 22, 0.08);
+  }
+  .card-back {
+    background: var(--dark-light);
+  }
+  .card-back .texture,
+  .card-face .texture {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .card-back .wordmark {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    font-family: 'aptly';
+    font-weight: 500;
+    font-size: 20px;
+  }
+  .card-back .wordmark .who { color: var(--yellow-100); }
+  .card-back .wordmark .q { color: var(--primary-dark-on-light); }
+  .card-back .wordmark .cards { color: var(--darker); }
+
+  .card-face {
+    background: var(--darker-light);
+  }
+  .card-face .texture { opacity: 0.4; }
+  .card-face .corner-q {
+    position: absolute;
+    bottom: 10px;
+    right: 18px;
+    font-family: 'aptly';
+    font-weight: 500;
+    font-size: 62px;
+    color: var(--primary-dark-on-light);
+  }
+  .card-face .q-text {
+    position: relative;
+    z-index: 1;
+    padding: 44px 28px;
+    font-family: 'golos-text';
+    font-weight: 600;
+    font-size: 30px;
+    line-height: 1.15;
+    color: var(--darker);
+  }
+  .hint {
+    margin-top: 28px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    font-family: 'golos-text';
+    font-size: 14px;
+    color: var(--gray-dark-on-light);
+  }
+</style>
+</head>
+<body>
+  <div class="frame-label">
+    <span>Pick a Card — deck (face down) — light</span>
+    <div class="phone">
+      <div class="screen" style="background: var(--darkest-light);">
+        <div class="notch"></div>
+        <div class="content">
+          <div class="top-bar" style="padding-top: 54px;">
+            <div class="close-chip">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--darker)" stroke-width="2.4">
+                <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+              </svg>
+            </div>
+          </div>
+          <div class="deck-area">
+            <div class="card-shell">
+              <div class="deck-layer l1"></div>
+              <div class="deck-layer l2"></div>
+              <div class="card-back">
+                <img class="texture" src="./assets/background-light.svg" alt="" />
+                <div class="wordmark"><span class="who">WHO</span><span class="q">?</span><span class="cards">CARDS</span></div>
+              </div>
+            </div>
+            <div class="hint">Tap to pick a card</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="frame-label">
+    <span>Pick a Card — revealed question face — light</span>
+    <div class="phone">
+      <div class="screen" style="background: var(--darkest-light);">
+        <div class="notch"></div>
+        <div class="content">
+          <div class="top-bar" style="padding-top: 54px;">
+            <div class="close-chip">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--darker)" stroke-width="2.4">
+                <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+              </svg>
+            </div>
+          </div>
+          <div class="deck-area">
+            <div class="card-shell">
+              <div class="deck-layer l1"></div>
+              <div class="deck-layer l2"></div>
+              <div class="card-face">
+                <img class="texture" src="./assets/background-light.svg" alt="" />
+                <div class="corner-q">?</div>
+                <div class="q-text">What is the most interesting thing you have learned recently?</div>
+              </div>
+            </div>
+            <div class="hint">Tap for next card</div>
+          </div>
+          <div class="player-bar">
+            <div class="bar-btn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--darker)" stroke-width="2">
+                <path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>Back</span>
+            </div>
+            <div class="bar-btn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--darker)" stroke-width="2">
+                <path d="M4 12v6a2 2 0 002 2h12a2 2 0 002-2v-6M16 6l-4-4-4 4M12 2v14" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>Share</span>
+            </div>
+            <div class="bar-btn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--darker)" stroke-width="2">
+                <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span>Next</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

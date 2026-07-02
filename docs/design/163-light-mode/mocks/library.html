@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>#163 light mode — Library / landing</title>
+<link rel="stylesheet" href="./assets/theme.css" />
+<style>
+  .logo-wordmark {
+    width: 240px;
+    height: auto;
+    display: block;
+  }
+  .tagline {
+    margin-top: 28px;
+    font-family: 'golos-text';
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 32px;
+    color: rgba(17, 21, 22, 0.8);
+    text-align: center;
+  }
+  .meta {
+    font-family: 'golos-text';
+    font-size: 14px;
+    color: var(--gray-dark-on-light);
+  }
+  .bottom-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    padding: 0 32px;
+  }
+  .center-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .content {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 64px 32px 32px;
+  }
+</style>
+</head>
+<body>
+  <div class="frame-label">
+    <span>Library / landing — light</span>
+    <div class="phone">
+      <div class="screen">
+        <div class="notch"></div>
+        <img class="texture" src="./assets/background-light.svg" alt="" />
+        <div class="content">
+          <div class="center-block">
+            <img class="logo-wordmark" src="./assets/wordmark.png" alt="WhoCards" />
+            <p class="tagline">Change your world,<br />one conversation at a time.</p>
+          </div>
+          <div class="bottom-block">
+            <span class="meta">66 cards · 14 languages</span>
+            <div class="btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M6 4l14 8-14 8V4z" fill="#111516" />
+              </svg>
+              Play
+            </div>
+            <div class="chip-outline">
+              Game: Global Game
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(17,21,22,.8)" stroke-width="2.5">
+                <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
