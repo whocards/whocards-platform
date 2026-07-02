@@ -38,6 +38,8 @@ const BarButton = ({icon, label, onPress, accessibilityLabel}: BarButtonProps) =
 
 type PlayerBarProps = {
   showLanguage: boolean
+  /** Hide Share while there is no card to share (e.g. the pick screen before a deal). */
+  showShare?: boolean
   onPrevious: () => void
   onNext: () => void
   onShare: () => void
@@ -52,6 +54,7 @@ type PlayerBarProps = {
  */
 export const PlayerBar = ({
   showLanguage,
+  showShare = true,
   onPrevious,
   onNext,
   onShare,
@@ -70,12 +73,14 @@ export const PlayerBar = ({
         onPress={onPrevious}
         accessibilityLabel="previous question"
       />
-      <BarButton
-        icon="share-outline"
-        label="Share"
-        onPress={onShare}
-        accessibilityLabel="share question"
-      />
+      {showShare ? (
+        <BarButton
+          icon="share-outline"
+          label="Share"
+          onPress={onShare}
+          accessibilityLabel="share question"
+        />
+      ) : null}
       {showLanguage ? (
         <BarButton
           icon="language"

@@ -14,13 +14,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
-import type {QuestionSet} from '@whocards/decks'
-import {getDeck, getInitialNav, navReducer} from '@whocards/decks'
+import type {GameId, QuestionSet} from '@whocards/decks'
+import {DEFAULT_GAME, getDeck, getInitialNav, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 import {colors} from '@whocards/tokens'
 
 import {LanguageModal} from '@/components/language-modal'
+import {PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
 import {QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
@@ -30,6 +31,7 @@ import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
 import {incrementCardCount, incrementSessionCount} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
+import {getStoredGame} from '@/lib/game-store'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, setStoredLanguage} from '@/lib/language-store'
 import {buildShareUrl} from '@/lib/share-url'
@@ -58,6 +60,15 @@ export default function PlayScreen() {
   const {deck: slug, q, lang} = useLocalSearchParams<{deck: string; q?: string; lang?: string}>()
   const deck = getDeck(slug)
 
+  // The chosen Game applies to organic opens only — a `?q=` deep link always opens
+  // the classic player so shared links and screenshot captures stay reproducible.
+  const isDeepLink = typeof q === 'string'
+  const [game, setGame] = useState<GameId | null>(isDeepLink ? DEFAULT_GAME : null)
+  useEffect(() => {
+    if (isDeepLink) return
+    void getStoredGame().then(setGame)
+  }, [isDeepLink])
+
   if (!deck) {
     return (
       <ScreenBackground>
@@ -65,6 +76,28 @@ export default function PlayScreen() {
           <Text className="font-sans text-white">Deck not found.</Text>
         </SafeAreaView>
       </ScreenBackground>
+    )
+  }
+
+  // Hold the background (a single fast AsyncStorage read) until the stored Game
+  // resolves, so the player never mounts one Game and flips to another.
+  if (game === null) {
+    return (
+      <ScreenBackground>
+        <View className="flex-1" />
+      </ScreenBackground>
+    )
+  }
+
+  if (game === 'pick') {
+    return (
+      <PickPlayer
+        key={`${deck.slug}:${game}`}
+        deckSlug={deck.slug}
+        questionIds={deck.questionIds}
+        questions={deck.questions}
+        languages={deck.languages}
+      />
     )
   }
 
@@ -77,7 +110,7 @@ export default function PlayScreen() {
   // back to the route), so swiping never remounts.
   return (
     <DeckPlayer
-      key={`${deck.slug}:${typeof q === 'string' ? q : ''}:${typeof lang === 'string' ? lang : ''}`}
+      key={`${deck.slug}:${game}:${typeof q === 'string' ? q : ''}:${typeof lang === 'string' ? lang : ''}`}
       deckSlug={deck.slug}
       questionIds={deck.questionIds}
       questions={deck.questions}
