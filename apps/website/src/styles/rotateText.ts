@@ -2,7 +2,7 @@ import gsap from 'gsap'
 // @ts-ignore
 import * as SplitText from 'split-text-js'
 
-const rotateText = () => {
+export const rotateText = () => {
   const words = gsap.utils.toArray<HTMLSpanElement>('.rotate')
 
   gsap.set(words, {visibility: 'visible'})
@@ -35,5 +35,3 @@ const rotateText = () => {
     )
   })
 }
-
-export default rotateText

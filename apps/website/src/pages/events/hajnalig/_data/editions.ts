@@ -1,6 +1,6 @@
 export type EditionYear = 2025 | 2026
 
-export interface Edition {
+export type Edition = {
   year: EditionYear
   /** landing page URL */
   href: string

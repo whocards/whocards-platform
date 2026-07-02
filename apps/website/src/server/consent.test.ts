@@ -1,10 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {
-  CONSENT_TYPE_TO_SEGMENT,
-  CONSENT_TYPES,
-  isConsentType,
-  normalizeEmail,
-} from './consent'
+import {CONSENT_TYPE_TO_SEGMENT, CONSENT_TYPES, isConsentType, normalizeEmail} from './consent'
 
 describe('consent constants (#119)', () => {
   describe('CONSENT_TYPES', () => {

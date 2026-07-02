@@ -1,11 +1,16 @@
 ---
-import Printer from '~components/Print'
+import {Print as Printer} from '~components/Print'
 import Layout from '~layouts/Layout.astro'
 ---
 
-<Layout title='Print' description='Download WhoCards as a free PDF to print at home. Choose your language and card orientation, then print and experience authentic connections.' showLangModal>
+<Layout
+  title='Print'
+  description='Download WhoCards as a free, perfectly aligned PDF for your precut business-card sheets. Choose your language and sheet, then print and experience authentic connections.'
+  showLangModal
+  class='!justify-start'
+>
   <section
-    class='mx-6 flex min-h-screen flex-col items-center gap-6 pt-20 pb-16 md:gap-8 md:pt-28 md:pb-8 lg:gap-12 lg:pb-0'
+    class='mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 pt-8 pb-16 lg:gap-6 lg:pt-10 lg:pb-10'
   >
     <Printer client:load />
   </section>

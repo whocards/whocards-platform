@@ -6,11 +6,12 @@ import Head from './Head.astro'
 
 import BackgroundImages from '~components/ui/BackgroundImages.astro'
 import {APP_IOS_LAUNCHED, APP_STORE_APP_ID} from '~constants/app'
-import {mainLinks, type Link} from '~constants/navigation'
+import {mainLinks} from '~constants/navigation'
+import type {Link} from '~constants/navigation'
 import '~styles/base.css'
 import Footer from './Footer.astro'
 
-export interface Props {
+export type Props = {
   class?: string
   title?: string
   description?: string

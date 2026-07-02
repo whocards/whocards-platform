@@ -52,9 +52,7 @@ export const emailConsent = pgTable(
     providerSegmentId: text('provider_segment_id'),
     providerSyncedAt: timestamp('provider_synced_at', {withTimezone: true, mode: 'string'}),
     providerSyncError: text('provider_sync_error'),
-    createdAt: timestamp('created_at', {withTimezone: true, mode: 'string'})
-      .defaultNow()
-      .notNull(),
+    createdAt: timestamp('created_at', {withTimezone: true, mode: 'string'}).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', {withTimezone: true, mode: 'string'}),
   },
   (table) => ({

@@ -1,4 +1,5 @@
 import {Ionicons} from '@expo/vector-icons'
+import * as Linking from 'expo-linking'
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
@@ -14,7 +15,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
-import type {GameId, QuestionSet} from '@whocards/decks'
+import type {GameId, NavAction, QuestionSet} from '@whocards/decks'
 import {DEFAULT_GAME, getDeck, getInitialNav, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
@@ -39,6 +40,7 @@ import {
   setStoredLanguage,
   setStoredSecondaryLanguages,
 } from '@/lib/language-store'
+import {parsePlayLink} from '@/lib/play-link'
 import {buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
@@ -64,15 +66,33 @@ export default function PlayScreen() {
   // captures are reproducible. Mirrors the web <Play> `?q=` behaviour (ADR-0003).
   const {deck: slug, q, lang} = useLocalSearchParams<{deck: string; q?: string; lang?: string}>()
   const deck = getDeck(slug)
+  const deckSlug = deck?.slug
 
   // The chosen Game applies to organic opens only — a `?q=` deep link always opens
   // the classic player so shared links and screenshot captures stay reproducible.
   const isDeepLink = typeof q === 'string'
   const [game, setGame] = useState<GameId | null>(isDeepLink ? DEFAULT_GAME : null)
+  // A warm deep link that arrives while the pick player is open (see the listener
+  // below) — carries the linked question into the classic player it switches to.
+  const [linkOverride, setLinkOverride] = useState<{q: string; lang?: string} | null>(null)
   useEffect(() => {
     if (isDeepLink) return
     void getStoredGame().then(setGame)
   }, [isDeepLink])
+
+  // DeckPlayer owns warm-deep-link handling while IT is mounted; when the pick
+  // player is open instead, catch the link here and switch to the classic player
+  // at the linked question (deep links always open classic).
+  useEffect(() => {
+    if (game !== 'pick' || !deckSlug) return
+    const sub = Linking.addEventListener('url', ({url}) => {
+      const link = parsePlayLink(url)
+      if (!link || link.deck !== deckSlug || !link.q) return
+      setLinkOverride({q: link.q, lang: link.lang})
+      setGame(DEFAULT_GAME)
+    })
+    return () => sub.remove()
+  }, [game, deckSlug])
 
   if (!deck) {
     return (
@@ -97,7 +117,6 @@ export default function PlayScreen() {
   if (game === 'pick') {
     return (
       <PickPlayer
-        key={`${deck.slug}:${game}`}
         deckSlug={deck.slug}
         questionIds={deck.questionIds}
         questions={deck.questions}
@@ -106,22 +125,14 @@ export default function PlayScreen() {
     )
   }
 
-  // Key on the linked target (deck + `?q=` + `?lang=`) so a deep link that arrives
-  // while the player is already mounted routes to the linked question. expo-router
-  // reuses this `play/[deck]` screen and only updates the route params, so without a
-  // changing key the engine's `useReducer` (seeded once from `startId`) would keep
-  // showing whatever card was open. Re-keying remounts the player fresh on the new
-  // target; it stays constant through normal play (mobile never writes `q`/`lang`
-  // back to the route), so swiping never remounts.
   return (
     <DeckPlayer
-      key={`${deck.slug}:${game}:${typeof q === 'string' ? q : ''}:${typeof lang === 'string' ? lang : ''}`}
       deckSlug={deck.slug}
       questionIds={deck.questionIds}
       questions={deck.questions}
       languages={deck.languages}
-      startId={typeof q === 'string' ? q : undefined}
-      startLanguage={typeof lang === 'string' ? lang : undefined}
+      startId={linkOverride?.q ?? (typeof q === 'string' ? q : undefined)}
+      startLanguage={linkOverride?.lang ?? (typeof lang === 'string' ? lang : undefined)}
     />
   )
 }
@@ -152,6 +163,15 @@ const DeckPlayer = ({
   const [{ids, idx}, dispatch] = useReducer(reducer, undefined, () =>
     getInitialNav(questionIds, startId)
   )
+  // The REAL last-dispatched nav action, read by the nav-events effect below. The
+  // committed transition alone can't tell a swipe from a deep-link 'reset' (both
+  // change idx), and a reset must not be tracked as a fabricated next/previous —
+  // so every dispatch goes through dispatchNav, which records the action first.
+  const lastNavActionRef = useRef<NavAction | null>(null)
+  const dispatchNav = useCallback((action: NavAction) => {
+    lastNavActionRef.current = action
+    dispatch(action)
+  }, [])
   const defaultLanguage = languages[0]
   // A shared link's `?lang=` (if valid for this deck) is the explicit intent of the
   // person who shared it, so it seeds the initial language and overrides storage below.
@@ -183,6 +203,24 @@ const DeckPlayer = ({
         })
     void Promise.all([primary, secondaries]).then(() => setLanguageReady(true))
   }, [deckSlug, languages, linkLanguage])
+
+  // A deep link that arrives while this deck is already open can't ride the route
+  // params: expo-router de-dupes a same-route link (e.g. `play/library?q=5` while
+  // already on `play/library`) and never updates `useLocalSearchParams`, so the card
+  // wouldn't move. Listen for the raw incoming URL instead and re-seed the engine when
+  // the link targets THIS deck. A link to a *different* deck changes the `[deck]`
+  // segment and is handled by expo-router's own navigation (a fresh mount), so it's
+  // ignored here. (`dispatchNav`/`setLanguage` are stable, so they stay out of the deps.)
+  useEffect(() => {
+    const sub = Linking.addEventListener('url', ({url}) => {
+      const link = parsePlayLink(url)
+      if (!link || link.deck !== deckSlug) return
+      if (link.lang && languages.includes(link.lang)) setLanguage(link.lang)
+      if (link.q && questionIds.includes(link.q)) dispatchNav({type: 'reset', startId: link.q})
+    })
+    return () => sub.remove()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckSlug, languages, questionIds])
 
   const questionId = ids[idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''
@@ -271,7 +309,12 @@ const DeckPlayer = ({
   useEffect(() => {
     const prev = prevNavRef.current
     if (prev && prev.idx !== idx) {
-      const action = idx > prev.idx ? ({type: 'next'} as const) : ({type: 'previous'} as const)
+      // The real dispatched action — a deep-link 'reset' yields no nav events
+      // (eventsFor returns []). Inference from the idx delta is only the fallback
+      // for a transition with no recorded action (shouldn't happen in practice).
+      const action =
+        lastNavActionRef.current ??
+        (idx > prev.idx ? ({type: 'next'} as const) : ({type: 'previous'} as const))
       for (const event of eventsFor(
         action,
         prev,
@@ -368,30 +411,30 @@ const DeckPlayer = ({
     navDir.current = 1
     selection()
     viewTracker.endView('advanced')
-    dispatch({type: 'next'})
-  }, [viewTracker])
+    dispatchNav({type: 'next'})
+  }, [viewTracker, dispatchNav])
 
   const dispatchPrevious = useCallback(() => {
     navDir.current = -1
     selection()
     viewTracker.endView('previous')
-    dispatch({type: 'previous'})
-  }, [viewTracker])
+    dispatchNav({type: 'previous'})
+  }, [viewTracker, dispatchNav])
 
   const goNext = useCallback(() => {
     navDir.current = 1
     revealChrome()
     viewTracker.endView('advanced')
-    dispatch({type: 'next'})
-  }, [revealChrome, viewTracker])
+    dispatchNav({type: 'next'})
+  }, [revealChrome, viewTracker, dispatchNav])
 
   // the reducer clamps `previous` at the first card, so no idx guard is needed here
   const goPrevious = useCallback(() => {
     navDir.current = -1
     revealChrome()
     viewTracker.endView('previous')
-    dispatch({type: 'previous'})
-  }, [revealChrome, viewTracker])
+    dispatchNav({type: 'previous'})
+  }, [revealChrome, viewTracker, dispatchNav])
 
   // leave the player — back to wherever we came from, falling back to the landing
   const handleExit = useCallback(() => {

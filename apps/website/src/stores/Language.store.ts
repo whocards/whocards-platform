@@ -2,7 +2,7 @@ import {action, atom} from 'nanostores'
 import type {Language} from '~types'
 import {DEFAULT_LANGUAGE} from '~utils'
 
-export interface LanguageStore {
+export type LanguageStore = {
   lang: Language
 }
 

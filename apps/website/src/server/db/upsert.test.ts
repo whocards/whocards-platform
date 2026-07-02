@@ -1,7 +1,8 @@
 import {eq} from 'drizzle-orm'
 import {beforeEach, describe, expect, it} from 'vitest'
 import * as schema from './schema'
-import {resetTestDb, type TestDb} from './test-helpers'
+import {resetTestDb} from './test-helpers'
+import type {TestDb} from './test-helpers'
 import {upsertConsent, upsertUser} from './upsert'
 
 // Exercises the real ON CONFLICT OR-merge SQL against an in-process Postgres
@@ -60,7 +61,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
     })
     const rows = await db.select().from(schema.emailConsent)
     expect(rows).toHaveLength(2)
-    const types = rows.map((r) => r.consentType).sort()
+    const types = rows.map((r) => r.consentType).toSorted()
     expect(types).toEqual(['app_launch', 'newsletter'])
   })
 

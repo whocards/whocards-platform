@@ -1,4 +1,5 @@
-import {Play, type QuestionSet} from '~components/Play'
+import {Play} from '~components/Play'
+import type {QuestionSet} from '~components/Play'
 import {hajnalig2025Deck, hajnalig2026Deck, resolveDeck} from '~data/decks'
 
 // The hajnalig event runs yearly; each edition is its own deck (different

@@ -2,11 +2,11 @@
 import type {HTMLAttributes} from 'astro/types'
 import type {ZodIssue} from 'zod'
 
-interface Props extends HTMLAttributes<'input'> {
+type Props = {
   error?: ZodIssue
   name: string
   title?: string
-}
+} & HTMLAttributes<'input'>
 
 const {error, title, name, ...props} = Astro.props
 const id = `input-${name}`

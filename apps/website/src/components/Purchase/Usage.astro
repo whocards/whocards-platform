@@ -15,42 +15,28 @@ const {class: classes} = Astro.props
             class:list={[index === 0 ? 'text-primary-dark' : 'text-dark']}
             data-usage-step
           >
-            <svg class='absolute inset-0 h-full w-full' viewBox='0 0 40 40' aria-hidden='true'>
-              {index === 0 ? (
-                <circle
-                  cx='20'
-                  cy='20'
-                  r='19'
-                  stroke-width='2'
-                  class='stroke-primary-dark'
-                  vector-effect='non-scaling-stroke'
-                  fill='none'
+            {index === 0 ? (
+              <Icon
+                name='usage-ring'
+                class='absolute inset-0 h-full w-full stroke-primary-dark'
+                aria-hidden='true'
+              />
+            ) : (
+              <>
+                <Icon
+                  name='usage-ring'
+                  class='absolute inset-0 h-full w-full stroke-dark'
+                  aria-hidden='true'
                 />
-              ) : (
-                <>
-                  <circle
-                    cx='20'
-                    cy='20'
-                    r='19'
-                    stroke-width='2'
-                    class='stroke-dark'
-                    vector-effect='non-scaling-stroke'
-                    fill='none'
-                  />
-                  <circle
-                    data-usage-ring
-                    cx='20'
-                    cy='20'
-                    r='19'
-                    stroke-width='2'
-                    class='stroke-primary-dark'
-                    vector-effect='non-scaling-stroke'
-                    fill='none'
-                    style='opacity: 0;'
-                  />
-                </>
-              )}
-            </svg>
+                <Icon
+                  name='usage-ring'
+                  data-usage-ring
+                  class='absolute inset-0 h-full w-full stroke-primary-dark'
+                  aria-hidden='true'
+                  style='opacity: 0;'
+                />
+              </>
+            )}
             <Icon name='card' class='relative z-10 h-[23px] w-[23px] lg:h-8 lg:w-8' />
           </div>
           {item.line && (
@@ -82,7 +68,9 @@ const {class: classes} = Astro.props
 <script>
   const timeline = document.querySelector('[data-usage-timeline]')
   const steps = timeline ? Array.from(timeline.querySelectorAll('[data-usage-step]')) : []
-  const lines = timeline ? Array.from(timeline.querySelectorAll<HTMLElement>('[data-usage-line]')) : []
+  const lines = timeline
+    ? Array.from(timeline.querySelectorAll<HTMLElement>('[data-usage-line]'))
+    : []
   const rings = steps.map((step) => step.querySelector<HTMLElement>('[data-usage-ring]'))
 
   const updateTimeline = () => {

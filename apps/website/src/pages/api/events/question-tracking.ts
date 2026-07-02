@@ -1,3 +1,4 @@
+import {logError} from '@whocards/observability'
 import type {APIRoute} from 'astro'
 import {eq} from 'drizzle-orm'
 import {z} from 'zod'
@@ -59,10 +60,10 @@ export const POST: APIRoute = async ({request}) => {
       })
       .returning({id: conferenceQuestionTracking.id})
 
-    console.log(res)
-
     if (!res) {
-      console.error('Failed to insert question tracking', res)
+      logError('Failed to insert question tracking', undefined, {
+        conferenceId: currentConference.id,
+      })
       return {message: 'Failed to insert question tracking', code: 500}
     }
 

@@ -43,6 +43,20 @@ describe('navReducer', () => {
     expect(next.ids).toHaveLength(ids.length * 2)
     expect(next.ids.slice(ids.length).toSorted()).toEqual(ids.toSorted())
   })
+
+  it('reset jumps to a startId in natural order (deep link into the open deck)', () => {
+    // from anywhere in the deck, a reset to 'c' re-seeds natural order at that card
+    expect(reducer({ids: shuffle(ids), idx: 2}, {type: 'reset', startId: 'c'})).toEqual({
+      ids,
+      idx: 2,
+    })
+  })
+
+  it('reset without a valid startId falls back to a fresh shuffle from the top', () => {
+    const out = reducer({ids, idx: 1}, {type: 'reset', startId: 'nope'})
+    expect(out.idx).toBe(0)
+    expect(out.ids.toSorted()).toEqual(ids.toSorted())
+  })
 })
 
 describe('getInitialNav', () => {

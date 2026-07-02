@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite'
 import icon from 'astro-icon'
 import robotsTxt from 'astro-robots-txt'
 import {defineConfig, passthroughImageService} from 'astro/config'
-import {SITE_URL as site} from './src/constants/env'
+import {SITE_URL as site} from './src/env.node'
 import languages from './src/data/languages.json'
 
 // `/[language]` routes are 301 redirects to `/` (see src/pages/[language]/index.astro),
@@ -74,7 +74,25 @@ export default defineConfig({
     }),
   ],
   output: 'static',
-  adapter: netlify(),
+  adapter: netlify({
+    // `/api/print.pdf` (#38) is `prerender = false` (a real Netlify function),
+    // so the font/logo files it reads at request time via `process.cwd()`
+    // (see src/server/print/render.ts) must be force-bundled — the SSR
+    // bundler otherwise only picks up statically-imported assets.
+    includeFiles: [
+      './public/fonts/aptly_regular.woff2',
+      './public/fonts/golos_text.woff2',
+      // Hebrew/Mandarin/Japanese script fonts (#41) — regular weight only,
+      // the print PDF never uses bold. ~2.7MB added to the function bundle;
+      // pdf-lib's `embedFont(..., {subset: true})` (see render.ts) still
+      // subsets the *output* PDF down to only the glyphs each deck actually
+      // uses, so this only affects the deployed function size, not download size.
+      './public/fonts/noto-sans-hebrew_regular.woff2',
+      './public/fonts/noto-sans-chinese_regular.woff2',
+      './public/fonts/noto-sans-japanese_regular.woff2',
+      './src/icons/logo-plain.svg',
+    ],
+  }),
   redirects: {
     '/preorder': '/contact',
     '/gift': '/contact',
