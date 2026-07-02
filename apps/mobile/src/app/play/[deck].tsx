@@ -1,10 +1,8 @@
 import {Ionicons} from '@expo/vector-icons'
-import * as Application from 'expo-application'
 import {useLocalSearchParams, useRouter} from 'expo-router'
-import * as StoreReview from 'expo-store-review'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Platform, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -17,30 +15,26 @@ import Animated, {
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import type {QuestionSet} from '@whocards/decks'
-import {getDeck, getDirection, getInitialNav, navReducer} from '@whocards/decks'
+import {getDeck, getInitialNav, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 import {colors} from '@whocards/tokens'
 
 import {LanguageModal} from '@/components/language-modal'
 import {PlayerBar} from '@/components/player-bar'
+import {QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
+import {usePlayerChrome} from '@/hooks/use-player-chrome'
+import {useReviewPrompt} from '@/hooks/use-review-prompt'
 import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
-import {
-  getReviewState,
-  incrementCardCount,
-  incrementSessionCount,
-  isReviewEligible,
-  markReviewAttempted,
-} from '@/lib/app-review'
+import {incrementCardCount, incrementSessionCount} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, setStoredLanguage} from '@/lib/language-store'
 import {buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
-const CHROME_HIDE_MS = 3000
 // How far off-screen the card travels when a swipe commits (points)
 const SWIPE_OFF_SCREEN = 400
 // Rubber-band resistance factor when swiping at a boundary (0–1, lower = more resistance)
@@ -56,46 +50,6 @@ const CARD_ENTER_TRAVEL = 28
 // Larger travel on the first entrance so the slower 900 ms timing reads as a real
 // slide rather than a long fade-in.
 const INITIAL_CARD_ENTER_TRAVEL = 56
-
-// Per-script question face. golos-text (the brand body face) covers Latin + Cyrillic;
-// Hebrew gets its bundled Noto face; CJK (zh/jp) falls back to the system font — full
-// glyph coverage on device, and the Noto CJK faces are too heavy to bundle (see
-// docs/tickets/0001-mobile-cjk-hebrew-question-fonts.md).
-const SYSTEM_FONT_LANGUAGES = new Set(['zh', 'jp'])
-const SCRIPT_FONTS: Record<string, string> = {he: 'noto-sans-hebrew'}
-
-/** The font family for a question in `language`, or `undefined` for the system font. */
-const questionFontFamily = (language: string): string | undefined => {
-  if (language in SCRIPT_FONTS) return SCRIPT_FONTS[language]
-  return SYSTEM_FONT_LANGUAGES.has(language) ? undefined : 'golos-text'
-}
-
-// --- dynamic question sizing: grow the text to fill its box, recomputed on rotation ---
-const LINE_HEIGHT_RATIO = 1.15
-// average glyph advance / line height as fractions of the font size (semibold sans)
-const CHAR_WIDTH_RATIO = 0.54
-// fraction of the box the text aims to cover — kept well under 1 so ragged wrapping
-// and real-device font metrics (taller than this estimate) still leave breathing room
-const FILL = 0.5
-const MIN_FONT = 22
-const MAX_FONT = 96
-
-/**
- * Largest font that lets `text` fill — without overflowing — a `width`×`height` box.
- * Derived from area (chars × glyph area ≈ filled area, so font ∝ √(area / chars)), then
- * capped so the longest single word still fits on one line. Orientation falls out for
- * free: rotating swaps width/height, the box changes, and the size is recomputed.
- */
-const fitFontSize = (text: string, width: number, height: number) => {
-  if (width <= 0 || height <= 0) return MIN_FONT
-  const trimmed = text.trim()
-  const chars = Math.max(trimmed.length, 1)
-  const raw = Math.sqrt((FILL * width * height) / (chars * CHAR_WIDTH_RATIO * LINE_HEIGHT_RATIO))
-  // cap so the longest word fills ~90% of the width — a margin on the widest lines too
-  const longestWord = trimmed.split(/\s+/).reduce((max, word) => Math.max(max, word.length), 1)
-  const widthCap = (width * 0.9) / (longestWord * CHAR_WIDTH_RATIO)
-  return Math.round(Math.max(MIN_FONT, Math.min(MAX_FONT, raw, widthCap)))
-}
 
 export default function PlayScreen() {
   // `q` deep-links to a specific question (e.g. mobile://play/library?q=1): the engine
@@ -192,9 +146,6 @@ const DeckPlayer = ({
 
   const questionId = ids[idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''
-  const direction = getDirection(language)
-  // brand/script face where one exists; system font (with a weight) otherwise
-  const questionFont = questionFontFamily(language)
 
   // --- observability: dwell tracker (stable for the component lifetime) ---
   const viewTracker = useMemo(() => createViewTracker(trackEvent), [])
@@ -226,50 +177,8 @@ const DeckPlayer = ({
   // session that never showed a card isn't counted — matches the session-count doc.
   const sessionCountedRef = useRef(false)
 
-  // --- In-app review: check eligibility and fire the native OS prompt ---
-  // Called after play (on exit or background), never mid-card or on launch.
-  // Fails silently; emits app_review_eligible and app_review_requested via track().
-  // An in-flight ref dedupes concurrent calls (AppState background + exit can both
-  // fire) so two callers can't pass the eligibility check before the first persists.
-  const reviewRequestInFlightRef = useRef(false)
-  const maybeRequestReview = useCallback(async () => {
-    if (reviewRequestInFlightRef.current) return
-    reviewRequestInFlightRef.current = true
-    try {
-      const appVersion = Application.nativeApplicationVersion ?? '0'
-      const state = await getReviewState()
-      if (!isReviewEligible(state, appVersion)) return
-
-      track({
-        name: EVENTS.APP_REVIEW_ELIGIBLE,
-        props: {
-          app_version: appVersion,
-          card_count: state.cardCount,
-          session_count: state.sessionCount,
-        },
-      })
-
-      const available = await StoreReview.isAvailableAsync()
-      if (!available) return
-      const hasAction = await StoreReview.hasAction()
-      if (!hasAction) return
-
-      // Persist before calling so a background/crash after this point doesn't
-      // allow a second attempt on the same version.
-      await markReviewAttempted(appVersion)
-
-      track({
-        name: EVENTS.APP_REVIEW_REQUESTED,
-        props: {app_version: appVersion, platform: Platform.OS},
-      })
-
-      await StoreReview.requestReview()
-    } catch {
-      // Fail silently — store review is best-effort.
-    } finally {
-      reviewRequestInFlightRef.current = false
-    }
-  }, [])
+  // In-app review — called after play (on exit or background), never mid-card.
+  const maybeRequestReview = useReviewPrompt()
 
   // --- Answer record: every serve enqueues an Answer; the queue sends it (or
   // retries offline). Recording is wired here, not in the engine, so the shared
@@ -357,62 +266,19 @@ const DeckPlayer = ({
   }, [])
   // window-derived fallback for the first paint, before onLayout reports the real box
   const measured = box ?? {width: winWidth - 64, height: winHeight - 220}
-  const fontSize = useMemo(
-    () => fitFontSize(text, measured.width, measured.height),
-    [text, measured.width, measured.height]
-  )
 
-  // --- auto-hiding chrome: a single 0→1 progress slides the bars in and out —
-  // the top bar up off the top edge, the bottom bar down off the bottom edge
-  // (a slide, not a fade). The card + gesture layer underneath spans the full
-  // screen, so a tap anywhere — including the bands the bars occupy — reveals
-  // the chrome again. ---
-  const chromeProgress = useSharedValue(1)
-  const [chromeShown, setChromeShown] = useState(true)
-  // Measured bar heights drive both the off-screen slide distance and the card's
-  // padding, so the question never sits under a bar even though the gesture layer
-  // runs full-bleed behind them.
-  const [topBarH, setTopBarH] = useState(0)
-  const [bottomBarH, setBottomBarH] = useState(0)
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const setChromeVisible = useCallback(
-    (to: number) => {
-      setChromeShown(to === 1)
-      chromeProgress.set(withTiming(to, {duration: reduceMotion ? 0 : 300}))
-    },
-    [chromeProgress, reduceMotion]
-  )
-
-  const revealChrome = useCallback(() => {
-    setChromeVisible(1)
-    if (hideTimer.current) clearTimeout(hideTimer.current)
-    hideTimer.current = setTimeout(() => setChromeVisible(0), CHROME_HIDE_MS)
-  }, [setChromeVisible])
-
-  useEffect(() => {
-    revealChrome()
-    return () => {
-      if (hideTimer.current) clearTimeout(hideTimer.current)
-    }
-  }, [revealChrome])
-
-  const onTopBarLayout = useCallback((event: LayoutChangeEvent) => {
-    setTopBarH(event.nativeEvent.layout.height)
-  }, [])
-  const onBottomBarLayout = useCallback((event: LayoutChangeEvent) => {
-    setBottomBarH(event.nativeEvent.layout.height)
-  }, [])
-
-  // top bar slides up off the top edge; bottom bar slides down off the bottom edge.
-  // topBarH/bottomBarH are captured per render, so the slide distance corrects once
-  // the bars measure.
-  const topChromeStyle = useAnimatedStyle(() => ({
-    transform: [{translateY: interpolate(chromeProgress.get(), [0, 1], [-topBarH, 0])}],
-  }))
-  const bottomChromeStyle = useAnimatedStyle(() => ({
-    transform: [{translateY: interpolate(chromeProgress.get(), [0, 1], [bottomBarH, 0])}],
-  }))
+  // auto-hiding chrome — the card + gesture layer underneath spans the full
+  // screen, so a tap anywhere (including the bands the bars occupy) reveals it
+  const {
+    chromeShown,
+    revealChrome,
+    topBarH,
+    bottomBarH,
+    onTopBarLayout,
+    onBottomBarLayout,
+    topChromeStyle,
+    bottomChromeStyle,
+  } = usePlayerChrome()
 
   // --- Reanimated card enter/exit: translateX shared value ---
   // Positive = entering from the right (going "next"), negative = entering from left (going "prev")
@@ -598,20 +464,7 @@ const DeckPlayer = ({
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
               {languageReady ? (
                 <Animated.View style={cardStyle}>
-                  <Text
-                    className="text-white"
-                    style={{
-                      fontSize,
-                      lineHeight: fontSize * LINE_HEIGHT_RATIO,
-                      writingDirection: direction,
-                      // writingDirection sets the bidi base direction but not paragraph
-                      // alignment in RN — RTL (Hebrew) needs textAlign to right-align
-                      textAlign: direction === 'rtl' ? 'right' : 'left',
-                      ...(questionFont ? {fontFamily: questionFont} : {fontWeight: '600'}),
-                    }}
-                  >
-                    {text}
-                  </Text>
+                  <QuestionText text={text} language={language} box={measured} />
                 </Animated.View>
               ) : null}
             </View>
