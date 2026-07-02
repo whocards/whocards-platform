@@ -1,7 +1,8 @@
+import {logError} from '@whocards/observability'
 import type {APIRoute} from 'astro'
 
 import type {CardSizeKey} from '~server/card-image'
-import {renderCardPng, SHARE_CARD_SIZE_KEYS} from '~server/card-image'
+import {renderCardPng, ShareCardNotFoundError, SHARE_CARD_SIZE_KEYS} from '~server/card-image'
 
 // On-demand Share Card image (epic #152, ticket #153): a Netlify function, not
 // a prerendered/static route. Story (9:16) and post (4:5) sizes render the
@@ -38,6 +39,14 @@ export const GET: APIRoute = async ({params}) => {
       },
     })
   } catch (error) {
+    // An unknown question id / missing translation is an expected 404 (a
+    // stale/malformed share link) and not worth logging. Anything else — a
+    // missing bundled font, a Satori/resvg crash — is a systemic render
+    // failure; still 404 (never a broken image), but logged so it's visible
+    // in production instead of silently looking like a bad link.
+    if (!(error instanceof ShareCardNotFoundError)) {
+      logError('share-card render failed', error)
+    }
     return new Response(`Failed to render card: ${(error as Error).message}`, {status: 404})
   }
 }

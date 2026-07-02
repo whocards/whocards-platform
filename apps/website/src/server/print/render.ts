@@ -8,11 +8,8 @@
 // WhoCards wordmark bottom-right. `CardContent.imageUrl` is a reserved slot
 // for a future per-question image (not rendered yet — see epic "Later").
 
-import {existsSync} from 'node:fs'
 import {readFile} from 'node:fs/promises'
-import {dirname, join} from 'node:path'
-import process from 'node:process'
-import {fileURLToPath} from 'node:url'
+import {join} from 'node:path'
 
 import fontkit from '@pdf-lib/fontkit'
 import {Resvg} from '@resvg/resvg-js'
@@ -25,6 +22,7 @@ import {decompress} from 'wawoff2'
 import type {PrintPdfParams} from './params'
 import {layoutFor, mm} from './presets'
 import type {Rect} from './presets'
+import {createBaseDirResolver} from '../runtime-base-dir'
 import {fitText} from './text-fit'
 import type {WrapMode} from './text-fit'
 
@@ -74,63 +72,14 @@ const toVisualOrder = (line: string): string => {
 // Fonts live in /public, the logo in /src/icons. This endpoint runs on-demand
 // (`prerender = false`, a Netlify function), so both are declared in
 // astro.config.ts's `netlify({includeFiles: [...]})` to be bundled with the
-// function.
-//
-// `process.cwd()` alone is NOT a reliable base at runtime: it matches the
-// astro project root (apps/website) in dev/build/tests (card-image.ts's
-// build-time-only precedent relies on exactly that), but the deployed
-// Netlify Function's cwd is the function bundle root — one level above
-// where `includeFiles` actually land, since their paths are relative to the
-// astro project root, not the function root (confirmed locally: a build
-// puts them at `.netlify/v1/functions/ssr/apps/website/public/fonts/...`,
-// nested under `apps/website`, while the function's own entry sits at
-// `.netlify/v1/functions/ssr/`). So instead of assuming one base, probe a
-// short list of candidates and cache whichever one actually has the files.
-let resolvedBaseDir: string | undefined
-
-const candidateBaseDirs = (): string[] => {
-  const bases = new Set<string>()
-  bases.add(process.cwd())
-  try {
-    // This module's own compiled location. Walking a few levels up from
-    // there works regardless of how the bundler nests chunks, and doesn't
-    // depend on cwd being set to anything in particular.
-    let dir = dirname(fileURLToPath(import.meta.url))
-    for (let i = 0; i < 8; i += 1) {
-      bases.add(dir)
-      const parent = dirname(dir)
-      if (parent === dir) break
-      dir = parent
-    }
-  } catch {
-    // import.meta.url isn't always a resolvable file: URL in every runtime —
-    // cwd/LAMBDA_TASK_ROOT are tried regardless.
-  }
-  // Netlify Functions run on AWS Lambda, which exposes the function's
-  // extraction root via LAMBDA_TASK_ROOT.
-  if (process.env['LAMBDA_TASK_ROOT']) bases.add(process.env['LAMBDA_TASK_ROOT'])
-  // Each base might already BE the astro project root, or might be the
-  // function/monorepo root one level above it — try both.
-  return [...bases].flatMap((base) => [base, join(base, 'apps', 'website')])
-}
-
-// Resolve (and cache) the astro project root by probing for a file we know
-// ships in every build — the always-present Aptly font.
-const resolveBaseDir = (): string => {
-  if (resolvedBaseDir) return resolvedBaseDir
-  const probed: string[] = []
-  for (const base of candidateBaseDirs()) {
-    const probe = join(base, 'public', 'fonts', FONT_FILES.aptly)
-    probed.push(probe)
-    if (existsSync(probe)) {
-      resolvedBaseDir = base
-      return base
-    }
-  }
-  throw new Error(
-    `print renderer: couldn't locate bundled fonts under any candidate base dir. Probed:\n${probed.join('\n')}`
-  )
-}
+// function. See ../runtime-base-dir for why resolving their on-disk location
+// takes more than `process.cwd()`.
+const resolveBaseDir = createBaseDirResolver({
+  // The always-present Aptly font.
+  probeRelativePath: join('public', 'fonts', FONT_FILES.aptly),
+  moduleUrl: import.meta.url,
+  label: 'print renderer',
+})
 
 const fontDir = (): string => join(resolveBaseDir(), 'public', 'fonts')
 const iconsDir = (): string => join(resolveBaseDir(), 'src', 'icons')

@@ -1,9 +1,7 @@
 import {createHash, randomBytes} from 'node:crypto'
-import {existsSync} from 'node:fs'
 import {mkdir, readdir, readFile, rename, rm, writeFile} from 'node:fs/promises'
-import {dirname, join} from 'node:path'
+import {join} from 'node:path'
 import process from 'node:process'
-import {fileURLToPath} from 'node:url'
 
 import {Resvg} from '@resvg/resvg-js'
 import bidiFactory from 'bidi-js'
@@ -11,6 +9,7 @@ import satori from 'satori'
 import type {Font as FontOptions} from 'satori'
 import {decompress} from 'wawoff2'
 
+import {createBaseDirResolver} from './runtime-base-dir'
 import type languages from '~data/languages.json'
 import questions from '~data/questions.json'
 
@@ -81,6 +80,16 @@ export const CARD_SIZES: Record<CardSizeKey, CardSize> = {
 /** The on-demand Share Card sizes (excludes `og`, which stays build-time-only). */
 export const SHARE_CARD_SIZE_KEYS = ['story', 'post'] as const satisfies readonly CardSizeKey[]
 
+/**
+ * Thrown for an expected "there's no such card" condition (unknown question
+ * id, or no text for the given language) — as opposed to an unexpected
+ * rendering/infra failure (a missing bundled font, a Satori/resvg crash).
+ * Callers (the /og and /share-card endpoints) both 404 either way, but only
+ * log the unexpected kind — see share-card's endpoint for why that split
+ * matters in production.
+ */
+export class ShareCardNotFoundError extends Error {}
+
 // Kept for callers that only care about the OG size (equal to CARD_SIZES.og).
 export const CARD_WIDTH = CARD_SIZES.og.width
 export const CARD_HEIGHT = CARD_SIZES.og.height
@@ -122,52 +131,13 @@ const FONT_FILES: Record<FontKey, {file: string; family: string}> = {
 // Fonts (and the maze SVG) live in /public. The OG size only ever renders at
 // build time, where the process cwd is the astro project root — but the
 // story/post sizes render on demand as a Netlify Function, whose cwd is NOT
-// reliably the project root (same problem src/server/print/render.ts solved
-// first; see its longer write-up). So resolve the base dir the same way: probe
-// a short list of candidates for a file we know ships in every build, and
-// cache whichever one actually has it.
-let resolvedBaseDir: string | undefined
-
-const candidateBaseDirs = (): string[] => {
-  const bases = new Set<string>()
-  bases.add(process.cwd())
-  try {
-    // This module's own compiled location. Walking a few levels up from there
-    // works regardless of how the bundler nests chunks.
-    let dir = dirname(fileURLToPath(import.meta.url))
-    for (let i = 0; i < 8; i += 1) {
-      bases.add(dir)
-      const parent = dirname(dir)
-      if (parent === dir) break
-      dir = parent
-    }
-  } catch {
-    // import.meta.url isn't always a resolvable file: URL in every runtime —
-    // cwd/LAMBDA_TASK_ROOT are tried regardless.
-  }
-  // Netlify Functions run on AWS Lambda, which exposes the function's
-  // extraction root via LAMBDA_TASK_ROOT.
-  if (process.env['LAMBDA_TASK_ROOT']) bases.add(process.env['LAMBDA_TASK_ROOT'])
-  // Each base might already BE the astro project root, or might be the
-  // function/monorepo root one level above it — try both.
-  return [...bases].flatMap((base) => [base, join(base, 'apps', 'website')])
-}
-
-const resolveBaseDir = (): string => {
-  if (resolvedBaseDir) return resolvedBaseDir
-  const probed: string[] = []
-  for (const base of candidateBaseDirs()) {
-    const probe = join(base, 'public', 'fonts', FONT_FILES.golos.file)
-    probed.push(probe)
-    if (existsSync(probe)) {
-      resolvedBaseDir = base
-      return base
-    }
-  }
-  throw new Error(
-    `card-image: couldn't locate bundled fonts under any candidate base dir. Probed:\n${probed.join('\n')}`
-  )
-}
+// reliably the project root. See ./runtime-base-dir (shared with
+// ./print/render.ts, which hit this exact problem first) for why.
+const resolveBaseDir = createBaseDirResolver({
+  probeRelativePath: join('public', 'fonts', FONT_FILES.golos.file),
+  moduleUrl: import.meta.url,
+  label: 'card-image',
+})
 
 const publicDir = (): string => join(resolveBaseDir(), 'public')
 const fontDir = (): string => join(publicDir(), 'fonts')
@@ -400,6 +370,12 @@ const buildTree = (rawText: string, language: string, mazeUri: string, size: Car
         width: '100%',
         height: '100%',
         display: 'flex',
+        // Flex's default direction is row, where justifyContent controls the
+        // HORIZONTAL axis — not what CardSize.verticalAlign means. Explicitly
+        // set column so justifyContent centers/top-aligns the question text
+        // block vertically (the only flow child; the wordmark below is
+        // absolutely positioned and doesn't participate in this layout).
+        flexDirection: 'column',
         justifyContent: size.verticalAlign,
         backgroundColor: BG_COLOR,
         backgroundImage: `url(${mazeUri})`,
@@ -487,19 +463,23 @@ const ensureCacheDir = (): Promise<unknown> => {
 const cacheKey = (text: string, language: string): string =>
   createHash('sha256').update(`${language} ${text}`).digest('hex')
 
-// Renders straight to PNG bytes for an already-resolved (text, language, size)
-// — the part shared by the cached OG build path and the uncached on-demand
-// story/post path below.
-const renderPng = async (text: string, language: string, size: CardSize): Promise<Buffer> => {
+// Renders the Satori SVG for an already-resolved (text, language, size) —
+// the layout step, before resvg rasterises it to PNG.
+const renderSvg = async (text: string, language: string, size: CardSize): Promise<string> => {
   const [fonts, mazeUri] = await Promise.all([fontsFor(language), buildMazeDataUri(size)])
-
-  const svg = await satori(buildTree(text, language, mazeUri, size) as never, {
+  return satori(buildTree(text, language, mazeUri, size) as never, {
     width: size.width,
     height: size.height,
     fonts,
     loadAdditionalAsset: async () => '',
   })
+}
 
+// Renders straight to PNG bytes for an already-resolved (text, language, size)
+// — the part shared by the cached OG build path and the uncached on-demand
+// story/post path below.
+const renderPng = async (text: string, language: string, size: CardSize): Promise<Buffer> => {
+  const svg = await renderSvg(text, language, size)
   const resvg = new Resvg(svg, {
     fitTo: {mode: 'width', value: size.width},
     background: BG_COLOR,
@@ -516,16 +496,23 @@ const renderPng = async (text: string, language: string, size: CardSize): Promis
  * immutable Cache-Control on the response already avoids re-rendering the
  * same (question, language, size) on every request.
  */
+// Shared by renderCardPng and the test-only renderCardSvgForTest below.
+const resolveQuestionText = (id: string, language: string): string => {
+  const entry = allQuestions[id]
+  if (!entry) throw new ShareCardNotFoundError(`Unknown question id: ${id}`)
+  const text = entry[language]
+  if (text == null) {
+    throw new ShareCardNotFoundError(`Question ${id} has no text for language ${language}`)
+  }
+  return text
+}
+
 export const renderCardPng = async (
   language: string,
   id: string,
   sizeKey: CardSizeKey = 'og'
 ): Promise<Buffer> => {
-  const entry = allQuestions[id]
-  if (!entry) throw new Error(`Unknown question id: ${id}`)
-  const text = entry[language]
-  if (text == null) throw new Error(`Question ${id} has no text for language ${language}`)
-
+  const text = resolveQuestionText(id, language)
   const size = CARD_SIZES[sizeKey]
 
   if (sizeKey !== 'og') {
@@ -555,6 +542,20 @@ export const renderCardPng = async (
   }
 
   return png
+}
+
+/**
+ * Exported for unit testing — renders the Satori SVG (pre-rasterisation) for
+ * a card, so a test can assert on layout (e.g. the question text's vertical
+ * position) without decoding a PNG. Never touches the build cache.
+ */
+export const renderCardSvgForTest = async (
+  language: string,
+  id: string,
+  sizeKey: CardSizeKey = 'og'
+): Promise<string> => {
+  const text = resolveQuestionText(id, language)
+  return renderSvg(text, language, CARD_SIZES[sizeKey])
 }
 
 /** Every (language, id) pair that has question text — used for static prerender. */
