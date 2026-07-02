@@ -2,7 +2,16 @@ import {Ionicons} from '@expo/vector-icons'
 import {logWarn} from '@whocards/observability'
 import type {ShareFormat} from '@whocards/observability/events'
 import {useCallback, useEffect, useMemo, useState} from 'react'
-import {ActivityIndicator, Modal, Pressable, Share, Text, View} from 'react-native'
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Share,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import {Gesture, GestureDetector, GestureHandlerRootView} from 'react-native-gesture-handler'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {colors} from '@whocards/tokens'
@@ -14,6 +23,18 @@ import {downloadAndShareImage} from '@/lib/share-image'
 // SWIPE_THRESHOLD-and-velocity pattern used for the card swipe in pick-player.tsx.
 const SWIPE_DISMISS_DISTANCE = 80
 const SWIPE_DISMISS_VELOCITY = 800
+
+// The drag handle's own layout is small (a decorative pill); extend its
+// gesture-recognized touch area to roughly the 44pt-square recommended
+// minimum tap target via RNGH's own hitSlop (the wrapped View's RN `hitSlop`
+// prop isn't read by gesture-handler's native recognizers).
+const HANDLE_HIT_SLOP = {top: 12, bottom: 12, left: 60, right: 60}
+
+// Cap the sheet's height so extreme Dynamic Type / a compact device in
+// landscape can't push rows off-screen — the content still sizes normally
+// (title + up to three rows is always well under this) and only engages
+// scrolling in that edge case.
+const SHEET_MAX_HEIGHT_RATIO = 0.8
 
 export type {ShareFormat}
 
@@ -184,6 +205,7 @@ export const ShareModal = ({
     () =>
       Gesture.Pan()
         .runOnJS(true)
+        .hitSlop(HANDLE_HIT_SLOP)
         .onEnd((event) => {
           if (
             event.translationY > SWIPE_DISMISS_DISTANCE ||
@@ -195,8 +217,20 @@ export const ShareModal = ({
     [onClose]
   )
 
+  const {height: windowHeight} = useWindowDimensions()
+  const sheetMaxHeight = windowHeight * SHEET_MAX_HEIGHT_RATIO
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      // Android only: without this, the status-bar strip isn't part of the
+      // Modal's surface, so the backdrop dims everything below it but leaves
+      // the status-bar area undimmed.
+      statusBarTranslucent
+    >
       {/* Gestures inside an RN Modal need their own root — the Modal renders
           into a separate native surface that isn't a descendant of the app's
           top-level GestureHandlerRootView (see _layout.tsx). */}
@@ -220,52 +254,60 @@ export const ShareModal = ({
               </View>
             </GestureDetector>
 
-            {/* No-op tap target: swallows taps landing on the sheet's own
-                whitespace so they don't fall through to the backdrop above and
-                close the sheet. `accessible={false}` keeps this out of the
-                accessibility tree so it doesn't swallow the rows' own labels
-                (a Pressable is `accessible` by default, which would otherwise
-                group everything below into a single unlabeled element). */}
-            <Pressable onPress={() => {}} accessible={false}>
-              <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
-                <Text className="text-darker font-title text-2xl">Share</Text>
-                <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
-                  <Ionicons name="close" size={24} color={colors.darker} />
-                </Pressable>
-              </View>
-
-              {rows.map((row) => {
-                const isPending = pending === row.format
-                const disabled = pending !== null && !isPending
-                return (
-                  <Pressable
-                    key={row.format}
-                    onPress={() => handlePress(row)}
-                    disabled={disabled}
-                    accessibilityRole="button"
-                    accessibilityLabel={row.label}
-                    accessibilityState={{disabled, busy: isPending}}
-                    className={`flex-row items-center gap-3 px-5 py-4 ${disabled ? 'opacity-40' : ''}`}
-                  >
-                    <Ionicons name={row.icon} size={22} color={colors.darker} />
-                    <Text className="text-darker font-sans text-lg">{row.label}</Text>
-                    {isPending ? (
-                      <ActivityIndicator
-                        size="small"
-                        color={colors.gray.dark}
-                        style={{marginLeft: 'auto'}}
-                      />
-                    ) : null}
+            {/* Caps the sheet at SHEET_MAX_HEIGHT_RATIO of the window so a
+                long error message plus max Dynamic Type, or a compact device
+                in landscape, can't push rows off-screen — content still sizes
+                naturally (well under this cap) in the normal case, and only
+                this section scrolls; the handle above stays put. */}
+            <ScrollView style={{maxHeight: sheetMaxHeight}} bounces={false}>
+              {/* No-op tap target: swallows taps landing on the sheet's own
+                  whitespace so they don't fall through to the backdrop above
+                  and close the sheet. `accessible={false}` keeps this out of
+                  the accessibility tree so it doesn't swallow the rows' own
+                  labels (a Pressable is `accessible` by default, which would
+                  otherwise group everything below into a single unlabeled
+                  element). */}
+              <Pressable onPress={() => {}} accessible={false}>
+                <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
+                  <Text className="text-darker font-title text-2xl">Share</Text>
+                  <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
+                    <Ionicons name="close" size={24} color={colors.darker} />
                   </Pressable>
-                )
-              })}
-
-              {error ? (
-                <View className="px-5 pt-2">
-                  <Text className="text-red font-sans text-sm">{error}</Text>
                 </View>
-              ) : null}
-            </Pressable>
+
+                {rows.map((row) => {
+                  const isPending = pending === row.format
+                  const disabled = pending !== null && !isPending
+                  return (
+                    <Pressable
+                      key={row.format}
+                      onPress={() => handlePress(row)}
+                      disabled={disabled}
+                      accessibilityRole="button"
+                      accessibilityLabel={row.label}
+                      accessibilityState={{disabled, busy: isPending}}
+                      className={`flex-row items-center gap-3 px-5 py-4 ${disabled ? 'opacity-40' : ''}`}
+                    >
+                      <Ionicons name={row.icon} size={22} color={colors.darker} />
+                      <Text className="text-darker font-sans text-lg">{row.label}</Text>
+                      {isPending ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.gray.dark}
+                          style={{marginLeft: 'auto'}}
+                        />
+                      ) : null}
+                    </Pressable>
+                  )
+                })}
+
+                {error ? (
+                  <View className="px-5 pt-2">
+                    <Text className="text-red font-sans text-sm">{error}</Text>
+                  </View>
+                ) : null}
+              </Pressable>
+            </ScrollView>
           </View>
         </View>
       </GestureHandlerRootView>
