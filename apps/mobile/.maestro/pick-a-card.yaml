@@ -1,7 +1,9 @@
 # The Pick a Card Game: choose it in the landing Game picker, then verify the
 # deal loop — Pick reveals a card, Next returns to the pick screen, Back re-reads
 # the last card. Questions are shuffled, so the flow asserts on the pick button's
-# presence/absence rather than specific question text.
+# presence/absence rather than specific question text. Buttons are matched by
+# their accessibility labels (a button's children are collapsed behind its label
+# in the iOS accessibility tree).
 #
 # Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}
@@ -12,9 +14,8 @@ tags:
 - launchApp:
     clearState: true # start clean: default Game is Classic
 - assertVisible: 'Game: Classic'
-- tapOn: 'choose game'
+- tapOn: 'Game: Classic'
 - assertVisible: 'Choose your game'
-- assertVisible: 'Included in early access'
 - tapOn: 'Pick a Card'
 - assertVisible: 'Game: Pick a Card'
 - tapOn: 'Play'

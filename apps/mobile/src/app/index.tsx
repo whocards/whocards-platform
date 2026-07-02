@@ -151,9 +151,12 @@ export default function LandingScreen() {
             </PressableScale>
           </Link>
           {/* quiet secondary control (outline, never a second filled CTA — DESIGN.md) */}
+          {/* label mirrors the visible text so tests and screen readers see the
+              current Game (an icon-only 'choose game' label would hide it — the
+              accessibility tree collapses a button's children behind its label) */}
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="choose game"
+            accessibilityLabel={`Game: ${gameTitle}`}
             onPress={() => {
               impact('light')
               setGameModalOpen(true)
