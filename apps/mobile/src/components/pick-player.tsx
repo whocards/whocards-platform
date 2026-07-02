@@ -56,6 +56,9 @@ type PickPlayerProps = {
   questionIds: string[]
   questions: QuestionSet
   languages: string[]
+  /** Is this deck's content resolved from the global Pool (`isPoolBacked`)? Gates the
+   *  Share sheet's image rows — the Share Card endpoint only resolves Pool ids. */
+  poolBacked: boolean
 }
 
 /**
@@ -65,7 +68,13 @@ type PickPlayerProps = {
  * is the same non-repeating shuffle as Classic (the engine's pickReducer
  * composes navReducer); only the reveal ritual differs.
  */
-export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPlayerProps) => {
+export const PickPlayer = ({
+  deckSlug,
+  questionIds,
+  questions,
+  languages,
+  poolBacked,
+}: PickPlayerProps) => {
   const router = useRouter()
   const reduceMotion = useReducedMotion()
 
@@ -511,8 +520,8 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
           visible={shareModalOpen}
           questionText={text}
           shareUrl={buildShareUrl(deckSlug, language, questionId)}
-          storyImageUrl={buildShareCardUrl('story', language, questionId)}
-          postImageUrl={buildShareCardUrl('post', language, questionId)}
+          storyImageUrl={poolBacked ? buildShareCardUrl('story', language, questionId) : undefined}
+          postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
           onShare={handleShareCompleted}
           onClose={() => setShareModalOpen(false)}
         />

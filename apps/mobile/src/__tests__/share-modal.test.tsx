@@ -2,9 +2,15 @@
  * Component tests for src/components/share-modal.tsx
  *
  * Covers the acceptance criteria from issue #154:
- * - three rows render (link / story / post)
+ * - three rows render (link / story / post) when storyImageUrl/postImageUrl
+ *   are supplied — the caller (play/[deck].tsx, pick-player.tsx) only supplies
+ *   them for a Pool-backed deck (`isPoolBacked`); an inline-source deck (e.g.
+ *   ai-at-work, hajnalig) omits them, since the Share Card endpoint resolves
+ *   ids against the global Pool only — an inline deck's ids either 404 or
+ *   (worse) collide with an unrelated Pool id and silently serve the wrong
+ *   image (PR #159 review finding)
  * - the link row hands the unchanged message+url payload to the OS share sheet
- *   and never touches the network
+ *   and never touches the network, for every deck
  * - an image row downloads-then-shares and reports completion via onShare
  * - an image download failure shows an inline message and leaves the sheet
  *   open and usable — the link row still works afterwards
@@ -43,11 +49,42 @@ describe('ShareModal', () => {
     shareSpy.mockRestore()
   })
 
-  it('renders the three rows', () => {
+  it('renders all three rows when the caller supplies both image URLs (a Pool-backed deck)', () => {
     render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
     expect(screen.getByText('Share link')).toBeTruthy()
     expect(screen.getByText('Story image')).toBeTruthy()
     expect(screen.getByText('Post image')).toBeTruthy()
+  })
+
+  it('renders only the link row when the image URLs are omitted (an inline-source deck)', () => {
+    render(
+      <ShareModal
+        visible
+        questionText={PROPS.questionText}
+        shareUrl={PROPS.shareUrl}
+        onShare={() => {}}
+        onClose={() => {}}
+      />
+    )
+    expect(screen.getByText('Share link')).toBeTruthy()
+    expect(screen.queryByText('Story image')).toBeNull()
+    expect(screen.queryByText('Post image')).toBeNull()
+  })
+
+  it('renders only the link row when just one image URL is omitted', () => {
+    render(
+      <ShareModal
+        visible
+        questionText={PROPS.questionText}
+        shareUrl={PROPS.shareUrl}
+        storyImageUrl={PROPS.storyImageUrl}
+        onShare={() => {}}
+        onClose={() => {}}
+      />
+    )
+    expect(screen.getByText('Share link')).toBeTruthy()
+    expect(screen.getByText('Story image')).toBeTruthy()
+    expect(screen.queryByText('Post image')).toBeNull()
   })
 
   it('shares the unchanged link payload and reports completion, without touching the network', async () => {

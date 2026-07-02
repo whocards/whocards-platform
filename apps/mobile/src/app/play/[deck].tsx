@@ -16,7 +16,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
 import type {GameId, NavAction, QuestionSet} from '@whocards/decks'
-import {DEFAULT_GAME, getDeck, getInitialNav, navReducer} from '@whocards/decks'
+import {DEFAULT_GAME, getDeck, getInitialNav, isPoolBacked, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 import {colors} from '@whocards/tokens'
@@ -123,6 +123,7 @@ export default function PlayScreen() {
         questionIds={deck.questionIds}
         questions={deck.questions}
         languages={deck.languages}
+        poolBacked={isPoolBacked(deck)}
       />
     )
   }
@@ -133,6 +134,7 @@ export default function PlayScreen() {
       questionIds={deck.questionIds}
       questions={deck.questions}
       languages={deck.languages}
+      poolBacked={isPoolBacked(deck)}
       startId={linkOverride?.q ?? (typeof q === 'string' ? q : undefined)}
       startLanguage={linkOverride?.lang ?? (typeof lang === 'string' ? lang : undefined)}
     />
@@ -144,6 +146,9 @@ type DeckPlayerProps = {
   questionIds: string[]
   questions: QuestionSet
   languages: string[]
+  /** Is this deck's content resolved from the global Pool (`isPoolBacked`)? Gates the
+   *  Share sheet's image rows — the Share Card endpoint only resolves Pool ids. */
+  poolBacked: boolean
   startId?: string
   /** Language from a shared deep-link (`?lang=`); wins over the stored preference. */
   startLanguage?: string
@@ -154,6 +159,7 @@ const DeckPlayer = ({
   questionIds,
   questions,
   languages,
+  poolBacked,
   startId,
   startLanguage,
 }: DeckPlayerProps) => {
@@ -658,8 +664,8 @@ const DeckPlayer = ({
           visible={shareModalOpen}
           questionText={text}
           shareUrl={buildShareUrl(deckSlug, language, questionId)}
-          storyImageUrl={buildShareCardUrl('story', language, questionId)}
-          postImageUrl={buildShareCardUrl('post', language, questionId)}
+          storyImageUrl={poolBacked ? buildShareCardUrl('story', language, questionId) : undefined}
+          postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
           onShare={handleShareCompleted}
           onClose={() => setShareModalOpen(false)}
         />

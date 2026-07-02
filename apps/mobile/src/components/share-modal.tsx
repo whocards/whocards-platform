@@ -24,11 +24,17 @@ type ShareModalProps = {
   visible: boolean
   /** The question text, used only for the link row's message payload. */
   questionText: string
-  /** The web deep-link — today's unchanged share payload. */
+  /** The web deep-link — today's unchanged share payload. Offered for every deck. */
   shareUrl: string
-  /** On-demand Share Card image URLs (issue #153 / ADR-0007). */
-  storyImageUrl: string
-  postImageUrl: string
+  /**
+   * On-demand Share Card image URLs (issue #153 / ADR-0007). Omit both when the
+   * current deck isn't Pool-backed (`@whocards/decks`' `isPoolBacked`) — the
+   * endpoint resolves ids against the global Pool only, so an inline deck's ids
+   * either 404 or (worse) collide with an unrelated Pool id and silently serve
+   * the wrong image. The sheet then shows the link row alone.
+   */
+  storyImageUrl?: string
+  postImageUrl?: string
   /** Fired once a row's OS share sheet has been successfully invoked. */
   onShare: (format: ShareFormat) => void
   onClose: () => void
@@ -38,18 +44,16 @@ type Row = {
   format: ShareFormat
   icon: keyof typeof Ionicons.glyphMap
   label: string
+  /** The Share Card URL for an image row; undefined (and unused) for the link row. */
+  url?: string
 }
-
-const ROWS: Row[] = [
-  {format: 'link', icon: 'link-outline', label: 'Share link'},
-  {format: 'story', icon: 'phone-portrait-outline', label: 'Story image'},
-  {format: 'post', icon: 'image-outline', label: 'Post image'},
-]
 
 /**
  * Native Share picker — same OS sheet treatment as the language/game modals
  * (`presentationStyle="pageSheet"`). Offers the web deep-link (unchanged payload,
- * works offline) alongside the two on-demand Share Card images (issue #154).
+ * works offline) alongside the two on-demand Share Card images (issue #154) —
+ * when the current deck supports them (see `storyImageUrl`/`postImageUrl` above).
+ * A link-only sheet (one row) is a normal, intentional state, not a degraded one.
  *
  * The link row never touches the network. The image rows download the PNG to a
  * local cache file (`@/lib/share-image`) and hand it to the OS share sheet as a
@@ -71,6 +75,26 @@ export const ShareModal = ({
   // other rows so a slow download can't be started twice from a double-tap.
   const [pending, setPending] = useState<ShareFormat | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Story/Post are only offered when the caller supplied their URL (i.e. the
+  // current deck is Pool-backed — see the prop docs above). A link-only sheet
+  // is a normal, intentional state.
+  const rows: Row[] = [
+    {format: 'link', icon: 'link-outline', label: 'Share link'},
+    ...(storyImageUrl
+      ? [
+          {
+            format: 'story',
+            icon: 'phone-portrait-outline',
+            label: 'Story image',
+            url: storyImageUrl,
+          } as const,
+        ]
+      : []),
+    ...(postImageUrl
+      ? [{format: 'post', icon: 'image-outline', label: 'Post image', url: postImageUrl} as const]
+      : []),
+  ]
 
   // Clear stale state whenever the sheet is (re)opened for a (possibly new) card.
   useEffect(() => {
@@ -118,15 +142,19 @@ export const ShareModal = ({
   )
 
   const handlePress = useCallback(
-    (format: ShareFormat) => {
+    (row: Row) => {
       if (pending) return
-      if (format === 'link') {
+      if (row.format === 'link') {
         shareLink()
         return
       }
-      shareImage(format, format === 'story' ? storyImageUrl : postImageUrl)
+      // Every non-link row in `rows` is only ever built with its `url` set (see
+      // above), so this is unreachable in practice — the guard just keeps the
+      // type honest without a non-null assertion.
+      if (!row.url) return
+      shareImage(row.format, row.url)
     },
-    [pending, shareLink, shareImage, storyImageUrl, postImageUrl]
+    [pending, shareLink, shareImage]
   )
 
   return (
@@ -152,13 +180,13 @@ export const ShareModal = ({
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{paddingBottom: Math.max(insets.bottom, 24)}}>
-          {ROWS.map((row) => {
+          {rows.map((row) => {
             const isPending = pending === row.format
             const disabled = pending !== null && !isPending
             return (
               <Pressable
                 key={row.format}
-                onPress={() => handlePress(row.format)}
+                onPress={() => handlePress(row)}
                 disabled={disabled}
                 accessibilityRole="button"
                 accessibilityLabel={row.label}
