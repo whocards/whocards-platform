@@ -28,9 +28,17 @@ type LanguageModalProps = {
  * web's "Choose your language" modal. `onDismiss` keeps `visible` in sync when the
  * sheet is swiped away.
  *
- * Two sections: the primary language (single choice — drives sharing, deep links,
- * layout direction) and "Also show" (a Display setting: up to two extra languages
- * rendered under the primary on the card). The primary never appears in "Also show".
+ * Three sections: the primary language (single choice — drives sharing, deep
+ * links, layout direction), "Also show" (a Display setting: up to two extra
+ * languages rendered under the primary on the card), and Tabletop mode (issue
+ * #148, a Display setting). The primary never appears in "Also show".
+ *
+ * A single-language deck has no language choice to make, so the primary-language
+ * list (and its "Choose your language" title) would be one inert, always-checked
+ * row — this sheet becomes display-settings-only for that deck: the language
+ * list is hidden and the title reads "Display settings" instead (still true when
+ * there's nothing to toggle on, i.e. no onTabletopChange either — the header
+ * copy just describes what the sheet is, even if it turns out empty).
  *
  * Status bar is set to dark (dark icons) while this white sheet is open so the
  * system icons remain visible. The root layout's light bar is restored on close.
@@ -47,7 +55,8 @@ export const LanguageModal = ({
   onClose,
 }: LanguageModalProps) => {
   const insets = useSafeAreaInsets()
-  const showSecondary = onSecondaryChange !== undefined && languages.length > 1
+  const hasLanguageChoice = languages.length > 1
+  const showSecondary = onSecondaryChange !== undefined && hasLanguageChoice
 
   const toggleSecondary = (code: string) => {
     if (!onSecondaryChange) return
@@ -76,29 +85,35 @@ export const LanguageModal = ({
           className="border-gray-lighter flex-row items-center justify-between border-b px-5 py-4"
           style={{paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16}}
         >
-          <Text className="text-darker font-title text-2xl">Choose your language</Text>
+          <Text className="text-darker font-title text-2xl">
+            {hasLanguageChoice ? 'Choose your language' : 'Display settings'}
+          </Text>
           <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
             <Ionicons name="close" size={24} color={colors.darker} />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{paddingBottom: Math.max(insets.bottom, 24)}}>
-          {languages.map((code) => {
-            const selected = code === current
-            return (
-              <Pressable
-                key={code}
-                onPress={() => onSelect(code)}
-                className={`flex-row items-center justify-between px-5 py-4 ${
-                  selected ? 'bg-yellow-300/40' : ''
-                }`}
-              >
-                <Text className="text-darker font-sans text-lg">
-                  {getLanguageName(code) ?? code}
-                </Text>
-                {selected ? <Text className="text-primary-dark text-lg font-bold">✓</Text> : null}
-              </Pressable>
-            )
-          })}
+          {hasLanguageChoice
+            ? languages.map((code) => {
+                const selected = code === current
+                return (
+                  <Pressable
+                    key={code}
+                    onPress={() => onSelect(code)}
+                    className={`flex-row items-center justify-between px-5 py-4 ${
+                      selected ? 'bg-yellow-300/40' : ''
+                    }`}
+                  >
+                    <Text className="text-darker font-sans text-lg">
+                      {getLanguageName(code) ?? code}
+                    </Text>
+                    {selected ? (
+                      <Text className="text-primary-dark text-lg font-bold">✓</Text>
+                    ) : null}
+                  </Pressable>
+                )
+              })
+            : null}
 
           {showSecondary ? (
             <>
@@ -144,7 +159,14 @@ export const LanguageModal = ({
 
           {onTabletopChange ? (
             <>
-              <View className="border-gray-lighter mt-2 border-t px-5 pb-1 pt-5">
+              {/* No divider when this is the sheet's first section — a single-language
+                  deck skips the language list above, so a top border here would float
+                  with nothing to separate from. */}
+              <View
+                className={`border-gray-lighter px-5 pb-1 pt-5 ${
+                  hasLanguageChoice ? 'mt-2 border-t' : ''
+                }`}
+              >
                 <Text className="text-darker font-title text-lg">Tabletop mode</Text>
                 <Text className="text-gray-dark font-sans text-sm">
                   Lay the phone flat on the table — the question mirrors on top so both sides can

@@ -38,6 +38,13 @@ const BarButton = ({icon, label, onPress, accessibilityLabel}: BarButtonProps) =
 
 type PlayerBarProps = {
   showLanguage: boolean
+  /**
+   * Whether the sheet this button opens offers an actual language choice — false
+   * for a single-language deck, where the sheet is display-settings-only (issue
+   * #148 review: the button must not promise a language choice that isn't
+   * there). Defaults to true, the historical behavior.
+   */
+  multiLanguage?: boolean
   /** Hide Share while there is no card to share (e.g. the pick screen before a deal). */
   showShare?: boolean
   onPrevious: () => void
@@ -54,6 +61,7 @@ type PlayerBarProps = {
  */
 export const PlayerBar = ({
   showLanguage,
+  multiLanguage = true,
   showShare = true,
   onPrevious,
   onNext,
@@ -83,10 +91,10 @@ export const PlayerBar = ({
       ) : null}
       {showLanguage ? (
         <BarButton
-          icon="language"
-          label="Language"
+          icon={multiLanguage ? 'language' : 'options-outline'}
+          label={multiLanguage ? 'Language' : 'Display'}
           onPress={onLanguage}
-          accessibilityLabel="change language"
+          accessibilityLabel={multiLanguage ? 'change language' : 'display settings'}
         />
       ) : null}
       <BarButton

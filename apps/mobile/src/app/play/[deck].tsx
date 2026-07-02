@@ -622,8 +622,11 @@ const DeckPlayer = ({
         >
           <PlayerBar
             // Always shown, not just for multi-language decks: this sheet also
-            // hosts Tabletop mode (issue #148), which every deck offers.
+            // hosts Tabletop mode (issue #148), which every deck offers. The button's
+            // label/icon still tell the truth about whether a language choice is
+            // actually in there (see multiLanguage below).
             showLanguage
+            multiLanguage={languages.length > 1}
             onPrevious={goPrevious}
             onNext={goNext}
             onShare={handleShare}
