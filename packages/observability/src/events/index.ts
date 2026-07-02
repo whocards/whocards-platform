@@ -21,16 +21,23 @@ export const EVENTS = {
   QUESTION_PREVIOUS: 'question_previous',
   QUESTION_VIEWED: 'question_viewed',
   DECK_CYCLED: 'deck_cycled',
+  CARD_PICKED: 'card_picked',
   LANGUAGE_CHANGED: 'language_changed',
+  SECONDARY_LANGUAGES_CHANGED: 'secondary_languages_changed',
   APP_REVIEW_ELIGIBLE: 'app_review_eligible',
   APP_REVIEW_REQUESTED: 'app_review_requested',
 } as const
 
 /** Game ids used in event payloads — single source of truth for the `game` prop. */
-export const GAMES = {WH: 'wh'} as const
+export const GAMES = {WH: 'wh', PICK: 'pick'} as const
 
 export type DeckOpenedProps = {deck_id: string; source: string}
-export type GameStartedProps = {deck_id: string; game: string; language: string}
+export type GameStartedProps = {
+  deck_id: string
+  game: string
+  language: string
+  secondary_languages?: string[]
+}
 export type QuestionShownProps = {
   deck_id: string
   question_id: string
@@ -58,7 +65,10 @@ export type QuestionViewedProps = {
   reason: ViewReason
 }
 export type DeckCycledProps = {deck_id: string; game: string}
+/** The pick tap itself — distinct from question_shown so re-reads don't inflate it. */
+export type CardPickedProps = {deck_id: string; game: string}
 export type LanguageChangedProps = {deck_id: string; from: string; to: string}
+export type SecondaryLanguagesChangedProps = {deck_id: string; secondary: string[]}
 export type AppReviewEligibleProps = {
   app_version: string
   card_count: number
