@@ -1,8 +1,9 @@
 import {Ionicons} from '@expo/vector-icons'
+import {Image} from 'expo-image'
 import {useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Pressable, Share, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -51,14 +52,41 @@ const FLIP_MS = 450
 // Physical-card proportions (width / height, ~poker card) for the deck and the
 // flipped question card.
 const CARD_ASPECT = 0.72
-const CARD_PADDING_X = 24
-const CARD_PADDING_Y = 40
+const CARD_PADDING_X = 28
+const CARD_PADDING_Y = 44
+// Vertical space reserved under the deck for the "tap to pick" hint — reserved in
+// both phases so the card doesn't jump when the hint disappears on deal.
+const HINT_SPACE = 40
 // The under-cards peeking out beneath the top of the deck (and beneath the card
 // mid-flip): slight rotation + downward offset per layer.
 const DECK_LAYERS = [
   {rotate: '-3deg', translateY: 10},
   {rotate: '2deg', translateY: 5},
 ] as const
+
+// The same texture as the printed card backs (rasterized from the website's
+// bg-hero squiggle — also used by ScreenBackground).
+const texture = require('../../assets/images/background.png')
+
+/**
+ * The card back, styled after the printed WhoCards deck: the brand squiggle
+ * texture over the darkest base, the stacked WHO?/CARDS wordmark bottom-left,
+ * and a small whocards.cc top-right.
+ */
+const CardBack = () => (
+  <View className="bg-darkest absolute inset-0 overflow-hidden rounded-[20px] border border-white/10">
+    <Image source={texture} contentFit="cover" style={StyleSheet.absoluteFill} />
+    <Text className="absolute right-5 top-4 font-sans text-xs text-white/80">whocards.cc</Text>
+    <View className="absolute bottom-6 left-6">
+      <Text style={{fontSize: 40, lineHeight: 42}} className="font-title text-yellow-400">
+        WHO<Text className="text-primary-dark">?</Text>
+      </Text>
+      <Text style={{fontSize: 40, lineHeight: 42}} className="font-title text-white">
+        CARDS
+      </Text>
+    </View>
+  </View>
+)
 
 type PickPlayerProps = {
   deckSlug: string
@@ -195,9 +223,11 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
   }, [])
   const measured = box ?? {width: winWidth - 64, height: winHeight - 220}
 
-  // --- card geometry: a physical-card aspect centred in the measured box, so the
-  // deck and the flipped question read as the same object ---
-  const cardWidth = Math.round(Math.min(measured.width, measured.height * CARD_ASPECT))
+  // --- card geometry: a physical-card aspect centred in the measured box (minus
+  // the hint band), so the deck and the flipped question read as the same object ---
+  const cardWidth = Math.round(
+    Math.min(measured.width, (measured.height - HINT_SPACE) * CARD_ASPECT)
+  )
   const cardHeight = Math.round(cardWidth / CARD_ASPECT)
   // the question face's inner box (card padding subtracted) drives fitFontSize
   const cardInner = {width: cardWidth - CARD_PADDING_X * 2, height: cardHeight - CARD_PADDING_Y * 2}
@@ -402,73 +432,85 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
           <View className="flex-1 px-8" style={{paddingTop: topBarH, paddingBottom: bottomBarH}}>
             <View className="flex-1 items-center justify-center" onLayout={onBoxLayout}>
               {!languageReady ? null : onCard ? (
-                <View style={{width: cardWidth, height: cardHeight}}>
-                  {/* the rest of the deck stays beneath while the card flips off it */}
-                  <Animated.View
-                    style={deckFadeStyle}
-                    className="absolute inset-0"
-                    pointerEvents="none"
-                  >
+                <View className="items-center">
+                  <View style={{width: cardWidth, height: cardHeight}}>
+                    {/* the rest of the deck stays beneath while the card flips off it */}
+                    <Animated.View
+                      style={deckFadeStyle}
+                      className="absolute inset-0"
+                      pointerEvents="none"
+                    >
+                      {DECK_LAYERS.map(({rotate, translateY}) => (
+                        <View
+                          key={rotate}
+                          style={{transform: [{rotate}, {translateY}]}}
+                          className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
+                        />
+                      ))}
+                    </Animated.View>
+                    <Animated.View style={wrapperStyle} className="absolute inset-0">
+                      {/* card back — visible through the first half of the flip */}
+                      <Animated.View style={backStyle} className="absolute inset-0">
+                        <CardBack />
+                      </Animated.View>
+                      {/* question face — revealed through the second half; styled after
+                          the printed front: near-black, question from the top-left,
+                          small violet ? in the top-right corner */}
+                      <Animated.View
+                        style={faceStyle}
+                        className="bg-darker absolute inset-0 overflow-hidden rounded-[20px] border border-white/10"
+                      >
+                        <Text className="text-primary-dark absolute right-5 top-3 font-title text-2xl">
+                          ?
+                        </Text>
+                        <View
+                          className="flex-1 justify-start"
+                          style={{
+                            paddingHorizontal: CARD_PADDING_X,
+                            paddingVertical: CARD_PADDING_Y,
+                          }}
+                        >
+                          <QuestionText
+                            text={text}
+                            language={language}
+                            box={cardInner}
+                            secondaries={secondary
+                              .filter((code) => code !== language)
+                              .map((code) => ({
+                                language: code,
+                                text: questions[questionId]?.[code] ?? '',
+                              }))}
+                          />
+                        </View>
+                      </Animated.View>
+                    </Animated.View>
+                  </View>
+                  {/* hint band stays reserved so the card doesn't jump between phases */}
+                  <View style={{height: HINT_SPACE}} />
+                </View>
+              ) : (
+                <View className="items-center">
+                  <View style={{width: cardWidth, height: cardHeight}}>
+                    {/* the deck: under-cards peeking out beneath the top card */}
                     {DECK_LAYERS.map(({rotate, translateY}) => (
                       <View
                         key={rotate}
                         style={{transform: [{rotate}, {translateY}]}}
-                        className="bg-dark/80 absolute inset-0 rounded-3xl border border-white/10"
+                        className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
                       />
                     ))}
-                  </Animated.View>
-                  <Animated.View style={wrapperStyle} className="absolute inset-0">
-                    {/* card back — visible through the first half of the flip */}
-                    <Animated.View
-                      style={backStyle}
-                      className="absolute inset-0 items-center justify-center rounded-3xl border border-white/15 bg-dark"
+                    <PressableScale
+                      onPress={handlePick}
+                      accessibilityRole="button"
+                      accessibilityLabel="Pick a card"
+                      className="absolute inset-0"
                     >
-                      <Text className="font-title text-8xl text-yellow-400">?</Text>
-                    </Animated.View>
-                    {/* question face — revealed through the second half */}
-                    <Animated.View
-                      style={faceStyle}
-                      className="absolute inset-0 justify-center rounded-3xl border border-white/10 bg-dark"
-                    >
-                      <View
-                        style={{paddingHorizontal: CARD_PADDING_X, paddingVertical: CARD_PADDING_Y}}
-                      >
-                        <QuestionText
-                          text={text}
-                          language={language}
-                          box={cardInner}
-                          secondaries={secondary
-                            .filter((code) => code !== language)
-                            .map((code) => ({
-                              language: code,
-                              text: questions[questionId]?.[code] ?? '',
-                            }))}
-                        />
-                      </View>
-                    </Animated.View>
-                  </Animated.View>
-                </View>
-              ) : (
-                <View style={{width: cardWidth, height: cardHeight}}>
-                  {/* the deck: under-cards peeking out beneath the top card */}
-                  {DECK_LAYERS.map(({rotate, translateY}) => (
-                    <View
-                      key={rotate}
-                      style={{transform: [{rotate}, {translateY}]}}
-                      className="bg-dark/80 absolute inset-0 rounded-3xl border border-white/10"
-                    />
-                  ))}
-                  <PressableScale
-                    onPress={handlePick}
-                    accessibilityRole="button"
-                    accessibilityLabel="Pick a card"
-                    className="active:bg-darker absolute inset-0 items-center justify-center rounded-3xl border border-white/15 bg-dark"
-                  >
-                    <Text className="font-title text-8xl text-yellow-400">?</Text>
-                    <Text className="text-gray-dark mt-3 font-sans text-sm">
-                      Tap to pick a card
-                    </Text>
-                  </PressableScale>
+                      <CardBack />
+                    </PressableScale>
+                  </View>
+                  <View style={{height: HINT_SPACE}} className="justify-center">
+                    <Text className="text-gray-dark font-sans text-sm">Tap to pick a card</Text>
+                  </View>
                 </View>
               )}
             </View>
