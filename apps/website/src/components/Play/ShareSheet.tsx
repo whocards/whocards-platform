@@ -1,10 +1,9 @@
 import {useEffect, useRef, useState} from 'react'
 import {logWarn} from '@whocards/observability'
 import {EVENTS, track} from '@whocards/observability/events'
-import type {QuestionId} from '~types'
-import {getCurrentQuestionUrl} from '~utils/urls'
 import type {ShareImageFormat} from './share-ui'
 import {
+  buildQuestionShareUrl,
   buildShareCardFilename,
   buildShareCardUrl,
   getImageRowLabel,
@@ -34,6 +33,15 @@ export type ShareSheetProps = {
   language: string
   questionId: string
   questionText: string
+  /**
+   * Whether the deck is Pool-backed (`source.kind === 'library'`), computed by
+   * the page from the deck registry and threaded through Play.tsx's
+   * `isPoolBacked` prop (see `share-ui.ts`'s `supportsShareImages`). The
+   * on-demand Share Card endpoint only knows Pool ids (ADR-0007), so decks that
+   * carry inline questions (e.g. ai-at-work, hajnalig) hide the Story/Post rows
+   * and offer Share link only.
+   */
+  supportsShareImages: boolean
 }
 
 /**
@@ -53,6 +61,7 @@ export const ShareSheet = ({
   language,
   questionId,
   questionText,
+  supportsShareImages,
 }: ShareSheetProps) => {
   const ref = useRef<HTMLDialogElement>(null)
   const [linkCopied, setLinkCopied] = useState(false)
@@ -109,7 +118,7 @@ export const ShareSheet = ({
   }
 
   const handleShareLink = async () => {
-    const url = getCurrentQuestionUrl(language, questionId as QuestionId)
+    const url = buildQuestionShareUrl(window.location.origin, deckId, language, questionId)
     setLinkError(false)
 
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -156,7 +165,9 @@ export const ShareSheet = ({
         document.body.append(link)
         link.click()
         link.remove()
-        URL.revokeObjectURL(objectUrl)
+        // Deferred: revoking synchronously can race the browser's own read of the
+        // blob URL to start the download in some engines (WebKit in particular).
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
       }
 
       setImageState((state) => ({...state, [format]: 'idle'}))
@@ -227,8 +238,12 @@ export const ShareSheet = ({
               Couldn&apos;t copy the link — try again.
             </p>
           )}
-          {imageRow('story')}
-          {imageRow('post')}
+          {supportsShareImages && (
+            <>
+              {imageRow('story')}
+              {imageRow('post')}
+            </>
+          )}
         </div>
       </div>
     </dialog>

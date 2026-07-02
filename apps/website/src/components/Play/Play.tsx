@@ -24,6 +24,17 @@ export type PlayProps = {
   languageStorageKey?: string
   /** text colour utility for the question, so the deck adapts to its background */
   questionClassName?: string
+  /**
+   * Whether this deck's questions come from the Pool (`source.kind === 'library'`
+   * — see `@whocards/decks`' `DeckSource` and `share-ui.ts`'s `supportsShareImages`).
+   * Gates the Share sheet's Story/Post image rows: the on-demand Share Card
+   * endpoint only knows Pool ids (ADR-0007), so a deck with inline questions
+   * (ai-at-work, hajnalig) would 404 or — worse, for a deck whose inline ids
+   * collide with real Pool ids like hajnalig's — silently render the WRONG
+   * question's card. Defaults to `false` (Share link only) so a caller that
+   * forgets to pass this stays safe rather than silently wrong.
+   */
+  isPoolBacked?: boolean
 }
 
 /** One queue per island, recording each serve to the Answer record via tRPC. */
@@ -70,6 +81,7 @@ export const Play = ({
   tracking,
   languageStorageKey = 'play-language',
   questionClassName = 'text-darkest',
+  isPoolBacked = false,
 }: PlayProps) => {
   const questionIds = useMemo(() => Object.keys(questions), [questions])
   const defaultLanguage = languages[0]
@@ -313,6 +325,11 @@ export const Play = ({
     dispatch({type: 'next'})
   }, [viewTracker])
 
+  const handleOpenShare = useCallback(() => setShareOpen(true), [])
+  // Stable identity so ShareSheet's dialog-event-listener effect doesn't tear
+  // down and re-wire its `close`/backdrop-click listeners on every Play render.
+  const handleCloseShare = useCallback(() => setShareOpen(false), [])
+
   const changeLanguage = useCallback(
     (next: string) => {
       if (next === language) return
@@ -380,7 +397,7 @@ export const Play = ({
 
           <button
             aria-label='share question'
-            onClick={() => setShareOpen(true)}
+            onClick={handleOpenShare}
             className='hover:text-primary-dark'
           >
             {ShareIcon}
@@ -432,12 +449,13 @@ export const Play = ({
 
       <ShareSheet
         open={shareOpen}
-        onClose={() => setShareOpen(false)}
+        onClose={handleCloseShare}
         deckId={deckSlug ?? ''}
         game={GAMES.WH}
         language={language ?? ''}
         questionId={ids[idx] ?? ''}
         questionText={questionText}
+        supportsShareImages={isPoolBacked}
       />
     </>
   )

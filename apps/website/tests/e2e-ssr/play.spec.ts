@@ -92,3 +92,16 @@ test('the Share control opens a sheet with link/story/post rows', async ({page})
   await page.getByRole('button', {name: 'close share sheet'}).click()
   await expect(page.getByRole('button', {name: 'Share link'})).toBeHidden()
 })
+
+// ai-at-work carries its own inline questions (ids like "ai-3") — NOT a subset of
+// the Pool the /share-card endpoint renders from (ADR-0007). Regression guard for
+// the review finding on #158: the image rows must not appear for a non-Pool deck.
+test('the Share sheet on a non-Pool deck (ai-at-work) offers Share link only', async ({page}) => {
+  await page.goto('/play/ai-at-work')
+  await expect(heading(page)).toBeVisible()
+
+  await page.getByRole('button', {name: 'share question'}).click()
+  await expect(page.getByRole('button', {name: 'Share link'})).toBeVisible()
+  await expect(page.getByRole('button', {name: 'Download story image'})).toHaveCount(0)
+  await expect(page.getByRole('button', {name: 'Download post image'})).toHaveCount(0)
+})

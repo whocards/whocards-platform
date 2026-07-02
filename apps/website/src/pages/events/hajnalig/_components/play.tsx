@@ -1,4 +1,4 @@
-import {Play} from '~components/Play'
+import {Play, supportsShareImages} from '~components/Play'
 import type {QuestionSet} from '~components/Play'
 import {hajnalig2025Deck, hajnalig2026Deck, resolveDeck} from '~data/decks'
 
@@ -22,6 +22,7 @@ export const SimplePlay = ({year = 2026}: {year?: EditionYear}) => {
       languageStorageKey={deck.languageStorageKey}
       tracking={deck.tracking}
       questionClassName={deck.questionClassName}
+      isPoolBacked={supportsShareImages(deck.source)}
     />
   )
 }
