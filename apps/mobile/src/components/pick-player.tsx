@@ -1,8 +1,9 @@
 import {Ionicons} from '@expo/vector-icons'
+import {Image} from 'expo-image'
 import {useRouter} from 'expo-router'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -10,7 +11,6 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
@@ -24,7 +24,6 @@ import {LanguageModal} from '@/components/language-modal'
 import {PlayerBar} from '@/components/player-bar'
 import {PressableScale} from '@/components/pressable-scale'
 import {QuestionText} from '@/components/question-text'
-import {ScreenBackground} from '@/components/screen-background'
 import type {ShareFormat} from '@/components/share-modal'
 import {ShareModal} from '@/components/share-modal'
 import {usePlayerChrome} from '@/hooks/use-player-chrome'
@@ -42,14 +41,42 @@ import {
 } from '@/lib/language-store'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 
-const SWIPE_THRESHOLD = 60
-// How far off-screen the card travels when a swipe commits (points)
-const SWIPE_OFF_SCREEN = 400
-// Rubber-band resistance factor when swiping at a boundary (0–1, lower = more resistance)
-const RUBBER_BAND = 0.3
 // Full card flip (deal → reveal) duration; DESIGN.md's 200–300 ms band applies to
 // interaction transitions — the deal is the one composed "moment of theatre" per card.
 const FLIP_MS = 450
+// Physical-card proportions (width / height, ~poker card) for the deck and the
+// flipped question card.
+const CARD_ASPECT = 0.72
+const CARD_PADDING_X = 28
+const CARD_PADDING_Y = 44
+// The tap instruction sits in one place well below the deck: a fixed-height band
+// (so the card never jumps between phases) pushed down by a gap.
+const HINT_SPACE = 40
+const HINT_GAP = 28
+// The under-cards peeking out beneath the top of the deck (and beneath the card
+// mid-flip): slight rotation + downward offset per layer.
+const DECK_LAYERS = [
+  {rotate: '-3deg', translateY: 10},
+  {rotate: '2deg', translateY: 5},
+] as const
+
+// The same texture as the printed card backs (rasterized from the website's
+// bg-hero squiggle — also used by ScreenBackground).
+const texture = require('../../assets/images/background.png')
+
+/**
+ * The card back, styled after the printed WhoCards deck: the brand squiggle
+ * texture over the darkest base and the one-line WHO?CARDS wordmark bottom-right.
+ */
+const CardBack = () => (
+  <View className="bg-darkest absolute inset-0 overflow-hidden rounded-[20px] border border-white/10">
+    <Image source={texture} contentFit="cover" style={StyleSheet.absoluteFill} />
+    <Text style={{fontSize: 26}} className="absolute bottom-5 right-5 font-title text-yellow-400">
+      WHO<Text className="text-primary-dark">?</Text>
+      <Text className="text-white">CARDS</Text>
+    </Text>
+  </View>
+)
 
 type PickPlayerProps = {
   deckSlug: string
@@ -196,6 +223,16 @@ export const PickPlayer = ({
   }, [])
   const measured = box ?? {width: winWidth - 64, height: winHeight - 220}
 
+  // --- card geometry: a physical-card aspect centred in the measured box (minus
+  // the full hint band incl. its gap), so the deck and the flipped question read
+  // as the same object and the stack never overflows on short screens ---
+  const cardWidth = Math.round(
+    Math.min(measured.width, (measured.height - HINT_SPACE - HINT_GAP) * CARD_ASPECT)
+  )
+  const cardHeight = Math.round(cardWidth / CARD_ASPECT)
+  // the question face's inner box (card padding subtracted) drives fitFontSize
+  const cardInner = {width: cardWidth - CARD_PADDING_X * 2, height: cardHeight - CARD_PADDING_Y * 2}
+
   const {
     chromeShown,
     revealChrome,
@@ -209,9 +246,8 @@ export const PickPlayer = ({
 
   // --- the deal: a reanimated 3D flip. Two absolutely-positioned faces with
   // backfaceVisibility hidden — the back rotates 0→180°, the face 180→360° —
-  // under a shared perspective. translateX (the swipe) composes on the wrapper. ---
+  // under a shared perspective. ---
   const flip = useSharedValue(0)
-  const translateX = useSharedValue(0)
 
   useEffect(() => {
     if (!onCard) return
@@ -219,19 +255,13 @@ export const PickPlayer = ({
     flip.set(withTiming(1, {duration: reduceMotion ? 0 : FLIP_MS}))
   }, [onCard, flip, reduceMotion])
 
-  // reset the swipe offset whenever a card is (re)dealt or put down
-  useEffect(() => {
-    translateX.set(0)
-  }, [phase, questionId, translateX])
-
   const wrapperStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      translateX.get(),
-      [-SWIPE_OFF_SCREEN, 0, SWIPE_OFF_SCREEN],
-      [0, 1, 0],
-      'clamp'
-    ),
-    transform: [{translateX: translateX.get()}],
+    transform: [
+      // a slight lift-and-settle arc through the flip, so the card reads as
+      // picked up off the deck rather than spun in place
+      {translateY: interpolate(flip.get(), [0, 0.5, 1], [0, -16, 0])},
+      {scale: interpolate(flip.get(), [0, 0.5, 1], [1, 1.04, 1])},
+    ],
   }))
   const backStyle = useAnimatedStyle(() => ({
     transform: [{perspective: 1000}, {rotateY: `${interpolate(flip.get(), [0, 1], [0, 180])}deg`}],
@@ -244,7 +274,6 @@ export const PickPlayer = ({
     ],
     backfaceVisibility: 'hidden' as const,
   }))
-
   // --- actions ---
   const handlePick = useCallback(() => {
     impact('medium')
@@ -253,11 +282,28 @@ export const PickPlayer = ({
     dispatch({type: 'pick'})
   }, [deckSlug, revealChrome])
 
-  const putDown = useCallback(() => {
-    selection()
+  // guards a second put-down (or a previous) while the exit flip is running
+  const exitingRef = useRef(false)
+
+  const commitPutDown = useCallback(() => {
+    exitingRef.current = false
     viewTracker.endView('advanced')
     dispatch({type: 'next'})
   }, [viewTracker])
+
+  // putting the card down flips it face-down again before the deck returns —
+  // the exit half of the deal ritual (the swipe path exits by sliding off instead)
+  const putDown = useCallback(() => {
+    if (exitingRef.current) return
+    exitingRef.current = true
+    selection()
+    flip.set(
+      withTiming(0, {duration: reduceMotion ? 0 : FLIP_MS}, () => {
+        'worklet'
+        runOnJS(commitPutDown)()
+      })
+    )
+  }, [flip, reduceMotion, commitPutDown])
 
   const goNext = useCallback(() => {
     if (!onCard) {
@@ -269,6 +315,7 @@ export const PickPlayer = ({
   }, [onCard, handlePick, revealChrome, putDown])
 
   const goPreviousFromCard = useCallback(() => {
+    if (exitingRef.current) return
     selection()
     viewTracker.endView('previous')
     dispatch({type: 'previous'})
@@ -308,131 +355,130 @@ export const PickPlayer = ({
 
   const openLanguage = useCallback(() => setLangModalOpen(true), [])
 
-  // --- gestures: swipe navigates only while a card is revealed; a swipe never
-  // deals. On the pick screen only the tap (chrome reveal) is mounted. ---
-  const isAtFirstSV = useSharedValue(nav.idx === 0)
-  useEffect(() => {
-    isAtFirstSV.set(nav.idx === 0)
-  }, [nav.idx, isAtFirstSV])
-
-  const reduceMotionSV = useSharedValue(reduceMotion)
-  useEffect(() => {
-    reduceMotionSV.set(reduceMotion)
-  }, [reduceMotion, reduceMotionSV])
-
+  // --- gestures: tap anywhere reveals the chrome. No swipes — the card itself is
+  // the button in both phases (tap to deal, tap to put down); Back lives in the bar. ---
   const revealChromeStable = useCallback(() => revealChrome(), [revealChrome])
-  const impactMediumOnJS = useCallback(() => impact('medium'), [])
 
-  const gesture = useMemo(() => {
-    const tap = Gesture.Tap().onStart(() => {
-      'worklet'
-      runOnJS(revealChromeStable)()
-    })
-    if (!onCard) return tap
-
-    const pan = Gesture.Pan()
-      .onBegin(() => {
+  const gesture = useMemo(
+    () =>
+      Gesture.Tap().onStart(() => {
         'worklet'
         runOnJS(revealChromeStable)()
-      })
-      .onUpdate((event) => {
-        'worklet'
-        const tx = event.translationX
-        if (tx > 0 && isAtFirstSV.get()) {
-          translateX.set(tx * RUBBER_BAND)
-        } else {
-          translateX.set(tx)
-        }
-      })
-      .onEnd((event) => {
-        'worklet'
-        const tx = event.translationX
-        const vx = event.velocityX
-        const travel = reduceMotionSV.get() ? 0 : SWIPE_OFF_SCREEN
-
-        // commit "put down" (back to the pick screen): swipe left or fast fling
-        if (tx <= -SWIPE_THRESHOLD || vx < -500) {
-          runOnJS(impactMediumOnJS)()
-          translateX.set(
-            withTiming(-travel, {duration: reduceMotionSV.get() ? 0 : 260}, () => {
-              'worklet'
-              runOnJS(putDown)()
-            })
-          )
-          return
-        }
-        // commit previous: swipe right (not while rubber-banded at the first card)
-        if ((tx >= SWIPE_THRESHOLD || vx > 500) && !isAtFirstSV.get()) {
-          runOnJS(impactMediumOnJS)()
-          translateX.set(
-            withTiming(travel, {duration: reduceMotionSV.get() ? 0 : 260}, () => {
-              'worklet'
-              runOnJS(goPreviousFromCard)()
-            })
-          )
-          return
-        }
-        translateX.set(withSpring(0, {damping: 20, stiffness: 300}))
-      })
-
-    return Gesture.Race(tap, pan)
-  }, [
-    onCard,
-    revealChromeStable,
-    putDown,
-    goPreviousFromCard,
-    impactMediumOnJS,
-    translateX,
-    isAtFirstSV,
-    reduceMotionSV,
-  ])
+      }),
+    [revealChromeStable]
+  )
 
   return (
-    <ScreenBackground>
+    // solid darkest backdrop (no screen texture) — the texture lives on the card
+    // backs here, and the printed cards sit on a plain table, not on themselves
+    <View className="bg-darkest flex-1">
       <View className="flex-1">
         <GestureDetector gesture={gesture}>
           <View className="flex-1 px-8" style={{paddingTop: topBarH, paddingBottom: bottomBarH}}>
-            <View className="flex-1 justify-center" onLayout={onBoxLayout}>
+            <View className="flex-1 items-center justify-center" onLayout={onBoxLayout}>
               {!languageReady ? null : onCard ? (
-                <Animated.View style={wrapperStyle}>
-                  {/* card back — visible through the first half of the flip */}
-                  <Animated.View
-                    style={backStyle}
-                    className="absolute inset-0 items-center justify-center rounded-3xl border border-white/10 bg-dark"
+                <View className="items-center">
+                  {/* the whole card is the put-down target; accessible={false} keeps the
+                      question text readable to VoiceOver (a labeled button would swallow
+                      it) — screen-reader users advance via the bar's Next instead */}
+                  <Pressable
+                    onPress={goNext}
+                    accessible={false}
+                    style={{width: cardWidth, height: cardHeight}}
                   >
-                    <Text className="font-title text-7xl text-yellow-400">?</Text>
-                  </Animated.View>
-                  {/* question face — revealed through the second half */}
-                  <Animated.View style={faceStyle} className="justify-center">
-                    <QuestionText
-                      text={text}
-                      language={language}
-                      box={measured}
-                      secondaries={secondary
-                        .filter((code) => code !== language)
-                        .map((code) => ({
-                          language: code,
-                          text: questions[questionId]?.[code] ?? '',
-                        }))}
-                    />
-                  </Animated.View>
-                </Animated.View>
+                    {/* the rest of the deck stays visible beneath the revealed card */}
+                    <View className="absolute inset-0" pointerEvents="none">
+                      {DECK_LAYERS.map(({rotate, translateY}) => (
+                        <View
+                          key={rotate}
+                          style={{transform: [{rotate}, {translateY}]}}
+                          className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
+                        />
+                      ))}
+                    </View>
+                    <Animated.View style={wrapperStyle} className="absolute inset-0">
+                      {/* card back — visible through the first half of the flip */}
+                      <Animated.View style={backStyle} className="absolute inset-0">
+                        <CardBack />
+                      </Animated.View>
+                      {/* question face — revealed through the second half: the question
+                          from the top-left over a whisper of the brand texture, with a
+                          big violet ? anchoring the bottom-right corner */}
+                      <Animated.View
+                        style={faceStyle}
+                        className="bg-darker absolute inset-0 overflow-hidden rounded-[20px] border border-white/10"
+                      >
+                        <Image
+                          source={texture}
+                          contentFit="cover"
+                          style={[StyleSheet.absoluteFill, {opacity: 0.4}]}
+                        />
+                        <Text className="text-primary-dark absolute bottom-3 right-5 font-title text-6xl">
+                          ?
+                        </Text>
+                        <View
+                          className="flex-1 justify-start"
+                          style={{
+                            paddingHorizontal: CARD_PADDING_X,
+                            paddingVertical: CARD_PADDING_Y,
+                          }}
+                        >
+                          <QuestionText
+                            text={text}
+                            language={language}
+                            box={cardInner}
+                            secondaries={secondary
+                              .filter((code) => code !== language)
+                              .map((code) => ({
+                                language: code,
+                                text: questions[questionId]?.[code] ?? '',
+                              }))}
+                          />
+                        </View>
+                      </Animated.View>
+                    </Animated.View>
+                  </Pressable>
+                  <Pressable
+                    onPress={goNext}
+                    hitSlop={12}
+                    accessibilityRole="button"
+                    accessibilityLabel="Tap for next card"
+                    style={{height: HINT_SPACE, marginTop: HINT_GAP}}
+                    className="justify-center"
+                  >
+                    <Text className="text-gray-dark font-sans text-sm">Tap for next card</Text>
+                  </Pressable>
+                </View>
               ) : (
                 <View className="items-center">
-                  <PressableScale
+                  <View style={{width: cardWidth, height: cardHeight}}>
+                    {/* the deck: under-cards peeking out beneath the top card */}
+                    {DECK_LAYERS.map(({rotate, translateY}) => (
+                      <View
+                        key={rotate}
+                        style={{transform: [{rotate}, {translateY}]}}
+                        className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
+                      />
+                    ))}
+                    <PressableScale
+                      onPress={handlePick}
+                      accessibilityRole="button"
+                      accessibilityLabel="Pick a card"
+                      className="absolute inset-0"
+                    >
+                      <CardBack />
+                    </PressableScale>
+                  </View>
+                  <Pressable
                     onPress={handlePick}
+                    hitSlop={12}
                     accessibilityRole="button"
-                    accessibilityLabel="Pick a card"
-                    className="active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
+                    accessibilityLabel="Tap to pick a card"
+                    style={{height: HINT_SPACE, marginTop: HINT_GAP}}
+                    className="justify-center"
                   >
-                    <Ionicons
-                      name="albums-outline"
-                      size={18}
-                      color={colors.darker}
-                      style={{marginRight: 8}}
-                    />
-                    <Text className="text-darker font-sans text-base font-bold">Pick a card</Text>
-                  </PressableScale>
+                    <Text className="text-gray-dark font-sans text-sm">Tap to pick a card</Text>
+                  </Pressable>
                 </View>
               )}
             </View>
@@ -526,6 +572,6 @@ export const PickPlayer = ({
           onClose={() => setShareModalOpen(false)}
         />
       </View>
-    </ScreenBackground>
+    </View>
   )
 }

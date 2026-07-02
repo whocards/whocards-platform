@@ -22,19 +22,21 @@ tags:
 
 # The pick screen: the deal button is the only card-area content.
 - assertVisible: 'Pick a card'
+- assertVisible: 'Tap to pick a card'
 - tapOn: 'Pick a card'
 - waitForAnimationToEnd
 - assertNotVisible: 'Pick a card' # a card is revealed
+- assertVisible: 'Tap for next card'
 
-# Next puts the card down and returns to the pick screen (never straight to another card).
+# Tapping the revealed card puts it down and returns to the pick screen
+# (never straight to another card).
 - tapOn:
-    point: '50%,45%' # reveal the chrome
-- tapOn: 'next question'
+    point: '50%,45%' # mid-card
 - assertVisible: 'Pick a card'
 
 # Back re-reads the last dealt card.
 - tapOn:
-    point: '50%,45%'
+    point: '50%,10%' # reveal the chrome (above the deck, not on a card)
 - tapOn: 'previous question'
 - waitForAnimationToEnd
 - assertNotVisible: 'Pick a card'
