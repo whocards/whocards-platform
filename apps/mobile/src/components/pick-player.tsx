@@ -212,9 +212,10 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
   const measured = box ?? {width: winWidth - 64, height: winHeight - 220}
 
   // --- card geometry: a physical-card aspect centred in the measured box (minus
-  // the hint band), so the deck and the flipped question read as the same object ---
+  // the full hint band incl. its gap), so the deck and the flipped question read
+  // as the same object and the stack never overflows on short screens ---
   const cardWidth = Math.round(
-    Math.min(measured.width, (measured.height - HINT_SPACE) * CARD_ASPECT)
+    Math.min(measured.width, (measured.height - HINT_SPACE - HINT_GAP) * CARD_ASPECT)
   )
   const cardHeight = Math.round(cardWidth / CARD_ASPECT)
   // the question face's inner box (card padding subtracted) drives fitFontSize
