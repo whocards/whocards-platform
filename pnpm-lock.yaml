@@ -80,6 +80,9 @@ importers:
       '@react-email/render':
         specifier: ^2.0.9
         version: 2.0.9(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@whocards/app-store':
+        specifier: workspace:*
+        version: link:../../packages/app-store
       '@whocards/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -352,6 +355,9 @@ importers:
       '@whocards/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@whocards/app-store':
+        specifier: workspace:*
+        version: link:../../packages/app-store
       '@whocards/decks':
         specifier: workspace:*
         version: link:../../packages/decks
@@ -492,6 +498,21 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
+      '@whocards/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.9(@opentelemetry/api@1.9.0)(@types/node@24.13.2)(jsdom@20.0.3)(vite@7.3.5(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+
+  packages/app-store:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
       '@whocards/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript

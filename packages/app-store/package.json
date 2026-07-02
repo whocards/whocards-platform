@@ -1,0 +1,19 @@
+{
+  "name": "@whocards/app-store",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@whocards/typescript-config": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
