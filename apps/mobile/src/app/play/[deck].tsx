@@ -1,11 +1,9 @@
 import {Ionicons} from '@expo/vector-icons'
-import * as Application from 'expo-application'
 import * as Linking from 'expo-linking'
 import {useLocalSearchParams, useRouter} from 'expo-router'
-import * as StoreReview from 'expo-store-review'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Platform, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Pressable, Share, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -17,32 +15,35 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
-import type {NavAction, QuestionSet} from '@whocards/decks'
-import {getDeck, getDirection, getInitialNav, navReducer} from '@whocards/decks'
+import type {GameId, NavAction, QuestionSet} from '@whocards/decks'
+import {DEFAULT_GAME, getDeck, getInitialNav, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 import {colors} from '@whocards/tokens'
 
 import {LanguageModal} from '@/components/language-modal'
+import {PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
+import {QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
+import {usePlayerChrome} from '@/hooks/use-player-chrome'
+import {useReviewPrompt} from '@/hooks/use-review-prompt'
 import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
-import {
-  getReviewState,
-  incrementCardCount,
-  incrementSessionCount,
-  isReviewEligible,
-  markReviewAttempted,
-} from '@/lib/app-review'
+import {incrementCardCount, incrementSessionCount} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
+import {getStoredGame} from '@/lib/game-store'
 import {impact, selection} from '@/lib/haptics'
-import {getStoredLanguage, setStoredLanguage} from '@/lib/language-store'
+import {
+  getStoredLanguage,
+  getStoredSecondaryLanguages,
+  setStoredLanguage,
+  setStoredSecondaryLanguages,
+} from '@/lib/language-store'
 import {parsePlayLink} from '@/lib/play-link'
 import {buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
-const CHROME_HIDE_MS = 3000
 // How far off-screen the card travels when a swipe commits (points)
 const SWIPE_OFF_SCREEN = 400
 // Rubber-band resistance factor when swiping at a boundary (0–1, lower = more resistance)
@@ -59,52 +60,39 @@ const CARD_ENTER_TRAVEL = 28
 // slide rather than a long fade-in.
 const INITIAL_CARD_ENTER_TRAVEL = 56
 
-// Per-script question face. golos-text (the brand body face) covers Latin + Cyrillic;
-// Hebrew gets its bundled Noto face; CJK (zh/jp) falls back to the system font — full
-// glyph coverage on device, and the Noto CJK faces are too heavy to bundle (see
-// docs/tickets/0001-mobile-cjk-hebrew-question-fonts.md).
-const SYSTEM_FONT_LANGUAGES = new Set(['zh', 'jp'])
-const SCRIPT_FONTS: Record<string, string> = {he: 'noto-sans-hebrew'}
-
-/** The font family for a question in `language`, or `undefined` for the system font. */
-const questionFontFamily = (language: string): string | undefined => {
-  if (language in SCRIPT_FONTS) return SCRIPT_FONTS[language]
-  return SYSTEM_FONT_LANGUAGES.has(language) ? undefined : 'golos-text'
-}
-
-// --- dynamic question sizing: grow the text to fill its box, recomputed on rotation ---
-const LINE_HEIGHT_RATIO = 1.15
-// average glyph advance / line height as fractions of the font size (semibold sans)
-const CHAR_WIDTH_RATIO = 0.54
-// fraction of the box the text aims to cover — kept well under 1 so ragged wrapping
-// and real-device font metrics (taller than this estimate) still leave breathing room
-const FILL = 0.5
-const MIN_FONT = 22
-const MAX_FONT = 96
-
-/**
- * Largest font that lets `text` fill — without overflowing — a `width`×`height` box.
- * Derived from area (chars × glyph area ≈ filled area, so font ∝ √(area / chars)), then
- * capped so the longest single word still fits on one line. Orientation falls out for
- * free: rotating swaps width/height, the box changes, and the size is recomputed.
- */
-const fitFontSize = (text: string, width: number, height: number) => {
-  if (width <= 0 || height <= 0) return MIN_FONT
-  const trimmed = text.trim()
-  const chars = Math.max(trimmed.length, 1)
-  const raw = Math.sqrt((FILL * width * height) / (chars * CHAR_WIDTH_RATIO * LINE_HEIGHT_RATIO))
-  // cap so the longest word fills ~90% of the width — a margin on the widest lines too
-  const longestWord = trimmed.split(/\s+/).reduce((max, word) => Math.max(max, word.length), 1)
-  const widthCap = (width * 0.9) / (longestWord * CHAR_WIDTH_RATIO)
-  return Math.round(Math.max(MIN_FONT, Math.min(MAX_FONT, raw, widthCap)))
-}
-
 export default function PlayScreen() {
   // `q` deep-links to a specific question (e.g. mobile://play/library?q=1): the engine
   // starts there in natural order instead of shuffling, so deep links and screenshot
   // captures are reproducible. Mirrors the web <Play> `?q=` behaviour (ADR-0003).
   const {deck: slug, q, lang} = useLocalSearchParams<{deck: string; q?: string; lang?: string}>()
   const deck = getDeck(slug)
+  const deckSlug = deck?.slug
+
+  // The chosen Game applies to organic opens only — a `?q=` deep link always opens
+  // the classic player so shared links and screenshot captures stay reproducible.
+  const isDeepLink = typeof q === 'string'
+  const [game, setGame] = useState<GameId | null>(isDeepLink ? DEFAULT_GAME : null)
+  // A warm deep link that arrives while the pick player is open (see the listener
+  // below) — carries the linked question into the classic player it switches to.
+  const [linkOverride, setLinkOverride] = useState<{q: string; lang?: string} | null>(null)
+  useEffect(() => {
+    if (isDeepLink) return
+    void getStoredGame().then(setGame)
+  }, [isDeepLink])
+
+  // DeckPlayer owns warm-deep-link handling while IT is mounted; when the pick
+  // player is open instead, catch the link here and switch to the classic player
+  // at the linked question (deep links always open classic).
+  useEffect(() => {
+    if (game !== 'pick' || !deckSlug) return
+    const sub = Linking.addEventListener('url', ({url}) => {
+      const link = parsePlayLink(url)
+      if (!link || link.deck !== deckSlug || !link.q) return
+      setLinkOverride({q: link.q, lang: link.lang})
+      setGame(DEFAULT_GAME)
+    })
+    return () => sub.remove()
+  }, [game, deckSlug])
 
   if (!deck) {
     return (
@@ -116,14 +104,35 @@ export default function PlayScreen() {
     )
   }
 
+  // Hold the background (a single fast AsyncStorage read) until the stored Game
+  // resolves, so the player never mounts one Game and flips to another.
+  if (game === null) {
+    return (
+      <ScreenBackground>
+        <View className="flex-1" />
+      </ScreenBackground>
+    )
+  }
+
+  if (game === 'pick') {
+    return (
+      <PickPlayer
+        deckSlug={deck.slug}
+        questionIds={deck.questionIds}
+        questions={deck.questions}
+        languages={deck.languages}
+      />
+    )
+  }
+
   return (
     <DeckPlayer
       deckSlug={deck.slug}
       questionIds={deck.questionIds}
       questions={deck.questions}
       languages={deck.languages}
-      startId={typeof q === 'string' ? q : undefined}
-      startLanguage={typeof lang === 'string' ? lang : undefined}
+      startId={linkOverride?.q ?? (typeof q === 'string' ? q : undefined)}
+      startLanguage={linkOverride?.lang ?? (typeof lang === 'string' ? lang : undefined)}
     />
   )
 }
@@ -169,6 +178,8 @@ const DeckPlayer = ({
   const linkLanguage =
     startLanguage && languages.includes(startLanguage) ? startLanguage : undefined
   const [language, setLanguage] = useState(linkLanguage ?? defaultLanguage)
+  // secondary display languages rendered under the primary (a Display setting)
+  const [secondary, setSecondary] = useState<string[]>([])
   // true once the AsyncStorage read has settled — gates the first card paint so
   // the player never shows a visible language flip on launch. The read is a single
   // fast local hit (~1-5 ms); holding the card behind it is the right trade-off
@@ -176,21 +187,21 @@ const DeckPlayer = ({
   const [languageReady, setLanguageReady] = useState(false)
   const [langModalOpen, setLangModalOpen] = useState(false)
 
-  // Seed language from storage on mount. Only apply a stored value if it is still
-  // present in this deck's languages list (guard against decks dropping a language).
+  // Seed language + secondaries from storage on mount. Only apply stored values
+  // still present in this deck's languages list (guard against decks dropping one).
   useEffect(() => {
+    const secondaries = getStoredSecondaryLanguages(deckSlug).then((stored) =>
+      setSecondary(stored.filter((code) => languages.includes(code)))
+    )
     // A shared link's language takes precedence — skip the stored value entirely.
-    if (linkLanguage) {
-      setLanguage(linkLanguage)
-      setLanguageReady(true)
-      return
-    }
-    void getStoredLanguage(deckSlug).then((stored) => {
-      if (stored && languages.includes(stored)) {
-        setLanguage(stored)
-      }
-      setLanguageReady(true)
-    })
+    const primary = linkLanguage
+      ? Promise.resolve(setLanguage(linkLanguage))
+      : getStoredLanguage(deckSlug).then((stored) => {
+          if (stored && languages.includes(stored)) {
+            setLanguage(stored)
+          }
+        })
+    void Promise.all([primary, secondaries]).then(() => setLanguageReady(true))
   }, [deckSlug, languages, linkLanguage])
 
   // A deep link that arrives while this deck is already open can't ride the route
@@ -213,9 +224,6 @@ const DeckPlayer = ({
 
   const questionId = ids[idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''
-  const direction = getDirection(language)
-  // brand/script face where one exists; system font (with a weight) otherwise
-  const questionFont = questionFontFamily(language)
 
   // --- observability: dwell tracker (stable for the component lifetime) ---
   const viewTracker = useMemo(() => createViewTracker(trackEvent), [])
@@ -239,7 +247,10 @@ const DeckPlayer = ({
   useEffect(() => {
     if (!languageReady || gameStartedRef.current) return
     gameStartedRef.current = true
-    track({name: EVENTS.GAME_STARTED, props: {deck_id: deckSlug, game: GAMES.WH, language}})
+    track({
+      name: EVENTS.GAME_STARTED,
+      props: {deck_id: deckSlug, game: GAMES.WH, language, secondary_languages: secondary},
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageReady])
 
@@ -247,50 +258,8 @@ const DeckPlayer = ({
   // session that never showed a card isn't counted — matches the session-count doc.
   const sessionCountedRef = useRef(false)
 
-  // --- In-app review: check eligibility and fire the native OS prompt ---
-  // Called after play (on exit or background), never mid-card or on launch.
-  // Fails silently; emits app_review_eligible and app_review_requested via track().
-  // An in-flight ref dedupes concurrent calls (AppState background + exit can both
-  // fire) so two callers can't pass the eligibility check before the first persists.
-  const reviewRequestInFlightRef = useRef(false)
-  const maybeRequestReview = useCallback(async () => {
-    if (reviewRequestInFlightRef.current) return
-    reviewRequestInFlightRef.current = true
-    try {
-      const appVersion = Application.nativeApplicationVersion ?? '0'
-      const state = await getReviewState()
-      if (!isReviewEligible(state, appVersion)) return
-
-      track({
-        name: EVENTS.APP_REVIEW_ELIGIBLE,
-        props: {
-          app_version: appVersion,
-          card_count: state.cardCount,
-          session_count: state.sessionCount,
-        },
-      })
-
-      const available = await StoreReview.isAvailableAsync()
-      if (!available) return
-      const hasAction = await StoreReview.hasAction()
-      if (!hasAction) return
-
-      // Persist before calling so a background/crash after this point doesn't
-      // allow a second attempt on the same version.
-      await markReviewAttempted(appVersion)
-
-      track({
-        name: EVENTS.APP_REVIEW_REQUESTED,
-        props: {app_version: appVersion, platform: Platform.OS},
-      })
-
-      await StoreReview.requestReview()
-    } catch {
-      // Fail silently — store review is best-effort.
-    } finally {
-      reviewRequestInFlightRef.current = false
-    }
-  }, [])
+  // In-app review — called after play (on exit or background), never mid-card.
+  const maybeRequestReview = useReviewPrompt()
 
   // --- Answer record: every serve enqueues an Answer; the queue sends it (or
   // retries offline). Recording is wired here, not in the engine, so the shared
@@ -383,62 +352,19 @@ const DeckPlayer = ({
   }, [])
   // window-derived fallback for the first paint, before onLayout reports the real box
   const measured = box ?? {width: winWidth - 64, height: winHeight - 220}
-  const fontSize = useMemo(
-    () => fitFontSize(text, measured.width, measured.height),
-    [text, measured.width, measured.height]
-  )
 
-  // --- auto-hiding chrome: a single 0→1 progress slides the bars in and out —
-  // the top bar up off the top edge, the bottom bar down off the bottom edge
-  // (a slide, not a fade). The card + gesture layer underneath spans the full
-  // screen, so a tap anywhere — including the bands the bars occupy — reveals
-  // the chrome again. ---
-  const chromeProgress = useSharedValue(1)
-  const [chromeShown, setChromeShown] = useState(true)
-  // Measured bar heights drive both the off-screen slide distance and the card's
-  // padding, so the question never sits under a bar even though the gesture layer
-  // runs full-bleed behind them.
-  const [topBarH, setTopBarH] = useState(0)
-  const [bottomBarH, setBottomBarH] = useState(0)
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const setChromeVisible = useCallback(
-    (to: number) => {
-      setChromeShown(to === 1)
-      chromeProgress.set(withTiming(to, {duration: reduceMotion ? 0 : 300}))
-    },
-    [chromeProgress, reduceMotion]
-  )
-
-  const revealChrome = useCallback(() => {
-    setChromeVisible(1)
-    if (hideTimer.current) clearTimeout(hideTimer.current)
-    hideTimer.current = setTimeout(() => setChromeVisible(0), CHROME_HIDE_MS)
-  }, [setChromeVisible])
-
-  useEffect(() => {
-    revealChrome()
-    return () => {
-      if (hideTimer.current) clearTimeout(hideTimer.current)
-    }
-  }, [revealChrome])
-
-  const onTopBarLayout = useCallback((event: LayoutChangeEvent) => {
-    setTopBarH(event.nativeEvent.layout.height)
-  }, [])
-  const onBottomBarLayout = useCallback((event: LayoutChangeEvent) => {
-    setBottomBarH(event.nativeEvent.layout.height)
-  }, [])
-
-  // top bar slides up off the top edge; bottom bar slides down off the bottom edge.
-  // topBarH/bottomBarH are captured per render, so the slide distance corrects once
-  // the bars measure.
-  const topChromeStyle = useAnimatedStyle(() => ({
-    transform: [{translateY: interpolate(chromeProgress.get(), [0, 1], [-topBarH, 0])}],
-  }))
-  const bottomChromeStyle = useAnimatedStyle(() => ({
-    transform: [{translateY: interpolate(chromeProgress.get(), [0, 1], [bottomBarH, 0])}],
-  }))
+  // auto-hiding chrome — the card + gesture layer underneath spans the full
+  // screen, so a tap anywhere (including the bands the bars occupy) reveals it
+  const {
+    chromeShown,
+    revealChrome,
+    topBarH,
+    bottomBarH,
+    onTopBarLayout,
+    onBottomBarLayout,
+    topChromeStyle,
+    bottomChromeStyle,
+  } = usePlayerChrome()
 
   // --- Reanimated card enter/exit: translateX shared value ---
   // Positive = entering from the right (going "next"), negative = entering from left (going "prev")
@@ -624,20 +550,17 @@ const DeckPlayer = ({
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
               {languageReady ? (
                 <Animated.View style={cardStyle}>
-                  <Text
-                    className="text-white"
-                    style={{
-                      fontSize,
-                      lineHeight: fontSize * LINE_HEIGHT_RATIO,
-                      writingDirection: direction,
-                      // writingDirection sets the bidi base direction but not paragraph
-                      // alignment in RN — RTL (Hebrew) needs textAlign to right-align
-                      textAlign: direction === 'rtl' ? 'right' : 'left',
-                      ...(questionFont ? {fontFamily: questionFont} : {fontWeight: '600'}),
-                    }}
-                  >
-                    {text}
-                  </Text>
+                  <QuestionText
+                    text={text}
+                    language={language}
+                    box={measured}
+                    secondaries={secondary
+                      .filter((code) => code !== language)
+                      .map((code) => ({
+                        language: code,
+                        text: questions[questionId]?.[code] ?? '',
+                      }))}
+                  />
                 </Animated.View>
               ) : null}
             </View>
@@ -686,6 +609,7 @@ const DeckPlayer = ({
           visible={langModalOpen}
           languages={languages}
           current={language}
+          secondary={secondary}
           onSelect={(next) => {
             selection()
             if (next !== language) {
@@ -696,8 +620,23 @@ const DeckPlayer = ({
             }
             setLanguage(next)
             void setStoredLanguage(deckSlug, next)
+            // the new primary can't also be a secondary
+            if (secondary.includes(next)) {
+              const pruned = secondary.filter((code) => code !== next)
+              setSecondary(pruned)
+              void setStoredSecondaryLanguages(deckSlug, pruned)
+            }
             setLangModalOpen(false)
             revealChrome()
+          }}
+          onSecondaryChange={(next) => {
+            selection()
+            track({
+              name: EVENTS.SECONDARY_LANGUAGES_CHANGED,
+              props: {deck_id: deckSlug, secondary: next},
+            })
+            setSecondary(next)
+            void setStoredSecondaryLanguages(deckSlug, next)
           }}
           onClose={() => {
             setLangModalOpen(false)

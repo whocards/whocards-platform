@@ -13,12 +13,16 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
-import {DEFAULT_DECK_SLUG, libraryDeck, resolveDeck} from '@whocards/decks'
+import type {GameId} from '@whocards/decks'
+import {DEFAULT_DECK_SLUG, DEFAULT_GAME, libraryDeck, resolveDeck} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
 
+import {GameModal} from '@/components/game-modal'
 import {PressableScale} from '@/components/pressable-scale'
 import {ScreenBackground} from '@/components/screen-background'
-import {impact} from '@/lib/haptics'
+import {getStoredGame, setStoredGame} from '@/lib/game-store'
+import {GAME_CATALOG} from '@/lib/games'
+import {impact, selection} from '@/lib/haptics'
 import {trpc} from '@/lib/trpc'
 
 // We launch with the original WhoCards deck; its content ships in-app for offline play.
@@ -38,6 +42,14 @@ export default function LandingScreen() {
   const [serverMeta, setServerMeta] = useState<{cards: number; languages: number} | null>(null)
   const {height: winHeight} = useWindowDimensions()
   const reduceMotion = useReducedMotion()
+
+  // the chosen Game — persisted globally, applied by the player on Play
+  const [game, setGame] = useState<GameId>(DEFAULT_GAME)
+  const [gameModalOpen, setGameModalOpen] = useState(false)
+  useEffect(() => {
+    void getStoredGame().then(setGame)
+  }, [])
+  const gameTitle = GAME_CATALOG.find((entry) => entry.id === game)?.title ?? game
 
   // --- splash → landing handoff ---
   // The native splash centres the logo on screen. We start our (identical) logo at
@@ -138,7 +150,35 @@ export default function LandingScreen() {
               <Text className="text-darker font-sans text-base font-bold">Play</Text>
             </PressableScale>
           </Link>
+          {/* quiet secondary control (outline, never a second filled CTA — DESIGN.md) */}
+          {/* label mirrors the visible text so tests and screen readers see the
+              current Game (an icon-only 'choose game' label would hide it — the
+              accessibility tree collapses a button's children behind its label) */}
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={`Game: ${gameTitle}`}
+            onPress={() => {
+              impact('light')
+              setGameModalOpen(true)
+            }}
+            className="flex-row items-center gap-1.5 rounded-full border border-white/25 px-4 py-2 active:bg-white/10"
+          >
+            <Text className="font-sans text-sm text-white/80">Game: {gameTitle}</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.white} />
+          </PressableScale>
         </Animated.View>
+
+        <GameModal
+          visible={gameModalOpen}
+          current={game}
+          onSelect={(next) => {
+            selection()
+            setGame(next)
+            void setStoredGame(next)
+            setGameModalOpen(false)
+          }}
+          onClose={() => setGameModalOpen(false)}
+        />
       </SafeAreaView>
     </ScreenBackground>
   )

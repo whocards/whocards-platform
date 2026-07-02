@@ -5,11 +5,16 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {getLanguageName} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
 
+import {MAX_SECONDARY_LANGUAGES} from '@/lib/language-constants'
+
 type LanguageModalProps = {
   visible: boolean
   languages: string[]
   current: string
+  /** Secondary display languages shown under the primary on the card (max 2). */
+  secondary?: string[]
   onSelect: (language: string) => void
+  onSecondaryChange?: (languages: string[]) => void
   onClose: () => void
 }
 
@@ -19,6 +24,10 @@ type LanguageModalProps = {
  * web's "Choose your language" modal. `onDismiss` keeps `visible` in sync when the
  * sheet is swiped away.
  *
+ * Two sections: the primary language (single choice — drives sharing, deep links,
+ * layout direction) and "Also show" (a Display setting: up to two extra languages
+ * rendered under the primary on the card). The primary never appears in "Also show".
+ *
  * Status bar is set to dark (dark icons) while this white sheet is open so the
  * system icons remain visible. The root layout's light bar is restored on close.
  */
@@ -26,10 +35,23 @@ export const LanguageModal = ({
   visible,
   languages,
   current,
+  secondary = [],
   onSelect,
+  onSecondaryChange,
   onClose,
 }: LanguageModalProps) => {
   const insets = useSafeAreaInsets()
+  const showSecondary = onSecondaryChange !== undefined && languages.length > 1
+
+  const toggleSecondary = (code: string) => {
+    if (!onSecondaryChange) return
+    if (secondary.includes(code)) {
+      onSecondaryChange(secondary.filter((entry) => entry !== code))
+      return
+    }
+    if (secondary.length >= MAX_SECONDARY_LANGUAGES) return
+    onSecondaryChange([...secondary, code])
+  }
 
   return (
     <Modal
@@ -71,6 +93,48 @@ export const LanguageModal = ({
               </Pressable>
             )
           })}
+
+          {showSecondary ? (
+            <>
+              <View className="border-gray-lighter mt-2 border-t px-5 pb-1 pt-5">
+                <Text className="text-darker font-title text-lg">Also show</Text>
+                <Text className="text-gray-dark font-sans text-sm">
+                  Show the question in up to {MAX_SECONDARY_LANGUAGES} more languages.
+                </Text>
+              </View>
+              {languages
+                .filter((code) => code !== current)
+                .map((code) => {
+                  const checked = secondary.includes(code)
+                  const disabled = !checked && secondary.length >= MAX_SECONDARY_LANGUAGES
+                  return (
+                    <Pressable
+                      key={`secondary-${code}`}
+                      onPress={() => toggleSecondary(code)}
+                      disabled={disabled}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{checked, disabled}}
+                      className={`flex-row items-center justify-between px-5 py-3 ${
+                        checked ? 'bg-yellow-300/40' : ''
+                      }`}
+                    >
+                      <Text
+                        className={`font-sans text-lg ${
+                          disabled ? 'text-gray-dark' : 'text-darker'
+                        }`}
+                      >
+                        {getLanguageName(code) ?? code}
+                      </Text>
+                      <Ionicons
+                        name={checked ? 'checkbox' : 'square-outline'}
+                        size={20}
+                        color={checked ? colors.primary.dark : colors.gray.dark}
+                      />
+                    </Pressable>
+                  )
+                })}
+            </>
+          ) : null}
         </ScrollView>
       </View>
     </Modal>

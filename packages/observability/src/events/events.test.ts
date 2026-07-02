@@ -1,6 +1,6 @@
 import {describe, expect, it, vi, afterEach} from 'vitest'
 import {configureObservability} from '../index'
-import {eventsFor, createViewTracker, EVENTS, track} from './index'
+import {eventsFor, createViewTracker, EVENTS, GAMES, track} from './index'
 import type {NavState, NavAction} from '@whocards/decks/engine'
 
 afterEach(() => {
@@ -210,5 +210,28 @@ describe('track — typed wrapper over trackEvent', () => {
     expect(consoleSpy).toHaveBeenCalledOnce()
     expect(consoleSpy.mock.calls[0]?.[1]).toBe('deck_opened')
     consoleSpy.mockRestore()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// catalog — pick game additions
+// ---------------------------------------------------------------------------
+
+describe('catalog — Pick a Card additions', () => {
+  it('exposes the pick game id and events', () => {
+    expect(GAMES.PICK).toBe('pick')
+    expect(EVENTS.CARD_PICKED).toBe('card_picked')
+    expect(EVENTS.SECONDARY_LANGUAGES_CHANGED).toBe('secondary_languages_changed')
+  })
+
+  it('eventsFor carries the pick game id into deck_cycled', () => {
+    const prev: NavState = {ids: ['q1', 'q2'], idx: 1}
+    const next: NavState = {ids: ['q1', 'q2', 'q3', 'q1'], idx: 2}
+    const events = eventsFor({type: 'next'}, prev, next, {
+      deck_id: 'library',
+      language: 'en',
+      game: GAMES.PICK,
+    })
+    expect(events[1]?.props).toEqual({deck_id: 'library', game: 'pick'})
   })
 })

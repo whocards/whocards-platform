@@ -33,7 +33,7 @@ The entitlement a Deck (or a language, or a feature) sits behind: `free`, `unloc
 _Avoid_: plan, paywall, tier (unqualified)
 
 **Game**:
-A way of playing a Deck — the policy that decides how the next Card is drawn and whose progress is remembered. Content-blind: the Deck supplies the Questions, the Game supplies the rules. Every Game draws Cards **without repeating until the Deck is exhausted, then starts over**; the Games differ only in the _scope_ of the "already answered" set they draw against.
+A way of playing a Deck — the policy that decides how the next Card is drawn and whose progress is remembered. Content-blind: the Deck supplies the Questions, the Game supplies the rules. Every Game draws Cards **without repeating until the Deck is exhausted, then starts over**; Games may differ in the _scope_ of the "already answered" set they draw against (Global vs Personal) or in the _draw ritual_ — how a player reaches the next Card (Pick a Card). A Game is not a Display setting: anything that changes only how a Card looks, not how it is drawn, is not a Game.
 _Avoid_: mode (unqualified), session, round, match
 
 **Global Game**:
@@ -43,6 +43,14 @@ _Avoid_: public game, shared deck, world game
 **Personal Game**:
 A **paid** Game scoped to one player: it draws against _that player's own_ answered-set, so each player exhausts the whole Deck once before it starts over for them. Progress is saved to the account, not the device.
 _Avoid_: my game, private game, solo game
+
+**Pick a Card**:
+A Game whose draw ritual is an explicit deal: the player draws each Card deliberately (a "Pick a card" action; later, tapping a face-down spread) and moving on returns them to the draw, not straight to another Card. Same non-repeating draw policy and answered-set scope as the Game it sits over; only the ritual of reaching the next Card differs. Access tier `unlock`.
+_Avoid_: card mode, deal mode, draw mode
+
+**Display setting**:
+A per-Device presentation choice — which languages a Card shows, how a Card animates — that never affects which Card is drawn or whose progress is remembered. Display settings compose freely with any Game. Showing a Question in a primary language plus up to two secondary languages is a Display setting; Pick a Card is not (it changes the draw ritual, so it is a Game).
+_Avoid_: mode, preference (unqualified), option
 
 **Offline play**:
 Playing the Global Game without a live network — a _connectivity state_, not a separate Game. Recording is **never** off: Answers are queued on the Device and flushed to the Answer record when the network returns, so offline play still feeds the shared progress once it syncs. (A fully isolated, never-syncing local mode — the old "classic" idea — is not part of the current plan; it may return later.)
