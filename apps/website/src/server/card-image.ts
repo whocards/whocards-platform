@@ -5,10 +5,11 @@ import process from 'node:process'
 
 import {Resvg} from '@resvg/resvg-js'
 import bidiFactory from 'bidi-js'
-import satori, {type Font as FontOptions} from 'satori'
+import satori from 'satori'
+import type {Font as FontOptions} from 'satori'
 import {decompress} from 'wawoff2'
 
-import languages from '~data/languages.json'
+import type languages from '~data/languages.json'
 import questions from '~data/questions.json'
 
 /**
@@ -97,7 +98,7 @@ const fontsFor = async (language: string): Promise<FontOptions[]> => {
   const data = await Promise.all(keys.map(loadTtf))
   return keys.map((key, i) => ({
     name: FONT_FILES[key].family,
-    data: data[i]!,
+    data: data[i],
     weight: (key === 'aptly' ? 700 : 400) as FontOptions['weight'],
     style: 'normal' as const,
   }))
@@ -340,7 +341,7 @@ const ensureCacheDir = (): Promise<unknown> => {
       await Promise.all(
         siblings
           .filter((name) => name !== `v${RENDERER_VERSION}`)
-          .map((name) => rm(join(cacheRoot, name), {recursive: true, force: true}).catch(() => {})),
+          .map((name) => rm(join(cacheRoot, name), {recursive: true, force: true}).catch(() => {}))
       )
     })()
   }

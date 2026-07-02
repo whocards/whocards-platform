@@ -8,7 +8,8 @@ import {beforeEach, describe, expect, it, vi} from 'vitest'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import * as schema from './db/schema'
 import {upsertConsent, upsertUser} from './db/upsert'
-import {resetTestDb, type TestDb} from './db/test-helpers'
+import {resetTestDb} from './db/test-helpers'
+import type {TestDb} from './db/test-helpers'
 import {
   applyProviderSyncResult,
   makeSegmentIdResolver,
@@ -16,9 +17,8 @@ import {
   reconcile,
   syncConsentToResend,
   syncEmailConsents,
-  type ResendContactsPort,
-  type SyncDeps,
 } from './resend-sync'
+import type {ResendContactsPort, SyncDeps} from './resend-sync'
 
 // ---------------------------------------------------------------------------
 // DB setup — one shared PGlite instance for the whole run (see ./db/test-helpers).

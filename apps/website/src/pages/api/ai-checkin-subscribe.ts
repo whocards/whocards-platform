@@ -1,3 +1,4 @@
+import {logError} from '@whocards/observability'
 import type {APIRoute} from 'astro'
 import {Resend} from 'resend'
 import {z} from 'zod'
@@ -107,11 +108,11 @@ export const POST: APIRoute = async ({request, clientAddress}) => {
   try {
     await insertUser({email, name: displayName, newsletter: true})
   } catch (error) {
-    console.error('ai-checkin-subscribe: failed to store lead', error)
+    logError('ai-checkin-subscribe: failed to store lead', error)
   }
 
   if (!env.RESEND_API_KEY) {
-    console.error('ai-checkin-subscribe: RESEND_API_KEY not configured')
+    logError('ai-checkin-subscribe: RESEND_API_KEY not configured')
     return json({message: 'Email is not configured yet. Please try again later.'}, 503)
   }
 
@@ -125,11 +126,11 @@ export const POST: APIRoute = async ({request, clientAddress}) => {
     })
 
     if (error) {
-      console.error('ai-checkin-subscribe: resend error', error)
+      logError('ai-checkin-subscribe: resend error', error)
       return json({message: "We couldn't send the email just now. Please try again."}, 502)
     }
   } catch (error) {
-    console.error('ai-checkin-subscribe: send threw', error)
+    logError('ai-checkin-subscribe: send threw', error)
     return json({message: "We couldn't send the email just now. Please try again."}, 502)
   }
 

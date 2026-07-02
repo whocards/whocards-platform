@@ -22,7 +22,9 @@ import {makeSegmentIdResolver, reconcile} from '../src/server/resend-sync'
 const args = process.argv.slice(2)
 const apply = args.includes('--apply')
 
-console.log(apply ? '[reconcile-resend] APPLY mode.' : '[reconcile-resend] DRY-RUN (pass --apply to write).')
+console.log(
+  apply ? '[reconcile-resend] APPLY mode.' : '[reconcile-resend] DRY-RUN (pass --apply to write).'
+)
 
 // ---------------------------------------------------------------------------
 // Env (manual read — runs outside Astro/t3-env)
@@ -69,9 +71,9 @@ const buildResendContacts = () => {
 
 // Stub used in dry-run — no Resend calls; satisfies the port type but never called.
 const dryRunContacts = {
-  create: async () => ({data: null, error: {name: 'dry_run', message: 'dry-run'}} as const),
-  get: async () => ({data: null, error: {name: 'dry_run', message: 'dry-run'}} as const),
-  addToSegment: async () => ({data: null, error: {name: 'dry_run', message: 'dry-run'}} as const),
+  create: async () => ({data: null, error: {name: 'dry_run', message: 'dry-run'}}) as const,
+  get: async () => ({data: null, error: {name: 'dry_run', message: 'dry-run'}}) as const,
+  addToSegment: async () => ({data: null, error: {name: 'dry_run', message: 'dry-run'}}) as const,
 }
 
 // ---------------------------------------------------------------------------

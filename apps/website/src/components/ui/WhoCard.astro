@@ -3,7 +3,7 @@ import {Icon} from 'astro-icon/components'
 import questions from '~/data/questions.json'
 import type {Language, QuestionId} from '~types'
 
-export interface Props {
+export type Props = {
   id: QuestionId
   lang: Language
   class?: string

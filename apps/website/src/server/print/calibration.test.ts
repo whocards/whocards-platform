@@ -30,6 +30,12 @@ const decodedPageContent = async (bytes: Uint8Array): Promise<string> => {
 /** Number of stroked paths in a decoded content stream — each is an `S` operator alone on its line. */
 const strokeCount = (content: string): number => (content.match(/(?:^|\n)S(?=\n|$)/g) ?? []).length
 
+// Bezier curve ops (`c`, one per rounded corner => 4 per card outline) only show up
+// for a cornerRadius layout; a square-corner layout's outlines are plain `re`
+// (rectangle) ops with none.
+const curveCount = (content: string): number =>
+  (content.match(/(?:^|\n)[-\d.]+ [-\d.]+ [-\d.]+ [-\d.]+ [-\d.]+ [-\d.]+ c\n/g) ?? []).length
+
 describe('renderCalibrationPdf', () => {
   it('produces a single-page PDF at the preset page size', async () => {
     const bytes = await renderCalibrationPdf({preset: 'avery-5371', offsetX: 0, offsetY: 0})
@@ -97,11 +103,6 @@ describe('renderCalibrationPdf', () => {
         await renderCalibrationPdf({preset: 'avery-5371', offsetX: 0, offsetY: 0})
       )
 
-      // Bezier curve ops (`c`, one per rounded corner => 4 per card outline) only
-      // show up for the cornerRadius layout; the square-corner layout's outlines are
-      // plain `re` (rectangle) ops with none.
-      const curveCount = (content: string): number =>
-        (content.match(/(?:^|\n)[-\d.]+ [-\d.]+ [-\d.]+ [-\d.]+ [-\d.]+ [-\d.]+ c\n/g) ?? []).length
       expect(curveCount(roundedContent)).toBeGreaterThan(0)
       expect(curveCount(squareContent)).toBe(0)
 

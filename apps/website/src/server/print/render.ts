@@ -18,12 +18,15 @@ import fontkit from '@pdf-lib/fontkit'
 import {Resvg} from '@resvg/resvg-js'
 import {getDeck} from '@whocards/decks'
 import bidiFactory from 'bidi-js'
-import {PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage} from 'pdf-lib'
+import {PDFDocument, rgb} from 'pdf-lib'
+import type {PDFFont, PDFImage, PDFPage} from 'pdf-lib'
 import {decompress} from 'wawoff2'
 
 import type {PrintPdfParams} from './params'
-import {layoutFor, mm, type Rect} from './presets'
-import {fitText, type WrapMode} from './text-fit'
+import {layoutFor, mm} from './presets'
+import type {Rect} from './presets'
+import {fitText} from './text-fit'
+import type {WrapMode} from './text-fit'
 
 const TEXT_COLOR = rgb(0.06, 0.06, 0.09) // near-black; renders on white print stock
 const ID_COLOR = rgb(0.45, 0.45, 0.5)

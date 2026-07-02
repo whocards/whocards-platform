@@ -34,7 +34,7 @@ export const getCurrentQuestionUrl = (lang: string | undefined, currentId: Quest
 export const getQuestionUrl = (id: QuestionId) => {
   if (!id) return ''
 
-  return window.location.origin + getTrimmedPath().replace(/\/[^\/]*$/, `/${id}`)
+  return window.location.origin + getTrimmedPath().replace(/\/[^/]*$/, `/${id}`)
 }
 
 export const isPrintPage = () => {

@@ -1,6 +1,7 @@
 import {and, isNull, eq, sql} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
-import {normalizeEmail, type ConsentType} from '../consent'
+import {normalizeEmail} from '../consent'
+import type {ConsentType} from '../consent'
 import * as schema from './schema'
 
 export type UserCreate = typeof schema.users.$inferInsert

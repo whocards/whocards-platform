@@ -3,7 +3,7 @@ import type {ZodIssue} from 'zod'
 import Button from '~components/ui/Button.astro'
 import Input from '~components/ui/Input.astro'
 
-export interface Props {
+export type Props = {
   formData?: Record<string, string>
   errors?: Record<string, ZodIssue>
   serverError?: string

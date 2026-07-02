@@ -43,7 +43,7 @@ export type ResendSelectingField =
   | {id: string; email?: undefined | null}
   | {email: string; id?: undefined | null}
 
-export interface ResendContactsPort {
+export type ResendContactsPort = {
   /** Create a contact (with optional segment membership). Returns {data: {id}, error}. */
   create(payload: {
     email: string
@@ -64,7 +64,7 @@ export interface ResendContactsPort {
   }): Promise<{data: {id: string} | null; error: {message: string; name: string} | null}>
 }
 
-export interface SyncDeps {
+export type SyncDeps = {
   resendContacts: ResendContactsPort
   segmentIdFor: SegmentIdResolver
   logger?: {

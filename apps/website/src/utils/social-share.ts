@@ -1,3 +1,5 @@
+import {logWarn} from '@whocards/observability'
+
 // copied with love from https://github.com/ellisonleao/sharer.js/blob/main/sharer.js
 export type Social = 'facebook' | 'linkedin' | 'twitter' | 'email' | 'copy'
 
@@ -13,7 +15,7 @@ const urls: Record<SocialKey, string> = {
 export const socialShare = (social: Social | string | undefined, title: string, url: string) => {
   // handle invalid social
   if (!social || (!urls[social as SocialKey] && social !== 'copy')) {
-    console.error(social, 'is not supported')
+    logWarn('social-share: unsupported target', undefined, {social})
     return
   }
 

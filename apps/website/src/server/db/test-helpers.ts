@@ -67,6 +67,7 @@ async function getTestDb(): Promise<TestDb> {
  */
 export async function resetTestDb(): Promise<TestDb> {
   const database = await getTestDb()
-  await client!.exec('TRUNCATE "email_consent", "user" RESTART IDENTITY CASCADE;')
+  if (!client) throw new Error('unreachable: getTestDb() always initializes client')
+  await client.exec('TRUNCATE "email_consent", "user" RESTART IDENTITY CASCADE;')
   return database
 }

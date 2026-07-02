@@ -2,6 +2,7 @@
 export const prerender = false
 
 import {sendContactMessage} from '@whocards/emails/contact'
+import {logError} from '@whocards/observability'
 import {Icon} from 'astro-icon/components'
 import type {ZodIssue} from 'zod'
 import ContactForm from '~components/thanks/ContactForm.astro'
@@ -40,7 +41,7 @@ if (Astro.request.method === 'POST') {
           parsed.error.issues.map((issue) => [String(issue.path[0]), issue])
         )
       } else if (!env.RESEND_API_KEY) {
-        console.error('contact: RESEND_API_KEY not configured')
+        logError('contact: RESEND_API_KEY not configured')
         serverError =
           'Our contact system is temporarily unavailable. Please email us directly at hello@whocards.cc.'
       } else {
@@ -52,7 +53,7 @@ if (Astro.request.method === 'POST') {
         })
 
         if (error) {
-          console.error('contact: resend error', error)
+          logError('contact: resend error', error)
           serverError =
             "We couldn't send your message just now. Please try again or email us directly at hello@whocards.cc."
         } else {
@@ -61,7 +62,7 @@ if (Astro.request.method === 'POST') {
       }
     }
   } catch (error) {
-    console.error('contact: unexpected error', error)
+    logError('contact: unexpected error', error)
     errors ??= {}
   }
 }

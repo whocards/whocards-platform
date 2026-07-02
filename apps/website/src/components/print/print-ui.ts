@@ -3,7 +3,8 @@
 // in Print.tsx.
 
 import type {LayoutId, PhysicalLayout} from '../../server/print/presets'
-import {OFFSET_LIMIT_MM, type PrintDeck} from '../../server/print/params'
+import {OFFSET_LIMIT_MM} from '../../server/print/params'
+import type {PrintDeck} from '../../server/print/params'
 
 /** Cards per sheet for a physical layout. */
 export const layoutUpCount = (layout: PhysicalLayout): number => layout.cols * layout.rows

@@ -1,17 +1,18 @@
 ---
 export const prerender = false
 
-import {Play, type QuestionSet} from '~components/Play'
+import {Play} from '~components/Play'
+import type {QuestionSet} from '~components/Play'
 import {DEFAULT_DECK_SLUG, getDeck} from '~data/decks'
 import {LANG_KEYS} from '~utils'
 import Layout from '~layouts/Layout.astro'
 
 // `/play/[deck]` — a deck served at its own stable, SEO-friendly path. SSR
 // (prerender=false) so crawlers still get per-question OG without running JS.
-const slug = Astro.params.deck!
+const slug = Astro.params.deck
 
 // the library deck lives at /play (back-compat); don't also serve it here.
-if (slug === DEFAULT_DECK_SLUG) {
+if (!slug || slug === DEFAULT_DECK_SLUG) {
   return Astro.redirect(`/play${Astro.url.search}`, 301)
 }
 

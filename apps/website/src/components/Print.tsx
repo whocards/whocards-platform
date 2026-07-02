@@ -1,6 +1,8 @@
-import {Icon as _Icon, type IconifyIconProps} from '@iconify-icon/react'
+import {Icon as _Icon} from '@iconify-icon/react'
+import type {IconifyIconProps} from '@iconify-icon/react'
 import {useStore} from '@nanostores/react'
-import {useState, type ComponentType} from 'react'
+import {useState} from 'react'
+import type {ComponentType} from 'react'
 import {
   buildCalibrationDownloadUrl,
   buildPrintDownloadUrl,
@@ -9,7 +11,8 @@ import {
   layoutUpCount,
 } from '~components/print/print-ui'
 import {PRINT_LANGUAGES} from '~server/print/params'
-import {PHYSICAL_LAYOUTS, type LayoutId, type PhysicalLayout} from '~server/print/presets'
+import {PHYSICAL_LAYOUTS} from '~server/print/presets'
+import type {LayoutId, PhysicalLayout} from '~server/print/presets'
 import {
   $calibrationOffsets,
   getCalibrationOffset,
@@ -30,7 +33,7 @@ const PRESET_LAYOUTS = Object.values(PHYSICAL_LAYOUTS)
 // h1 is the only element that keeps the display/font-title treatment (design review #19).
 const SECTION_LABEL_CLASS = 'text-xs font-semibold uppercase tracking-[0.16em] text-primary-light'
 
-export default function Print() {
+export function Print() {
   const store = useStore($langStore)
   const [preset, setPreset] = useState<LayoutId | undefined>(() =>
     getDefaultPresetId(PHYSICAL_LAYOUTS)
@@ -147,7 +150,7 @@ export default function Print() {
   )
 }
 
-interface AlignmentSectionProps {
+type AlignmentSectionProps = {
   offsetX: number
   offsetY: number
   onChangeOffset: (axis: 'offsetX' | 'offsetY', value: number) => void
@@ -192,7 +195,7 @@ function AlignmentSection({offsetX, offsetY, onChangeOffset, disabled}: Alignmen
   )
 }
 
-interface OffsetInputProps {
+type OffsetInputProps = {
   label: string
   value: number
   onChange: (value: number) => void
@@ -218,7 +221,7 @@ function OffsetInput({label, value, onChange, disabled}: OffsetInputProps) {
   )
 }
 
-interface PresetTileProps {
+type PresetTileProps = {
   layout: PhysicalLayout
   selected: boolean
   onSelect: () => void

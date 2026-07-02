@@ -8,15 +8,15 @@ import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {Webhook} from 'svix'
 import * as schema from './db/schema'
 import {upsertConsent} from './db/upsert'
-import {resetTestDb, type TestDb} from './db/test-helpers'
+import {resetTestDb} from './db/test-helpers'
+import type {TestDb} from './db/test-helpers'
 import {
   verifyResendSignature,
   dispatchResendEvent,
   segmentIdToConsentType,
   UNSUBSCRIBE_SOURCE,
-  type WebhookHeaders,
-  type DispatchSegmentIds,
 } from './resend-webhook'
+import type {WebhookHeaders, DispatchSegmentIds} from './resend-webhook'
 
 // ---------------------------------------------------------------------------
 // DB setup — one shared PGlite instance for the whole run (see ./db/test-helpers).

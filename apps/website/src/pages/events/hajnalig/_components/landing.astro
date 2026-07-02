@@ -1,9 +1,10 @@
 ---
 import Button from '~components/ui/Button.astro'
-import {editions, type EditionYear} from '../_data/editions'
+import {editions} from '../_data/editions'
+import type {EditionYear} from '../_data/editions'
 import Footer from './footer.astro'
 
-interface Props {
+type Props = {
   year: EditionYear
 }
 

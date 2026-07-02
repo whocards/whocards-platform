@@ -318,7 +318,7 @@ export const Play = ({
 
   // two languages => simple toggle (preserves hajnalig UX); more => dropdown
   const isToggle = languages.length === 2
-  const otherLanguage = isToggle ? languages.find((l) => l !== language)! : undefined
+  const otherLanguage = isToggle ? languages.find((l) => l !== language) : undefined
 
   const handleToggleLanguage = useCallback(() => {
     if (otherLanguage) changeLanguage(otherLanguage)
@@ -411,5 +411,3 @@ export const Play = ({
     </>
   )
 }
-
-export default Play
