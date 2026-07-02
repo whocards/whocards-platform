@@ -15,7 +15,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 )
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import {getStoredLanguage, setStoredLanguage} from '../lib/language-store'
+import {
+  getStoredLanguage,
+  getStoredSecondaryLanguages,
+  setStoredLanguage,
+  setStoredSecondaryLanguages,
+} from '../lib/language-store'
 
 beforeEach(async () => {
   await AsyncStorage.clear()
@@ -83,9 +88,6 @@ describe('language-store', () => {
 })
 
 describe('secondary display languages', () => {
-  const {getStoredSecondaryLanguages, setStoredSecondaryLanguages} =
-    require('../lib/language-store') as typeof import('../lib/language-store')
-
   it('returns an empty list when nothing is stored', async () => {
     expect(await getStoredSecondaryLanguages('test-deck-sec-missing')).toEqual([])
   })

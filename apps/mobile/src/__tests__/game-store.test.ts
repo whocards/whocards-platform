@@ -12,8 +12,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
 
-type Store = typeof import('../lib/game-store')
-type Storage = typeof import('@react-native-async-storage/async-storage').default
+import type AsyncStorageDefault from '@react-native-async-storage/async-storage'
+import type * as GameStoreModule from '../lib/game-store'
+
+type Store = typeof GameStoreModule
+type Storage = typeof AsyncStorageDefault
 
 const load = (): {store: Store; storage: Storage} => {
   const storageModule = require('@react-native-async-storage/async-storage')
