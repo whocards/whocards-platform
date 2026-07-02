@@ -1,4 +1,5 @@
 import {Heading, Hr, Link, Section, Text} from '@react-email/components'
+import {buildAppStoreUrl, buildPlayStoreUrl} from '@whocards/app-store'
 
 import {emailBrand} from '../brand'
 import {BrandButton, EmailShell} from '../components'
@@ -7,18 +8,17 @@ export const appLaunchAnnouncementSubject = "It's live — WhoCards is in your p
 export const appLaunchAnnouncementPreview =
   'WhoCards is now on iOS and Android. Download it and start a real conversation today.'
 
-// Real store listings (iOS App Store id 6782853824 / Android com.whocards.mobile).
-// The send path (render.tsx) overrides these via APP_STORE_URL / PLAY_STORE_URL.
-const DEFAULT_APP_STORE_URL =
-  'https://apps.apple.com/app/whocards/id6782853824?utm_source=email&utm_medium=launch_blast&utm_campaign=launch'
-const DEFAULT_PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=com.whocards.mobile&utm_source=email&utm_medium=launch_blast&utm_campaign=launch'
-
 export type AppLaunchAnnouncementProps = Readonly<{
-  /** Pre-populated App Store URL (with UTM). Defaults to placeholder. */
-  appStoreUrl?: string
-  /** Pre-populated Google Play URL (with UTM). Defaults to placeholder. */
-  playStoreUrl?: string
+  /**
+   * Pre-populated App Store URL (with UTM). Required — no fallback. A missing
+   * value must fail the render rather than silently ship a stale CTA (#128).
+   */
+  appStoreUrl: string
+  /**
+   * Pre-populated Google Play URL (with UTM). Required — no fallback. A missing
+   * value must fail the render rather than silently ship a stale CTA (#128).
+   */
+  playStoreUrl: string
   /**
    * Opening greeting — use to segment copy by source list.
    * e.g. "Hi waitlist friend," vs "Hi there,"
@@ -27,8 +27,8 @@ export type AppLaunchAnnouncementProps = Readonly<{
 }>
 
 export function AppLaunchAnnouncementEmail({
-  appStoreUrl = DEFAULT_APP_STORE_URL,
-  playStoreUrl = DEFAULT_PLAY_STORE_URL,
+  appStoreUrl,
+  playStoreUrl,
   greeting = 'Hi there,',
 }: AppLaunchAnnouncementProps) {
   return (
@@ -91,8 +91,8 @@ export function AppLaunchAnnouncementEmail({
 }
 
 export function appLaunchAnnouncementText({
-  appStoreUrl = DEFAULT_APP_STORE_URL,
-  playStoreUrl = DEFAULT_PLAY_STORE_URL,
+  appStoreUrl,
+  playStoreUrl,
   greeting = 'Hi there,',
 }: Required<AppLaunchAnnouncementProps>) {
   return `It's live — WhoCards is in your pocket.
@@ -185,9 +185,11 @@ const smallText = {
 const link = {color: emailBrand.colors.accent, textDecoration: 'underline'}
 const rule = {borderColor: emailBrand.colors.cardMuted, margin: '30px 0'}
 
+// Placeholder values live only here, for the React Email preview UI (`email:dev`).
+// The send path (render.tsx) must pass real URLs explicitly — see #128.
 AppLaunchAnnouncementEmail.PreviewProps = {
-  appStoreUrl: DEFAULT_APP_STORE_URL,
-  playStoreUrl: DEFAULT_PLAY_STORE_URL,
+  appStoreUrl: buildAppStoreUrl({source: 'email', medium: 'launch_blast'}),
+  playStoreUrl: buildPlayStoreUrl({source: 'email', medium: 'launch_blast'}),
   greeting: 'Hi waitlist friend,',
 } satisfies AppLaunchAnnouncementProps
 

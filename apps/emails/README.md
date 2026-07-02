@@ -24,6 +24,13 @@ feedback form or contact route. Rendered previews use safe placeholders when the
 not send onboarding until the group and opt-in flow have been verified with a Google account outside
 the owner account.
 
+`email:render` also requires `APP_STORE_URL` and `PLAY_STORE_URL` to render the launch-blast email
+(`app-launch-announcement`). Unlike the Android tester URLs, these have **no fallback** — the
+render throws if either is missing, so a forgotten env var can't ship a stale CTA (#128). Build them
+with `buildAppStoreUrl` / `buildPlayStoreUrl` from `@whocards/app-store`, which is also the single
+source of truth for the App Store id and Android package (also consumed by the website). To iterate
+on the template's copy without setting these, use `email:dev`, which renders `PreviewProps` instead.
+
 ## Resend configuration
 
 Add these values to the repository's uncommitted `.env` file:

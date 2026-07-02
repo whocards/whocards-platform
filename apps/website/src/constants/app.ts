@@ -12,7 +12,11 @@
  * Store URLs point at the real listings (iOS App Store id + Android package).
  * The guard below throws at module load if a placeholder ever slips back in for a
  * platform that is marked launched, so a broken CTA can never reach a live funnel.
+ *
+ * The store id/package are defined once, in `@whocards/app-store` — the single
+ * source of truth also consumed by the launch-blast email (#128).
  */
+import {APP_STORE_APP_ID, buildAppStoreUrl, buildPlayStoreUrl} from '@whocards/app-store'
 import {env} from '~env'
 
 import {computeAppVisible} from './app-visibility'
@@ -36,16 +40,16 @@ export const APP_VISIBLE: boolean = computeAppVisible(APP_IOS_LAUNCHED, APP_ANDR
 
 /**
  * App Store numeric ID (App Store Connect `ascAppId`) for the iOS Smart App Banner.
- * Only surfaced when APP_IOS_LAUNCHED is true (#90).
+ * Only surfaced when APP_IOS_LAUNCHED is true (#90). Re-exported from
+ * `@whocards/app-store` so existing imports of this module keep working.
  */
-export const APP_STORE_APP_ID = '6782853824'
+export {APP_STORE_APP_ID}
 
 /** App Store product URL — keyed off the numeric App Store id (slug is cosmetic). */
-export const APP_STORE_URL = `https://apps.apple.com/app/whocards/id${APP_STORE_APP_ID}?utm_source=website&utm_medium=app_page&utm_campaign=launch`
+export const APP_STORE_URL = buildAppStoreUrl({source: 'website', medium: 'app_page'})
 
 /** Google Play store URL — keyed off the Android application id. */
-export const PLAY_STORE_URL =
-  'https://play.google.com/store/apps/details?id=com.whocards.mobile&utm_source=website&utm_medium=app_page&utm_campaign=launch'
+export const PLAY_STORE_URL = buildPlayStoreUrl({source: 'website', medium: 'app_page'})
 
 // Defence-in-depth: a launched platform must never serve a placeholder store link.
 // This fires at module load (SSR) so a stray `TODO` can't slip past review and
@@ -54,12 +58,12 @@ export const PLAY_STORE_URL =
 if (APP_IOS_LAUNCHED && APP_STORE_URL.includes('TODO')) {
   throw new Error(
     'iOS is launched (PUBLIC_APP_IOS_LAUNCHED=true) but the App Store URL still contains a TODO ' +
-      'placeholder. Set the real App Store id in src/constants/app.ts before launch.'
+      'placeholder. Set the real App Store id in packages/app-store/src/index.ts before launch.'
   )
 }
 if (APP_ANDROID_LAUNCHED && PLAY_STORE_URL.includes('TODO')) {
   throw new Error(
     'Android is launched (PUBLIC_APP_ANDROID_LAUNCHED=true) but the Play Store URL still contains a ' +
-      'TODO placeholder. Set the real Android package in src/constants/app.ts before launch.'
+      'TODO placeholder. Set the real Android package in packages/app-store/src/index.ts before launch.'
   )
 }
