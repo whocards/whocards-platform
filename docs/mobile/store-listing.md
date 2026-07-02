@@ -93,8 +93,8 @@ connection.
 
 SHARE A MOMENT
 
-Found a question that stopped you in your tracks? Share it — as text, or as a card image — straight
-from the app.
+Found a question that stopped you in your tracks? Share it — as a link, or as a card image —
+straight from the app.
 
 WHAT WE DON'T DO
 
@@ -108,7 +108,7 @@ Questions? hello@whocards.cc
 Privacy Policy: https://whocards.cc/legal/pp
 ```
 
-(1,306 characters — well under the 4,000 limit; leaves headroom for a future paragraph, e.g. once
+(1,424 characters — well under the 4,000 limit; leaves headroom for a future paragraph, e.g. once
 the pick-a-card deck-flip ritual or a paid Game ships and deserves a mention.)
 
 ### Keywords (max 100 characters, confirmed, comma-separated) — candidates, paired to subtitle package
@@ -205,9 +205,10 @@ Content Rating:  Everyone (pending actual IARC questionnaire — "Everyone" is t
 
 ---
 
-## "What's New" — v1 release notes (iOS + Android, max 4,000 characters on iOS; Play has no
+## "What's New" — v1 release notes (iOS + Android)
 
-strict published limit but conventionally matches)
+iOS caps this field at 4,000 characters; Play has no strict published limit but conventionally
+matches it.
 
 ```
 Welcome to WhoCards on your phone.
@@ -220,7 +221,7 @@ This is v1. Play a round, share a question that stops you in your tracks, and te
 change: hello@whocards.cc
 ```
 
-(354 characters.) Per `04-app-launch-plan.md` §6's release-cadence principle, every future release
+(362 characters.) Per `04-app-launch-plan.md` §6's release-cadence principle, every future release
 should ship its own what's-new (e.g. the pick-a-card deck-flip ritual currently on
 `feat/pick-a-card-deck-flip` deserves its own v1.1 note once it merges) — out of scope for this
 draft, which only covers the v1 release the issue asked for.
