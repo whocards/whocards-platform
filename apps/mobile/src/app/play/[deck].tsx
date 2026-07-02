@@ -455,7 +455,7 @@ const DeckPlayer = ({
     (format: ShareFormat) => {
       track({
         name: EVENTS.SHARE_COMPLETED,
-        props: {deck_id: deckSlug, question_id: questionId, language, format},
+        props: {deck_id: deckSlug, question_id: questionId, language, game: GAMES.WH, format},
       })
     },
     [deckSlug, questionId, language]

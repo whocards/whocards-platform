@@ -1,5 +1,6 @@
 import {Ionicons} from '@expo/vector-icons'
 import {logWarn} from '@whocards/observability'
+import type {ShareFormat} from '@whocards/observability/events'
 import {StatusBar} from 'expo-status-bar'
 import {useCallback, useEffect, useState} from 'react'
 import {
@@ -17,8 +18,7 @@ import {colors} from '@whocards/tokens'
 
 import {downloadAndShareImage} from '@/lib/share-image'
 
-/** The three destinations offered by the sheet (mirrors the PostHog `format` prop). */
-export type ShareFormat = 'link' | 'story' | 'post'
+export type {ShareFormat}
 
 type ShareModalProps = {
   visible: boolean

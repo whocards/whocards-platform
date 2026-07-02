@@ -291,7 +291,7 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
     (format: ShareFormat) => {
       track({
         name: EVENTS.SHARE_COMPLETED,
-        props: {deck_id: deckSlug, question_id: questionId, language, format},
+        props: {deck_id: deckSlug, question_id: questionId, language, game: GAMES.PICK, format},
       })
     },
     [deckSlug, questionId, language]
