@@ -272,3 +272,28 @@ describe('catalog — Share sheet additions', () => {
     consoleSpy.mockRestore()
   })
 })
+
+// ---------------------------------------------------------------------------
+// catalog — Tabletop mode addition (issue #148)
+// ---------------------------------------------------------------------------
+
+describe('catalog — Tabletop mode addition', () => {
+  it('exposes tabletop_mode_changed', () => {
+    expect(EVENTS.TABLETOP_MODE_CHANGED).toBe('tabletop_mode_changed')
+  })
+
+  it('track() emits tabletop_mode_changed with the deck and new state', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    configureObservability({dev: true})
+
+    track({
+      name: EVENTS.TABLETOP_MODE_CHANGED,
+      props: {deck_id: 'friends', enabled: true},
+    })
+
+    expect(consoleSpy).toHaveBeenCalledOnce()
+    expect(consoleSpy.mock.calls[0]?.[1]).toBe('tabletop_mode_changed')
+    expect(consoleSpy.mock.calls[0]?.[2]).toEqual({deck_id: 'friends', enabled: true})
+    consoleSpy.mockRestore()
+  })
+})

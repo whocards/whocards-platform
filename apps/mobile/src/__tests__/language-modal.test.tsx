@@ -7,11 +7,16 @@
  * 16px (`py-4`) top padding. We assert the resolved header `paddingTop` per platform
  * so a future edit can't silently drop the inset (re-overlapping the clock) or
  * double-pad iOS.
+ *
+ * Also covers the Tabletop mode toggle (issue #148): it renders whenever the
+ * caller supplies `onTabletopChange` (regardless of language count, unlike
+ * "Also show"), reflects the `tabletop` prop in its checked state, and reports
+ * the flipped value on press.
  */
 import React from 'react'
 import {Platform, StyleSheet} from 'react-native'
 import type {ViewStyle} from 'react-native'
-import {render, screen} from '@testing-library/react-native'
+import {fireEvent, render, screen} from '@testing-library/react-native'
 
 const TOP_INSET = 47 // a representative status-bar/cutout height (e.g. a Pixel)
 
@@ -65,5 +70,71 @@ describe('LanguageModal header inset', () => {
     renderModal()
     await screen.findByText('Choose your language')
     expect(headerPaddingTop()).toBe(16)
+  })
+})
+
+describe('LanguageModal — Tabletop mode toggle (#148)', () => {
+  it('is absent when the caller does not supply onTabletopChange', async () => {
+    render(
+      <LanguageModal
+        visible
+        languages={['en', 'he']}
+        current="en"
+        onSelect={() => {}}
+        onClose={() => {}}
+      />
+    )
+    await screen.findByText('Choose your language')
+    expect(screen.queryByText('Tabletop mode')).toBeNull()
+  })
+
+  it('renders even for a single-language deck (unlike "Also show")', async () => {
+    render(
+      <LanguageModal
+        visible
+        languages={['en']}
+        current="en"
+        onSelect={() => {}}
+        onTabletopChange={() => {}}
+        onClose={() => {}}
+      />
+    )
+    await screen.findByText('Choose your language')
+    expect(screen.getByText('Tabletop mode')).toBeTruthy()
+    expect(screen.queryByText('Also show')).toBeNull()
+  })
+
+  it('reflects the tabletop prop as the switch checked state', async () => {
+    render(
+      <LanguageModal
+        visible
+        languages={['en', 'he']}
+        current="en"
+        onSelect={() => {}}
+        tabletop
+        onTabletopChange={() => {}}
+        onClose={() => {}}
+      />
+    )
+    const toggle = await screen.findByLabelText('Tabletop mode')
+    expect(toggle.props.accessibilityState).toEqual({checked: true})
+  })
+
+  it('reports the flipped value on press', async () => {
+    const onTabletopChange = jest.fn()
+    render(
+      <LanguageModal
+        visible
+        languages={['en', 'he']}
+        current="en"
+        onSelect={() => {}}
+        tabletop={false}
+        onTabletopChange={onTabletopChange}
+        onClose={() => {}}
+      />
+    )
+    const toggle = await screen.findByLabelText('Tabletop mode')
+    fireEvent.press(toggle)
+    expect(onTabletopChange).toHaveBeenCalledWith(true)
   })
 })

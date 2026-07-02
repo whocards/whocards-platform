@@ -15,6 +15,10 @@ type LanguageModalProps = {
   secondary?: string[]
   onSelect: (language: string) => void
   onSecondaryChange?: (languages: string[]) => void
+  /** Tabletop mode (issue #148): the Card renders the Question twice, mirrored
+   * 180°, for two sides of a flat phone to read at once. */
+  tabletop?: boolean
+  onTabletopChange?: (enabled: boolean) => void
   onClose: () => void
 }
 
@@ -38,6 +42,8 @@ export const LanguageModal = ({
   secondary = [],
   onSelect,
   onSecondaryChange,
+  tabletop = false,
+  onTabletopChange,
   onClose,
 }: LanguageModalProps) => {
   const insets = useSafeAreaInsets()
@@ -133,6 +139,34 @@ export const LanguageModal = ({
                     </Pressable>
                   )
                 })}
+            </>
+          ) : null}
+
+          {onTabletopChange ? (
+            <>
+              <View className="border-gray-lighter mt-2 border-t px-5 pb-1 pt-5">
+                <Text className="text-darker font-title text-lg">Tabletop mode</Text>
+                <Text className="text-gray-dark font-sans text-sm">
+                  Lay the phone flat on the table — the question mirrors on top so both sides can
+                  read it at once.
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => onTabletopChange(!tabletop)}
+                accessibilityRole="switch"
+                accessibilityLabel="Tabletop mode"
+                accessibilityState={{checked: tabletop}}
+                className={`flex-row items-center justify-between px-5 py-3 ${
+                  tabletop ? 'bg-yellow-300/40' : ''
+                }`}
+              >
+                <Text className="text-darker font-sans text-lg">Two-way readable</Text>
+                <Ionicons
+                  name={tabletop ? 'checkbox' : 'square-outline'}
+                  size={20}
+                  color={tabletop ? colors.primary.dark : colors.gray.dark}
+                />
+              </Pressable>
             </>
           ) : null}
         </ScrollView>

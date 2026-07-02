@@ -30,16 +30,24 @@ const MAX_FONT = 96
  * Derived from area (chars × glyph area ≈ filled area, so font ∝ √(area / chars)), then
  * capped so the longest single word still fits on one line. Orientation falls out for
  * free: rotating swaps width/height, the box changes, and the size is recomputed.
+ *
+ * `minFont` overrides the floor (default MIN_FONT) — Tabletop mode (mirrored) passes
+ * a lower floor because each half only gets ~50% of the box height.
  */
-export const fitFontSize = (text: string, width: number, height: number) => {
-  if (width <= 0 || height <= 0) return MIN_FONT
+export const fitFontSize = (
+  text: string,
+  width: number,
+  height: number,
+  minFont: number = MIN_FONT
+) => {
+  if (width <= 0 || height <= 0) return minFont
   const trimmed = text.trim()
   const chars = Math.max(trimmed.length, 1)
   const raw = Math.sqrt((FILL * width * height) / (chars * CHAR_WIDTH_RATIO * LINE_HEIGHT_RATIO))
   // cap so the longest word fills ~90% of the width — a margin on the widest lines too
   const longestWord = trimmed.split(/\s+/).reduce((max, word) => Math.max(max, word.length), 1)
   const widthCap = (width * 0.9) / (longestWord * CHAR_WIDTH_RATIO)
-  return Math.round(Math.max(MIN_FONT, Math.min(MAX_FONT, raw, widthCap)))
+  return Math.round(Math.max(minFont, Math.min(MAX_FONT, raw, widthCap)))
 }
 
 // The primary's share of the box height when secondaries are shown — the
@@ -47,6 +55,17 @@ export const fitFontSize = (text: string, width: number, height: number) => {
 const PRIMARY_SHARE = [1, 0.65, 0.55] as const
 const SECONDARY_MIN = 16
 const SECONDARY_MAX = 34
+
+// --- Tabletop mode (issue #148, a Display setting): the Card renders the Question
+// twice, split horizontally, the top half rotated 180° so the two sides of a phone
+// lying flat on the table can both read it. Each half only gets ~50% of the box
+// height (minus MIRROR_GAP), so the normal floors would too often force an
+// unreadable-small primary on a long question with 2 secondaries. Degradation
+// order: secondaries compress first (a much lower floor) before the primary gives
+// up more than a few points, since the Question stays the hero (soul.md test 3).
+const MIN_FONT_MIRRORED = 16
+const SECONDARY_MIN_MIRRORED = 11
+const MIRROR_GAP = 28
 
 type LanguageText = {language: string; text: string}
 
@@ -61,6 +80,13 @@ type QuestionTextProps = {
    * direction, so an RTL secondary under an LTR primary just works.
    */
   secondaries?: LanguageText[]
+  /**
+   * Tabletop mode (issue #148, a Display setting): render the primary+secondaries
+   * stack twice, split horizontally — normal on the bottom half, rotated 180° on
+   * the top half — so players on both sides of a flat phone read simultaneously.
+   * Never changes which Card is drawn, only how this one looks (CONTEXT.md).
+   */
+  mirrored?: boolean
 }
 
 /** One language's text block with the right script font, bidi direction, and alignment. */
@@ -92,20 +118,29 @@ const LanguageBlock = ({
   )
 }
 
-/**
- * The question face: the primary language sized to fill its box, with any
- * secondary display languages rendered smaller and muted below it. Shared by
- * every player so all Games render a Card identically. A secondary missing a
- * translation renders nothing.
- */
-export const QuestionText = ({text, language, box, secondaries = []}: QuestionTextProps) => {
-  const shown = secondaries.filter((entry) => entry.text)
+type QuestionFaceProps = {
+  text: string
+  language: string
+  box: {width: number; height: number}
+  shown: LanguageText[]
+  /**
+   * Tighter font floors for a Tabletop-mirrored half (see MIN_FONT_MIRRORED /
+   * SECONDARY_MIN_MIRRORED above) and a tighter gap between the primary and
+   * secondary blocks to give long questions more room in half the box.
+   */
+  compact?: boolean
+}
+
+/** One primary+secondaries stack, sized to fill `box`. The unit both faces share. */
+const QuestionFace = ({text, language, box, shown, compact = false}: QuestionFaceProps) => {
   const share = PRIMARY_SHARE[Math.min(shown.length, PRIMARY_SHARE.length - 1)] ?? 1
+  const minFont = compact ? MIN_FONT_MIRRORED : MIN_FONT
   const fontSize = useMemo(
-    () => fitFontSize(text, box.width, box.height * share),
-    [text, box.width, box.height, share]
+    () => fitFontSize(text, box.width, box.height * share, minFont),
+    [text, box.width, box.height, share, minFont]
   )
-  const secondaryFont = Math.round(Math.max(SECONDARY_MIN, Math.min(SECONDARY_MAX, fontSize * 0.5)))
+  const secondaryMin = compact ? SECONDARY_MIN_MIRRORED : SECONDARY_MIN
+  const secondaryFont = Math.round(Math.max(secondaryMin, Math.min(SECONDARY_MAX, fontSize * 0.5)))
 
   if (shown.length === 0) {
     return <LanguageBlock text={text} language={language} fontSize={fontSize} />
@@ -115,7 +150,7 @@ export const QuestionText = ({text, language, box, secondaries = []}: QuestionTe
     <View>
       <LanguageBlock text={text} language={language} fontSize={fontSize} />
       {shown.map((entry) => (
-        <View key={entry.language} className="mt-4">
+        <View key={entry.language} className={compact ? 'mt-2' : 'mt-4'}>
           <LanguageBlock
             text={entry.text}
             language={entry.language}
@@ -124,6 +159,50 @@ export const QuestionText = ({text, language, box, secondaries = []}: QuestionTe
           />
         </View>
       ))}
+    </View>
+  )
+}
+
+/**
+ * The question face: the primary language sized to fill its box, with any
+ * secondary display languages rendered smaller and muted below it. Shared by
+ * every player so all Games render a Card identically. A secondary missing a
+ * translation renders nothing.
+ *
+ * With `mirrored` (Tabletop mode), the same face renders twice in a box split
+ * in half: normal on the bottom, rotated 180° on top. The rotated copy is
+ * hidden from screen readers (`accessibilityElementsHidden` /
+ * `importantForAccessibility="no-hide-descendants"`) so the Question is
+ * announced once, not twice.
+ */
+export const QuestionText = ({
+  text,
+  language,
+  box,
+  secondaries = [],
+  mirrored = false,
+}: QuestionTextProps) => {
+  const shown = secondaries.filter((entry) => entry.text)
+
+  if (!mirrored) {
+    return <QuestionFace text={text} language={language} box={box} shown={shown} />
+  }
+
+  const halfBox = {width: box.width, height: Math.max(0, (box.height - MIRROR_GAP) / 2)}
+
+  return (
+    <View>
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={{transform: [{rotate: '180deg'}]}}
+      >
+        <QuestionFace text={text} language={language} box={halfBox} shown={shown} compact />
+      </View>
+      <View style={{height: MIRROR_GAP}} className="items-center justify-center">
+        <View className="h-px w-16 bg-white/10" />
+      </View>
+      <QuestionFace text={text} language={language} box={halfBox} shown={shown} compact />
     </View>
   )
 }
