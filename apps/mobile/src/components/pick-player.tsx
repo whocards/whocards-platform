@@ -48,6 +48,17 @@ const RUBBER_BAND = 0.3
 // Full card flip (deal → reveal) duration; DESIGN.md's 200–300 ms band applies to
 // interaction transitions — the deal is the one composed "moment of theatre" per card.
 const FLIP_MS = 450
+// Physical-card proportions (width / height, ~poker card) for the deck and the
+// flipped question card.
+const CARD_ASPECT = 0.72
+const CARD_PADDING_X = 24
+const CARD_PADDING_Y = 40
+// The under-cards peeking out beneath the top of the deck (and beneath the card
+// mid-flip): slight rotation + downward offset per layer.
+const DECK_LAYERS = [
+  {rotate: '-3deg', translateY: 10},
+  {rotate: '2deg', translateY: 5},
+] as const
 
 type PickPlayerProps = {
   deckSlug: string
@@ -184,6 +195,13 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
   }, [])
   const measured = box ?? {width: winWidth - 64, height: winHeight - 220}
 
+  // --- card geometry: a physical-card aspect centred in the measured box, so the
+  // deck and the flipped question read as the same object ---
+  const cardWidth = Math.round(Math.min(measured.width, measured.height * CARD_ASPECT))
+  const cardHeight = Math.round(cardWidth / CARD_ASPECT)
+  // the question face's inner box (card padding subtracted) drives fitFontSize
+  const cardInner = {width: cardWidth - CARD_PADDING_X * 2, height: cardHeight - CARD_PADDING_Y * 2}
+
   const {
     chromeShown,
     revealChrome,
@@ -219,7 +237,13 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
       [0, 1, 0],
       'clamp'
     ),
-    transform: [{translateX: translateX.get()}],
+    transform: [
+      {translateX: translateX.get()},
+      // a slight lift-and-settle arc through the flip, so the card reads as
+      // picked up off the deck rather than spun in place
+      {translateY: interpolate(flip.get(), [0, 0.5, 1], [0, -16, 0])},
+      {scale: interpolate(flip.get(), [0, 0.5, 1], [1, 1.04, 1])},
+    ],
   }))
   const backStyle = useAnimatedStyle(() => ({
     transform: [{perspective: 1000}, {rotateY: `${interpolate(flip.get(), [0, 1], [0, 180])}deg`}],
@@ -231,6 +255,11 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
       {rotateY: `${interpolate(flip.get(), [0, 1], [180, 360])}deg`},
     ],
     backfaceVisibility: 'hidden' as const,
+  }))
+  // the rest of the deck stays visible beneath the card mid-flip, then fades out
+  // once the question has landed (keeps the face uncluttered while reading)
+  const deckFadeStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(flip.get(), [0, 0.75, 1], [1, 1, 0]),
   }))
 
   // --- actions ---
@@ -371,46 +400,74 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
       <View className="flex-1">
         <GestureDetector gesture={gesture}>
           <View className="flex-1 px-8" style={{paddingTop: topBarH, paddingBottom: bottomBarH}}>
-            <View className="flex-1 justify-center" onLayout={onBoxLayout}>
+            <View className="flex-1 items-center justify-center" onLayout={onBoxLayout}>
               {!languageReady ? null : onCard ? (
-                <Animated.View style={wrapperStyle}>
-                  {/* card back — visible through the first half of the flip */}
+                <View style={{width: cardWidth, height: cardHeight}}>
+                  {/* the rest of the deck stays beneath while the card flips off it */}
                   <Animated.View
-                    style={backStyle}
-                    className="absolute inset-0 items-center justify-center rounded-3xl border border-white/10 bg-dark"
+                    style={deckFadeStyle}
+                    className="absolute inset-0"
+                    pointerEvents="none"
                   >
-                    <Text className="font-title text-7xl text-yellow-400">?</Text>
+                    {DECK_LAYERS.map(({rotate, translateY}) => (
+                      <View
+                        key={rotate}
+                        style={{transform: [{rotate}, {translateY}]}}
+                        className="bg-dark/80 absolute inset-0 rounded-3xl border border-white/10"
+                      />
+                    ))}
                   </Animated.View>
-                  {/* question face — revealed through the second half */}
-                  <Animated.View style={faceStyle} className="justify-center">
-                    <QuestionText
-                      text={text}
-                      language={language}
-                      box={measured}
-                      secondaries={secondary
-                        .filter((code) => code !== language)
-                        .map((code) => ({
-                          language: code,
-                          text: questions[questionId]?.[code] ?? '',
-                        }))}
-                    />
+                  <Animated.View style={wrapperStyle} className="absolute inset-0">
+                    {/* card back — visible through the first half of the flip */}
+                    <Animated.View
+                      style={backStyle}
+                      className="absolute inset-0 items-center justify-center rounded-3xl border border-white/15 bg-dark"
+                    >
+                      <Text className="font-title text-8xl text-yellow-400">?</Text>
+                    </Animated.View>
+                    {/* question face — revealed through the second half */}
+                    <Animated.View
+                      style={faceStyle}
+                      className="absolute inset-0 justify-center rounded-3xl border border-white/10 bg-dark"
+                    >
+                      <View
+                        style={{paddingHorizontal: CARD_PADDING_X, paddingVertical: CARD_PADDING_Y}}
+                      >
+                        <QuestionText
+                          text={text}
+                          language={language}
+                          box={cardInner}
+                          secondaries={secondary
+                            .filter((code) => code !== language)
+                            .map((code) => ({
+                              language: code,
+                              text: questions[questionId]?.[code] ?? '',
+                            }))}
+                        />
+                      </View>
+                    </Animated.View>
                   </Animated.View>
-                </Animated.View>
+                </View>
               ) : (
-                <View className="items-center">
+                <View style={{width: cardWidth, height: cardHeight}}>
+                  {/* the deck: under-cards peeking out beneath the top card */}
+                  {DECK_LAYERS.map(({rotate, translateY}) => (
+                    <View
+                      key={rotate}
+                      style={{transform: [{rotate}, {translateY}]}}
+                      className="bg-dark/80 absolute inset-0 rounded-3xl border border-white/10"
+                    />
+                  ))}
                   <PressableScale
                     onPress={handlePick}
                     accessibilityRole="button"
                     accessibilityLabel="Pick a card"
-                    className="active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
+                    className="active:bg-darker absolute inset-0 items-center justify-center rounded-3xl border border-white/15 bg-dark"
                   >
-                    <Ionicons
-                      name="albums-outline"
-                      size={18}
-                      color={colors.darker}
-                      style={{marginRight: 8}}
-                    />
-                    <Text className="text-darker font-sans text-base font-bold">Pick a card</Text>
+                    <Text className="font-title text-8xl text-yellow-400">?</Text>
+                    <Text className="text-gray-dark mt-3 font-sans text-sm">
+                      Tap to pick a card
+                    </Text>
                   </PressableScale>
                 </View>
               )}
