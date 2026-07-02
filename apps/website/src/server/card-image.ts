@@ -41,13 +41,34 @@ type CardSize = {
   // Even padding around the card content, in px at this size.
   padding: number
   // The wordmark is tuned for the OG size (44px/52px); other sizes scale it
-  // by this factor rather than repeating the OG's absolute px values.
+  // by this factor rather than repeating the OG's absolute px values. OG's
+  // landscape frame gives the wordmark plenty of relative weight at 1x; the
+  // taller portrait sizes are viewed close-up (a phone screen, not a link
+  // preview) and need a visibly bigger mark to still read as deliberate
+  // rather than a shrunken afterthought in the corner.
   wordmarkScale: number
+  // Question text scales off the OG breakpoint table (fontSizeFor's `base`)
+  // by this factor. OG derives it from its own width (a no-op, factor 1);
+  // story/post do NOT just scale by width like the wordmark does — both are
+  // 1080px wide, but story is much taller (9:16 vs 4:5) and needs
+  // noticeably bigger type to carry that extra vertical frame instead of
+  // floating a small headline in a sea of background. Tuned by rendering
+  // real PNGs (see docs/design/161-share-card-polish), not derived.
+  fontScale: number
   // OG's design is top-aligned question text (matches the committed design
   // pixel-for-pixel). The taller portrait sizes centre the text block instead
   // between the top padding and the wordmark, which reads better on a 9:16/4:5
   // canvas than a wall of top-aligned text.
   verticalAlign: 'flex-start' | 'center'
+  // A single-line RTL question sits in a shrink-to-fit flex item, so
+  // `textAlign: right` has no box width left to move within — it visibly
+  // hugs the left edge (flexbox's default justify-content), same as LTR,
+  // even though multi-line RTL text (wrapped near the full column width)
+  // reads as right-aligned. That quirk is baked into OG's committed,
+  // byte-identical pixels (a past design already shipped and tested), so OG
+  // keeps it; story/post are new enough at this design pass to fix it
+  // properly with an explicit justify-content.
+  rtlJustify: 'flex-start' | 'flex-end'
 }
 
 export const CARD_SIZES: Record<CardSizeKey, CardSize> = {
@@ -57,23 +78,29 @@ export const CARD_SIZES: Record<CardSizeKey, CardSize> = {
     height: 630,
     padding: 64,
     wordmarkScale: 1,
+    fontScale: 1,
     verticalAlign: 'flex-start',
+    rtlJustify: 'flex-start',
   },
   story: {
     key: 'story',
     width: 1080,
     height: 1920,
     padding: 80,
-    wordmarkScale: 0.9,
+    wordmarkScale: 1.45,
+    fontScale: 1.85,
     verticalAlign: 'center',
+    rtlJustify: 'flex-end',
   },
   post: {
     key: 'post',
     width: 1080,
     height: 1350,
     padding: 72,
-    wordmarkScale: 0.9,
+    wordmarkScale: 1.2,
+    fontScale: 1.4,
     verticalAlign: 'center',
+    rtlJustify: 'flex-end',
   },
 }
 
@@ -277,17 +304,72 @@ const toVisualRtl = (text: string, fontSize: number, size: CardSize): string => 
     .join('\n')
 }
 
+// The OG breakpoint table: short questions are set large, long ones shrink in
+// steps. Tuned for the OG size's 1200px landscape width — kept as its own
+// function (rather than inlined) so story/post can use it as their *starting
+// point* (via fontScale) without duplicating the thresholds.
+const baseFontSizeFor = (len: number): number =>
+  len <= 45 ? 92 : len <= 70 ? 82 : len <= 100 ? 72 : len <= 140 ? 58 : len <= 200 ? 48 : 42
+
+// CJK glyphs are roughly full-width squares — much wider per character than
+// a Latin/Hebrew average glyph — so a line-wrap estimate needs a different
+// factor per script or it wildly under-counts lines for zh/jp. (Matches the
+// spirit of maxCharsPerLine's RTL-only 0.52, generalized to every script the
+// autofit below has to reason about.)
+const avgCharWidthFactor = (language: string): number =>
+  language === 'zh' || language === 'jp' ? 1.15 : 0.55
+
+const AUTOFIT_LINE_HEIGHT = 1.2
+const AUTOFIT_MIN_FONT_SIZE = 34
+const AUTOFIT_STEP = 2
+// The estimate above is a heuristic, not a real layout pass — Satori's actual
+// wrap can land one line short/long of it (confirmed by rendering a long
+// Japanese question: estimated 10 lines, Satori wrapped 11). Padding the
+// estimated block height gives that a margin to be wrong in without the
+// text actually reaching the wordmark.
+const AUTOFIT_SAFETY_MARGIN = 1.08
+
 /**
- * Pick a font size so the question fills as much of the card as possible while
- * still fitting. Short questions are set large; long ones auto-shrink. The
- * thresholds are tuned for the OG size's 1200px width; other sizes scale the
- * result by their own width so text reads at a proportionally similar size.
+ * Pick a font size so the question fills as much of the card as possible
+ * while still fitting — the whole point of this design pass (#161): a small
+ * headline floating in a sea of background doesn't hold a 9:16/4:5 frame the
+ * way it holds the wide OG frame.
+ *
+ * OG keeps its original, byte-identical table (`size.fontScale` is 1, a
+ * no-op). Story/post start from that same table scaled *up* by their own
+ * `fontScale` (bigger type, tuned by rendering real PNGs — see
+ * docs/design/161-share-card-polish) and then shrink in steps, using an
+ * estimated wrapped-line count, until the block is projected to fit the
+ * available height without reaching the wordmark. Without this step a long
+ * CJK question at story's fontScale overflows both the top of the canvas
+ * and the wordmark — CJK characters are much wider than the Latin/Hebrew
+ * case the flat scale was tuned against.
  */
-const fontSizeFor = (text: string, size: CardSize): number => {
+const fontSizeFor = (text: string, language: string, size: CardSize): number => {
   const len = text.replace(/\s+/g, ' ').trim().length
-  const base =
-    len <= 45 ? 92 : len <= 70 ? 82 : len <= 100 ? 72 : len <= 140 ? 58 : len <= 200 ? 48 : 42
-  return Math.round(base * (size.width / CARD_SIZES.og.width))
+  const base = baseFontSizeFor(len)
+  if (size.key === 'og') return Math.round(base * size.fontScale)
+
+  const availableWidth = size.width - size.padding * 2
+  // Reserve room below the centred text block for the (now much bigger,
+  // see CardSize.wordmarkScale) wordmark, so a long question can never grow
+  // into it. Centering splits leftover space evenly top/bottom, so this
+  // clearance is effectively "spent" on both sides — deliberately
+  // conservative, matching the wordmark's own approximate glyph height plus
+  // a breathing gap.
+  const wordmarkClearance = Math.round(52 * size.wordmarkScale + 60)
+  const availableHeight = size.height - size.padding * 2 - wordmarkClearance * 2
+  const widthFactor = avgCharWidthFactor(language)
+
+  let fontSize = Math.round(base * size.fontScale)
+  while (fontSize > AUTOFIT_MIN_FONT_SIZE) {
+    const charsPerLine = Math.max(1, Math.floor(availableWidth / (fontSize * widthFactor)))
+    const lines = Math.ceil(len / charsPerLine)
+    const blockHeight = lines * fontSize * AUTOFIT_LINE_HEIGHT * AUTOFIT_SAFETY_MARGIN
+    if (blockHeight <= availableHeight) break
+    fontSize -= AUTOFIT_STEP
+  }
+  return fontSize
 }
 
 // The brand wordmark: white "WHOCARDS.CC" in the Aptly title face followed by
@@ -358,7 +440,7 @@ const Wordmark = (scale: number) => {
 const buildTree = (rawText: string, language: string, mazeUri: string, size: CardSize) => {
   const rtl = isRtl(language)
   const fontFamily = `${fontFamilyFor(language)}, Golos Text`
-  const fontSize = fontSizeFor(rawText, size)
+  const fontSize = fontSizeFor(rawText, language, size)
   // For RTL we pre-reorder + pre-wrap the text and disable Satori wrapping;
   // for LTR we let Satori wrap normally.
   const text = rtl ? toVisualRtl(rawText, fontSize, size) : rawText
@@ -391,6 +473,11 @@ const buildTree = (rawText: string, language: string, mazeUri: string, size: Car
           props: {
             style: {
               display: 'flex',
+              // A shrink-to-fit single line (short RTL question) has no
+              // spare box width for `textAlign` to shift text within, so it
+              // silently hugs the flex default (flex-start/left) unless we
+              // justify the flex item itself — see CardSize.rtlJustify.
+              justifyContent: rtl ? size.rtlJustify : 'flex-start',
               fontFamily,
               fontSize: `${fontSize}px`,
               fontWeight: 400,
