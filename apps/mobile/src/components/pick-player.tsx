@@ -25,7 +25,6 @@ import {LanguageModal} from '@/components/language-modal'
 import {PlayerBar} from '@/components/player-bar'
 import {PressableScale} from '@/components/pressable-scale'
 import {QuestionText} from '@/components/question-text'
-import {ScreenBackground} from '@/components/screen-background'
 import {usePlayerChrome} from '@/hooks/use-player-chrome'
 import {useReviewPrompt} from '@/hooks/use-review-prompt'
 import {enqueue, flush} from '@/lib/answer-queue'
@@ -54,8 +53,8 @@ const FLIP_MS = 450
 const CARD_ASPECT = 0.72
 const CARD_PADDING_X = 28
 const CARD_PADDING_Y = 44
-// Vertical space reserved under the deck for the "tap to pick" hint — reserved in
-// both phases so the card doesn't jump when the hint disappears on deal.
+// Vertical space reserved under the deck for the "next card" hint — reserved in
+// both phases so the card doesn't jump between them.
 const HINT_SPACE = 40
 // The under-cards peeking out beneath the top of the deck (and beneath the card
 // mid-flip): slight rotation + downward offset per layer.
@@ -70,21 +69,17 @@ const texture = require('../../assets/images/background.png')
 
 /**
  * The card back, styled after the printed WhoCards deck: the brand squiggle
- * texture over the darkest base, the stacked WHO?/CARDS wordmark bottom-left,
- * and a small whocards.cc top-right.
+ * texture over the darkest base and the one-line WHO?CARDS wordmark bottom-right.
+ * The optional hint invites the deal from the centre of the card.
  */
-const CardBack = () => (
-  <View className="bg-darkest absolute inset-0 overflow-hidden rounded-[20px] border border-white/10">
+const CardBack = ({hint}: {hint?: string}) => (
+  <View className="bg-darkest absolute inset-0 items-center justify-center overflow-hidden rounded-[20px] border border-white/10">
     <Image source={texture} contentFit="cover" style={StyleSheet.absoluteFill} />
-    <Text className="absolute right-5 top-4 font-sans text-xs text-white/80">whocards.cc</Text>
-    <View className="absolute bottom-6 left-6">
-      <Text style={{fontSize: 40, lineHeight: 42}} className="font-title text-yellow-400">
-        WHO<Text className="text-primary-dark">?</Text>
-      </Text>
-      <Text style={{fontSize: 40, lineHeight: 42}} className="font-title text-white">
-        CARDS
-      </Text>
-    </View>
+    {hint ? <Text className="font-sans text-lg font-semibold text-white/90">{hint}</Text> : null}
+    <Text style={{fontSize: 26}} className="absolute bottom-5 right-5 font-title text-yellow-400">
+      WHO<Text className="text-primary-dark">?</Text>
+      <Text className="text-white">CARDS</Text>
+    </Text>
   </View>
 )
 
@@ -300,11 +295,28 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
     dispatch({type: 'pick'})
   }, [deckSlug, revealChrome])
 
-  const putDown = useCallback(() => {
-    selection()
+  // guards a second put-down (or a previous) while the exit flip is running
+  const exitingRef = useRef(false)
+
+  const commitPutDown = useCallback(() => {
+    exitingRef.current = false
     viewTracker.endView('advanced')
     dispatch({type: 'next'})
   }, [viewTracker])
+
+  // putting the card down flips it face-down again before the deck returns —
+  // the exit half of the deal ritual (the swipe path exits by sliding off instead)
+  const putDown = useCallback(() => {
+    if (exitingRef.current) return
+    exitingRef.current = true
+    selection()
+    flip.set(
+      withTiming(0, {duration: reduceMotion ? 0 : FLIP_MS}, () => {
+        'worklet'
+        runOnJS(commitPutDown)()
+      })
+    )
+  }, [flip, reduceMotion, commitPutDown])
 
   const goNext = useCallback(() => {
     if (!onCard) {
@@ -316,6 +328,7 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
   }, [onCard, handlePick, revealChrome, putDown])
 
   const goPreviousFromCard = useCallback(() => {
+    if (exitingRef.current) return
     selection()
     viewTracker.endView('previous')
     dispatch({type: 'previous'})
@@ -394,7 +407,7 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
           translateX.set(
             withTiming(-travel, {duration: reduceMotionSV.get() ? 0 : 260}, () => {
               'worklet'
-              runOnJS(putDown)()
+              runOnJS(commitPutDown)()
             })
           )
           return
@@ -417,7 +430,7 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
   }, [
     onCard,
     revealChromeStable,
-    putDown,
+    commitPutDown,
     goPreviousFromCard,
     impactMediumOnJS,
     translateX,
@@ -426,7 +439,9 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
   ])
 
   return (
-    <ScreenBackground>
+    // solid darkest backdrop (no screen texture) — the texture lives on the card
+    // backs here, and the printed cards sit on a plain table, not on themselves
+    <View className="bg-darkest flex-1">
       <View className="flex-1">
         <GestureDetector gesture={gesture}>
           <View className="flex-1 px-8" style={{paddingTop: topBarH, paddingBottom: bottomBarH}}>
@@ -485,8 +500,17 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
                       </Animated.View>
                     </Animated.View>
                   </View>
-                  {/* hint band stays reserved so the card doesn't jump between phases */}
-                  <View style={{height: HINT_SPACE}} />
+                  {/* the way onward — mirrors the pick hint's spot and voice */}
+                  <Pressable
+                    onPress={goNext}
+                    hitSlop={12}
+                    accessibilityRole="button"
+                    accessibilityLabel="Tap for next card"
+                    style={{height: HINT_SPACE}}
+                    className="justify-center"
+                  >
+                    <Text className="text-gray-dark font-sans text-sm">Tap for next card</Text>
+                  </Pressable>
                 </View>
               ) : (
                 <View className="items-center">
@@ -505,12 +529,11 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
                       accessibilityLabel="Pick a card"
                       className="absolute inset-0"
                     >
-                      <CardBack />
+                      <CardBack hint="Tap to pick a card" />
                     </PressableScale>
                   </View>
-                  <View style={{height: HINT_SPACE}} className="justify-center">
-                    <Text className="text-gray-dark font-sans text-sm">Tap to pick a card</Text>
-                  </View>
+                  {/* band stays reserved so the card doesn't jump between phases */}
+                  <View style={{height: HINT_SPACE}} />
                 </View>
               )}
             </View>
@@ -594,6 +617,6 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
           }}
         />
       </View>
-    </ScreenBackground>
+    </View>
   )
 }
