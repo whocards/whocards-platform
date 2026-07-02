@@ -1,3 +1,5 @@
 export * from './shuffle'
 export * from './nav'
 export * from './direction'
+export * from './games'
+export * from './pick'
