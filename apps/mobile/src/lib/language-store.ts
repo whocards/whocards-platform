@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+import {MAX_SECONDARY_LANGUAGES} from './language-constants'
+
 /**
  * Per-deck AsyncStorage key for the player's chosen language. Using a per-deck
  * key means "I prefer Spanish" on the Friends deck is independent of any
@@ -40,4 +42,45 @@ export const getStoredLanguage = async (deckSlug: string): Promise<string | unde
 export const setStoredLanguage = async (deckSlug: string, language: string): Promise<void> => {
   cache[deckSlug] = language
   await AsyncStorage.setItem(storageKey(deckSlug), language)
+}
+
+// --- secondary display languages (a Display setting, see CONTEXT.md) ---
+// Up to MAX_SECONDARY_LANGUAGES extra languages rendered under the primary on the
+// card. Stored on their own key so the primary key (deep links, web parity) is
+// untouched. Callers validate against the deck's languages and drop the primary.
+
+const secondaryKey = (deckSlug: string) => `whocards-language-secondary:${deckSlug}`
+
+const secondaryCache: Record<string, string[]> = {}
+
+/** Returns the persisted secondary display languages for `deckSlug` (possibly empty). */
+export const getStoredSecondaryLanguages = async (deckSlug: string): Promise<string[]> => {
+  const cached = secondaryCache[deckSlug]
+  if (cached) return cached
+
+  const stored = await AsyncStorage.getItem(secondaryKey(deckSlug))
+  if (stored) {
+    try {
+      const parsed: unknown = JSON.parse(stored)
+      if (Array.isArray(parsed) && parsed.every((code) => typeof code === 'string')) {
+        const languages = parsed.slice(0, MAX_SECONDARY_LANGUAGES)
+        secondaryCache[deckSlug] = languages
+        return languages
+      }
+    } catch {
+      // corrupt value — treat as unset
+    }
+  }
+
+  return []
+}
+
+/** Persists the secondary display languages for `deckSlug` and warms the cache. */
+export const setStoredSecondaryLanguages = async (
+  deckSlug: string,
+  languages: string[]
+): Promise<void> => {
+  const trimmed = languages.slice(0, MAX_SECONDARY_LANGUAGES)
+  secondaryCache[deckSlug] = trimmed
+  await AsyncStorage.setItem(secondaryKey(deckSlug), JSON.stringify(trimmed))
 }

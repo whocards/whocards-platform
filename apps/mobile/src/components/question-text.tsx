@@ -1,5 +1,5 @@
 import {useMemo} from 'react'
-import {Text} from 'react-native'
+import {Text, View} from 'react-native'
 import {getDirection} from '@whocards/decks'
 
 // Per-script question face. golos-text (the brand body face) covers Latin + Cyrillic;
@@ -42,30 +42,41 @@ export const fitFontSize = (text: string, width: number, height: number) => {
   return Math.round(Math.max(MIN_FONT, Math.min(MAX_FONT, raw, widthCap)))
 }
 
+// The primary's share of the box height when secondaries are shown — the
+// secondaries are support, not focus (DESIGN.md: the Question is the focus).
+const PRIMARY_SHARE = [1, 0.65, 0.55] as const
+const SECONDARY_MIN = 16
+const SECONDARY_MAX = 34
+
+type LanguageText = {language: string; text: string}
+
 type QuestionTextProps = {
   text: string
   language: string
   /** The measured box the question grows to fill (see fitFontSize). */
   box: {width: number; height: number}
+  /**
+   * Secondary display languages rendered under the primary (a Display setting).
+   * Each renders as its own text block with its own script font and bidi base
+   * direction, so an RTL secondary under an LTR primary just works.
+   */
+  secondaries?: LanguageText[]
 }
 
-/**
- * The question face: one language's text sized to fill its box, with the right
- * script font, bidi base direction, and RTL alignment. Shared by every player
- * so all Games render a Card identically.
- */
-export const QuestionText = ({text, language, box}: QuestionTextProps) => {
+/** One language's text block with the right script font, bidi direction, and alignment. */
+const LanguageBlock = ({
+  text,
+  language,
+  fontSize,
+  muted,
+}: LanguageText & {fontSize: number; muted?: boolean}) => {
   const direction = getDirection(language)
   // brand/script face where one exists; system font (with a weight) otherwise
-  const questionFont = questionFontFamily(language)
-  const fontSize = useMemo(
-    () => fitFontSize(text, box.width, box.height),
-    [text, box.width, box.height]
-  )
+  const font = questionFontFamily(language)
 
   return (
     <Text
-      className="text-white"
+      className={muted ? 'text-white/70' : 'text-white'}
       style={{
         fontSize,
         lineHeight: fontSize * LINE_HEIGHT_RATIO,
@@ -73,10 +84,46 @@ export const QuestionText = ({text, language, box}: QuestionTextProps) => {
         // writingDirection sets the bidi base direction but not paragraph
         // alignment in RN — RTL (Hebrew) needs textAlign to right-align
         textAlign: direction === 'rtl' ? 'right' : 'left',
-        ...(questionFont ? {fontFamily: questionFont} : {fontWeight: '600'}),
+        ...(font ? {fontFamily: font} : {fontWeight: '600'}),
       }}
     >
       {text}
     </Text>
+  )
+}
+
+/**
+ * The question face: the primary language sized to fill its box, with any
+ * secondary display languages rendered smaller and muted below it. Shared by
+ * every player so all Games render a Card identically. A secondary missing a
+ * translation renders nothing.
+ */
+export const QuestionText = ({text, language, box, secondaries = []}: QuestionTextProps) => {
+  const shown = secondaries.filter((entry) => entry.text)
+  const share = PRIMARY_SHARE[Math.min(shown.length, PRIMARY_SHARE.length - 1)] ?? 1
+  const fontSize = useMemo(
+    () => fitFontSize(text, box.width, box.height * share),
+    [text, box.width, box.height, share]
+  )
+  const secondaryFont = Math.round(Math.max(SECONDARY_MIN, Math.min(SECONDARY_MAX, fontSize * 0.5)))
+
+  if (shown.length === 0) {
+    return <LanguageBlock text={text} language={language} fontSize={fontSize} />
+  }
+
+  return (
+    <View>
+      <LanguageBlock text={text} language={language} fontSize={fontSize} />
+      {shown.map((entry) => (
+        <View key={entry.language} className="mt-4">
+          <LanguageBlock
+            text={entry.text}
+            language={entry.language}
+            fontSize={secondaryFont}
+            muted
+          />
+        </View>
+      ))}
+    </View>
   )
 }

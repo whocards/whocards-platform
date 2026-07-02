@@ -32,7 +32,12 @@ import {send} from '@/lib/answer-transport'
 import {incrementCardCount, incrementSessionCount} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
-import {getStoredLanguage, setStoredLanguage} from '@/lib/language-store'
+import {
+  getStoredLanguage,
+  getStoredSecondaryLanguages,
+  setStoredLanguage,
+  setStoredSecondaryLanguages,
+} from '@/lib/language-store'
 import {buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
@@ -68,17 +73,23 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
 
   const defaultLanguage = languages[0]
   const [language, setLanguage] = useState(defaultLanguage)
+  // secondary display languages rendered under the primary (a Display setting)
+  const [secondary, setSecondary] = useState<string[]>([])
   // gate the first reveal on the stored-language read, mirroring DeckPlayer
   const [languageReady, setLanguageReady] = useState(false)
   const [langModalOpen, setLangModalOpen] = useState(false)
 
   useEffect(() => {
-    void getStoredLanguage(deckSlug).then((stored) => {
-      if (stored && languages.includes(stored)) {
-        setLanguage(stored)
-      }
-      setLanguageReady(true)
-    })
+    void Promise.all([
+      getStoredLanguage(deckSlug).then((stored) => {
+        if (stored && languages.includes(stored)) {
+          setLanguage(stored)
+        }
+      }),
+      getStoredSecondaryLanguages(deckSlug).then((stored) =>
+        setSecondary(stored.filter((code) => languages.includes(code)))
+      ),
+    ]).then(() => setLanguageReady(true))
   }, [deckSlug, languages])
 
   const questionId = nav.ids[nav.idx]
@@ -96,7 +107,10 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
   useEffect(() => {
     if (!languageReady || gameStartedRef.current) return
     gameStartedRef.current = true
-    track({name: EVENTS.GAME_STARTED, props: {deck_id: deckSlug, game: GAMES.PICK, language}})
+    track({
+      name: EVENTS.GAME_STARTED,
+      props: {deck_id: deckSlug, game: GAMES.PICK, language, secondary_languages: secondary},
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageReady])
 
@@ -369,7 +383,17 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
                   </Animated.View>
                   {/* question face — revealed through the second half */}
                   <Animated.View style={faceStyle} className="justify-center">
-                    <QuestionText text={text} language={language} box={measured} />
+                    <QuestionText
+                      text={text}
+                      language={language}
+                      box={measured}
+                      secondaries={secondary
+                        .filter((code) => code !== language)
+                        .map((code) => ({
+                          language: code,
+                          text: questions[questionId]?.[code] ?? '',
+                        }))}
+                    />
                   </Animated.View>
                 </Animated.View>
               ) : (
@@ -436,6 +460,7 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
           visible={langModalOpen}
           languages={languages}
           current={language}
+          secondary={secondary}
           onSelect={(next) => {
             selection()
             if (next !== language) {
@@ -446,8 +471,23 @@ export const PickPlayer = ({deckSlug, questionIds, questions, languages}: PickPl
             }
             setLanguage(next)
             void setStoredLanguage(deckSlug, next)
+            // the new primary can't also be a secondary
+            if (secondary.includes(next)) {
+              const pruned = secondary.filter((code) => code !== next)
+              setSecondary(pruned)
+              void setStoredSecondaryLanguages(deckSlug, pruned)
+            }
             setLangModalOpen(false)
             revealChrome()
+          }}
+          onSecondaryChange={(next) => {
+            selection()
+            track({
+              name: EVENTS.SECONDARY_LANGUAGES_CHANGED,
+              props: {deck_id: deckSlug, secondary: next},
+            })
+            setSecondary(next)
+            void setStoredSecondaryLanguages(deckSlug, next)
           }}
           onClose={() => {
             setLangModalOpen(false)

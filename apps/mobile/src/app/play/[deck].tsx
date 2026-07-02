@@ -33,7 +33,12 @@ import {incrementCardCount, incrementSessionCount} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
 import {getStoredGame} from '@/lib/game-store'
 import {impact, selection} from '@/lib/haptics'
-import {getStoredLanguage, setStoredLanguage} from '@/lib/language-store'
+import {
+  getStoredLanguage,
+  getStoredSecondaryLanguages,
+  setStoredLanguage,
+  setStoredSecondaryLanguages,
+} from '@/lib/language-store'
 import {buildShareUrl} from '@/lib/share-url'
 
 const SWIPE_THRESHOLD = 60
@@ -153,6 +158,8 @@ const DeckPlayer = ({
   const linkLanguage =
     startLanguage && languages.includes(startLanguage) ? startLanguage : undefined
   const [language, setLanguage] = useState(linkLanguage ?? defaultLanguage)
+  // secondary display languages rendered under the primary (a Display setting)
+  const [secondary, setSecondary] = useState<string[]>([])
   // true once the AsyncStorage read has settled — gates the first card paint so
   // the player never shows a visible language flip on launch. The read is a single
   // fast local hit (~1-5 ms); holding the card behind it is the right trade-off
@@ -160,21 +167,21 @@ const DeckPlayer = ({
   const [languageReady, setLanguageReady] = useState(false)
   const [langModalOpen, setLangModalOpen] = useState(false)
 
-  // Seed language from storage on mount. Only apply a stored value if it is still
-  // present in this deck's languages list (guard against decks dropping a language).
+  // Seed language + secondaries from storage on mount. Only apply stored values
+  // still present in this deck's languages list (guard against decks dropping one).
   useEffect(() => {
+    const secondaries = getStoredSecondaryLanguages(deckSlug).then((stored) =>
+      setSecondary(stored.filter((code) => languages.includes(code)))
+    )
     // A shared link's language takes precedence — skip the stored value entirely.
-    if (linkLanguage) {
-      setLanguage(linkLanguage)
-      setLanguageReady(true)
-      return
-    }
-    void getStoredLanguage(deckSlug).then((stored) => {
-      if (stored && languages.includes(stored)) {
-        setLanguage(stored)
-      }
-      setLanguageReady(true)
-    })
+    const primary = linkLanguage
+      ? Promise.resolve(setLanguage(linkLanguage))
+      : getStoredLanguage(deckSlug).then((stored) => {
+          if (stored && languages.includes(stored)) {
+            setLanguage(stored)
+          }
+        })
+    void Promise.all([primary, secondaries]).then(() => setLanguageReady(true))
   }, [deckSlug, languages, linkLanguage])
 
   const questionId = ids[idx]
@@ -202,7 +209,10 @@ const DeckPlayer = ({
   useEffect(() => {
     if (!languageReady || gameStartedRef.current) return
     gameStartedRef.current = true
-    track({name: EVENTS.GAME_STARTED, props: {deck_id: deckSlug, game: GAMES.WH, language}})
+    track({
+      name: EVENTS.GAME_STARTED,
+      props: {deck_id: deckSlug, game: GAMES.WH, language, secondary_languages: secondary},
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageReady])
 
@@ -497,7 +507,17 @@ const DeckPlayer = ({
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
               {languageReady ? (
                 <Animated.View style={cardStyle}>
-                  <QuestionText text={text} language={language} box={measured} />
+                  <QuestionText
+                    text={text}
+                    language={language}
+                    box={measured}
+                    secondaries={secondary
+                      .filter((code) => code !== language)
+                      .map((code) => ({
+                        language: code,
+                        text: questions[questionId]?.[code] ?? '',
+                      }))}
+                  />
                 </Animated.View>
               ) : null}
             </View>
@@ -546,6 +566,7 @@ const DeckPlayer = ({
           visible={langModalOpen}
           languages={languages}
           current={language}
+          secondary={secondary}
           onSelect={(next) => {
             selection()
             if (next !== language) {
@@ -556,8 +577,23 @@ const DeckPlayer = ({
             }
             setLanguage(next)
             void setStoredLanguage(deckSlug, next)
+            // the new primary can't also be a secondary
+            if (secondary.includes(next)) {
+              const pruned = secondary.filter((code) => code !== next)
+              setSecondary(pruned)
+              void setStoredSecondaryLanguages(deckSlug, pruned)
+            }
             setLangModalOpen(false)
             revealChrome()
+          }}
+          onSecondaryChange={(next) => {
+            selection()
+            track({
+              name: EVENTS.SECONDARY_LANGUAGES_CHANGED,
+              props: {deck_id: deckSlug, secondary: next},
+            })
+            setSecondary(next)
+            void setStoredSecondaryLanguages(deckSlug, next)
           }}
           onClose={() => {
             setLangModalOpen(false)

@@ -81,3 +81,45 @@ describe('language-store', () => {
     expect(AsyncStorage.setItem).toHaveBeenCalledWith('whocards-language:test-deck-set', 'de')
   })
 })
+
+describe('secondary display languages', () => {
+  const {getStoredSecondaryLanguages, setStoredSecondaryLanguages} =
+    require('../lib/language-store') as typeof import('../lib/language-store')
+
+  it('returns an empty list when nothing is stored', async () => {
+    expect(await getStoredSecondaryLanguages('test-deck-sec-missing')).toEqual([])
+  })
+
+  it('persists and retrieves secondaries under their own key', async () => {
+    await setStoredSecondaryLanguages('test-deck-sec-rw', ['he', 'es'])
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+      'whocards-language-secondary:test-deck-sec-rw',
+      JSON.stringify(['he', 'es'])
+    )
+    expect(await getStoredSecondaryLanguages('test-deck-sec-rw')).toEqual(['he', 'es'])
+  })
+
+  it('reads persisted secondaries from AsyncStorage when the cache is cold', async () => {
+    await AsyncStorage.setItem(
+      'whocards-language-secondary:test-deck-sec-cold',
+      JSON.stringify(['fr'])
+    )
+    expect(await getStoredSecondaryLanguages('test-deck-sec-cold')).toEqual(['fr'])
+  })
+
+  it('caps the stored list at two languages', async () => {
+    await setStoredSecondaryLanguages('test-deck-sec-cap', ['he', 'es', 'fr'])
+    expect(await getStoredSecondaryLanguages('test-deck-sec-cap')).toEqual(['he', 'es'])
+  })
+
+  it('treats a corrupt stored value as unset', async () => {
+    await AsyncStorage.setItem('whocards-language-secondary:test-deck-sec-bad', 'not-json{')
+    expect(await getStoredSecondaryLanguages('test-deck-sec-bad')).toEqual([])
+  })
+
+  it('does not touch the primary-language key', async () => {
+    await setStoredLanguage('test-deck-sec-iso', 'en')
+    await setStoredSecondaryLanguages('test-deck-sec-iso', ['he'])
+    expect(await getStoredLanguage('test-deck-sec-iso')).toBe('en')
+  })
+})
