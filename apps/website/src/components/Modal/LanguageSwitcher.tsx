@@ -1,6 +1,8 @@
-import {Icon as _Icon, type IconifyIconProps} from '@iconify-icon/react'
+import {Icon as _Icon} from '@iconify-icon/react'
+import type {IconifyIconProps} from '@iconify-icon/react'
 import {useStore} from '@nanostores/react'
-import {useEffect, useMemo, useRef, type ComponentType, type PropsWithChildren} from 'react'
+import {useEffect, useMemo, useRef} from 'react'
+import type {ComponentType, PropsWithChildren} from 'react'
 import {idsStore} from '~stores/Game.store'
 import {$langStore, setLang} from '~stores/Language.store'
 import type {Language} from '~types'
@@ -95,11 +97,11 @@ export const LanguageSwitcher = () => {
   )
 }
 
-interface QuestionLinkProps extends PropsWithChildren<unknown> {
+type QuestionLinkProps = {
   lang: Language
   selected: boolean
   useButton: boolean
-}
+} & PropsWithChildren<unknown>
 
 const QuestionButton = (props: QuestionLinkProps) => {
   return (

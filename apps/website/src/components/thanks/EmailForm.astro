@@ -5,7 +5,7 @@ import Checkbox from '~components/ui/Checkbox.astro'
 import Input from '~components/ui/Input.astro'
 import type {UserSelect} from '~server/db'
 
-export interface Props {
+export type Props = {
   formData?: Record<string, any>
   errors?: Record<string, ZodIssue>
   submitted?: boolean

@@ -34,7 +34,7 @@ import {Webhook} from 'svix'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import type {ConsentType} from './consent'
 import {normalizeEmail} from './consent'
-import * as dbSchema from './db/schema'
+import type * as dbSchema from './db/schema'
 import {unsubscribeAllActiveByEmail, unsubscribeByEmailAndType} from './db/upsert'
 
 // ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ export type UnsubscribeSource = (typeof UNSUBSCRIBE_SOURCE)[keyof typeof UNSUBSC
 // Svix signature verification
 // ---------------------------------------------------------------------------
 
-export interface WebhookHeaders {
+export type WebhookHeaders = {
   'svix-id': string
   'svix-timestamp': string
   'svix-signature': string
@@ -157,7 +157,7 @@ export type DispatchSummary = {
   affectedRows: number
 }
 
-export interface DispatchSegmentIds {
+export type DispatchSegmentIds = {
   newsletterSegmentId: string | undefined
   appWaitlistSegmentId: string | undefined
 }

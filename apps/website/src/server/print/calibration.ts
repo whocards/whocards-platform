@@ -11,10 +11,12 @@
 // needs pdf-lib's built-in Helvetica (StandardFonts), no font-file reads and
 // therefore no dependency on that Netlify file-bundling path at all.
 
-import {PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage} from 'pdf-lib'
+import {PDFDocument, StandardFonts, rgb} from 'pdf-lib'
+import type {PDFFont, PDFPage} from 'pdf-lib'
 
 import type {CalibrationPdfParams} from './calibration-params'
-import {layoutFor, mm, PT_PER_MM, type Rect, type Size} from './presets'
+import {layoutFor, mm, PT_PER_MM} from './presets'
+import type {Rect, Size} from './presets'
 import {wrapToWidth} from './text-fit'
 
 const GRID_COLOR = rgb(0.06, 0.06, 0.09)

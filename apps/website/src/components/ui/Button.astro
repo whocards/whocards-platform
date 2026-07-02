@@ -5,7 +5,7 @@ import {cn} from '~utils'
 
 // TODO Polymorphic component https://docs.astro.build/en/guides/typescript/#polymorphic-type
 
-export interface Props<T> extends HTMLAttributes<'button' | 'a'> {
+export type Props<T> = HTMLAttributes<'button' | 'a'> & {
   size?: 'sm' | 'md' | 'lg'
   type?: 'button' | 'submit'
   variant?: 'primary' | 'secondary'

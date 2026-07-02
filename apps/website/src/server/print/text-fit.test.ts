@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
-import {fitText, wrapToWidth, type FontMetrics} from './text-fit'
+import {fitText, wrapToWidth} from './text-fit'
+import type {FontMetrics} from './text-fit'
 
 // A fake monospace-ish metric: width = size * 0.6 per character. Deterministic
 // and gives full control over wrap points without needing a real font.

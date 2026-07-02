@@ -1,3 +1,4 @@
+import {logError} from '@whocards/observability'
 import type {APIRoute} from 'astro'
 
 import {parseCalibrationParams} from '../../server/print/calibration-params'
@@ -30,7 +31,7 @@ export const GET: APIRoute = async ({url}) => {
   try {
     pdf = Buffer.from(await renderCalibrationPdf(parsed.value))
   } catch (err) {
-    console.error('calibration.pdf render failed:', err)
+    logError('calibration.pdf render failed', err)
     return new Response(JSON.stringify({error: 'PDF rendering failed'}), {
       status: 500,
       headers: {'content-type': 'application/json'},

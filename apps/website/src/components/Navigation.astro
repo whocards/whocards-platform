@@ -1,11 +1,12 @@
 ---
 import {Icon} from 'astro-icon/components'
 import NavLink from './Buttons/NavLink.astro'
-import {eventLinks, type Link} from '~constants/navigation'
+import {eventLinks} from '~constants/navigation'
+import type {Link} from '~constants/navigation'
 import {websiteNextUrl} from '~constants/urls'
 const isQuestionPage = Astro.url.pathname.includes('question')
 
-interface Props {
+type Props = {
   links: Link[]
 }
 const {links} = Astro.props
@@ -221,37 +222,43 @@ const inlineLinks = links.filter((link) => link.href !== '/app' && !link.button)
 </script>
 
 <script>
-  const button = document.getElementById('who-menu-button')!
-  const drawer = document.getElementById('who-drawer')! as HTMLInputElement
-  const links = document.querySelectorAll('.drawer-side .menu a')!
-  const bg = document.querySelector('.drawer-overlay')!
+  const button = document.getElementById('who-menu-button')
+  const drawer = document.getElementById('who-drawer') as HTMLInputElement | null
+  const links = document.querySelectorAll('.drawer-side .menu a')
+  const bg = document.querySelector('.drawer-overlay')
 
-  for (const link of links) {
-    link?.addEventListener('click', () => {
-      drawer.checked = false
-      button.classList.remove('swap-active')
+  if (button && drawer) {
+    for (const link of links) {
+      link.addEventListener('click', () => {
+        drawer.checked = false
+        button.classList.remove('swap-active')
+      })
+    }
+
+    button.addEventListener('click', (e) => {
+      e.preventDefault()
+      drawer.checked = !drawer.checked
+      button.classList.toggle('swap-active')
+    })
+
+    bg?.addEventListener('click', () => {
+      button.classList.toggle('swap-active')
     })
   }
-
-  button?.addEventListener('click', (e) => {
-    e.preventDefault()
-    drawer.checked = !drawer.checked
-    button.classList.toggle('swap-active')
-  })
-
-  bg?.addEventListener('click', (e) => {
-    button.classList.toggle('swap-active')
-  })
 </script>
 
 <script>
-  const navbar = document.querySelectorAll('.navbar')![0]
-  let observer = new IntersectionObserver((entries) => {
-    if (entries[0].boundingClientRect.y < 0) {
-      navbar.classList.add('backdrop-blur')
-    } else {
-      navbar.classList.remove('backdrop-blur')
-    }
-  })
-  observer.observe(document.querySelector('#top-of-site-pixel-anchor')!)
+  const navbar = document.querySelectorAll('.navbar')[0]
+  const topOfSitePixel = document.querySelector('#top-of-site-pixel-anchor')
+
+  if (navbar && topOfSitePixel) {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].boundingClientRect.y < 0) {
+        navbar.classList.add('backdrop-blur')
+      } else {
+        navbar.classList.remove('backdrop-blur')
+      }
+    })
+    observer.observe(topOfSitePixel)
+  }
 </script>

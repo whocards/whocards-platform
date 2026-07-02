@@ -1,11 +1,13 @@
 ---
-import Button, {type Props as ButtonProps} from '~components/ui/Button.astro'
+import Button from '~components/ui/Button.astro'
+import type {Props as ButtonProps} from '~components/ui/Button.astro'
 import type {Link} from '~constants/navigation'
 
-export interface Props extends Omit<Link, 'href'>, Omit<ButtonProps<'a'>, 'title'> {
-  selected: boolean
-  hideIcon?: boolean
-}
+export type Props = Omit<Link, 'href'> &
+  Omit<ButtonProps<'a'>, 'title'> & {
+    selected: boolean
+    hideIcon?: boolean
+  }
 
 const {
   href,

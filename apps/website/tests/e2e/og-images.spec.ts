@@ -1,4 +1,5 @@
 import {expect, test} from '@playwright/test'
+import type {Page} from '@playwright/test'
 
 // Social / Open Graph metadata (rendered by src/layouts/Head.astro):
 //   - every page exposes og:image and twitter:image
@@ -21,7 +22,7 @@ const sample = [
   {path: '/mission', expectImage: /\/social\.png$/},
 ]
 
-const metaContent = (page: import('@playwright/test').Page, property: string) =>
+const metaContent = (page: Page, property: string) =>
   page.locator(`meta[property="${property}"]`).getAttribute('content')
 
 for (const {path, expectImage} of sample) {
@@ -59,12 +60,9 @@ for (const card of ['/og/en/1.png', '/og/he/1.png']) {
 // it (same limitation as /contact). Asserting its per-question og:image ->
 // /og/{lang}/{id}.png needs an SSR-capable server (e.g. `netlify dev`); enable
 // this once the e2e harness can run functions.
-test.fixme(
-  'TODO: SSR /play exposes per-question og:image (needs functions-capable server)',
-  async () => {
-    // Verified manually on the deploy preview:
-    //   /play?lang=en&q=1 -> og:image .../og/en/1.png
-    //   /play?lang=he&q=2 -> og:image .../og/he/2.png
-    //   /play (no q)      -> og:image .../social.png
-  }
-)
+test.fixme('TODO: SSR /play exposes per-question og:image (needs functions-capable server)', async () => {
+  // Verified manually on the deploy preview:
+  //   /play?lang=en&q=1 -> og:image .../og/en/1.png
+  //   /play?lang=he&q=2 -> og:image .../og/he/2.png
+  //   /play (no q)      -> og:image .../social.png
+})

@@ -4,12 +4,12 @@ import type {QuestionId, QuestionIds} from '~types'
 import {generateGame} from '~utils'
 import {getCurrentQuestionUrl} from '~utils/urls'
 
-interface Game {
+type Game = {
   ids: QuestionIds
   idx: number
 }
 
-export interface GameStatus {
+export type GameStatus = {
   prev: QuestionId | undefined
   next: QuestionId | undefined
   current: QuestionId

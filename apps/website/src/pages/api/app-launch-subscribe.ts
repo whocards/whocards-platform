@@ -1,3 +1,4 @@
+import {logError} from '@whocards/observability'
 import type {APIRoute} from 'astro'
 import {Resend} from 'resend'
 import {env} from '~env'
@@ -54,6 +55,7 @@ export const POST: APIRoute = async ({request, clientAddress}) => {
 
   // Log source for segmentation (full persistence tracked in #92). No email — PII.
   if (source) {
+    // oxlint-disable-next-line no-console -- deliberate info log, not an error/warning
     console.info('app-launch-subscribe: source=%s', source)
   }
 
@@ -88,33 +90,33 @@ export const POST: APIRoute = async ({request, clientAddress}) => {
       })
     }
   } catch (error) {
-    console.error('app-launch-subscribe: failed to store lead', error)
+    logError('app-launch-subscribe: failed to store lead', error)
     return json({message: "We couldn't save your signup. Please try again."}, 503)
   }
 
   if (!env.RESEND_API_KEY) {
-    console.error('app-launch-subscribe: RESEND_API_KEY not configured')
+    logError('app-launch-subscribe: RESEND_API_KEY not configured')
     return json({message: 'Email is not configured yet. Please try again later.'}, 503)
   }
 
   const resend = new Resend(env.RESEND_API_KEY)
 
-  const email_ = confirmationEmail({newsletter})
+  const confirmation = confirmationEmail({newsletter})
 
   try {
     const {error} = await resend.emails.send({
       from: env.RESEND_FROM_EMAIL,
       to: email,
-      subject: email_.subject,
-      html: email_.html,
+      subject: confirmation.subject,
+      html: confirmation.html,
     })
 
     if (error) {
-      console.error('app-launch-subscribe: resend error', error)
+      logError('app-launch-subscribe: resend error', error)
       return json({message: "We couldn't send the confirmation email. Please try again."}, 502)
     }
   } catch (error) {
-    console.error('app-launch-subscribe: send threw', error)
+    logError('app-launch-subscribe: send threw', error)
     return json({message: "We couldn't send the confirmation email. Please try again."}, 502)
   }
 
@@ -136,7 +138,7 @@ export const POST: APIRoute = async ({request, clientAddress}) => {
     }
     await syncEmailConsents(db, email, {resendContacts, segmentIdFor})
   } catch (syncErr) {
-    console.error('app-launch-subscribe: resend sync threw (non-fatal)', syncErr)
+    logError('app-launch-subscribe: resend sync threw (non-fatal)', syncErr)
   }
 
   return json({message: confirmationMessage({newsletter})}, 200)
