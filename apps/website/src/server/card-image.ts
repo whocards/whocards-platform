@@ -34,7 +34,7 @@ import questions from '~data/questions.json'
 /** A Share Card output size. `key` doubles as the on-demand endpoint's URL segment. */
 export type CardSizeKey = 'og' | 'story' | 'post'
 
-type CardSize = {
+export type CardSize = {
   key: CardSizeKey
   width: number
   height: number
@@ -264,7 +264,15 @@ const bidi = bidiFactory()
 
 // Rough max characters per visual line at a given font size, used to wrap RTL
 // text before reordering (Satori in this version does no bidi reordering, so we
-// reorder ourselves and feed it pre-broken visual-order lines).
+// reorder ourselves and feed it pre-broken visual-order lines). 0.52 is tuned
+// specifically for Hebrew's average glyph width for this *actual* wrap step —
+// deliberately a hair narrower than avgCharWidthFactor's 0.55 (the coarser
+// constant the autofit below uses to just *estimate* a line count across every
+// script). They're allowed to differ: a narrower actual-wrap factor means real
+// Hebrew wrapping fits comfortably inside the autofit's slightly more generous
+// per-line budget rather than the two disagreeing outward and letting text run
+// past what the autofit sized for. (The autofit's own AUTOFIT_SAFETY_MARGIN
+// absorbs the gap either way.)
 const maxCharsPerLine = (fontSize: number, size: CardSize): number =>
   Math.floor((size.width - size.padding * 2) / (fontSize * 0.52))
 
@@ -329,6 +337,33 @@ const AUTOFIT_STEP = 2
 // text actually reaching the wordmark.
 const AUTOFIT_SAFETY_MARGIN = 1.08
 
+// Reserve room below the centred text block for the (now much bigger, see
+// CardSize.wordmarkScale) wordmark, so a long question can never grow into
+// it. Centering splits leftover space evenly top/bottom, so this clearance is
+// effectively "spent" on both sides — deliberately conservative, matching the
+// wordmark's own approximate glyph height plus a breathing gap. Exported (not
+// just inlined in fontSizeFor) so tests can assert against this exact budget
+// instead of re-deriving the formula themselves.
+export const wordmarkClearanceFor = (size: CardSize): number =>
+  Math.round(52 * size.wordmarkScale + 60)
+
+// Estimate how many visual lines `text` will render as, honouring forced
+// paragraph breaks (`\n`, or a blank line from `\n\n`) instead of flattening
+// them away. Both LTR (`whiteSpace: pre-wrap`) and RTL (`toVisualRtl`, which
+// explicitly keeps a `''` entry per blank paragraph) preserve every `\n` in
+// the source as a real line break in the render — confirmed against actual
+// Satori output: a short multi-paragraph question ("Who is a person you
+// admire?\n\nWhy?") renders as paragraph-1's wrapped lines, PLUS one blank
+// line for the `\n\n`, PLUS paragraph-2's wrapped lines, not the single
+// flattened-length estimate a naive `text.replace(/\s+/g, ' ')` would give.
+// A blank paragraph still consumes exactly one line of height even though it
+// has zero characters to wrap.
+const estimateLineCount = (text: string, charsPerLine: number): number =>
+  text.split('\n').reduce((total, paragraph) => {
+    const paragraphLen = paragraph.trim().length
+    return total + (paragraphLen === 0 ? 1 : Math.ceil(paragraphLen / charsPerLine))
+  }, 0)
+
 /**
  * Pick a font size so the question fills as much of the card as possible
  * while still fitting — the whole point of this design pass (#161): a small
@@ -351,25 +386,52 @@ const fontSizeFor = (text: string, language: string, size: CardSize): number => 
   if (size.key === 'og') return Math.round(base * size.fontScale)
 
   const availableWidth = size.width - size.padding * 2
-  // Reserve room below the centred text block for the (now much bigger,
-  // see CardSize.wordmarkScale) wordmark, so a long question can never grow
-  // into it. Centering splits leftover space evenly top/bottom, so this
-  // clearance is effectively "spent" on both sides — deliberately
-  // conservative, matching the wordmark's own approximate glyph height plus
-  // a breathing gap.
-  const wordmarkClearance = Math.round(52 * size.wordmarkScale + 60)
+  const wordmarkClearance = wordmarkClearanceFor(size)
   const availableHeight = size.height - size.padding * 2 - wordmarkClearance * 2
   const widthFactor = avgCharWidthFactor(language)
 
   let fontSize = Math.round(base * size.fontScale)
   while (fontSize > AUTOFIT_MIN_FONT_SIZE) {
     const charsPerLine = Math.max(1, Math.floor(availableWidth / (fontSize * widthFactor)))
-    const lines = Math.ceil(len / charsPerLine)
+    // text (not the flattened `len`) so forced paragraph breaks are counted
+    // as real lines instead of collapsing into the surrounding text — see
+    // estimateLineCount.
+    const lines = estimateLineCount(text, charsPerLine)
     const blockHeight = lines * fontSize * AUTOFIT_LINE_HEIGHT * AUTOFIT_SAFETY_MARGIN
     if (blockHeight <= availableHeight) break
     fontSize -= AUTOFIT_STEP
   }
-  return fontSize
+  // The shrink loop decrements by AUTOFIT_STEP while checking `> MIN`, so an
+  // odd starting size (base * fontScale frequently rounds to one, e.g. 133,
+  // 107, 89) can step past MIN to MIN - 1 on its last iteration instead of
+  // landing exactly on it. Clamp so callers can rely on MIN as a true floor.
+  return Math.max(fontSize, AUTOFIT_MIN_FONT_SIZE)
+}
+
+/**
+ * Exported for unit testing only — reproduces the autofit's own projected
+ * block height for a (text, language, size), using the exact same
+ * fontSizeFor/estimateLineCount/wordmarkClearanceFor this module renders
+ * with (not a re-derived formula), so a full-dataset sweep (every question
+ * id with an embedded `\n`, every language, both story and post) can assert
+ * "does the estimate itself ever project past the wordmark clearance" for
+ * all ~500 real (id, language, size) combinations without paying for a real
+ * Satori render per case.
+ */
+export const autofitEstimateForTest = (
+  text: string,
+  language: string,
+  size: CardSize
+): {fontSize: number; blockHeight: number; availableHeight: number} => {
+  const fontSize = fontSizeFor(text, language, size)
+  const availableWidth = size.width - size.padding * 2
+  const widthFactor = avgCharWidthFactor(language)
+  const charsPerLine = Math.max(1, Math.floor(availableWidth / (fontSize * widthFactor)))
+  const lines = estimateLineCount(text, charsPerLine)
+  const blockHeight = lines * fontSize * AUTOFIT_LINE_HEIGHT * AUTOFIT_SAFETY_MARGIN
+  const wordmarkClearance = wordmarkClearanceFor(size)
+  const availableHeight = size.height - size.padding * 2 - wordmarkClearance * 2
+  return {fontSize, blockHeight, availableHeight}
 }
 
 // The brand wordmark: white "WHOCARDS.CC" in the Aptly title face followed by
