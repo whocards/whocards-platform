@@ -1,0 +1,228 @@
+/*
+ * Shared mock CSS for the #163 light-mode proposal.
+ * Token values mirror packages/tokens/src/colors.ts (dark, unchanged) plus the
+ * new light-mode values proposed in ../proposal.md. Do NOT treat this file as
+ * an implementation artifact — it exists only to render the review mocks.
+ */
+
+@font-face {
+  font-family: 'golos-text';
+  src: url('./golos_text.woff2') format('woff2');
+  font-weight: 400 700;
+}
+@font-face {
+  font-family: 'aptly';
+  src: url('./aptly_regular.woff2') format('woff2');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'aptly';
+  src: url('./aptly_medium.woff2') format('woff2');
+  font-weight: 500 700;
+}
+
+:root {
+  /* ---- unchanged brand primitives (packages/tokens/src/colors.ts) ---- */
+  --yellow-100: #7e7552; /* existing, currently-unused token — reused below as the
+                              light-theme-legible flat "yellow" for text/wordmark use */
+  --yellow-300: #ffe37e;
+  --yellow-400: #f9d75f;
+  --yellow-500: #f6c944;
+  --gray: #65636e;
+  --gray-lighter: #dcdee9;
+  --gray-light: #474a69;
+  --gray-dark: #9698af;
+  --primary-light: #f9d75f;
+  --primary-dark: #c058d2;
+  --dark: #262432;
+  --darker: #111516;
+  --darkest: #08001a;
+  --background: #0d051f;
+  --white: #f5f5f5;
+  --red: #ee1e23;
+
+  /* ---- proposed light-mode additions (see proposal.md §Palette) ---- */
+  --background-light: #f6f2fb; /* canvas */
+  --darkest-light: #ffffff; /* deep canvas / nav chrome / native sheets (== existing bg-white) */
+  --darker-light: #efeaf7; /* mid surface: revealed card fill, PlayerBar, close chip */
+  --dark-light: #ded4ec; /* raised surface: deck peek layers, card back, pressed card */
+  --gray-dark-on-light: #6b6d82; /* deepened muted text, AA on light surfaces */
+  --primary-dark-on-light: #9a3aac; /* deepened violet, AA for text-scale use on light */
+  --red-on-light: #c9151a; /* deepened error, AA for text-scale use on light */
+  --rule-light: #dcdee9; /* == existing gray-lighter, reused as-is */
+  --selection-tint: rgba(255, 227, 126, 0.4); /* == existing bg-yellow-300/40 */
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  padding: 40px;
+  background: #e4e0ec;
+  font-family: 'golos-text', ui-sans-serif, system-ui, sans-serif;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  align-items: flex-start;
+}
+.frame-label {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+.frame-label span {
+  font-family: 'aptly';
+  font-weight: 500;
+  font-size: 14px;
+  color: #3a3550;
+  letter-spacing: 0.02em;
+}
+
+/* ---- device frame ---- */
+.phone {
+  width: 390px;
+  height: 844px;
+  border-radius: 54px;
+  padding: 14px;
+  background: #0b0b0f;
+  box-shadow:
+    0 30px 60px rgba(20, 10, 40, 0.35),
+    0 2px 8px rgba(20, 10, 40, 0.25);
+}
+.screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 40px;
+  overflow: hidden;
+  background: var(--background-light);
+}
+.notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 30px;
+  background: #0b0b0f;
+  border-radius: 0 0 18px 18px;
+  z-index: 50;
+}
+.texture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.safe-top {
+  padding-top: 54px;
+}
+.safe-bottom {
+  padding-bottom: 34px;
+}
+
+/* ---- shared bits ---- */
+.close-chip {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(20, 10, 40, 0.08);
+}
+.close-chip svg {
+  stroke: var(--darker);
+}
+
+.player-bar {
+  display: flex;
+  align-items: stretch;
+  border-top: 1px solid rgba(17, 21, 22, 0.1);
+  background: rgba(255, 255, 255, 0.86);
+  padding: 8px 16px 26px;
+  gap: 4px;
+}
+.bar-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+}
+.bar-btn span {
+  font-size: 12px;
+  color: var(--gray-dark-on-light);
+}
+.bar-btn svg {
+  stroke: var(--darker);
+}
+
+.btn-primary {
+  width: 100%;
+  background: var(--yellow-400);
+  color: var(--darker);
+  border-radius: 999px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: 'golos-text';
+  font-weight: 700;
+  font-size: 16px;
+}
+.chip-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(17, 21, 22, 0.16);
+  border-radius: 999px;
+  padding: 8px 16px;
+  color: rgba(17, 21, 22, 0.8);
+  font-size: 14px;
+}
+
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 90px;
+  background: var(--darkest-light);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 24px rgba(20, 10, 40, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 20px 16px;
+  border-bottom: 1px solid var(--rule-light);
+}
+.sheet-title {
+  font-family: 'aptly';
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--darker);
+}
+.sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+}
+.sheet-row svg {
+  stroke: var(--darker);
+}
+.sheet-row span {
+  font-size: 17px;
+  color: var(--darker);
+}
