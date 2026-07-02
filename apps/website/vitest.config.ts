@@ -1,9 +1,19 @@
+import {fileURLToPath} from 'node:url'
+
 import {defineConfig} from 'vitest/config'
 
 // Unit tests for pure server-side logic (e.g. app-waitlist consent). SSR routes
 // and pages are covered by Playwright (tests/e2e, tests/e2e-ssr); vitest only
 // picks up colocated `*.test.ts` modules under src/.
 export default defineConfig({
+  resolve: {
+    // Mirror tsconfig.json's `~*` -> `./src/*` path alias (astro/vite resolve
+    // it via the astro integration at build/dev time; vitest runs standalone,
+    // so it needs its own alias). card-image.ts (src/server/card-image.ts)
+    // imports its question/language data this way, so any test that imports
+    // it — directly or via the /share-card endpoint — needs this to resolve.
+    alias: [{find: /^~/, replacement: fileURLToPath(new URL('./src/', import.meta.url))}],
+  },
   test: {
     include: ['src/**/*.test.ts'],
     // The DB-backed suites share a single PGlite instance (an in-process

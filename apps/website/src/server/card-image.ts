@@ -1,7 +1,9 @@
 import {createHash, randomBytes} from 'node:crypto'
+import {existsSync} from 'node:fs'
 import {mkdir, readdir, readFile, rename, rm, writeFile} from 'node:fs/promises'
-import {join} from 'node:path'
+import {dirname, join} from 'node:path'
 import process from 'node:process'
+import {fileURLToPath} from 'node:url'
 
 import {Resvg} from '@resvg/resvg-js'
 import bidiFactory from 'bidi-js'
@@ -13,19 +15,75 @@ import type languages from '~data/languages.json'
 import questions from '~data/questions.json'
 
 /**
- * Programmatic generator for the per-question social/OG card images.
+ * Programmatic generator for the per-question **Share Card** images (CONTEXT.md):
+ * the build-time OG/social link-preview image, and the on-demand story (9:16) /
+ * post (4:5) sizes served for sharing (ADR-0007). This module is the single
+ * design source for all three — same navy maze background, auto-sized question
+ * text, WHOCARDS.CC wordmark — parameterized over `CardSize` (see below).
  *
  * Pipeline: question text -> Satori (HTML/CSS -> SVG) -> @resvg/resvg-js (SVG -> PNG).
  *
  * Fonts ship as woff2 in /public/fonts but Satori only understands ttf/otf/woff,
  * so we decompress the woff2 to ttf once (cached) with wawoff2.
  *
- * Adding a question or language requires NO committed PNGs: the card is rendered
- * from src/data/questions.json on demand (build-time prerender of the .png endpoint).
+ * Adding a question or language requires NO committed PNGs: every card is
+ * rendered from src/data/questions.json — the OG size at build time (prerender
+ * of the .png endpoint, persisted-cached below), the story/post sizes on demand
+ * (Netlify function, never cached to disk — see `renderCardPng`).
  */
 
-export const CARD_WIDTH = 1200
-export const CARD_HEIGHT = 630
+/** A Share Card output size. `key` doubles as the on-demand endpoint's URL segment. */
+export type CardSizeKey = 'og' | 'story' | 'post'
+
+type CardSize = {
+  key: CardSizeKey
+  width: number
+  height: number
+  // Even padding around the card content, in px at this size.
+  padding: number
+  // The wordmark is tuned for the OG size (44px/52px); other sizes scale it
+  // by this factor rather than repeating the OG's absolute px values.
+  wordmarkScale: number
+  // OG's design is top-aligned question text (matches the committed design
+  // pixel-for-pixel). The taller portrait sizes centre the text block instead
+  // between the top padding and the wordmark, which reads better on a 9:16/4:5
+  // canvas than a wall of top-aligned text.
+  verticalAlign: 'flex-start' | 'center'
+}
+
+export const CARD_SIZES: Record<CardSizeKey, CardSize> = {
+  og: {
+    key: 'og',
+    width: 1200,
+    height: 630,
+    padding: 64,
+    wordmarkScale: 1,
+    verticalAlign: 'flex-start',
+  },
+  story: {
+    key: 'story',
+    width: 1080,
+    height: 1920,
+    padding: 80,
+    wordmarkScale: 0.9,
+    verticalAlign: 'center',
+  },
+  post: {
+    key: 'post',
+    width: 1080,
+    height: 1350,
+    padding: 72,
+    wordmarkScale: 0.9,
+    verticalAlign: 'center',
+  },
+}
+
+/** The on-demand Share Card sizes (excludes `og`, which stays build-time-only). */
+export const SHARE_CARD_SIZE_KEYS = ['story', 'post'] as const satisfies readonly CardSizeKey[]
+
+// Kept for callers that only care about the OG size (equal to CARD_SIZES.og).
+export const CARD_WIDTH = CARD_SIZES.og.width
+export const CARD_HEIGHT = CARD_SIZES.og.height
 
 const BG_COLOR = '#262434'
 // The decorative maze lines are a darker tone-on-tone of the navy base.
@@ -33,9 +91,6 @@ const MAZE_COLOR = '#1e1d2a'
 const TEXT_COLOR = '#f5f5f5'
 const ACCENT_PURPLE = '#c058d2'
 const ACCENT_YELLOW = '#f9d75f'
-
-// Even padding around the card content (matches the original committed design).
-const PADDING = 64
 
 type LanguageCode = keyof typeof languages
 type Questions = Record<string, Record<string, string>>
@@ -64,11 +119,58 @@ const FONT_FILES: Record<FontKey, {file: string; family: string}> = {
   japanese: {file: 'noto-sans-japanese_regular.woff2', family: 'Noto Sans Japanese'},
 }
 
-// Fonts (and the maze SVG) live in /public. Cards are prerendered at build time
-// where the process cwd is the project root, so resolve from cwd (robust against
-// the bundled module location, which import.meta.url would point to).
-const publicDir = join(process.cwd(), 'public')
-const fontDir = join(publicDir, 'fonts')
+// Fonts (and the maze SVG) live in /public. The OG size only ever renders at
+// build time, where the process cwd is the astro project root — but the
+// story/post sizes render on demand as a Netlify Function, whose cwd is NOT
+// reliably the project root (same problem src/server/print/render.ts solved
+// first; see its longer write-up). So resolve the base dir the same way: probe
+// a short list of candidates for a file we know ships in every build, and
+// cache whichever one actually has it.
+let resolvedBaseDir: string | undefined
+
+const candidateBaseDirs = (): string[] => {
+  const bases = new Set<string>()
+  bases.add(process.cwd())
+  try {
+    // This module's own compiled location. Walking a few levels up from there
+    // works regardless of how the bundler nests chunks.
+    let dir = dirname(fileURLToPath(import.meta.url))
+    for (let i = 0; i < 8; i += 1) {
+      bases.add(dir)
+      const parent = dirname(dir)
+      if (parent === dir) break
+      dir = parent
+    }
+  } catch {
+    // import.meta.url isn't always a resolvable file: URL in every runtime —
+    // cwd/LAMBDA_TASK_ROOT are tried regardless.
+  }
+  // Netlify Functions run on AWS Lambda, which exposes the function's
+  // extraction root via LAMBDA_TASK_ROOT.
+  if (process.env['LAMBDA_TASK_ROOT']) bases.add(process.env['LAMBDA_TASK_ROOT'])
+  // Each base might already BE the astro project root, or might be the
+  // function/monorepo root one level above it — try both.
+  return [...bases].flatMap((base) => [base, join(base, 'apps', 'website')])
+}
+
+const resolveBaseDir = (): string => {
+  if (resolvedBaseDir) return resolvedBaseDir
+  const probed: string[] = []
+  for (const base of candidateBaseDirs()) {
+    const probe = join(base, 'public', 'fonts', FONT_FILES.golos.file)
+    probed.push(probe)
+    if (existsSync(probe)) {
+      resolvedBaseDir = base
+      return base
+    }
+  }
+  throw new Error(
+    `card-image: couldn't locate bundled fonts under any candidate base dir. Probed:\n${probed.join('\n')}`
+  )
+}
+
+const publicDir = (): string => join(resolveBaseDir(), 'public')
+const fontDir = (): string => join(publicDir(), 'fonts')
 
 const ttfCache = new Map<FontKey, Promise<Buffer>>()
 
@@ -76,7 +178,7 @@ const loadTtf = (key: FontKey): Promise<Buffer> => {
   let cached = ttfCache.get(key)
   if (!cached) {
     cached = (async () => {
-      const woff2 = await readFile(join(fontDir, FONT_FILES[key].file))
+      const woff2 = await readFile(join(fontDir(), FONT_FILES[key].file))
       const ttf = await decompress(woff2)
       return Buffer.from(ttf)
     })()
@@ -106,34 +208,57 @@ const fontsFor = async (language: string): Promise<FontOptions[]> => {
 
 // The decorative maze pattern. The committed cards render `public/background.svg`
 // as faint, darker tone-on-tone lines over the navy base. We recolour the maze
-// paths to a solid dark fill, rasterise a card-aspect crop once, and cache the
-// result as a PNG data URI to use as a Satori `backgroundImage`.
-let mazeDataUri: Promise<string> | undefined
+// paths to a solid dark fill, rasterise a card-aspect crop once per size, and
+// cache the result as a PNG data URI to use as a Satori `backgroundImage`.
+//
+// The source art is landscape (2467x1722, aspect ~1.433). The OG size
+// (1200x630, aspect ~1.905) is *wider* than the source, so it crops a full-width
+// strip from the top — the original approach. The story/post sizes are
+// *taller* than the source (portrait), where a full-width top strip would need
+// more vertical extent than the art has; those instead crop a full-height
+// slice, centred horizontally, and fit to height.
+const MAZE_SOURCE_WIDTH = 2467
+const MAZE_SOURCE_HEIGHT = 1722
+const MAZE_SOURCE_ASPECT = MAZE_SOURCE_WIDTH / MAZE_SOURCE_HEIGHT
 
-const buildMazeDataUri = (): Promise<string> => {
-  if (!mazeDataUri) {
-    mazeDataUri = (async () => {
-      const raw = await readFile(join(publicDir, 'background.svg'), 'utf8')
-      // The maze SVG is 2467x1722. Crop a card-aspect region from the top via a
-      // viewBox and rasterise straight to the card size (no stretching).
-      const MAZE_W = 2467
-      const cropHeight = Math.round((MAZE_W * CARD_HEIGHT) / CARD_WIDTH)
+const mazeDataUriCache = new Map<CardSizeKey, Promise<string>>()
+
+const buildMazeDataUri = (size: CardSize): Promise<string> => {
+  let cached = mazeDataUriCache.get(size.key)
+  if (!cached) {
+    cached = (async () => {
+      const raw = await readFile(join(publicDir(), 'background.svg'), 'utf8')
+      const targetAspect = size.width / size.height
+
+      let viewBox: string
+      let fitTo: {mode: 'width' | 'height'; value: number}
+      if (targetAspect >= MAZE_SOURCE_ASPECT) {
+        // Landscape (including OG): crop a full-width strip from the top.
+        const cropHeight = Math.round(MAZE_SOURCE_WIDTH * (size.height / size.width))
+        viewBox = `0 0 ${MAZE_SOURCE_WIDTH} ${cropHeight}`
+        fitTo = {mode: 'width', value: size.width}
+      } else {
+        // Portrait: crop a full-height slice, centred horizontally.
+        const cropWidth = Math.round(MAZE_SOURCE_HEIGHT * targetAspect)
+        const xOffset = Math.round((MAZE_SOURCE_WIDTH - cropWidth) / 2)
+        viewBox = `${xOffset} 0 ${cropWidth} ${MAZE_SOURCE_HEIGHT}`
+        fitTo = {mode: 'height', value: size.height}
+      }
+
       const svg = raw
         .replace(
           /^<svg[^>]*>/,
-          `<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_WIDTH}" height="${CARD_HEIGHT}" viewBox="0 0 ${MAZE_W} ${cropHeight}" fill="none">`
+          `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="${viewBox}" fill="none">`
         )
         .replace(/fill="url\(#b\)"/g, `fill="${MAZE_COLOR}"`)
         .replace(/fill-opacity="\.[0-9]+"/g, 'fill-opacity="1"')
-      const resvg = new Resvg(svg, {
-        fitTo: {mode: 'width', value: CARD_WIDTH},
-        background: BG_COLOR,
-      })
+      const resvg = new Resvg(svg, {fitTo, background: BG_COLOR})
       const png = resvg.render().asPng()
       return `data:image/png;base64,${Buffer.from(png).toString('base64')}`
     })()
+    mazeDataUriCache.set(size.key, cached)
   }
-  return mazeDataUri
+  return cached
 }
 
 const isRtl = (language: string): boolean => RTL_LANGUAGES.has(language)
@@ -143,8 +268,8 @@ const bidi = bidiFactory()
 // Rough max characters per visual line at a given font size, used to wrap RTL
 // text before reordering (Satori in this version does no bidi reordering, so we
 // reorder ourselves and feed it pre-broken visual-order lines).
-const maxCharsPerLine = (fontSize: number): number =>
-  Math.floor((CARD_WIDTH - 128) / (fontSize * 0.52))
+const maxCharsPerLine = (fontSize: number, size: CardSize): number =>
+  Math.floor((size.width - size.padding * 2) / (fontSize * 0.52))
 
 const wrapLine = (line: string, maxChars: number): string[] => {
   if (line.length <= maxChars) return [line]
@@ -166,8 +291,8 @@ const wrapLine = (line: string, maxChars: number): string[] => {
 
 // Reorder logical-order RTL text into visual order (with bracket mirroring) and
 // wrap it, so Satori's plain LTR glyph placement renders it correctly.
-const toVisualRtl = (text: string, fontSize: number): string => {
-  const maxChars = maxCharsPerLine(fontSize)
+const toVisualRtl = (text: string, fontSize: number, size: CardSize): string => {
+  const maxChars = maxCharsPerLine(fontSize, size)
   const reorder = (line: string): string => {
     if (!line) return line
     const levels = bidi.getEmbeddingLevels(line, 'rtl')
@@ -184,85 +309,89 @@ const toVisualRtl = (text: string, fontSize: number): string => {
 
 /**
  * Pick a font size so the question fills as much of the card as possible while
- * still fitting. Short questions are set large; long ones auto-shrink.
+ * still fitting. Short questions are set large; long ones auto-shrink. The
+ * thresholds are tuned for the OG size's 1200px width; other sizes scale the
+ * result by their own width so text reads at a proportionally similar size.
  */
-const fontSizeFor = (text: string): number => {
+const fontSizeFor = (text: string, size: CardSize): number => {
   const len = text.replace(/\s+/g, ' ').trim().length
-  if (len <= 45) return 92
-  if (len <= 70) return 82
-  if (len <= 100) return 72
-  if (len <= 140) return 58
-  if (len <= 200) return 48
-  return 42
+  const base =
+    len <= 45 ? 92 : len <= 70 ? 82 : len <= 100 ? 72 : len <= 140 ? 58 : len <= 200 ? 48 : 42
+  return Math.round(base * (size.width / CARD_SIZES.og.width))
 }
 
 // The brand wordmark: white "WHOCARDS.CC" in the Aptly title face followed by
 // the two-tone question mark (magenta hook + yellow square dot), matching
-// src/icons/logo.svg and the committed cards.
-const Wordmark = () => ({
-  type: 'div',
-  props: {
-    style: {
-      display: 'flex',
-      alignItems: 'flex-end',
-      gap: '16px',
-    },
-    children: [
-      {
-        type: 'div',
-        props: {
-          style: {
-            display: 'flex',
-            fontFamily: 'Aptly',
-            fontSize: '44px',
-            fontWeight: 700,
-            color: TEXT_COLOR,
-          },
-          children: 'WHOCARDS.CC',
-        },
+// src/icons/logo.svg and the committed cards. `scale` is 1 at the OG size
+// (giving the original absolute px values) and <1 for the smaller-width
+// story/post canvases.
+const Wordmark = (scale: number) => {
+  const px = (value: number) => `${Math.round(value * scale)}px`
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: px(16),
       },
-      {
-        type: 'div',
-        props: {
-          style: {
-            position: 'relative',
-            display: 'flex',
-            fontFamily: 'Aptly',
-            fontSize: '52px',
-            fontWeight: 700,
-            color: ACCENT_PURPLE,
+      children: [
+        {
+          type: 'div',
+          props: {
+            style: {
+              display: 'flex',
+              fontFamily: 'Aptly',
+              fontSize: px(44),
+              fontWeight: 700,
+              color: TEXT_COLOR,
+            },
+            children: 'WHOCARDS.CC',
           },
-          children: [
-            '?',
-            // Yellow square dot overlays the magenta glyph's own dot.
-            {
-              type: 'div',
-              props: {
-                style: {
-                  position: 'absolute',
-                  bottom: '2px',
-                  left: '4px',
-                  width: '13px',
-                  height: '13px',
-                  borderRadius: '3px',
-                  backgroundColor: ACCENT_YELLOW,
+        },
+        {
+          type: 'div',
+          props: {
+            style: {
+              position: 'relative',
+              display: 'flex',
+              fontFamily: 'Aptly',
+              fontSize: px(52),
+              fontWeight: 700,
+              color: ACCENT_PURPLE,
+            },
+            children: [
+              '?',
+              // Yellow square dot overlays the magenta glyph's own dot.
+              {
+                type: 'div',
+                props: {
+                  style: {
+                    position: 'absolute',
+                    bottom: px(2),
+                    left: px(4),
+                    width: px(13),
+                    height: px(13),
+                    borderRadius: px(3),
+                    backgroundColor: ACCENT_YELLOW,
+                  },
                 },
               },
-            },
-          ],
+            ],
+          },
         },
-      },
-    ],
-  },
-})
+      ],
+    },
+  }
+}
 
-const buildTree = (rawText: string, language: string, mazeUri: string) => {
+const buildTree = (rawText: string, language: string, mazeUri: string, size: CardSize) => {
   const rtl = isRtl(language)
   const fontFamily = `${fontFamilyFor(language)}, Golos Text`
-  const fontSize = fontSizeFor(rawText)
+  const fontSize = fontSizeFor(rawText, size)
   // For RTL we pre-reorder + pre-wrap the text and disable Satori wrapping;
   // for LTR we let Satori wrap normally.
-  const text = rtl ? toVisualRtl(rawText, fontSize) : rawText
+  const text = rtl ? toVisualRtl(rawText, fontSize, size) : rawText
   return {
     type: 'div',
     props: {
@@ -271,13 +400,16 @@ const buildTree = (rawText: string, language: string, mazeUri: string) => {
         width: '100%',
         height: '100%',
         display: 'flex',
+        justifyContent: size.verticalAlign,
         backgroundColor: BG_COLOR,
         backgroundImage: `url(${mazeUri})`,
-        backgroundSize: `${CARD_WIDTH}px ${CARD_HEIGHT}px`,
-        padding: `${PADDING}px`,
+        backgroundSize: `${size.width}px ${size.height}px`,
+        padding: `${size.padding}px`,
       },
       children: [
-        // Question text: top-aligned, filling the card with even margins.
+        // Question text: filling the card width with even margins. Top-aligned
+        // for OG (the original design); vertically centred for the taller
+        // portrait sizes (see CardSize.verticalAlign).
         {
           type: 'div',
           props: {
@@ -304,11 +436,11 @@ const buildTree = (rawText: string, language: string, mazeUri: string) => {
           props: {
             style: {
               position: 'absolute',
-              bottom: `${PADDING}px`,
-              right: `${PADDING}px`,
+              bottom: `${size.padding}px`,
+              right: `${size.padding}px`,
               display: 'flex',
             },
-            children: [Wordmark()],
+            children: [Wordmark(size.wordmarkScale)],
           },
         },
       ],
@@ -327,7 +459,8 @@ const RENDERER_VERSION = '1'
 // per-version dir keyed by a hash of (text, language) and reuse it across builds.
 // Netlify restores/saves .cache/og between deploys (see netlify/plugins/og-cache),
 // so a deploy that doesn't touch questions.json renders zero PNGs. Resolves from
-// cwd (the website project root at build time), matching publicDir above.
+// cwd (the website project root at build time — this path is only ever hit for
+// the `og` size, which only ever renders at build time; see renderCardPng).
 const cacheRoot = join(process.cwd(), '.cache', 'og')
 const cacheDir = join(cacheRoot, `v${RENDERER_VERSION}`)
 let cacheDirReady: Promise<unknown> | undefined
@@ -354,12 +487,50 @@ const ensureCacheDir = (): Promise<unknown> => {
 const cacheKey = (text: string, language: string): string =>
   createHash('sha256').update(`${language} ${text}`).digest('hex')
 
-/** Render the OG/social card PNG for a given language + question id. */
-export const renderCardPng = async (language: string, id: string): Promise<Buffer> => {
+// Renders straight to PNG bytes for an already-resolved (text, language, size)
+// — the part shared by the cached OG build path and the uncached on-demand
+// story/post path below.
+const renderPng = async (text: string, language: string, size: CardSize): Promise<Buffer> => {
+  const [fonts, mazeUri] = await Promise.all([fontsFor(language), buildMazeDataUri(size)])
+
+  const svg = await satori(buildTree(text, language, mazeUri, size) as never, {
+    width: size.width,
+    height: size.height,
+    fonts,
+    loadAdditionalAsset: async () => '',
+  })
+
+  const resvg = new Resvg(svg, {
+    fitTo: {mode: 'width', value: size.width},
+    background: BG_COLOR,
+  })
+  return Buffer.from(resvg.render().asPng())
+}
+
+/**
+ * Render a Share Card PNG for a given language + question id, at `sizeKey`
+ * (default `'og'`, the build-time link-preview size). The `og` size is the
+ * only one that touches the persisted `.cache/og` build cache — the on-demand
+ * story/post sizes (ADR-0007) always render fresh: they run as a Netlify
+ * function, where there's no build cache directory to rely on, and the CDN's
+ * immutable Cache-Control on the response already avoids re-rendering the
+ * same (question, language, size) on every request.
+ */
+export const renderCardPng = async (
+  language: string,
+  id: string,
+  sizeKey: CardSizeKey = 'og'
+): Promise<Buffer> => {
   const entry = allQuestions[id]
   if (!entry) throw new Error(`Unknown question id: ${id}`)
   const text = entry[language]
   if (text == null) throw new Error(`Question ${id} has no text for language ${language}`)
+
+  const size = CARD_SIZES[sizeKey]
+
+  if (sizeKey !== 'og') {
+    return renderPng(text, language, size)
+  }
 
   const cacheFile = join(cacheDir, `${cacheKey(text, language)}.png`)
   try {
@@ -369,20 +540,7 @@ export const renderCardPng = async (language: string, id: string): Promise<Buffe
     // Cache miss (or unreadable) — render it below and populate the cache.
   }
 
-  const [fonts, mazeUri] = await Promise.all([fontsFor(language), buildMazeDataUri()])
-
-  const svg = await satori(buildTree(text, language, mazeUri) as never, {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    fonts,
-    loadAdditionalAsset: async () => '',
-  })
-
-  const resvg = new Resvg(svg, {
-    fitTo: {mode: 'width', value: CARD_WIDTH},
-    background: BG_COLOR,
-  })
-  const png = Buffer.from(resvg.render().asPng())
+  const png = await renderPng(text, language, size)
 
   // Best-effort, atomic cache write — never fail a build over the cache, and
   // never leave a truncated PNG (a killed build mid-write would otherwise be
