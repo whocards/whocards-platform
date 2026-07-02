@@ -6,9 +6,11 @@ import {describe, expect, it} from 'vitest'
 import {
   autofitEstimateForTest,
   CARD_SIZES,
+  measureQuestionTextBlock,
   renderCardPng,
   renderCardSvgForTest,
   SHARE_CARD_SIZE_KEYS,
+  wordmarkClearanceFor,
 } from './card-image'
 import questions from '~data/questions.json'
 
@@ -91,14 +93,14 @@ const textBoxY = (svg: string): number => {
 
 // Same clip-mask signal as textBoxY, but the full box (top + height) — used by
 // the wordmark-clearance regression tests below to check the rendered text
-// block's actual bottom edge against the autofit's own budget.
+// block's actual bottom edge against the autofit's own budget. Delegates to
+// card-image.ts's own measureQuestionTextBlock (rather than re-deriving the
+// regex here) so the renderer's shrink-and-remeasure loop and this test suite
+// share exactly one definition of "where did the text actually land".
 const questionTextBounds = (svg: string): {top: number; bottom: number} => {
-  const match = svg.match(
-    /<mask id="satori_om-id-0"><rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"/
-  )
-  if (!match) throw new Error('expected a satori_om-id-0 clip mask in the SVG')
-  const top = Number(match[1])
-  return {top, bottom: top + Number(match[2])}
+  const bounds = measureQuestionTextBlock(svg)
+  if (!bounds) throw new Error('expected a satori_om-id-0 clip mask in the SVG')
+  return bounds
 }
 
 describe('question text vertical layout (regression: flex row vs column)', () => {
@@ -214,7 +216,7 @@ describe('autofit never overflows the frame or the wordmark (regression: CJK wid
     const {top, bottom} = questionTextBounds(svg)
     const size = CARD_SIZES[sizeKey]
     expect(top).toBeGreaterThanOrEqual(size.padding)
-    expect(bottom).toBeLessThan(size.height - size.padding - wordmarkClearanceForTest(size))
+    expect(bottom).toBeLessThan(size.height - size.padding - wordmarkClearanceFor(size))
   })
 
   it.each(['story', 'post'] as const)('%s: Japanese stays within the frame', async (sizeKey) => {
@@ -222,7 +224,7 @@ describe('autofit never overflows the frame or the wordmark (regression: CJK wid
     const {top, bottom} = questionTextBounds(svg)
     const size = CARD_SIZES[sizeKey]
     expect(top).toBeGreaterThanOrEqual(size.padding)
-    expect(bottom).toBeLessThan(size.height - size.padding - wordmarkClearanceForTest(size))
+    expect(bottom).toBeLessThan(size.height - size.padding - wordmarkClearanceFor(size))
   })
 })
 
@@ -232,15 +234,25 @@ describe('autofit never overflows the frame or the wordmark (regression: CJK wid
 // wrapped lines, so it never counted the extra line(s) they force. That
 // undercounted the block height enough to let real text render behind the
 // wordmark for ~13.5% of (id, language, size) combinations with an embedded
-// `\n`. These three are the reviewer's confirmed worst offenders (up to
-// -119px past the wordmark clearance boundary before the fix) — pinned here
-// with real Satori renders, not just the estimate math the sweep below uses.
+// `\n`. Fixing the estimate alone wasn't sufficient, though: a second review
+// pass ran a REAL Satori sweep and found 20 more real incursions the fixed
+// estimate still missed (up to -91px, e.g. hu/3/story) — the estimate's flat
+// per-paragraph `Math.ceil(len / charsPerLine)` still undercounts Satori's
+// actual word-wrap for some multi-paragraph Latin shapes. Rather than tuning
+// the estimate/safety-margin harder against that next input shape too,
+// renderSvg now measures the actual rendered block and shrinks-and-remeasures
+// until it's verified clear (see renderSvg's doc comment) — these are the
+// worst confirmed offenders from both passes, pinned with real Satori
+// renders (not just the estimate math the fast sweep below uses).
 describe('autofit clears the wordmark for multi-paragraph (\\n\\n) questions (regression: #169)', () => {
   const cases = [
     {language: 'he', id: '4', sizeKey: 'story'},
     {language: 'jp', id: '35', sizeKey: 'story'},
     {language: 'zh', id: '21', sizeKey: 'story'},
     {language: 'zh', id: '21', sizeKey: 'post'},
+    // Worst offender found by the real-render re-verification pass: the
+    // estimate-only fix still projected this as fitting.
+    {language: 'hu', id: '3', sizeKey: 'story'},
   ] as const
 
   it.each(cases)('$language/$id/$sizeKey clears the wordmark', async ({language, id, sizeKey}) => {
@@ -248,36 +260,63 @@ describe('autofit clears the wordmark for multi-paragraph (\\n\\n) questions (re
     const {top, bottom} = questionTextBounds(svg)
     const size = CARD_SIZES[sizeKey]
     expect(top).toBeGreaterThanOrEqual(size.padding)
-    expect(bottom).toBeLessThan(size.height - size.padding - wordmarkClearanceForTest(size))
+    expect(bottom).toBeLessThan(size.height - size.padding - wordmarkClearanceFor(size))
   })
 })
 
-// Wordmark clearance mirrors fontSizeFor's own reservation (52px glyph *
-// wordmarkScale, plus a breathing gap) so the tests above stay in lockstep
-// with the autofit's own budget rather than duplicating a second magic
-// number that could silently drift from the real one.
-const wordmarkClearanceForTest = (size: (typeof CARD_SIZES)[keyof typeof CARD_SIZES]): number =>
-  Math.round(52 * size.wordmarkScale + 60)
-
-// Full-dataset sweep (reviewer-requested): every question id containing a
-// `\n` in ANY language, every language it has text for, both on-demand
-// sizes — asserting the autofit's own projected block height never crosses
-// its own wordmark-clearance budget. This is estimate-math level (calls
-// autofitEstimateForTest, not a real Satori render, for ~500 combinations)
-// so it stays fast; the three worst real offenders are pinned with actual
-// renders in the describe block above instead.
-describe('autofit sweep: every multi-paragraph question, every language, every on-demand size (regression: #169)', () => {
-  const multiParagraphCases: {id: string; language: string}[] = []
-  for (const [id, entry] of Object.entries(questions as Record<string, Record<string, string>>)) {
-    for (const [language, text] of Object.entries(entry)) {
-      if (text.includes('\n')) multiParagraphCases.push({id, language})
-    }
+// Every (id, language) pair with an embedded `\n`, from the real dataset —
+// shared by both sweeps below so they can't silently drift apart on which
+// cases they cover.
+const multiParagraphCases: {id: string; language: string}[] = []
+for (const [id, entry] of Object.entries(questions as Record<string, Record<string, string>>)) {
+  for (const [language, text] of Object.entries(entry)) {
+    if (text.includes('\n')) multiParagraphCases.push({id, language})
   }
+}
 
+// GROUND TRUTH sweep (reviewer-requested, regression: #169): every
+// \n-containing question id, every language it has text for, both on-demand
+// sizes — through the REAL renderer (renderCardSvgForTest -> actual Satori
+// word-wrap -> measureQuestionTextBlock), asserting the rendered block never
+// crosses the actual wordmark-clearance boundary. This is the test that
+// actually caught the 20 real incursions the estimate-only sweep further
+// below missed (the estimate can't see Satori's real word-wrap; only a real
+// render can). ~518 combinations, but each is an SVG-only Satori call (no PNG
+// rasterisation) with warm font/maze caches, so this runs in a few seconds —
+// fast enough to stay in the default suite rather than needing a separate
+// slow-test file.
+describe('autofit REAL sweep: every multi-paragraph question, every language, every on-demand size, real Satori renders (regression: #169)', () => {
   it('found at least one multi-paragraph case to sweep (sanity check the sweep isn’t vacuous)', () => {
     expect(multiParagraphCases.length).toBeGreaterThan(0)
   })
 
+  it('never renders the text block past the wordmark clearance', async () => {
+    const incursions: string[] = []
+    for (const {id, language} of multiParagraphCases) {
+      for (const sizeKey of SHARE_CARD_SIZE_KEYS) {
+        const size = CARD_SIZES[sizeKey]
+        const svg = await renderCardSvgForTest(language, id, sizeKey)
+        const bounds = measureQuestionTextBlock(svg)
+        const limit = size.height - size.padding - wordmarkClearanceFor(size)
+        if (!bounds || bounds.bottom > limit) {
+          incursions.push(
+            `${language}/${id}/${sizeKey}: rendered bottom ${bounds?.bottom ?? 'MISSING'}px vs ${limit}px limit`
+          )
+        }
+      }
+    }
+    expect(incursions).toEqual([])
+  })
+})
+
+// Fast, estimate-only sweep (not ground truth — see the REAL sweep above,
+// which is what actually guards the invariant). This just checks that
+// fontSizeFor's own starting-point estimate is in the right neighbourhood;
+// it can't see Satori's real word-wrap, so a pass here does NOT guarantee no
+// wordmark collision (that's exactly the gap that let 20 real incursions
+// through review). Kept as a cheap early signal / for iterating on the
+// estimate's tuning without paying for a real render.
+describe('autofit sweep (estimate-only, fast — not authoritative): every multi-paragraph question, every language, every on-demand size', () => {
   it('never projects the text block past the wordmark clearance', () => {
     const incursions: string[] = []
     for (const {id, language} of multiParagraphCases) {
@@ -293,7 +332,17 @@ describe('autofit sweep: every multi-paragraph question, every language, every o
         }
       }
     }
-    expect(incursions).toEqual([])
+    // Informational, not a hard requirement — the estimate is a heuristic
+    // starting point, and renderSvg's measure-and-correct loop is what
+    // actually guarantees the invariant (see the REAL sweep above). Logged
+    // rather than asserted so a "the estimate under-shot again" case doesn't
+    // fail CI when the real renderer already corrects for it.
+    if (incursions.length > 0) {
+      console.info(
+        `autofit estimate under-shot ${incursions.length} case(s) (corrected by renderSvg's measure loop):`,
+        incursions
+      )
+    }
   })
 })
 

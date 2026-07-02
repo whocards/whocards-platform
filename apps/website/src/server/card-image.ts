@@ -499,10 +499,21 @@ const Wordmark = (scale: number) => {
   }
 }
 
-const buildTree = (rawText: string, language: string, mazeUri: string, size: CardSize) => {
+const buildTree = (
+  rawText: string,
+  language: string,
+  mazeUri: string,
+  size: CardSize,
+  // renderSvg's shrink-and-remeasure loop (see below) needs to re-render at a
+  // smaller font size than fontSizeFor's own estimate without recomputing
+  // that estimate — passing it explicitly keeps "what font size did we
+  // actually render at" unambiguous instead of two callers each re-deriving
+  // it and risking drift.
+  fontSizeOverride?: number
+) => {
   const rtl = isRtl(language)
   const fontFamily = `${fontFamilyFor(language)}, Golos Text`
-  const fontSize = fontSizeFor(rawText, language, size)
+  const fontSize = fontSizeOverride ?? fontSizeFor(rawText, language, size)
   // For RTL we pre-reorder + pre-wrap the text and disable Satori wrapping;
   // for LTR we let Satori wrap normally.
   const text = rtl ? toVisualRtl(rawText, fontSize, size) : rawText
@@ -612,16 +623,71 @@ const ensureCacheDir = (): Promise<unknown> => {
 const cacheKey = (text: string, language: string): string =>
   createHash('sha256').update(`${language} ${text}`).digest('hex')
 
+// Satori emits a clip mask (`<mask id="satori_om-id-0">...<rect .../></mask>`)
+// for the question-text div right after the two full-canvas background rects
+// — its `y`/`height` are exactly where that div's content box landed. This is
+// the cheapest available "where did the text actually render" signal short of
+// decoding pixels, and it's the single source of truth both renderSvg's own
+// shrink-and-remeasure loop below AND the test suite use — so a change to how
+// this is read can't silently drift between "what the renderer checks" and
+// "what the tests check".
+export const measureQuestionTextBlock = (
+  svg: string
+): {top: number; bottom: number} | undefined => {
+  const match = svg.match(
+    /<mask id="satori_om-id-0"><rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"/
+  )
+  if (!match) return undefined
+  const top = Number(match[1])
+  return {top, bottom: top + Number(match[2])}
+}
+
 // Renders the Satori SVG for an already-resolved (text, language, size) —
 // the layout step, before resvg rasterises it to PNG.
+//
+// fontSizeFor's line-count estimate (see above) only picks a starting font
+// size — it's a cheap heuristic (a flat chars-per-line ceiling per
+// paragraph), not a real layout pass, and #169 found real inputs (mostly
+// multi-paragraph Latin text) where Satori's actual word-wrap lands the
+// rendered block a few px past the wordmark-clearance boundary even after
+// the estimate itself projects a fit. Tuning the estimate or its safety
+// margin harder just chases the next input shape that breaks it the same
+// way. Instead, for story/post we treat the estimate as a starting point
+// only and verify the *actual* rendered block against the *actual*
+// clearance boundary: measure it (measureQuestionTextBlock, no PNG
+// rasterisation — cheap relative to the render pipeline's dominant costs,
+// font decode and the final resvg pass), and if it still intrudes, shrink
+// one AUTOFIT_STEP and re-render. This is naturally bounded by the same
+// `fontSize > AUTOFIT_MIN_FONT_SIZE` floor the estimate loop uses, so it
+// can't run away; in practice (see the real-render sweep in
+// card-image.test.ts) it converges in 0-3 extra Satori calls for the inputs
+// that need correcting, since the estimate is usually only a step or two
+// short. OG is exempt: its byte-identical output is a hard constraint
+// (#161), and fontSizeFor already early-returns a fixed size for it with no
+// shrink loop at all.
 const renderSvg = async (text: string, language: string, size: CardSize): Promise<string> => {
   const [fonts, mazeUri] = await Promise.all([fontsFor(language), buildMazeDataUri(size)])
-  return satori(buildTree(text, language, mazeUri, size) as never, {
+  const satoriOptions = {
     width: size.width,
     height: size.height,
     fonts,
     loadAdditionalAsset: async () => '',
-  })
+  }
+
+  if (size.key === 'og') {
+    return satori(buildTree(text, language, mazeUri, size) as never, satoriOptions)
+  }
+
+  let fontSize = fontSizeFor(text, language, size)
+  let svg = await satori(buildTree(text, language, mazeUri, size, fontSize) as never, satoriOptions)
+  const clearanceLimit = size.height - size.padding - wordmarkClearanceFor(size)
+  while (fontSize > AUTOFIT_MIN_FONT_SIZE) {
+    const bounds = measureQuestionTextBlock(svg)
+    if (!bounds || bounds.bottom <= clearanceLimit) break
+    fontSize -= AUTOFIT_STEP
+    svg = await satori(buildTree(text, language, mazeUri, size, fontSize) as never, satoriOptions)
+  }
+  return svg
 }
 
 // Renders straight to PNG bytes for an already-resolved (text, language, size)
