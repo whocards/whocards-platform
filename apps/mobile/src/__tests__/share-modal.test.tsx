@@ -14,6 +14,16 @@
  * - an image row downloads-then-shares and reports completion via onShare
  * - an image download failure shows an inline message and leaves the sheet
  *   open and usable — the link row still works afterwards
+ *
+ * And, from issue #162 (compact bottom sheet):
+ * - tapping the dimmed backdrop dismisses the sheet
+ * - tapping the sheet's own content (its no-op tap-swallow wrapper) does not
+ *   — otherwise the whitespace around the rows would double as a backdrop tap
+ * Swipe-down-to-dismiss (the GestureDetector pan on the drag handle) isn't
+ * exercised here — gesture-handler's native recognizers aren't driven by
+ * `fireEvent`, same as the existing swipe gestures elsewhere in this app
+ * (e.g. pick-player.tsx's card swipe, also untested at this level); it needs
+ * on-device/Maestro verification instead.
  */
 import React from 'react'
 import {Share} from 'react-native'
@@ -154,5 +164,34 @@ describe('ShareModal', () => {
     })
     expect(shareSpy).toHaveBeenCalled()
     expect(onShare).toHaveBeenCalledWith('link')
+  })
+
+  it('dismisses when the dimmed backdrop is tapped', () => {
+    const onClose = jest.fn()
+    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={onClose} />)
+
+    fireEvent.press(screen.getByLabelText('dismiss'))
+
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('does not dismiss when the sheet content itself is tapped', () => {
+    const onClose = jest.fn()
+    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={onClose} />)
+
+    // The title sits on the sheet's own whitespace, not on a row or the close
+    // button — it must not fall through to the backdrop's dismiss handler.
+    fireEvent.press(screen.getByText('Share'))
+
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('dismisses via the explicit close button', () => {
+    const onClose = jest.fn()
+    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={onClose} />)
+
+    fireEvent.press(screen.getByLabelText('close'))
+
+    expect(onClose).toHaveBeenCalled()
   })
 })

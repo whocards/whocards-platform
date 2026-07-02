@@ -1,22 +1,40 @@
 import {Ionicons} from '@expo/vector-icons'
 import {logWarn} from '@whocards/observability'
 import type {ShareFormat} from '@whocards/observability/events'
-import {StatusBar} from 'expo-status-bar'
-import {useCallback, useEffect, useState} from 'react'
+import {useCallback, useEffect, useMemo, useState} from 'react'
 import {
   ActivityIndicator,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   Share,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native'
+import {Gesture, GestureDetector, GestureHandlerRootView} from 'react-native-gesture-handler'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {colors} from '@whocards/tokens'
 
 import {downloadAndShareImage} from '@/lib/share-image'
+
+// A downward drag past this many px, or a fling faster than this velocity
+// (px/s), counts as "swipe down" and dismisses the sheet — mirrors the
+// SWIPE_THRESHOLD-and-velocity pattern used for the card swipe in pick-player.tsx.
+const SWIPE_DISMISS_DISTANCE = 80
+const SWIPE_DISMISS_VELOCITY = 800
+
+// The drag handle's own layout is small (a decorative pill); extend its
+// gesture-recognized touch area to roughly the 44pt-square recommended
+// minimum tap target via RNGH's own hitSlop (the wrapped View's RN `hitSlop`
+// prop isn't read by gesture-handler's native recognizers).
+const HANDLE_HIT_SLOP = {top: 12, bottom: 12, left: 60, right: 60}
+
+// Cap the sheet's height so extreme Dynamic Type / a compact device in
+// landscape can't push rows off-screen — the content still sizes normally
+// (title + up to three rows is always well under this) and only engages
+// scrolling in that edge case.
+const SHEET_MAX_HEIGHT_RATIO = 0.8
 
 export type {ShareFormat}
 
@@ -49,11 +67,30 @@ type Row = {
 }
 
 /**
- * Native Share picker — same OS sheet treatment as the language/game modals
- * (`presentationStyle="pageSheet"`). Offers the web deep-link (unchanged payload,
- * works offline) alongside the two on-demand Share Card images (issue #154) —
- * when the current deck supports them (see `storyImageUrl`/`postImageUrl` above).
- * A link-only sheet (one row) is a normal, intentional state, not a degraded one.
+ * Native Share picker — a compact bottom sheet sized to its content (title +
+ * up to three rows), anchored to the bottom edge with the screen behind it
+ * dimmed (issue #162). Unlike the language/game modals (`presentationStyle=
+ * "pageSheet"`, a native full-height card sheet — appropriate there since a
+ * language list can run long), this sheet's content is always small and
+ * fixed-size, so a full-height native sheet wasted most of the screen. That's
+ * an intentional divergence, not an oversight — the language/game modals are
+ * unaffected by this change.
+ *
+ * Built on a transparent, `overFullScreen` `Modal` (RN's own suggestion for a
+ * custom-height sheet — there's no first-class "compact detent" API) rather
+ * than a bottom-sheet library: the content is simple enough that a dimmed
+ * backdrop + a bottom-anchored, content-sized `View` gets the native
+ * partial-height feel without a new native dependency. Tapping the backdrop,
+ * or swiping down on the sheet, both call `onClose`; a `GestureDetector` pan
+ * (`react-native-gesture-handler`, already a dependency — see pick-player.tsx's
+ * card swipe) drives the swipe, wrapped in its own `GestureHandlerRootView`
+ * since gestures inside an RN `Modal` need a fresh root (the Modal renders
+ * into a separate native surface).
+ *
+ * Offers the web deep-link (unchanged payload, works offline) alongside the
+ * two on-demand Share Card images (issue #154) — when the current deck
+ * supports them (see `storyImageUrl`/`postImageUrl` above). A link-only sheet
+ * (one row) is a normal, intentional state, not a degraded one.
  *
  * The link row never touches the network. The image rows download the PNG to a
  * local cache file (`@/lib/share-image`) and hand it to the OS share sheet as a
@@ -157,62 +194,123 @@ export const ShareModal = ({
     [pending, shareLink, shareImage]
   )
 
+  // Swipe-down-to-dismiss: scoped to the drag handle only (not the whole sheet)
+  // so it can't fight the row Pressables for the touch. `onEnd` rather than a
+  // live `onUpdate` — the sheet doesn't track the finger, it just dismisses
+  // past a distance/velocity threshold, keeping this in step with the Modal's
+  // own `animationType="slide"` rather than driving a second animation.
+  // `.runOnJS(true)` runs the callback directly on the JS thread — plain
+  // `onClose`, no 'worklet' pragma or reanimated runtime needed.
+  const swipeDown = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .hitSlop(HANDLE_HIT_SLOP)
+        .onEnd((event) => {
+          if (
+            event.translationY > SWIPE_DISMISS_DISTANCE ||
+            event.velocityY > SWIPE_DISMISS_VELOCITY
+          ) {
+            onClose()
+          }
+        }),
+    [onClose]
+  )
+
+  const {height: windowHeight} = useWindowDimensions()
+  const sheetMaxHeight = windowHeight * SHEET_MAX_HEIGHT_RATIO
+
   return (
     <Modal
       visible={visible}
+      transparent
       animationType="slide"
-      presentationStyle="pageSheet"
       onRequestClose={onClose}
-      onDismiss={onClose}
+      // Android only: without this, the status-bar strip isn't part of the
+      // Modal's surface, so the backdrop dims everything below it but leaves
+      // the status-bar area undimmed.
+      statusBarTranslucent
     >
-      {/* Dark status-bar icons are legible over this white sheet. */}
-      <StatusBar style="dark" />
-      <View className="flex-1 bg-white">
-        {/* On Android, pageSheet renders behind the status bar, so push the header
-            below the display cutout. On iOS the card sheet already insets itself. */}
-        <View
-          className="border-gray-lighter flex-row items-center justify-between border-b px-5 py-4"
-          style={{paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16}}
-        >
-          <Text className="text-darker font-title text-2xl">Share</Text>
-          <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
-            <Ionicons name="close" size={24} color={colors.darker} />
-          </Pressable>
-        </View>
-        <ScrollView contentContainerStyle={{paddingBottom: Math.max(insets.bottom, 24)}}>
-          {rows.map((row) => {
-            const isPending = pending === row.format
-            const disabled = pending !== null && !isPending
-            return (
-              <Pressable
-                key={row.format}
-                onPress={() => handlePress(row)}
-                disabled={disabled}
-                accessibilityRole="button"
-                accessibilityLabel={row.label}
-                accessibilityState={{disabled, busy: isPending}}
-                className={`flex-row items-center gap-3 px-5 py-4 ${disabled ? 'opacity-40' : ''}`}
-              >
-                <Ionicons name={row.icon} size={22} color={colors.darker} />
-                <Text className="text-darker font-sans text-lg">{row.label}</Text>
-                {isPending ? (
-                  <ActivityIndicator
-                    size="small"
-                    color={colors.gray.dark}
-                    style={{marginLeft: 'auto'}}
-                  />
+      {/* Gestures inside an RN Modal need their own root — the Modal renders
+          into a separate native surface that isn't a descendant of the app's
+          top-level GestureHandlerRootView (see _layout.tsx). */}
+      <GestureHandlerRootView style={{flex: 1}}>
+        <View className="flex-1 justify-end">
+          {/* Dimmed backdrop — the card underneath stays visible. Tapping it
+              dismisses; the sheet below swallows its own taps (see the no-op
+              onPress) so tapping the sheet itself doesn't also close it. */}
+          <Pressable
+            className="absolute inset-0 bg-black/50"
+            onPress={onClose}
+            accessibilityLabel="dismiss"
+          />
+          <View
+            className="rounded-t-3xl bg-white"
+            style={{paddingBottom: Math.max(insets.bottom, 24)}}
+          >
+            <GestureDetector gesture={swipeDown}>
+              <View className="items-center pb-1 pt-3">
+                <View className="h-1 w-10 rounded-full bg-gray-lighter" />
+              </View>
+            </GestureDetector>
+
+            {/* Caps the sheet at SHEET_MAX_HEIGHT_RATIO of the window so a
+                long error message plus max Dynamic Type, or a compact device
+                in landscape, can't push rows off-screen — content still sizes
+                naturally (well under this cap) in the normal case, and only
+                this section scrolls; the handle above stays put. */}
+            <ScrollView style={{maxHeight: sheetMaxHeight}} bounces={false}>
+              {/* No-op tap target: swallows taps landing on the sheet's own
+                  whitespace so they don't fall through to the backdrop above
+                  and close the sheet. `accessible={false}` keeps this out of
+                  the accessibility tree so it doesn't swallow the rows' own
+                  labels (a Pressable is `accessible` by default, which would
+                  otherwise group everything below into a single unlabeled
+                  element). */}
+              <Pressable onPress={() => {}} accessible={false}>
+                <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
+                  <Text className="text-darker font-title text-2xl">Share</Text>
+                  <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
+                    <Ionicons name="close" size={24} color={colors.darker} />
+                  </Pressable>
+                </View>
+
+                {rows.map((row) => {
+                  const isPending = pending === row.format
+                  const disabled = pending !== null && !isPending
+                  return (
+                    <Pressable
+                      key={row.format}
+                      onPress={() => handlePress(row)}
+                      disabled={disabled}
+                      accessibilityRole="button"
+                      accessibilityLabel={row.label}
+                      accessibilityState={{disabled, busy: isPending}}
+                      className={`flex-row items-center gap-3 px-5 py-4 ${disabled ? 'opacity-40' : ''}`}
+                    >
+                      <Ionicons name={row.icon} size={22} color={colors.darker} />
+                      <Text className="text-darker font-sans text-lg">{row.label}</Text>
+                      {isPending ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.gray.dark}
+                          style={{marginLeft: 'auto'}}
+                        />
+                      ) : null}
+                    </Pressable>
+                  )
+                })}
+
+                {error ? (
+                  <View className="px-5 pt-2">
+                    <Text className="text-red font-sans text-sm">{error}</Text>
+                  </View>
                 ) : null}
               </Pressable>
-            )
-          })}
-
-          {error ? (
-            <View className="px-5 pt-2">
-              <Text className="text-red font-sans text-sm">{error}</Text>
-            </View>
-          ) : null}
-        </ScrollView>
-      </View>
+            </ScrollView>
+          </View>
+        </View>
+      </GestureHandlerRootView>
     </Modal>
   )
 }
