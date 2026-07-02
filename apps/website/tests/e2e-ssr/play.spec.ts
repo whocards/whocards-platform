@@ -76,3 +76,19 @@ test('the deck route /play/ai-at-work renders and navigates', async ({page}) => 
   await page.getByRole('button', {name: 'next question'}).click()
   await expect(heading(page)).not.toHaveText(first ?? '')
 })
+
+// Share sheet (#155): headless Chromium has no OS file-share target, so
+// `supportsFileShare` is false and the image rows render as their honest
+// "Download ..." labels rather than "Story image"/"Post image".
+test('the Share control opens a sheet with link/story/post rows', async ({page}) => {
+  await page.goto('/play?q=1&lang=en')
+  await expect(heading(page)).toHaveText(q1.en)
+
+  await page.getByRole('button', {name: 'share question'}).click()
+  await expect(page.getByRole('button', {name: 'Share link'})).toBeVisible()
+  await expect(page.getByRole('button', {name: 'Download story image'})).toBeVisible()
+  await expect(page.getByRole('button', {name: 'Download post image'})).toBeVisible()
+
+  await page.getByRole('button', {name: 'close share sheet'}).click()
+  await expect(page.getByRole('button', {name: 'Share link'})).toBeHidden()
+})
