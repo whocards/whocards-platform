@@ -44,6 +44,7 @@ import {
 } from '@/lib/language-store'
 import {parsePlayLink} from '@/lib/play-link'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
+import {getStoredTabletopMode, setStoredTabletopMode} from '@/lib/tabletop-store'
 
 const SWIPE_THRESHOLD = 60
 // How far off-screen the card travels when a swipe commits (points)
@@ -188,6 +189,10 @@ const DeckPlayer = ({
   const [language, setLanguage] = useState(linkLanguage ?? defaultLanguage)
   // secondary display languages rendered under the primary (a Display setting)
   const [secondary, setSecondary] = useState<string[]>([])
+  // Tabletop mode (issue #148, a Display setting): mirrors the Question 180° in
+  // the bottom half so two sides of a flat phone can both read it. Global, not
+  // per-deck — see tabletop-store.ts.
+  const [tabletop, setTabletop] = useState(false)
   // true once the AsyncStorage read has settled — gates the first card paint so
   // the player never shows a visible language flip on launch. The read is a single
   // fast local hit (~1-5 ms); holding the card behind it is the right trade-off
@@ -196,12 +201,14 @@ const DeckPlayer = ({
   const [langModalOpen, setLangModalOpen] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
 
-  // Seed language + secondaries from storage on mount. Only apply stored values
-  // still present in this deck's languages list (guard against decks dropping one).
+  // Seed language + secondaries + tabletop mode from storage on mount. Only apply
+  // stored languages still present in this deck's languages list (guard against
+  // decks dropping one).
   useEffect(() => {
     const secondaries = getStoredSecondaryLanguages(deckSlug).then((stored) =>
       setSecondary(stored.filter((code) => languages.includes(code)))
     )
+    const tabletopMode = getStoredTabletopMode().then((stored) => setTabletop(stored))
     // A shared link's language takes precedence — skip the stored value entirely.
     const primary = linkLanguage
       ? Promise.resolve(setLanguage(linkLanguage))
@@ -210,7 +217,7 @@ const DeckPlayer = ({
             setLanguage(stored)
           }
         })
-    void Promise.all([primary, secondaries]).then(() => setLanguageReady(true))
+    void Promise.all([primary, secondaries, tabletopMode]).then(() => setLanguageReady(true))
   }, [deckSlug, languages, linkLanguage])
 
   // A deep link that arrives while this deck is already open can't ride the route
@@ -576,6 +583,7 @@ const DeckPlayer = ({
                         language: code,
                         text: questions[questionId]?.[code] ?? '',
                       }))}
+                    mirrored={tabletop}
                   />
                 </Animated.View>
               ) : null}
@@ -613,7 +621,9 @@ const DeckPlayer = ({
           style={bottomChromeStyle}
         >
           <PlayerBar
-            showLanguage={languages.length > 1}
+            // Always shown, not just for multi-language decks: this sheet also
+            // hosts Tabletop mode (issue #148), which every deck offers.
+            showLanguage
             onPrevious={goPrevious}
             onNext={goNext}
             onShare={handleShare}
@@ -653,6 +663,16 @@ const DeckPlayer = ({
             })
             setSecondary(next)
             void setStoredSecondaryLanguages(deckSlug, next)
+          }}
+          tabletop={tabletop}
+          onTabletopChange={(next) => {
+            selection()
+            track({
+              name: EVENTS.TABLETOP_MODE_CHANGED,
+              props: {deck_id: deckSlug, enabled: next},
+            })
+            setTabletop(next)
+            void setStoredTabletopMode(next)
           }}
           onClose={() => {
             setLangModalOpen(false)
