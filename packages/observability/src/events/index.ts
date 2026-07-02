@@ -24,6 +24,7 @@ export const EVENTS = {
   CARD_PICKED: 'card_picked',
   LANGUAGE_CHANGED: 'language_changed',
   SECONDARY_LANGUAGES_CHANGED: 'secondary_languages_changed',
+  TABLETOP_MODE_CHANGED: 'tabletop_mode_changed',
   APP_REVIEW_ELIGIBLE: 'app_review_eligible',
   APP_REVIEW_REQUESTED: 'app_review_requested',
   SHARE_COMPLETED: 'share_completed',
@@ -73,6 +74,12 @@ export type DeckCycledProps = {deck_id: string; game: string}
 export type CardPickedProps = {deck_id: string; game: string}
 export type LanguageChangedProps = {deck_id: string; from: string; to: string}
 export type SecondaryLanguagesChangedProps = {deck_id: string; secondary: string[]}
+/**
+ * Tabletop mode toggled (issue #148, a Display setting). The preference is
+ * global (see tabletop-store.ts), but `deck_id` records which deck the player
+ * was on when they flipped it, for context.
+ */
+export type TabletopModeChangedProps = {deck_id: string; enabled: boolean}
 export type AppReviewEligibleProps = {
   app_version: string
   card_count: number
