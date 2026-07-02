@@ -25,6 +25,11 @@ const Icon = _Icon as unknown as ComponentType<IconifyIconProps>
 
 const PRESET_LAYOUTS = Object.values(PHYSICAL_LAYOUTS)
 
+// Small uppercase eyebrow used for the section labels below the hero (matches the
+// "What to do" / "Why this matters" labels on the android-testers page) — the page's
+// h1 is the only element that keeps the display/font-title treatment (design review #19).
+const SECTION_LABEL_CLASS = 'text-xs font-semibold uppercase tracking-[0.16em] text-primary-light'
+
 export default function Print() {
   const store = useStore($langStore)
   const [preset, setPreset] = useState<LayoutId | undefined>(() =>
@@ -55,80 +60,87 @@ export default function Print() {
 
   return (
     <>
-      <h1 className='text-gradient font-title text-center text-7xl font-extrabold uppercase leading-none tracking-tight text-white md:text-8xl xl:text-9xl'>
-        Print It Yourself
-      </h1>
-      <p className='text-center text-xl text-slate-300 md:text-2xl lg:max-w-6xl lg:text-4xl'>
-        Print your own WhoCards for free and experience the power of authentic connections.
-      </p>
-
-      <div className='w-full max-w-4xl'>
-        <h2 className='font-title text-center text-5xl'>Choose your sheet</h2>
-        <div className='mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-          {PRESET_LAYOUTS.map((layout) => (
-            <PresetTile
-              key={layout.id}
-              layout={layout}
-              selected={layout.id === preset}
-              onSelect={() => setPreset(layout.id)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className='flex w-full max-w-sm flex-col items-center gap-3'>
-        <h2 className='font-title text-center text-5xl'>Language</h2>
-        <button
-          className='border-primary-light flex h-12 w-full items-center justify-center rounded-lg border-2 px-2 font-bold tracking-wider'
-          onClick={() => window.langsModal.showModal()}
-        >
-          <div className='flex-1'>{LANGUAGES[store.lang]}</div>
-          <Icon
-            icon='majesticons:chevron-up'
-            className='rotate-180 justify-self-end'
-            height={24}
-            width={24}
-          />
-        </button>
-        {!langSupported && (
-          <p className='text-center text-sm text-amber-300'>
-            {LANGUAGES[store.lang]} printing is coming soon — pick another language to download.
-          </p>
-        )}
-      </div>
-
-      <AlignmentSection
-        offsetX={offsetX}
-        offsetY={offsetY}
-        onChangeOffset={updateOffset}
-        disabled={!preset}
-      />
-
-      <div className='flex flex-col items-center gap-3 text-center'>
-        <p className='max-w-md font-bold text-amber-300'>
-          Print at 100% / actual size — turn off &ldquo;Fit to page&rdquo; so the cards line up with
-          your precut sheet.
+      <div className='flex flex-col items-center gap-1.5 text-center lg:gap-2'>
+        <h1 className='text-gradient font-title text-balance text-4xl font-extrabold uppercase leading-tight tracking-tight text-white lg:text-5xl'>
+          Print It Yourself
+        </h1>
+        <p className='text-pretty max-w-xl text-base text-slate-300'>
+          Free, perfectly aligned PDFs for your precut business-card sheets.
         </p>
-        <div className='flex flex-wrap items-center justify-center gap-3'>
-          <a
-            className={cn('btn btn-primary', {
-              'btn-disabled pointer-events-none opacity-50': !canDownload,
-            })}
-            aria-disabled={!canDownload}
-            href={downloadUrl}
-          >
-            Download
-          </a>
-          <a
-            className={cn('btn btn-outline', {
-              'btn-disabled pointer-events-none opacity-50': !preset,
-            })}
-            aria-disabled={!preset}
-            href={testPrintUrl}
-            title='A single plain-paper page with card outlines and corner marks, for checking alignment before you print the full deck'
-          >
-            Test print
-          </a>
+      </div>
+
+      {/* Configurator: tiles (~2/3) + the action panel (~1/3) that holds every remaining
+          control — on mobile this collapses to a single column, tiles first (design
+          review #19: the whole flow must fit one lg+ viewport without scrolling). */}
+      <div className='grid w-full grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start lg:gap-8'>
+        <div className='lg:col-span-2'>
+          <h2 className={SECTION_LABEL_CLASS}>Choose your sheet</h2>
+          <div className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3'>
+            {PRESET_LAYOUTS.map((layout) => (
+              <PresetTile
+                key={layout.id}
+                layout={layout}
+                selected={layout.id === preset}
+                onSelect={() => setPreset(layout.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className='flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 lg:col-span-1'>
+          <div className='flex flex-col gap-2'>
+            <h2 className={SECTION_LABEL_CLASS}>Language</h2>
+            <button
+              className='border-primary-light flex h-11 w-full items-center justify-center rounded-lg border-2 px-3 font-bold tracking-wider'
+              onClick={() => window.langsModal.showModal()}
+            >
+              <div className='flex-1 text-left'>{LANGUAGES[store.lang]}</div>
+              <Icon
+                aria-hidden='true'
+                icon='majesticons:chevron-up'
+                className='rotate-180 justify-self-end'
+                height={24}
+                width={24}
+              />
+            </button>
+            {!langSupported && (
+              <p className='text-pretty text-sm text-amber-300'>
+                {LANGUAGES[store.lang]} printing is coming soon — pick another language to download.
+              </p>
+            )}
+          </div>
+
+          <AlignmentSection
+            offsetX={offsetX}
+            offsetY={offsetY}
+            onChangeOffset={updateOffset}
+            disabled={!preset}
+          />
+
+          <p className='text-pretty text-xs font-semibold text-amber-300'>
+            Print at 100% — turn off &ldquo;Fit to page&rdquo;.
+          </p>
+
+          <div className='flex flex-col gap-2'>
+            <a
+              className={cn('btn btn-primary !w-full', {
+                'btn-disabled pointer-events-none opacity-50': !canDownload,
+              })}
+              aria-disabled={!canDownload}
+              href={downloadUrl}
+            >
+              Download
+            </a>
+            <a
+              className={cn('btn btn-outline !w-full', {
+                'btn-disabled pointer-events-none opacity-50': !preset,
+              })}
+              aria-disabled={!preset}
+              href={testPrintUrl}
+            >
+              Test print
+            </a>
+          </div>
         </div>
       </div>
     </>
@@ -142,34 +154,40 @@ interface AlignmentSectionProps {
   disabled: boolean
 }
 
-// Inline alignment nudge (#40, promoted out of a collapsed <details> in #139): most
-// printers add a small (sub-cm) offset even at 100% scale, which can ruin a whole
-// precut sheet, so this sits in the main flow rather than behind a disclosure —
-// right where a "test print" (below) would prompt someone to use it.
+// Compact alignment nudge (#40): the two inputs stay in the main flow (a printer's
+// drift can ruin a whole precut sheet, so they need to stay reachable), but the full
+// how-to copy — and what the Test print button actually produces — moves into a
+// <details> disclosure rather than a title-attribute tooltip (design review #19).
 function AlignmentSection({offsetX, offsetY, onChangeOffset, disabled}: AlignmentSectionProps) {
   return (
-    <div className='flex w-full max-w-md flex-col items-center gap-3 text-center'>
-      <h2 className='font-title text-center text-5xl'>Fine-tune alignment</h2>
-      <p className='text-sm text-slate-300'>
-        Download the test print below, print it at 100% on plain paper, and hold it over your precut
-        sheet (or up to the light). If the outlines and corner marks don&rsquo;t sit on the
-        perforations, nudge X/Y here in mm until they do, then download your deck — the offset
-        carries over.
-      </p>
-      <div className='flex items-center gap-4'>
+    <div className='flex flex-col gap-2'>
+      <h2 className={SECTION_LABEL_CLASS}>Fine-tune alignment</h2>
+      <div className='flex items-end gap-3'>
         <OffsetInput
-          label='X offset (mm)'
+          label='X (mm)'
           value={offsetX}
           disabled={disabled}
           onChange={(value) => onChangeOffset('offsetX', value)}
         />
         <OffsetInput
-          label='Y offset (mm)'
+          label='Y (mm)'
           value={offsetY}
           disabled={disabled}
           onChange={(value) => onChangeOffset('offsetY', value)}
         />
       </div>
+      <p className='text-pretty text-xs text-slate-400'>Cards off by a hair? Nudge X/Y here.</p>
+      <details className='text-xs text-slate-400'>
+        <summary className='cursor-pointer font-semibold text-slate-300 hover:text-primary-light'>
+          How does alignment &amp; test print work?
+        </summary>
+        <p className='text-pretty mt-2 leading-relaxed'>
+          Test print downloads a single plain-paper page with card outlines and corner marks. Print
+          it at 100% (no &ldquo;Fit to page&rdquo;), hold it over your precut sheet or up to the
+          light, and nudge X/Y here in mm until the outlines land on the perforations — the offset
+          carries over when you download your full deck.
+        </p>
+      </details>
     </div>
   )
 }
@@ -183,17 +201,18 @@ interface OffsetInputProps {
 
 function OffsetInput({label, value, onChange, disabled}: OffsetInputProps) {
   return (
-    <label className='flex flex-col items-center gap-1 text-xs text-slate-300'>
+    <label className='flex flex-col gap-1 text-xs text-slate-300'>
       {label}
       <input
         type='number'
+        inputMode='decimal'
         step={0.5}
         min={-20}
         max={20}
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.valueAsNumber)}
-        className='input input-bordered input-sm w-24 text-center text-darker'
+        className='border-primary-light disabled:opacity-40 w-20 rounded-lg border-2 bg-transparent px-2 py-1.5 text-center text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-light'
       />
     </label>
   )
@@ -215,15 +234,14 @@ function PresetTile({layout, selected, onSelect}: PresetTileProps) {
       aria-pressed={selected}
       onClick={onSelect}
       className={cn(
-        'flex flex-col items-center gap-3 rounded-lg border-2 border-white/20 p-4 text-center transition',
+        'flex flex-col items-center gap-1.5 rounded-lg border-2 border-white/20 p-2.5 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-light focus-visible:ring-offset-2 focus-visible:ring-offset-background',
         disabled ? 'cursor-not-allowed opacity-40' : 'hover:border-primary-light',
         selected && !disabled && 'border-primary-light bg-primary-light/10'
       )}
     >
       <PresetDiagram layout={layout} />
-      <div className='font-bold'>{layout.label}</div>
-      <div className='text-sm text-slate-300'>{layoutUpCount(layout)}-up</div>
-      {layout.note && <div className='text-xs text-slate-400'>{layout.note}</div>}
+      <div className='text-sm font-bold'>{layout.label}</div>
+      {layout.note && <div className='text-pretty text-xs text-slate-400'>{layout.note}</div>}
       {disabled && (
         <div className='text-xs font-bold uppercase tracking-wide text-amber-300'>Coming soon</div>
       )}
@@ -237,8 +255,9 @@ function PresetDiagram({layout}: {layout: PhysicalLayout}) {
 
   return (
     <div
-      className='flex items-center justify-center rounded border border-white/30 bg-black/20 p-1.5'
-      style={{aspectRatio: pageAspect, height: '5rem'}}
+      aria-hidden='true'
+      className='flex items-center justify-center rounded border border-white/30 bg-black/20 p-1'
+      style={{aspectRatio: pageAspect, height: '3.5rem'}}
     >
       <div
         className='grid h-full w-full gap-[2px]'
