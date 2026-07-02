@@ -26,10 +26,14 @@ export const EVENTS = {
   SECONDARY_LANGUAGES_CHANGED: 'secondary_languages_changed',
   APP_REVIEW_ELIGIBLE: 'app_review_eligible',
   APP_REVIEW_REQUESTED: 'app_review_requested',
+  SHARE_COMPLETED: 'share_completed',
 } as const
 
 /** Game ids used in event payloads — single source of truth for the `game` prop. */
 export const GAMES = {WH: 'wh', PICK: 'pick'} as const
+
+/** The three rows offered by the Share sheet (epic #152) — one shape for web and mobile. */
+export type ShareFormat = 'link' | 'story' | 'post'
 
 export type DeckOpenedProps = {deck_id: string; source: string}
 export type GameStartedProps = {
@@ -77,6 +81,20 @@ export type AppReviewEligibleProps = {
 // `platform` is React Native's `Platform.OS` ('ios' | 'android'); typed as string
 // here so the shared (web + mobile) package needn't depend on react-native types.
 export type AppReviewRequestedProps = {app_version: string; platform: string}
+/**
+ * A completed Share (epic #152): the Web Share API succeeded, the clipboard-copy
+ * fallback succeeded, or a Share Card PNG download was triggered. Fired by both
+ * the web player and mobile Share sheet (#154/#155) with the same shape so both
+ * surfaces roll into one growth metric. A cancelled OS share sheet is NOT a
+ * completed share — callers must not emit this for a user-abandoned share.
+ */
+export type ShareCompletedProps = {
+  deck_id: string
+  question_id: string
+  language: string
+  game: string
+  format: ShareFormat
+}
 
 // ---------------------------------------------------------------------------
 // Typed track wrapper

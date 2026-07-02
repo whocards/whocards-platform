@@ -1,7 +1,7 @@
 ---
 export const prerender = false
 
-import {Play} from '~components/Play'
+import {Play, supportsShareImages} from '~components/Play'
 import type {QuestionSet} from '~components/Play'
 import {DEFAULT_DECK_SLUG, getDeck} from '~data/decks'
 import {LANG_KEYS} from '~utils'
@@ -45,5 +45,6 @@ const questionId = qParam && qParam in deck.questions ? qParam : undefined
     tracking={deck.tracking}
     languageStorageKey={deck.languageStorageKey}
     questionClassName={deck.questionClassName}
+    isPoolBacked={supportsShareImages(deck.source)}
   />
 </Layout>
