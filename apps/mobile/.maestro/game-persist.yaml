@@ -1,0 +1,23 @@
+# The chosen Game survives an app relaunch (game-store persistence): pick the
+# Pick a Card Game, cold-restart, and the landing chip plus the player both
+# still use it.
+#
+# Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'Game: Classic'
+- tapOn: 'choose game'
+- tapOn: 'Pick a Card'
+- assertVisible: 'Game: Pick a Card'
+
+# Relaunch WITHOUT clearing state — the stored Game is reapplied.
+- stopApp
+- launchApp
+- assertVisible: 'Game: Pick a Card'
+- tapOn: 'Play'
+- assertVisible: 'Pick a card'
