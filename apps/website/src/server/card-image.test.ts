@@ -435,7 +435,15 @@ describe('autofit sweep (estimate-only, fast — not authoritative): every multi
 // change shows up as a normal diff) closes that gap. Regenerate these hashes
 // only as a deliberate, reviewed OG-design change — never to "make the test
 // pass".
-const sha256 = (buffer: Buffer): string => createHash('sha256').update(buffer).digest('hex')
+//
+// The pin hashes the Satori SVG, NOT the resvg PNG: the SVG is pure-JS output
+// (fontSizeFor, buildTree, the embedded maze data URI, the decompressed fonts
+// — the whole design surface), so it's identical on every platform. The PNG is
+// not — resvg's native rasterizer produces different bytes on macOS and Linux,
+// which is exactly how the original PNG pins (recorded on macOS) went red on
+// CI while staying green locally. Everything after the SVG is resvg + the
+// BG_COLOR option, neither of which this pin is meant to guard.
+const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex')
 
 describe('OG output stays byte-identical (regression: no automated pin on the #161 hard constraint)', () => {
   // PINNED_OG_HASHES: computed once from a real render and checked in below.
@@ -443,16 +451,16 @@ describe('OG output stays byte-identical (regression: no automated pin on the #1
   // reviewed design change (not a side effect of touching fontSizeFor /
   // buildTree / the maze pipeline) before updating the hash.
   const pinned: [language: string, id: string, sha256: string][] = [
-    ['en', '1', '27e3ccef8c8c751f32eca8566416410ec18d1717e7f9f87bc92a3f6b835dc5fd'],
-    ['he', '29', '1fcf6b6af57896cec5cbd268171aacb3f38b0e398572effa8d15e2ec25f200a8'],
-    ['zh', '21', '928aa1537b3e40ce440ba3296f3751359e4811d9722d361cacb64daec6634614'],
+    ['en', '1', '8f6dda7346974614bba61544a91722eec389d32f85f0d2f98d74d6b12544fe93'],
+    ['he', '29', '0d0d5997b6311770210681e20652eed11ee64dda52e2da4980af7cb1ff11371a'],
+    ['zh', '21', '939fc05162f95e8a3bae54615339b3cc824b70ab33335c9ca08bdb2b1e1e90da'],
   ]
 
   it.each(pinned)(
     '%s/%s OG render matches its pinned checksum',
     async (language, id, expectedHash) => {
-      const png = await renderCardPng(language, id, 'og')
-      expect(sha256(png)).toBe(expectedHash)
+      const svg = await renderCardSvgForTest(language, id, 'og')
+      expect(sha256(svg)).toBe(expectedHash)
     }
   )
 })
