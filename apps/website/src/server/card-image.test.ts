@@ -430,11 +430,10 @@ describe('autofit sweep (estimate-only, fast — not authoritative): every multi
 // output (fontSizeFor early-returns for `size.key === 'og'` specifically to
 // guarantee this). That claim was previously only checked by a one-off manual
 // `cmp` documented in the PR description — nothing would go red in CI if a
-// future change to fontSizeFor, buildTree, or the maze/background pipeline
-// broke it. Pinning a content hash here (checked into source, so a real
-// change shows up as a normal diff) closes that gap. Regenerate these hashes
-// only as a deliberate, reviewed OG-design change — never to "make the test
-// pass".
+// future change to fontSizeFor or buildTree broke it. Pinning a content hash
+// here (checked into source, so a real change shows up as a normal diff)
+// closes that gap. Regenerate these hashes only as a deliberate, reviewed
+// OG-design change — never to "make the test pass".
 //
 // The pin hashes the Satori SVG, NOT the resvg PNG, and strips the embedded
 // maze data URI first. resvg's native rasterizer produces different bytes on
@@ -444,8 +443,14 @@ describe('autofit sweep (estimate-only, fast — not authoritative): every multi
 // SVG hash inherits the same platform dependence. With the data URI
 // normalized away, what's hashed is the pure-JS design surface (fontSizeFor,
 // buildTree, the decompressed fonts, all Satori layout), identical on every
-// platform. The maze's presence is still asserted; its pixels are resvg's
-// business, not this pin's.
+// platform.
+//
+// KNOWN LIMIT: everything downstream of the maze raster is NOT covered —
+// buildMazeDataUri's color/crop/viewBox/fitTo math lands entirely inside the
+// stripped base64 blob (verified in review: changing MAZE_COLOR leaves this
+// pin green). Only the maze's presence and the <image> tag's position/size
+// survive. A maze-pipeline regression needs its own pure-JS unit test on
+// buildMazeDataUri's computed parameters, or an eyeball of a preview render.
 const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex')
 
 const normalizeEmbeddedRasters = (svg: string): string =>
