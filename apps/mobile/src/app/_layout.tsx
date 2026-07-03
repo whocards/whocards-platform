@@ -44,6 +44,14 @@ export default function RootLayout() {
     return () => clearTimeout(fallback)
   }, [])
 
+  // Deliberately NOT theme-aware (issue #163): this is the color that shows through
+  // the gap during a Stack screen transition. Play and Pick a Card force dark
+  // regardless of the Theme setting (amendment 2) and are where transitions happen
+  // most (every "Play" tap, every hand-back), so `darkest` keeps that — the
+  // overwhelmingly common case — flash-free. The cost is the opposite: a Light-theme
+  // Library transitioning in/out can show a brief dark flash in the gap. Accepted
+  // trade-off, not an oversight — revisit if Light theme sees Library-heavy
+  // navigation patterns (e.g. a future screen between Library and Play).
   const navigator = (
     <Stack screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}} />
   )

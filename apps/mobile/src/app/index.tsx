@@ -2,7 +2,7 @@ import {Ionicons} from '@expo/vector-icons'
 import {Image} from 'expo-image'
 import {Link} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import {useColorScheme} from 'nativewind'
+import {StatusBar} from 'expo-status-bar'
 import {useCallback, useEffect, useRef, useState} from 'react'
 import type {View as RNView} from 'react-native'
 import {Text, useWindowDimensions, View} from 'react-native'
@@ -57,12 +57,12 @@ export default function LandingScreen() {
   // the Theme Display setting (issue #163) — System-follow by default, with a
   // manual override; the Library canvas is the one screen that actually
   // follows it (Play/Pick a Card force dark — the Card stays dark in both
-  // themes). `colorScheme` drives the raw-color props below (Ionicons, the
-  // Play button's play-glyph fill) that can't be expressed as a `dark:` class.
-  const {theme, select: selectTheme} = useThemeSetting()
+  // themes). `resolvedScheme` drives the raw-color props below (Ionicons, the
+  // Play button's play-glyph fill, the local `<StatusBar>` override) that
+  // can't be expressed as a `dark:` class.
+  const {theme, resolvedScheme, select: selectTheme} = useThemeSetting()
   const [themeModalOpen, setThemeModalOpen] = useState(false)
-  const {colorScheme} = useColorScheme()
-  const isDark = colorScheme !== 'light'
+  const isDark = resolvedScheme !== 'light'
   const chromeColor = isDark ? colors.white : colors.darker
 
   // --- splash → landing handoff ---
@@ -129,6 +129,12 @@ export default function LandingScreen() {
 
   return (
     <ScreenBackground textureOpacity={bgOpacity}>
+      {/* Library is the one screen that actually follows the Theme setting (issue
+          #163), so — like each themed sheet (game-modal, language-modal, theme-modal)
+          — it needs its own local override: the root `_layout.tsx` default is a fixed
+          `style="light"` (white icons) for the always-dark Play/Pick a Card screens,
+          which would go invisible over the near-white `canvasLight` background. */}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <SafeAreaView className="flex-1 items-center justify-between px-8 pb-8 pt-16">
         <View className="flex-1 items-center justify-center">
           <Animated.View ref={logoRef} onLayout={onLogoLayout} style={logoStyle}>

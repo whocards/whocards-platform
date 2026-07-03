@@ -19,18 +19,19 @@ import type {ThemeSetting} from '@/lib/theme-store'
  *
  * `resolvedScheme` is the live, effective 'light' | 'dark' for the rare
  * JS-level conditional (an `Ionicons` color, a `StatusBar` style, which
- * `Image` source to load) that can't be expressed as a `dark:` class.
+ * `Image` source to load) that can't be expressed as a `dark:` class —
+ * callers should read it from here rather than calling `useColorScheme()`
+ * a second time, so there's one source of truth for "is this screen dark
+ * right now."
  */
 export const useThemeSetting = () => {
   const [theme, setTheme] = useState<ThemeSetting>('system')
-  const [ready, setReady] = useState(false)
   const {colorScheme: resolvedScheme} = useColorScheme()
 
   useEffect(() => {
     void getStoredTheme().then((stored) => {
       colorScheme.set(stored)
       setTheme(stored)
-      setReady(true)
     })
   }, [])
 
@@ -47,7 +48,6 @@ export const useThemeSetting = () => {
     // resolves — matches the app's historical (dark-only) appearance rather
     // than assuming light.
     resolvedScheme: resolvedScheme ?? 'dark',
-    ready,
     select,
   }
 }
