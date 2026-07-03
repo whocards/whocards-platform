@@ -1,4 +1,4 @@
-# Spike 0001: messaging-platform bots (Slack / Discord / Teams) — Phase 1 research
+# Spike 0002: messaging-platform bots (Slack / Discord / Teams) — Phase 1 research
 
 Date: 2026-07-03
 Status: Research complete, no code shipped
