@@ -100,6 +100,25 @@ type Row = {
  * A download failure (offline, endpoint error) shows a brief inline message and
  * leaves the sheet open and usable — it never blocks the link row.
  *
+ * Never auto-closes on a share (owner decision, 2026-07-03, issue #192): no
+ * row closes this sheet as a *side effect* of the native share flow, on
+ * either platform — only an explicit user action does (X, swipe-down,
+ * backdrop tap). This mattered most on Android, which has no trustworthy "the
+ * user actually shared" signal to close on in the first place: `Share.share`
+ * (`ShareModule.kt`) resolves `sharedAction` unconditionally the instant the
+ * chooser *opens*, and `Sharing.shareAsync` (`SharingModule.kt`'s
+ * `OnActivityResult`) resolves on *any* chooser dismissal, completed or
+ * cancelled alike. The sheet used to auto-close on both of those, tearing
+ * down this Modal (and its nested GestureHandlerRootView — RNGH needs a
+ * fresh root inside a Modal, see below) right as a competing Activity launch
+ * was changing window focus — a race matching known upstream bug classes
+ * where that leaves gesture/touch dispatch stuck (see `shareLink`'s comment),
+ * and a much better fit for the originally reported "app left unresponsive
+ * after dismissing the share sheet" symptom than a genuine hang. Staying open
+ * on iOS too (even though its link row *does* get a trustworthy cancel
+ * signal) is a deliberate, matching choice: it lets someone share the same
+ * card to a second target right away instead of reopening the sheet.
+ *
  * Themed (issue #163, amendment 1): a dark surface in dark mode, the
  * pre-existing light sheet surface in light mode — see
  * docs/design/163-light-mode/proposal.md. Also sets its own `<StatusBar>`
@@ -166,16 +185,38 @@ export const ShareModal = ({
     // — exactly today's payload, no network involved.
     Share.share({message: `${questionText}\n\n${shareUrl}`, url: shareUrl})
       .then((result) => {
-        // iOS reports an explicit cancel; Android's Share.share resolves as soon as
-        // the chooser opens, with no completion signal either way — best-effort.
+        // iOS reports an explicit cancel here; Android's Share.share
+        // (ShareModule.kt) calls `startActivity(chooser)` then resolves the
+        // promise with `sharedAction` *unconditionally* the instant the chooser
+        // *opens* — before the user has so much as seen it, let alone chosen or
+        // cancelled — so it can never mean "cancelled" there. This check still
+        // earns its keep on iOS, where it skips the completion analytics below
+        // on a genuine cancel; on Android it's a no-op (the branch is never true).
         if (result.action === Share.dismissedAction) return
         onShare('link')
-        onClose()
+        // Owner decision, 2026-07-03 (issue #192): this sheet no longer closes
+        // itself as a side effect of a share — on either platform. Two reasons.
+        // (1) Android has no trustworthy "the user actually shared" signal to
+        // close on in the first place (see above); auto-closing on that
+        // unconditional resolve used to tear down this sheet's Modal (and its
+        // nested GestureHandlerRootView — RNGH needs a fresh root inside a
+        // Modal, see the file doc above) right as the *incoming* system
+        // chooser's own window-focus transition was in flight — two competing
+        // window changes at once. That matches known upstream bug classes where
+        // a competing Activity launch mid-touch leaves gesture/touch dispatch
+        // stuck (facebook/react-native#17073,
+        // react-navigation/react-navigation#9757), and it explains the
+        // originally reported "unresponsive after dismissing the share sheet"
+        // symptom far better than a genuine hang would. (2) Staying open — on
+        // iOS too, where the signal genuinely is trustworthy — lets someone
+        // share the same card to a second target right away instead of
+        // reopening the sheet. The sheet only closes on an explicit user
+        // action: the X, swipe-down, or a backdrop tap.
       })
       .catch((err: unknown) => {
         logWarn('[share-modal] link share failed', err)
       })
-  }, [questionText, shareUrl, onShare, onClose])
+  }, [questionText, shareUrl, onShare])
 
   const shareImage = useCallback(
     (format: Exclude<ShareFormat, 'link'>, url: string) => {
@@ -185,7 +226,16 @@ export const ShareModal = ({
         .then(() => {
           setPending(null)
           onShare(format)
-          onClose()
+          // Owner decision, 2026-07-03 (issue #192): stays open here too — see
+          // shareLink's comment. `Sharing.shareAsync`'s promise resolves once the
+          // OS chooser is dismissed *for any reason* (completed, backed out,
+          // tapped outside — expo-sharing doesn't distinguish them on either
+          // platform, see SharingModule.kt's OnActivityResult / the iOS module's
+          // completionWithItemsHandler, both unconditional), so it was never a
+          // trustworthy "close now" signal to begin with. Leaving the sheet open
+          // means a cancelled or completed share lands back on a live sheet —
+          // sharing again or picking a different row works immediately, no
+          // reopen needed.
         })
         .catch((err: unknown) => {
           logWarn(`[share-modal] ${format} image share failed`, err)
@@ -193,7 +243,7 @@ export const ShareModal = ({
           setError("Couldn't load the image — check your connection and try again.")
         })
     },
-    [onShare, onClose]
+    [onShare]
   )
 
   const handlePress = useCallback(
