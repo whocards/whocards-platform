@@ -56,6 +56,38 @@ const PRIMARY_SHARE = [1, 0.65, 0.55] as const
 const SECONDARY_MIN = 16
 const SECONDARY_MAX = 34
 
+// The secondary's font size is this fraction of the primary's by default —
+// support, not focus. Grown by up to SECONDARY_RATIO_HEADROOM_BONUS on a short
+// question: fitFontSize's returned size is itself a measure of how much room the
+// primary had (a short question doesn't need to grow all the way to MAX_FONT to
+// fill its share of the box, so a size well below MAX_FONT — while still well
+// above the floor — means there was headroom to spare). A question sized at (or
+// near) its floor gets exactly the base ratio — the same value this always used
+// — so long questions, and the tighter Tabletop-mirrored floors, are unaffected.
+const SECONDARY_RATIO = 0.5
+const SECONDARY_RATIO_HEADROOM_BONUS = 0.15
+
+/**
+ * The secondary language's font size, as a fraction of the (already-fit) primary
+ * `primaryFontSize` — grown toward `SECONDARY_MAX` when the primary sizing had
+ * headroom (see the constants above), never adjusting the primary itself.
+ * `primaryMinFont` is whichever floor (`MIN_FONT`/`MIN_FONT_MIRRORED`) `fontSize`
+ * was fit against, so headroom is measured from the floor that was actually in
+ * play.
+ */
+export const fitSecondaryFontSize = (
+  primaryFontSize: number,
+  primaryMinFont: number,
+  secondaryMin: number
+) => {
+  const headroom = Math.max(
+    0,
+    Math.min(1, (primaryFontSize - primaryMinFont) / (MAX_FONT - primaryMinFont))
+  )
+  const ratio = SECONDARY_RATIO + headroom * SECONDARY_RATIO_HEADROOM_BONUS
+  return Math.round(Math.max(secondaryMin, Math.min(SECONDARY_MAX, primaryFontSize * ratio)))
+}
+
 // --- Tabletop mode (issue #148, a Display setting): the Card renders the Question
 // twice, split horizontally, the top half rotated 180° so the two sides of a phone
 // lying flat on the table can both read it. Each half only gets ~50% of the box
@@ -140,7 +172,7 @@ const QuestionFace = ({text, language, box, shown, compact = false}: QuestionFac
     [text, box.width, box.height, share, minFont]
   )
   const secondaryMin = compact ? SECONDARY_MIN_MIRRORED : SECONDARY_MIN
-  const secondaryFont = Math.round(Math.max(secondaryMin, Math.min(SECONDARY_MAX, fontSize * 0.5)))
+  const secondaryFont = fitSecondaryFontSize(fontSize, minFont, secondaryMin)
 
   if (shown.length === 0) {
     return <LanguageBlock text={text} language={language} fontSize={fontSize} />
@@ -162,6 +194,36 @@ const QuestionFace = ({text, language, box, shown, compact = false}: QuestionFac
     </View>
   )
 }
+
+/**
+ * The seam between Tabletop mode's two mirrored halves (issue #189). A flat
+ * `bg-white/10` hairline read as an afterthought, disconnected from the rest of
+ * the face. This blends it with the face's own brand accent instead: three
+ * same-color bars (`primary-dark`, the same violet as the corner "?" glyph on
+ * the card's question face — see pick-player.tsx) at decreasing width and
+ * increasing opacity, sharing a center. The outer bar alone is barely visible;
+ * the overlap toward the middle reads as the bright center of a fade. That's a
+ * deliberate choice over reusing the maze texture image here too: the face
+ * already tiles that texture behind the primary/secondary text (at 0.4 opacity,
+ * see pick-player.tsx), so a second image layer right at the flip seam would
+ * compete with the texture already there rather than read as a seam. The
+ * brand's other gradient (`@whocards/tokens` `gradients.primary`) is a CSS
+ * `linear-gradient()` string — a web-only value, not something an RN `View`
+ * can render without an SVG/gradient dependency this two-line polish item
+ * doesn't justify pulling in. Purely decorative, so it carries no
+ * accessibility role; the rotated half's `accessibilityElementsHidden` (the
+ * actual a11y-sensitive part of Tabletop mode) lives on the sibling view above
+ * this one and is untouched.
+ */
+const TabletopDivider = () => (
+  <View style={{height: MIRROR_GAP}} className="items-center justify-center">
+    <View className="items-center justify-center" style={{width: 96, height: 4}}>
+      <View className="bg-primary-dark/10 absolute h-full w-full rounded-full" />
+      <View className="bg-primary-dark/25 absolute h-full rounded-full" style={{width: 56}} />
+      <View className="bg-primary-dark/50 absolute h-full rounded-full" style={{width: 22}} />
+    </View>
+  </View>
+)
 
 /**
  * The question face: the primary language sized to fill its box, with any
@@ -199,9 +261,7 @@ export const QuestionText = ({
       >
         <QuestionFace text={text} language={language} box={halfBox} shown={shown} compact />
       </View>
-      <View style={{height: MIRROR_GAP}} className="items-center justify-center">
-        <View className="h-px w-16 bg-white/10" />
-      </View>
+      <TabletopDivider />
       <QuestionFace text={text} language={language} box={halfBox} shown={shown} compact />
     </View>
   )
