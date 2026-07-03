@@ -51,9 +51,7 @@ import {PlayerBar} from '../components/player-bar'
 const noop = () => {}
 
 const renderBar = (props: Partial<React.ComponentProps<typeof PlayerBar>> = {}) =>
-  render(
-    <PlayerBar onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} {...props} />
-  )
+  render(<PlayerBar onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} {...props} />)
 
 describe('PlayerBar — no Language/Display button (issue #176)', () => {
   it('never renders a Language or Display action — that setting moved to the home Settings menu', () => {

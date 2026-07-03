@@ -77,10 +77,12 @@ export type LanguageChangedProps = {deck_id: string; from: string; to: string}
 export type SecondaryLanguagesChangedProps = {deck_id: string; secondary: string[]}
 /**
  * Tabletop mode toggled (issue #148, a Display setting). The preference is
- * global (see tabletop-store.ts), but `deck_id` records which deck the player
- * was on when they flipped it, for context.
+ * global (see tabletop-store.ts). It was originally flipped from inside a
+ * deck's play screen, where `deck_id` recorded which deck the player was on;
+ * since the Settings menu (issue #176) the toggle lives on the deck-less home
+ * screen, so `deck_id` is optional and absent from new events.
  */
-export type TabletopModeChangedProps = {deck_id: string; enabled: boolean}
+export type TabletopModeChangedProps = {deck_id?: string; enabled: boolean}
 /**
  * Theme setting changed (issue #163, a Display setting). Global and not
  * deck-scoped — chosen from the Library screen's "Theme" sheet, outside any

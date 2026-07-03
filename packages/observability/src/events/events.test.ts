@@ -282,7 +282,22 @@ describe('catalog — Tabletop mode addition', () => {
     expect(EVENTS.TABLETOP_MODE_CHANGED).toBe('tabletop_mode_changed')
   })
 
-  it('track() emits tabletop_mode_changed with the deck and new state', () => {
+  it('track() emits tabletop_mode_changed with the new state (no deck_id since #176 — toggled from the deck-less Settings menu)', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    configureObservability({dev: true})
+
+    track({
+      name: EVENTS.TABLETOP_MODE_CHANGED,
+      props: {enabled: true},
+    })
+
+    expect(consoleSpy).toHaveBeenCalledOnce()
+    expect(consoleSpy.mock.calls[0]?.[1]).toBe('tabletop_mode_changed')
+    expect(consoleSpy.mock.calls[0]?.[2]).toEqual({enabled: true})
+    consoleSpy.mockRestore()
+  })
+
+  it('track() still accepts a deck_id for context (pre-#176 events carried one)', () => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     configureObservability({dev: true})
 
@@ -291,8 +306,6 @@ describe('catalog — Tabletop mode addition', () => {
       props: {deck_id: 'friends', enabled: true},
     })
 
-    expect(consoleSpy).toHaveBeenCalledOnce()
-    expect(consoleSpy.mock.calls[0]?.[1]).toBe('tabletop_mode_changed')
     expect(consoleSpy.mock.calls[0]?.[2]).toEqual({deck_id: 'friends', enabled: true})
     consoleSpy.mockRestore()
   })
