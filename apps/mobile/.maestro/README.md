@@ -31,7 +31,9 @@ pnpm -F mobile e2e:android  # com.whocards.mobile
 - `language-modal-inset.yaml` — opens the language sheet and screenshots it so the
   header can be confirmed clear of the status bar / display cutout on a device **with a
   cutout** (the Pixel-notch fix, #102). The inset math is also guarded deterministically
-  by `src/__tests__/language-modal.test.tsx`.
+  by `src/__tests__/settings-sheet-header.test.tsx` (issue #189, third pass: the header
+  markup every page in the Settings pager renders, tested once instead of duplicated
+  per sheet).
 - `share-question-url.yaml` (**android only**) — cold deep-links to `q=1`, taps Share,
   and asserts the question's web link (`whocards.cc/play…?q=1`) shows in Android's
   share-sheet preview (the share-link fix, #101). The URL builder itself is unit-tested

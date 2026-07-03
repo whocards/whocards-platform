@@ -7,15 +7,25 @@
  * Issue #189, third pass: this sheet is now a single `Modal` with internal
  * pages (menu, Game, Theme, Language) rather than a stack of separate,
  * on-top-of-each-other `Modal`s (the second #189 pass's approach, dropped
- * after on-device feedback found the modal-swap handoff flickered). This
- * file's own "nested sheet" describe blocks from that second pass are now
- * "page" blocks: same wiring under test (which row navigates where, which
- * setter each selection calls, which analytics event fires, Game/Theme
- * auto-returning to the menu on select vs. Language staying put), plus new
- * coverage for the pager itself — Android back popping one level before
- * closing, the backdrop always fully closing regardless of the current page,
- * the inactive page hidden from the accessibility tree, and every fresh open
- * starting back at the menu.
+ * after on-device feedback found the modal-swap handoff flickered).
+ *
+ * Issue #189, fourth pass: two more owner on-device rounds.
+ * - Motion: pages now rise from the bottom over the menu (translateY-driven)
+ *   instead of sliding in horizontally — the horizontal version "read like
+ *   page navigation," jarring next to every other sheet in the app. The menu
+ *   stays mounted and dims underneath rather than sliding away.
+ * - Dismiss semantics shifted with the motion: a tap on the dim behind a
+ *   risen page now pops that page (same as Android back), not a full close —
+ *   the *outer* sheet's own backdrop still fully closes, but it's covered
+ *   while a page is risen so it isn't reachable in that state.
+ * - "Second language" split out of the Language page into its own menu row
+ *   and page (owner: "split the second language selector into a separate
+ *   section in game play options") — see second-language-settings-page.test.tsx
+ *   for that page's own content tests. Splitting it also removed the one
+ *   reason primary Language used to stay open after a pick, so it now
+ *   auto-returns to the menu like every other single-pick page.
+ * - The menu is grouped into two sections, Gameplay and Appearance — see
+ *   settings-modal.tsx's own doc comment for where Language landed and why.
  *
  * The storage libs (game-store, tabletop-store, language-store) are mocked
  * outright rather than run for real: they already have their own dedicated
@@ -94,7 +104,11 @@ jest.mock('@whocards/observability/events', () => {
 import {track} from '@whocards/observability/events'
 import {SettingsModal} from '../components/settings-modal'
 import {getStoredGame, setStoredGame} from '../lib/game-store'
-import {getStoredLanguage, setStoredLanguage} from '../lib/language-store'
+import {
+  getStoredLanguage,
+  getStoredSecondaryLanguages,
+  setStoredLanguage,
+} from '../lib/language-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '../lib/tabletop-store'
 
 const mockedGetStoredGame = getStoredGame as jest.Mock
@@ -102,6 +116,7 @@ const mockedSetStoredGame = setStoredGame as jest.Mock
 const mockedGetStoredTabletopMode = getStoredTabletopMode as jest.Mock
 const mockedSetStoredTabletopMode = setStoredTabletopMode as jest.Mock
 const mockedGetStoredLanguage = getStoredLanguage as jest.Mock
+const mockedGetStoredSecondaryLanguages = getStoredSecondaryLanguages as jest.Mock
 const mockedSetStoredLanguage = setStoredLanguage as jest.Mock
 const mockedTrack = track as jest.Mock
 
@@ -110,6 +125,7 @@ beforeEach(() => {
   mockedGetStoredGame.mockResolvedValue('wh')
   mockedGetStoredTabletopMode.mockResolvedValue(false)
   mockedGetStoredLanguage.mockResolvedValue(undefined)
+  mockedGetStoredSecondaryLanguages.mockResolvedValue([])
 })
 
 const renderModal = (overrides: Partial<React.ComponentProps<typeof SettingsModal>> = {}) =>
@@ -126,22 +142,33 @@ const renderModal = (overrides: Partial<React.ComponentProps<typeof SettingsModa
   )
 
 describe('SettingsModal — menu', () => {
-  it('shows Game, Theme, Language, and Tabletop mode', async () => {
+  it('shows Gameplay (Game, Language, Second language, Tabletop) and Appearance (Theme)', async () => {
     renderModal()
     await screen.findByText('Settings')
+    expect(screen.getByText('Gameplay')).toBeTruthy()
     expect(screen.getByText('Game')).toBeTruthy()
-    expect(screen.getByText('Theme')).toBeTruthy()
     expect(screen.getByText('Language')).toBeTruthy()
+    expect(screen.getByText('Second language')).toBeTruthy()
     expect(screen.getByText('Tabletop mode')).toBeTruthy()
+    expect(screen.getByText('Appearance')).toBeTruthy()
+    expect(screen.getByText('Theme')).toBeTruthy()
   })
 
-  it('reflects the loaded Game and the current Theme/Language values', async () => {
+  it('reflects the loaded Game, Theme, Language, and Second language values', async () => {
     mockedGetStoredGame.mockResolvedValue('pick')
     mockedGetStoredLanguage.mockResolvedValue('he')
-    renderModal({theme: 'dark'})
+    mockedGetStoredSecondaryLanguages.mockResolvedValue(['en'])
+    renderModal({theme: 'dark', languages: ['en', 'he']})
     await waitFor(() => expect(screen.getByText('Pick a Card')).toBeTruthy())
     expect(screen.getByText('Dark')).toBeTruthy()
-    expect(screen.getByText('Hebrew')).toBeTruthy()
+    expect(screen.getByLabelText('Language: Hebrew')).toBeTruthy()
+    expect(screen.getByLabelText('Second language: English')).toBeTruthy()
+  })
+
+  it('shows "None" for Second language when no secondary is stored', async () => {
+    renderModal()
+    await screen.findByText('Settings')
+    expect(screen.getByLabelText('Second language: None')).toBeTruthy()
   })
 
   it('disables the Language row for a single-language deck (no chevron, no navigation)', async () => {
@@ -151,10 +178,19 @@ describe('SettingsModal — menu', () => {
     fireEvent.press(row)
     expect(screen.queryByText('Choose your language')).toBeNull()
   })
+
+  it('disables the Second language row for a single-language deck (no possible secondary)', async () => {
+    renderModal({languages: ['en']})
+    const row = await screen.findByLabelText('Second language: None')
+    expect(row.props.accessibilityState).toEqual({disabled: true})
+    fireEvent.press(row)
+    // No page opened — "back" only ever renders on a pushed page's header.
+    expect(screen.queryByLabelText('back')).toBeNull()
+  })
 })
 
 describe('SettingsModal — Game page', () => {
-  it('navigates on press, applies + persists a selection, and slides back to the menu', async () => {
+  it('navigates on press, applies + persists a selection, and returns to the menu', async () => {
     renderModal()
     const gameRow = await screen.findByLabelText('Game: Classic')
     fireEvent.press(gameRow)
@@ -169,7 +205,7 @@ describe('SettingsModal — Game page', () => {
 })
 
 describe('SettingsModal — Theme page', () => {
-  it('navigates on press, reports a selection via onSelectTheme, and slides back to the menu', async () => {
+  it('navigates on press, reports a selection via onSelectTheme, and returns to the menu', async () => {
     const onSelectTheme = jest.fn()
     renderModal({onSelectTheme})
     const themeRow = await screen.findByLabelText('Theme: System')
@@ -183,15 +219,12 @@ describe('SettingsModal — Theme page', () => {
 })
 
 describe('SettingsModal — Language page', () => {
-  it('navigates on press, applies + persists a primary selection, tracks LANGUAGE_CHANGED, and stays put', async () => {
+  it('navigates on press, applies + persists a primary selection, tracks LANGUAGE_CHANGED, and returns to the menu', async () => {
     renderModal()
     const languageRow = await screen.findByLabelText('Language: English')
     fireEvent.press(languageRow)
     await screen.findByText('Choose your language')
-    // "Hebrew" appears twice — once as the primary-language row, once again in
-    // "Also show" (any non-current language can also be a secondary) — the
-    // primary row renders first, so index 0 is the one under test here.
-    const [hebrew] = await screen.findAllByText('Hebrew')
+    const hebrew = await screen.findByText('Hebrew')
     fireEvent.press(hebrew)
     expect(mockedSetStoredLanguage).toHaveBeenCalledWith('library', 'he')
     expect(mockedTrack).toHaveBeenCalledWith(
@@ -200,22 +233,58 @@ describe('SettingsModal — Language page', () => {
         props: expect.objectContaining({deck_id: 'library', from: 'en', to: 'he'}),
       })
     )
-    // Unlike Game/Theme, selecting a language does NOT slide back to the menu —
-    // still on the Language page (its own header is still queryable).
-    await waitFor(() => expect(screen.getByText('Hebrew')).toBeTruthy())
-    expect(screen.getByText('Choose your language')).toBeTruthy()
-  })
-
-  it('returns to the menu when the back arrow is pressed, showing the updated value', async () => {
-    renderModal()
-    const languageRow = await screen.findByLabelText('Language: English')
-    fireEvent.press(languageRow)
-    await screen.findByText('Choose your language')
-    const [hebrew] = await screen.findAllByText('Hebrew')
-    fireEvent.press(hebrew)
-    fireEvent.press(screen.getByLabelText('back'))
+    // Issue #189, fourth pass: now auto-returns like every other single-pick
+    // page (splitting "Second language" out removed the reason to linger).
     await waitFor(() => expect(screen.queryByText('Choose your language')).toBeNull())
     expect(screen.getByLabelText('Language: Hebrew')).toBeTruthy()
+  })
+
+  it('clears an existing Second language when it becomes the new primary', async () => {
+    renderModal({languages: ['en', 'he']})
+    // Set Hebrew as the secondary first.
+    fireEvent.press(await screen.findByLabelText('Second language: None'))
+    fireEvent.press(await screen.findByText('Hebrew'))
+    await waitFor(() => expect(screen.getByLabelText('Second language: Hebrew')).toBeTruthy())
+
+    // Now pick Hebrew as the primary too — it can't remain the secondary.
+    fireEvent.press(screen.getByLabelText('Language: English'))
+    fireEvent.press(await screen.findByText('Hebrew'))
+    await waitFor(() => expect(screen.getByLabelText('Second language: None')).toBeTruthy())
+  })
+})
+
+describe('SettingsModal — Second language page (issue #189, owner on-device feedback)', () => {
+  it('navigates on press, applies + persists a selection, tracks SECONDARY_LANGUAGES_CHANGED, and returns to the menu', async () => {
+    renderModal({languages: ['en', 'he']})
+    fireEvent.press(await screen.findByLabelText('Second language: None'))
+    await screen.findByText('Second language')
+    fireEvent.press(await screen.findByText('Hebrew'))
+    expect(mockedTrack).toHaveBeenCalledWith({
+      name: 'secondary_languages_changed',
+      props: {deck_id: 'library', secondary: ['he']},
+    })
+    // Back on the menu — "back" only ever renders on a pushed page's header.
+    await waitFor(() => expect(screen.queryByLabelText('back')).toBeNull())
+    expect(screen.getByLabelText('Second language: Hebrew')).toBeTruthy()
+  })
+
+  it('never lists the current primary as a choice', async () => {
+    renderModal({languages: ['en', 'he']})
+    fireEvent.press(await screen.findByLabelText('Second language: None'))
+    await screen.findByText('Second language')
+    expect(screen.queryByText('English')).toBeNull()
+  })
+
+  it('picking "None" clears an existing secondary', async () => {
+    renderModal({languages: ['en', 'he']})
+    fireEvent.press(await screen.findByLabelText('Second language: None'))
+    fireEvent.press(await screen.findByText('Hebrew'))
+    await waitFor(() => expect(screen.getByLabelText('Second language: Hebrew')).toBeTruthy())
+
+    fireEvent.press(screen.getByLabelText('Second language: Hebrew'))
+    const [none] = await screen.findAllByText('None')
+    fireEvent.press(none)
+    await waitFor(() => expect(screen.getByLabelText('Second language: None')).toBeTruthy())
   })
 })
 
@@ -240,16 +309,16 @@ describe('SettingsModal — Tabletop mode (inline switch, issue #148/#176)', () 
   })
 })
 
-describe('SettingsModal — single Modal, internal pages (issue #189, third pass)', () => {
-  it('hides the menu from the accessibility tree while a page is open', async () => {
+describe('SettingsModal — single Modal, internal pages (issue #189, third/fourth pass)', () => {
+  it('hides the menu from the accessibility tree while a page is risen', async () => {
     renderModal()
     const gameRow = await screen.findByLabelText('Game: Classic')
     fireEvent.press(gameRow)
     await screen.findByText('Choose your game')
     // includeHiddenElements bypasses RNTL's default accessibility-hidden filter —
     // the menu's "Tabletop mode" text still exists in the tree (not unmounted,
-    // just hidden), same technique question-text.test.tsx uses for Tabletop
-    // mode's own rotated, hidden half.
+    // just hidden/dimmed underneath), same technique question-text.test.tsx uses
+    // for Tabletop mode's own rotated, hidden half.
     expect(screen.getAllByText('Tabletop mode', {includeHiddenElements: true})).toHaveLength(1)
     expect(screen.queryByText('Tabletop mode')).toBeNull()
   })
@@ -285,12 +354,22 @@ describe('SettingsModal — single Modal, internal pages (issue #189, third pass
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('backdrop press always fully closes, even from a pushed page', async () => {
+  it('tapping the dim behind a risen page pops it, same as Android back — not a full close', async () => {
     const onClose = jest.fn()
     renderModal({onClose})
     const gameRow = await screen.findByLabelText('Game: Classic')
     fireEvent.press(gameRow)
     await screen.findByText('Choose your game')
+    fireEvent.press(screen.getByLabelText('dismiss page'))
+    await waitFor(() => expect(screen.queryByText('Choose your game')).toBeNull())
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText('Settings')).toBeTruthy()
+  })
+
+  it('the outer backdrop still fully closes the sheet from the menu', async () => {
+    const onClose = jest.fn()
+    renderModal({onClose})
+    await screen.findByText('Settings')
     fireEvent.press(screen.getByLabelText('dismiss'))
     expect(onClose).toHaveBeenCalled()
   })

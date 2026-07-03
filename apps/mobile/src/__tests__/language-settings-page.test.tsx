@@ -1,18 +1,19 @@
 /**
  * Component test for src/components/language-settings-page.tsx (issue #189,
- * third pass — extracted from the standalone `LanguageModal` the second pass
- * built). SettingsModal's own pager wiring (which row navigates here, the
- * slide — and NOT auto-navigating back on select, unlike Game/Theme) is
- * covered by settings-modal.test.tsx; this file covers the page's own
- * content: the primary-language list, the "Also show" secondary section, the
- * single-language-deck shape, and the back arrow reporting via `onBack`. The
- * header inset/icon logic itself is covered once, generically, in
- * settings-sheet-header.test.tsx — not duplicated per page.
+ * third/fourth pass — extracted from the standalone `LanguageModal` the
+ * second pass built; the "Also show" secondary picker that used to live on
+ * this page split out into its own page in the fourth pass — see
+ * second-language-settings-page.test.tsx). SettingsModal's own pager wiring
+ * (which row navigates here, the rise, auto-returning to the menu on select)
+ * is covered by settings-modal.test.tsx; this file covers the page's own
+ * content: the primary-language list, the single-language-deck shape, and
+ * the back arrow reporting via `onBack`. The header inset/icon logic itself
+ * is covered once, generically, in settings-sheet-header.test.tsx — not
+ * duplicated per page.
  *
- * Issue #176 moved Tabletop mode out of this sheet entirely (it's now an inline
- * switch row in settings-modal.tsx) and reduced the secondary/"Also show"
- * language from up to 2 down to at most 1 — picking a different one now
- * replaces, rather than appending until a cap blocks further picks.
+ * Issue #176 reduced the secondary/"Also show" language from up to 2 down to
+ * at most 1 — that cap logic now lives with the split-out secondary page, not
+ * here.
  *
  * Also covers the single-language-deck shape (issue #148 review, finding 1,
  * carried forward by #176): with one language there's no real choice to make,
@@ -44,6 +45,14 @@ describe('LanguageSettingsPage — Tabletop mode moved out (issue #176)', () => 
     await screen.findByText('Choose your language')
     expect(screen.queryByText('Tabletop mode')).toBeNull()
     expect(screen.queryByLabelText('Tabletop mode')).toBeNull()
+  })
+})
+
+describe('LanguageSettingsPage — "Also show" moved out (issue #189, fourth pass)', () => {
+  it('never renders an "Also show" section — that setting is its own page now', async () => {
+    renderPage()
+    await screen.findByText('Choose your language')
+    expect(screen.queryByText('Also show')).toBeNull()
   })
 })
 
@@ -103,84 +112,15 @@ describe('LanguageSettingsPage — primary selection', () => {
     fireEvent.press(hebrew)
     expect(onSelect).toHaveBeenCalledWith('he')
   })
-})
 
-const renderWithSecondary = (secondary: string[], onSecondaryChange = jest.fn()) =>
-  render(
-    <LanguageSettingsPage
-      languages={['en', 'he', 'es']}
-      current="en"
-      secondary={secondary}
-      onSelect={() => {}}
-      onSecondaryChange={onSecondaryChange}
-      onBack={() => {}}
-    />
-  )
-
-describe('LanguageSettingsPage — "Also show" secondary language (issue #176: at most 1)', () => {
-  it('is absent when the caller does not supply onSecondaryChange', async () => {
-    render(
-      <LanguageSettingsPage
-        languages={['en', 'he']}
-        current="en"
-        onSelect={() => {}}
-        onBack={() => {}}
-      />
-    )
-    await screen.findByText('Choose your language')
-    expect(screen.queryByText('Also show')).toBeNull()
-  })
-
-  it('is absent for a single-language deck (no possible alternate)', async () => {
-    render(
-      <LanguageSettingsPage
-        languages={['en']}
-        current="en"
-        onSelect={() => {}}
-        onSecondaryChange={() => {}}
-        onBack={() => {}}
-      />
-    )
-    await screen.findByText('Language')
-    expect(screen.queryByText('Also show')).toBeNull()
-  })
-
-  it('describes the cap as one more language, not several', async () => {
-    renderWithSecondary([])
-    await screen.findByText('Also show')
-    expect(screen.getByText('Show the question in one more language.')).toBeTruthy()
-  })
-
-  it('reflects the checked state of the current secondary', async () => {
-    renderWithSecondary(['he'])
-    const checked = await screen.findByLabelText('Hebrew')
-    expect(checked.props.accessibilityState).toEqual({checked: true})
-    const unchecked = screen.getByLabelText('Spanish')
-    expect(unchecked.props.accessibilityState).toEqual({checked: false})
-  })
-
-  it('picking a new secondary REPLACES the previous one (no append-until-cap)', async () => {
-    const onSecondaryChange = jest.fn()
-    renderWithSecondary(['he'], onSecondaryChange)
-    const spanish = await screen.findByLabelText('Spanish')
-    fireEvent.press(spanish)
-    expect(onSecondaryChange).toHaveBeenCalledWith(['es'])
-  })
-
-  it('pressing the already-chosen secondary clears it', async () => {
-    const onSecondaryChange = jest.fn()
-    renderWithSecondary(['he'], onSecondaryChange)
-    const hebrew = await screen.findByLabelText('Hebrew')
-    fireEvent.press(hebrew)
-    expect(onSecondaryChange).toHaveBeenCalledWith([])
-  })
-
-  it('never lists the current primary as a secondary checkbox option', async () => {
-    renderWithSecondary([])
-    await screen.findByText('Also show')
-    // Only "Also show" rows carry an accessibilityLabel (the primary-language
-    // rows above are matched by their Text content, not a label) — so a null
-    // result here means "English" (the current primary) never got a checkbox row.
-    expect(screen.queryByLabelText('English')).toBeNull()
+  it('marks the current primary language selected', async () => {
+    renderPage()
+    const english = await screen.findByText('English')
+    // The primary rows are matched by their Text content (no explicit
+    // accessibilityLabel — same as before the split), so walk up from the
+    // Text node to the Pressable ancestor carrying accessibilityState.
+    let node: typeof english | null = english
+    while (node && node.props?.accessibilityState === undefined) node = node.parent
+    expect(node?.props.accessibilityState).toEqual({selected: true})
   })
 })
