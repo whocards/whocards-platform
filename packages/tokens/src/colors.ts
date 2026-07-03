@@ -37,7 +37,10 @@ export const colors = {
   // Pick a Card's deck/faces) never read these — they stay dark in both themes. These
   // cover the Library canvas, the Play/Pick a Card chrome around the Card (issue
   // #173), and the Language/Game/Share/Theme sheet surfaces.
-  canvasLight: '#f6f2fb',
+  // Deepened again (issue #189 on-device: too bright, maze texture read as
+  // invisible against it) to match the regenerated maze texture's own base
+  // fill — see docs/design/163-light-mode/proposal.md's texture recipe note.
+  canvasLight: '#efe7f7',
   // Deepened variants for text/accents that only ever sat on a dark canvas or a
   // small icon before now — the flat tokens don't reliably clear WCAG AA once
   // they're legible-text-sized on the new light surfaces (see the proposal's
