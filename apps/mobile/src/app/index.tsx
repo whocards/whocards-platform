@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {useCallback, useEffect, useRef, useState} from 'react'
 import type {View as RNView} from 'react-native'
-import {Text, useWindowDimensions, View} from 'react-native'
+import {Pressable, Text, useWindowDimensions, View} from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -22,6 +22,7 @@ import {GameModal} from '@/components/game-modal'
 import {PressableScale} from '@/components/pressable-scale'
 import {ScreenBackground} from '@/components/screen-background'
 import {ThemeModal} from '@/components/theme-modal'
+import {useInternalMarker} from '@/hooks/use-internal-marker'
 import {useThemeSetting} from '@/hooks/use-theme-setting'
 import {getStoredGame, setStoredGame} from '@/lib/game-store'
 import {GAME_CATALOG} from '@/lib/games'
@@ -64,6 +65,10 @@ export default function LandingScreen() {
   const [themeModalOpen, setThemeModalOpen] = useState(false)
   const isDark = resolvedScheme !== 'light'
   const chromeColor = isDark ? colors.white : colors.darker
+
+  // The hidden dev marker (issue #178) — a long-press on the wordmark below
+  // toggles it. See use-internal-marker.ts.
+  const {toggle: toggleInternalMarker} = useInternalMarker()
 
   // --- splash → landing handoff ---
   // The native splash centres the logo on screen. We start our (identical) logo at
@@ -137,16 +142,25 @@ export default function LandingScreen() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <SafeAreaView className="flex-1 items-center justify-between px-8 pb-8 pt-16">
         <View className="flex-1 items-center justify-center">
-          <Animated.View ref={logoRef} onLayout={onLogoLayout} style={logoStyle}>
-            <Image
-              source={logo}
-              contentFit="contain"
-              accessibilityLabel="WhoCards"
-              // explicit width AND height — native sizes a required image to its
-              // intrinsic pixels otherwise (aspectRatio alone only works on web)
-              style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
-            />
-          </Animated.View>
+          {/* Hidden dev marker (issue #178): a long-press on the wordmark toggles a
+              persisted is_internal flag for this device — the manual counterpart to
+              the automatic simulator/emulator flag, for the owner's 2 physical dev
+              phones. `accessible={false}` keeps the Image's own accessibilityLabel
+              ("WhoCards") as what VoiceOver/TalkBack lands on, rather than the
+              Pressable swallowing it into an unlabeled button — this marker is
+              deliberately not meant to be discoverable at all, screen reader or not. */}
+          <Pressable onLongPress={toggleInternalMarker} accessible={false}>
+            <Animated.View ref={logoRef} onLayout={onLogoLayout} style={logoStyle}>
+              <Image
+                source={logo}
+                contentFit="contain"
+                accessibilityLabel="WhoCards"
+                // explicit width AND height — native sizes a required image to its
+                // intrinsic pixels otherwise (aspectRatio alone only works on web)
+                style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
+              />
+            </Animated.View>
+          </Pressable>
           <Animated.Text
             style={contentStyle}
             className="text-darker/80 dark:text-white/80 mt-7 text-center font-sans text-xl font-semibold leading-8"

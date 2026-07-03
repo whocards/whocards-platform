@@ -1,3 +1,4 @@
+import * as Device from 'expo-device'
 import PostHog from 'posthog-react-native'
 import {configureObservability, consoleProvider} from '@whocards/observability'
 import type {LogEntry, ObservabilityProvider} from '@whocards/observability'
@@ -33,6 +34,20 @@ export const posthog =
         enableSessionReplay: false,
       })
     : undefined
+
+// Release builds on non-real hardware — simulators/emulators, including the
+// Maestro flows `pnpm release:check` drives (issue #178) — send events that
+// are otherwise indistinguishable from a real player's, once sendToPostHog is
+// true. Flag rather than drop: a dropped event is gone for good, a flagged one
+// stays debuggable and is one PostHog "Filter out internal and test users"
+// rule away from being excluded from insights. `register()` persists this
+// super property in PostHog's own local storage, so it rides on every future
+// `capture()` call (this session and every later one) with nothing more to do
+// here — see `setInternalMarker` below for the manual counterpart used on the
+// 2 physical dev phones, which this check can't reach.
+if (posthog && !Device.isDevice) {
+  void posthog.register({is_internal: true})
+}
 
 // posthog-react-native types properties as JSON values; our EventProps is the wider
 // Record<string, unknown>. Cast at this boundary — the values are runtime JSON and
@@ -83,5 +98,24 @@ export const initObservability = (): void => {
     // `dev:false` routes explicit events through PostHog; `dev:true` uses the console
     // provider. Tied to sendToPostHog so the client `disabled` state and routing agree.
     configureObservability({dev: !sendToPostHog, provider: posthogProvider})
+  }
+}
+
+/**
+ * Manually flip the `is_internal` PostHog super property (issue #178) — the
+ * escape hatch for the owner's physical dev phones, which — unlike a
+ * simulator/emulator (the `Device.isDevice` check above) — can't be
+ * auto-detected. Wired to a long-press on the Library wordmark; see
+ * use-internal-marker.ts. `register`/`unregister` both persist locally, so
+ * the choice survives app restarts without any boot-time restore of their own
+ * (use-internal-marker.ts still restores our own AsyncStorage flag on mount,
+ * for the UI's benefit, and re-applies it here as a cheap, idempotent safety
+ * net).
+ */
+export const setInternalMarker = (internal: boolean): void => {
+  if (internal) {
+    void posthog?.register({is_internal: true})
+  } else {
+    void posthog?.unregister('is_internal')
   }
 }

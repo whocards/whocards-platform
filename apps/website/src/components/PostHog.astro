@@ -1,3 +1,15 @@
+---
+import {env} from '~env'
+import {isInternalDeployContext} from '~lib/internal-context'
+
+// CONTEXT is a server-only env var (env.ts) — Vite's client bundle only
+// inlines PUBLIC_-prefixed vars, so the <script> below can't read it
+// directly. Compute the flag here (build time) and thread it through the
+// <meta> tag; the script reads that back at runtime (issue #178).
+const isInternal = isInternalDeployContext(env.CONTEXT)
+---
+
+<meta name='whocards-internal' content={isInternal ? 'true' : 'false'} />
 <script>
   import posthog from 'posthog-js'
   import {env} from '~env'
@@ -5,7 +17,14 @@
   import {identify} from '@whocards/observability'
   import {getDeviceId} from '~lib/device-id'
 
-  if (env.PUBLIC_POSTHOG_KEY) {
+  // Dev-gate the raw PostHog client itself, not just our own event wrapper
+  // (issue #178): `initObservability`'s `dev` flag only routes trackEvent/
+  // identify calls through the console provider — it does NOT stop
+  // posthog-js's own autocapture (pageviews, clicks, exceptions) from firing.
+  // `.env.example` ships PUBLIC_POSTHOG_KEY pre-filled with the real project
+  // key, so without this check any `astro dev` run would autocapture real
+  // events from localhost.
+  if (env.PUBLIC_POSTHOG_KEY && !import.meta.env.DEV) {
     posthog.init(env.PUBLIC_POSTHOG_KEY, {
       api_host: env.PUBLIC_POSTHOG_HOST,
       ui_host: env.PUBLIC_POSTHOG_UI_HOST,
@@ -18,6 +37,12 @@
     })
 
     window.posthog = posthog
+
+    // Netlify deploy-preview / branch-deploy builds (issue #178) — flagged
+    // server-side; see the <meta> tag + isInternalDeployContext above.
+    const isInternal =
+      document.querySelector('meta[name="whocards-internal"]')?.getAttribute('content') === 'true'
+    if (isInternal) posthog.register({is_internal: true})
   }
 
   initObservability()
