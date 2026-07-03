@@ -72,3 +72,21 @@ describe('ThemeModal — options', () => {
     expect(onSelect).toHaveBeenCalledWith('light')
   })
 })
+
+describe('ThemeModal — compact sheet (issue #189, second pass)', () => {
+  it('dismisses on backdrop press', async () => {
+    const onClose = jest.fn()
+    render(<ThemeModal visible current="system" onSelect={() => {}} onClose={onClose} />)
+    await screen.findByText('Theme')
+    fireEvent.press(screen.getByLabelText('dismiss'))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('dismisses on close-button press', async () => {
+    const onClose = jest.fn()
+    render(<ThemeModal visible current="system" onSelect={() => {}} onClose={onClose} />)
+    await screen.findByText('Theme')
+    fireEvent.press(screen.getByLabelText('close'))
+    expect(onClose).toHaveBeenCalled()
+  })
+})

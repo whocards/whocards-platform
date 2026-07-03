@@ -53,10 +53,10 @@ type SettingsModalProps = {
  * single entry point on the home screen (the `SecondaryButton` in
  * `app/index.tsx`). Nested modals: this sheet is the menu, each row that
  * isn't a plain toggle opens its own sheet on top of it (GameModal,
- * ThemeModal, LanguageModal) — the same `presentationStyle="pageSheet"`
- * treatment every sheet in the app already uses, just stacked one deeper.
- * Tabletop mode is a plain on/off preference, so it's an inline switch row
- * here rather than a further nested sheet for a single checkbox.
+ * ThemeModal, LanguageModal) — see the "Nested sheets" and "Backdrop
+ * coordination" notes below for how that stacking is presented. Tabletop
+ * mode is a plain on/off preference, so it's an inline switch row here
+ * rather than a further nested sheet for a single checkbox.
  *
  * Language scoping decision (flagged per #176): Language and its secondary
  * are stored per-deck (`whocards-language:{deck}`,
@@ -93,18 +93,35 @@ type SettingsModalProps = {
  * rather than something you'd want to flick away mid-scroll, and the close
  * button + backdrop tap already cover dismissal.
  *
- * The three nested sheets (GameModal, ThemeModal, LanguageModal) deliberately
- * keep their existing `presentationStyle="pageSheet"` native-card treatment
- * rather than also going compact: LanguageModal's list is unbounded (every
- * language in the deck plus an "Also show" section) and already documents
- * pageSheet as the right call for a list that can run long (see its own doc
- * comment) — forcing it into a content-hugging sheet would make the common
- * case (a handful of languages) look fine but the edge case (many languages)
- * scroll inside a tiny window instead of using the screen it actually needs.
- * Rather than fork the nested sheets' presentation from each other, all three
- * stay pageSheet for a consistent "menu is compact, drilling in is
- * full native sheet" hierarchy — a deeper sheet reads as more deliberate,
- * which matches them being one tap further from the home screen.
+ * Nested sheets — reversed (issue #189, second pass): the first pass of this
+ * issue kept GameModal/ThemeModal/LanguageModal on their original
+ * `presentationStyle="pageSheet"` native-card treatment, reasoning that
+ * LanguageModal's unbounded list needed the room. Owner on-device feedback on
+ * the merged PR: a full-height pageSheet opening from this now-transparent
+ * compact sheet reads as broken, not deliberate — the visual language breaks
+ * exactly where it should feel continuous. All three are now the same compact
+ * bottom sheet as this one, each internally capped at ~80% of the window
+ * height and scrolling past that (see each file's own doc comment) — which
+ * turns out to answer the original unbounded-list objection just as well as
+ * a full native sheet did, without the jarring size jump.
+ *
+ * Backdrop coordination: stacking two independent Modals, each with its own
+ * `bg-black/50` backdrop, would double-dim into a murky mess once a nested
+ * sheet is open (two 50%-black layers over the same content ≈ 75% black, and
+ * a visible seam where they overlap vs. where they don't). ShareModal has no
+ * precedent here — it only ever opens standalone, never nested over another
+ * compact sheet. Fix lives here, not in the children: while any child sheet
+ * is open, this sheet hides its own backdrop and content (`opacity: 0`,
+ * `pointerEvents: 'none'`) rather than lowering its dim, so exactly one dim
+ * is ever visible — the open child's own standard one. That keeps the
+ * children fully self-contained (GameModal/ThemeModal/LanguageModal render
+ * a normal, undiscounted backdrop and have no idea they're ever nested,
+ * so they're just as correct if a future call site ever opens one of them
+ * standalone) instead of baking a "lighter when nested" assumption into
+ * three otherwise-reusable leaf components. Hiding (not unmounting) means
+ * this sheet's own state — scroll position, the in-flight `useEffect` loads
+ * above — survives a child opening and closing, and it reappears instantly,
+ * already fully rendered, as the child's own close animation reveals it.
  */
 export const SettingsModal = ({
   visible,
@@ -150,6 +167,11 @@ export const SettingsModal = ({
   const {height: windowHeight} = useWindowDimensions()
   const sheetMaxHeight = windowHeight * SHEET_MAX_HEIGHT_RATIO
 
+  // Double-dim guard (issue #189, second pass — see the doc comment above):
+  // while any nested sheet is open, this sheet's own backdrop+content hide
+  // rather than stacking a second dim under the child's.
+  const childOpen = gameModalOpen || themeModalOpen || languageModalOpen
+
   return (
     <Modal
       visible={visible}
@@ -164,146 +186,157 @@ export const SettingsModal = ({
       {/* Dark sheet → light status-bar icons; light sheet → dark icons. */}
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <View className="flex-1 justify-end">
-        {/* Dimmed backdrop — the Library screen underneath stays visible.
-            Tapping it dismisses; the sheet below swallows its own taps (see
-            the no-op onPress further down) so tapping the sheet itself
-            doesn't also close it. */}
-        <Pressable
-          className="absolute inset-0 bg-black/50"
-          onPress={onClose}
-          accessibilityLabel="dismiss"
-        />
-        {/* No-op tap target: swallows taps landing on the sheet's own whitespace
-            (header padding, the gap around the title) so they don't fall through
-            to the backdrop above and close the sheet — same pattern as
-            ShareModal. `accessible={false}` keeps this out of the accessibility
-            tree so it doesn't swallow every row's own label into one opaque
-            element (a Pressable is `accessible` by default, which would
-            otherwise group everything below into a single unlabeled node). */}
-        <Pressable
-          onPress={() => {}}
-          accessible={false}
-          className="bg-white dark:bg-dark rounded-t-3xl"
-          style={{paddingBottom: Math.max(insets.bottom, 24)}}
+        {/* Hidden (not unmounted) while a nested sheet is open — see the
+            "Backdrop coordination" doc comment above. `pointerEvents="none"`
+            keeps this sheet's own Pressables (backdrop, rows) from soaking up
+            taps meant for the child while it's invisible. */}
+        <View
+          style={childOpen ? styles.hidden : undefined}
+          pointerEvents={childOpen ? 'none' : 'auto'}
         >
-          {/* On Android with statusBarTranslucent, the sheet can otherwise sit
+          {/* Dimmed backdrop — the Library screen underneath stays visible.
+              Tapping it dismisses; the sheet below swallows its own taps (see
+              the no-op onPress further down) so tapping the sheet itself
+              doesn't also close it. */}
+          <Pressable
+            className="absolute inset-0 bg-black/50"
+            onPress={onClose}
+            accessibilityLabel="dismiss"
+          />
+          {/* No-op tap target: swallows taps landing on the sheet's own whitespace
+              (header padding, the gap around the title) so they don't fall through
+              to the backdrop above and close the sheet — same pattern as
+              ShareModal. `accessible={false}` keeps this out of the accessibility
+              tree so it doesn't swallow every row's own label into one opaque
+              element (a Pressable is `accessible` by default, which would
+              otherwise group everything below into a single unlabeled node). */}
+          <Pressable
+            onPress={() => {}}
+            accessible={false}
+            className="bg-white dark:bg-dark rounded-t-3xl"
+            style={{paddingBottom: Math.max(insets.bottom, 24)}}
+          >
+            {/* On Android with statusBarTranslucent, the sheet can otherwise sit
               under the status bar/notch on a device in the rare case its
               content pushes the header above the safe area — push the header
               below the display cutout, same guard the pageSheet header used. */}
-          <View
-            className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
-            style={{paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16}}
-          >
-            <Text className="text-darker dark:text-white font-title text-2xl">Settings</Text>
-            <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
-              <Ionicons name="close" size={24} color={iconColor} />
-            </Pressable>
-          </View>
-          {/* Caps the sheet at SHEET_MAX_HEIGHT_RATIO of the window so max
+            <View
+              className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+              style={{paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16}}
+            >
+              <Text className="text-darker dark:text-white font-title text-2xl">Settings</Text>
+              <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
+                <Ionicons name="close" size={24} color={iconColor} />
+              </Pressable>
+            </View>
+            {/* Caps the sheet at SHEET_MAX_HEIGHT_RATIO of the window so max
               Dynamic Type or a compact device in landscape can't push the
               Tabletop row off-screen — content still sizes naturally (well
               under this cap) in the normal case. */}
-          <ScrollView style={{maxHeight: sheetMaxHeight}} bounces={false}>
-            {/* label mirrors the visible text so tests and screen readers see the
+            <ScrollView style={{maxHeight: sheetMaxHeight}} bounces={false}>
+              {/* label mirrors the visible text so tests and screen readers see the
               current value (a button's children collapse behind its label in
               the iOS a11y tree) — same pattern as the old Library chips. */}
-            <Pressable
-              onPress={() => setGameModalOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={`Game: ${gameTitle}`}
-              className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
-            >
-              <Text className="text-darker dark:text-white font-sans text-lg">Game</Text>
-              <View className="flex-row items-center gap-1.5">
-                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                  {gameTitle}
-                </Text>
-                <Ionicons name="chevron-forward" size={16} color={chevronColor} />
-              </View>
-            </Pressable>
-
-            <Pressable
-              onPress={() => setThemeModalOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={`Theme: ${THEME_LABEL[theme]}`}
-              className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
-            >
-              <Text className="text-darker dark:text-white font-sans text-lg">Theme</Text>
-              <View className="flex-row items-center gap-1.5">
-                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                  {THEME_LABEL[theme]}
-                </Text>
-                <Ionicons name="chevron-forward" size={16} color={chevronColor} />
-              </View>
-            </Pressable>
-
-            <Pressable
-              onPress={() => hasLanguageChoice && setLanguageModalOpen(true)}
-              disabled={!hasLanguageChoice}
-              accessibilityRole="button"
-              accessibilityLabel={`Language: ${languageLabel}`}
-              accessibilityState={{disabled: !hasLanguageChoice}}
-              className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
-            >
-              <Text className="text-darker dark:text-white font-sans text-lg">Language</Text>
-              <View className="flex-row items-center gap-1.5">
-                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                  {languageLabel}
-                </Text>
-                {hasLanguageChoice ? (
+              <Pressable
+                onPress={() => setGameModalOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel={`Game: ${gameTitle}`}
+                className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+              >
+                <Text className="text-darker dark:text-white font-sans text-lg">Game</Text>
+                <View className="flex-row items-center gap-1.5">
+                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
+                    {gameTitle}
+                  </Text>
                   <Ionicons name="chevron-forward" size={16} color={chevronColor} />
-                ) : null}
-              </View>
-            </Pressable>
+                </View>
+              </Pressable>
 
-            {/* Tabletop mode (issue #148): moved here from the play-screen sheet by
+              <Pressable
+                onPress={() => setThemeModalOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel={`Theme: ${THEME_LABEL[theme]}`}
+                className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+              >
+                <Text className="text-darker dark:text-white font-sans text-lg">Theme</Text>
+                <View className="flex-row items-center gap-1.5">
+                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
+                    {THEME_LABEL[theme]}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color={chevronColor} />
+                </View>
+              </Pressable>
+
+              <Pressable
+                onPress={() => hasLanguageChoice && setLanguageModalOpen(true)}
+                disabled={!hasLanguageChoice}
+                accessibilityRole="button"
+                accessibilityLabel={`Language: ${languageLabel}`}
+                accessibilityState={{disabled: !hasLanguageChoice}}
+                className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+              >
+                <Text className="text-darker dark:text-white font-sans text-lg">Language</Text>
+                <View className="flex-row items-center gap-1.5">
+                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
+                    {languageLabel}
+                  </Text>
+                  {hasLanguageChoice ? (
+                    <Ionicons name="chevron-forward" size={16} color={chevronColor} />
+                  ) : null}
+                </View>
+              </Pressable>
+
+              {/* Tabletop mode (issue #148): moved here from the play-screen sheet by
               #176 since it's a global preference (tabletop-store.ts), not a
               per-deck one — a plain on/off row, no nested sheet needed for one
               checkbox. */}
-            <View className="border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5">
-              <Text className="text-darker dark:text-white font-title text-lg">Tabletop mode</Text>
-              <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-                Lay the phone flat on the table — the question mirrors on top so both sides can read
-                it at once.
-              </Text>
-            </View>
-            <Pressable
-              onPress={() => {
-                selection()
-                const next = !tabletop
-                // Global setting, no deck context anymore (this menu opens before
-                // any deck is open) — matches THEME_CHANGED's shape, the other
-                // global setting's event, which also carries no deck_id.
-                track({name: EVENTS.TABLETOP_MODE_CHANGED, props: {enabled: next}})
-                setTabletop(next)
-                void setStoredTabletopMode(next)
-              }}
-              accessibilityRole="switch"
-              accessibilityLabel="Tabletop mode"
-              accessibilityState={{checked: tabletop}}
-              className={`flex-row items-center justify-between px-5 py-3 ${
-                tabletop ? 'bg-yellow-300/40' : ''
-              }`}
-            >
-              <Text className="text-darker dark:text-white font-sans text-lg">
-                Two-way readable
-              </Text>
-              <Ionicons
-                name={tabletop ? 'checkbox' : 'square-outline'}
-                size={20}
-                color={
-                  tabletop
-                    ? isDark
-                      ? colors.accentOnDark
-                      : colors.accentOnLight
-                    : isDark
-                      ? colors.gray.dark
-                      : colors.mutedOnLight
-                }
-              />
-            </Pressable>
-          </ScrollView>
-        </Pressable>
+              <View className="border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5">
+                <Text className="text-darker dark:text-white font-title text-lg">
+                  Tabletop mode
+                </Text>
+                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
+                  Lay the phone flat on the table — the question mirrors on top so both sides can
+                  read it at once.
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => {
+                  selection()
+                  const next = !tabletop
+                  // Global setting, no deck context anymore (this menu opens before
+                  // any deck is open) — matches THEME_CHANGED's shape, the other
+                  // global setting's event, which also carries no deck_id.
+                  track({name: EVENTS.TABLETOP_MODE_CHANGED, props: {enabled: next}})
+                  setTabletop(next)
+                  void setStoredTabletopMode(next)
+                }}
+                accessibilityRole="switch"
+                accessibilityLabel="Tabletop mode"
+                accessibilityState={{checked: tabletop}}
+                className={`flex-row items-center justify-between px-5 py-3 ${
+                  tabletop ? 'bg-yellow-300/40' : ''
+                }`}
+              >
+                <Text className="text-darker dark:text-white font-sans text-lg">
+                  Two-way readable
+                </Text>
+                <Ionicons
+                  name={tabletop ? 'checkbox' : 'square-outline'}
+                  size={20}
+                  color={
+                    tabletop
+                      ? isDark
+                        ? colors.accentOnDark
+                        : colors.accentOnLight
+                      : isDark
+                        ? colors.gray.dark
+                        : colors.mutedOnLight
+                  }
+                />
+              </Pressable>
+            </ScrollView>
+          </Pressable>
+        </View>
 
         <GameModal
           visible={gameModalOpen}
@@ -365,3 +398,9 @@ export const SettingsModal = ({
     </Modal>
   )
 }
+
+// opacity: 0 (not display: 'none') so layout doesn't jump and this sheet's own
+// entrance/exit animation timing is unaffected — only whether it's painted.
+const styles = {
+  hidden: {opacity: 0},
+} as const

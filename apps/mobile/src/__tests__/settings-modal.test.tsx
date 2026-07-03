@@ -14,6 +14,8 @@
  * the storage layer itself.
  */
 import React from 'react'
+import {StyleSheet} from 'react-native'
+import type {ViewStyle} from 'react-native'
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native'
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -75,6 +77,27 @@ const renderModal = (overrides: Partial<React.ComponentProps<typeof SettingsModa
       {...overrides}
     />
   )
+
+// Walk up from SettingsModal's own backdrop (the first "dismiss"-labeled
+// element — mounted before any nested sheet's) until we find the ancestor
+// carrying the hide-while-child-open props, same "walk .parent until you find
+// the prop under test" pattern language-modal.test.tsx uses for its header
+// paddingTop. RNTL's fireEvent.press bypasses pointerEvents entirely (it
+// calls the handler directly rather than hit-testing), so pressing through it
+// can't stand in for the real guard — reading the props it actually sets is
+// the only way to assert this without a real device.
+const settingsHideState = (): {opacity: unknown; pointerEvents: unknown} => {
+  let node: ReturnType<typeof screen.getAllByLabelText>[number] | null =
+    screen.getAllByLabelText('dismiss')[0]
+  while (node) {
+    if (node.props?.pointerEvents !== undefined) {
+      const flat = StyleSheet.flatten(node.props?.style as ViewStyle | undefined)
+      return {opacity: flat?.opacity, pointerEvents: node.props.pointerEvents}
+    }
+    node = node.parent
+  }
+  throw new Error('hide-while-child-open wrapper not found')
+}
 
 describe('SettingsModal — rows', () => {
   it('shows Game, Theme, Language, and Tabletop mode', async () => {
@@ -168,5 +191,57 @@ describe('SettingsModal — Tabletop mode (inline switch, issue #148/#176)', () 
       name: 'tabletop_mode_changed',
       props: {enabled: true},
     })
+  })
+})
+
+describe('SettingsModal — backdrop double-dim guard (issue #189, second pass)', () => {
+  it('shows its own backdrop+content normally when no nested sheet is open', async () => {
+    renderModal()
+    await screen.findByText('Settings')
+    const {opacity, pointerEvents} = settingsHideState()
+    expect(opacity).not.toBe(0)
+    expect(pointerEvents).toBe('auto')
+  })
+
+  it('hides its own backdrop+content (not a second dim) once GameModal opens', async () => {
+    renderModal()
+    const gameRow = await screen.findByLabelText('Game: Classic')
+    fireEvent.press(gameRow)
+    await screen.findByText('Choose your game')
+    const {opacity, pointerEvents} = settingsHideState()
+    expect(opacity).toBe(0)
+    expect(pointerEvents).toBe('none')
+  })
+
+  it('hides its own backdrop+content once ThemeModal opens', async () => {
+    renderModal()
+    const themeRow = await screen.findByLabelText('Theme: System')
+    fireEvent.press(themeRow)
+    await screen.findByLabelText('Theme: Dark')
+    const {opacity, pointerEvents} = settingsHideState()
+    expect(opacity).toBe(0)
+    expect(pointerEvents).toBe('none')
+  })
+
+  it('hides its own backdrop+content once LanguageModal opens', async () => {
+    renderModal()
+    const languageRow = await screen.findByLabelText('Language: English')
+    fireEvent.press(languageRow)
+    await screen.findByText('Choose your language')
+    const {opacity, pointerEvents} = settingsHideState()
+    expect(opacity).toBe(0)
+    expect(pointerEvents).toBe('none')
+  })
+
+  it('reveals itself again once the nested sheet closes', async () => {
+    renderModal()
+    const gameRow = await screen.findByLabelText('Game: Classic')
+    fireEvent.press(gameRow)
+    const pick = await screen.findByLabelText('Pick a Card')
+    fireEvent.press(pick)
+    await waitFor(() => expect(screen.queryByText('Choose your game')).toBeNull())
+    const {opacity, pointerEvents} = settingsHideState()
+    expect(opacity).not.toBe(0)
+    expect(pointerEvents).toBe('auto')
   })
 })

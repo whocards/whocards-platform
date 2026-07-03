@@ -1,12 +1,15 @@
 /**
  * Component test for src/components/language-modal.tsx
  *
- * Guards the Pixel-notch fix (#102): on Android the page-sheet renders behind the
- * status bar, so the header must add the top safe-area inset to clear the display
- * cutout. On iOS the card sheet already insets, so the header keeps its original
- * 16px (`py-4`) top padding. We assert the resolved header `paddingTop` per platform
- * so a future edit can't silently drop the inset (re-overlapping the clock) or
- * double-pad iOS.
+ * Guards the Pixel-notch fix (#102): on Android, `statusBarTranslucent` (issue
+ * #189, second pass — this sheet was a `pageSheet` originally) draws the sheet
+ * behind the status bar, so the header must add the top safe-area inset to
+ * clear the display cutout. On iOS the sheet is bottom-anchored and
+ * content-hugging (it doesn't reach the status bar in the normal case, same
+ * as every sheet in this family — see settings-modal.tsx), so the header
+ * keeps its original 16px (`py-4`) top padding there. We assert the resolved
+ * header `paddingTop` per platform so a future edit can't silently drop the
+ * inset (re-overlapping the clock) or double-pad iOS.
  *
  * Issue #176 moved Tabletop mode out of this sheet entirely (it's now an inline
  * switch row in settings-modal.tsx, the sheet that now opens this one) and
@@ -71,7 +74,7 @@ describe('LanguageModal header inset', () => {
     expect(headerPaddingTop()).toBe(TOP_INSET + 16)
   })
 
-  it('keeps the original 16px top padding on iOS (the pageSheet card already insets)', async () => {
+  it('keeps the original 16px top padding on iOS (bottom-anchored, content-hugging — see doc comment)', async () => {
     Object.defineProperty(Platform, 'OS', {configurable: true, value: 'ios'})
     renderModal()
     await screen.findByText('Choose your language')
@@ -204,5 +207,39 @@ describe('LanguageModal — "Also show" secondary language (issue #176: at most 
     // rows above are matched by their Text content, not a label) — so a null
     // result here means "English" (the current primary) never got a checkbox row.
     expect(screen.queryByLabelText('English')).toBeNull()
+  })
+})
+
+describe('LanguageModal — compact sheet (issue #189, second pass)', () => {
+  it('dismisses on backdrop press', async () => {
+    const onClose = jest.fn()
+    render(
+      <LanguageModal
+        visible
+        languages={['en', 'he']}
+        current="en"
+        onSelect={() => {}}
+        onClose={onClose}
+      />
+    )
+    await screen.findByText('Choose your language')
+    fireEvent.press(screen.getByLabelText('dismiss'))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('dismisses on close-button press', async () => {
+    const onClose = jest.fn()
+    render(
+      <LanguageModal
+        visible
+        languages={['en', 'he']}
+        current="en"
+        onSelect={() => {}}
+        onClose={onClose}
+      />
+    )
+    await screen.findByText('Choose your language')
+    fireEvent.press(screen.getByLabelText('close'))
+    expect(onClose).toHaveBeenCalled()
   })
 })
