@@ -330,6 +330,9 @@ const avgCharWidthFactor = (language: string): number =>
 const AUTOFIT_LINE_HEIGHT = 1.2
 const AUTOFIT_MIN_FONT_SIZE = 34
 const AUTOFIT_STEP = 2
+// Exported so the boundary-clamp regression test asserts against the real
+// constant rather than a hardcoded copy of it that could silently drift.
+export const AUTOFIT_MIN_FONT_SIZE_FOR_TEST = AUTOFIT_MIN_FONT_SIZE
 // The estimate above is a heuristic, not a real layout pass — Satori's actual
 // wrap can land one line short/long of it (confirmed by rendering a long
 // Japanese question: estimated 10 lines, Satori wrapped 11). Padding the
@@ -642,6 +645,56 @@ export const measureQuestionTextBlock = (
   return {top, bottom: top + Number(match[2])}
 }
 
+/**
+ * Pure control-flow core of the shrink-and-remeasure loop, extracted out of
+ * renderSvg (below) so its boundary behaviour can be unit-tested directly
+ * against a synthetic `check` — no Satori call, no real font metrics —
+ * instead of only indirectly through real renders. `check(fontSize)` renders
+ * (or, in a test, fakes rendering) at that size and reports whether it
+ * clears the wordmark; this function decides what to try next.
+ *
+ * Two invariants, both load-bearing (a real bug shipped from violating the
+ * second one — see #169's round-3 review):
+ *   1. `fontSize` passed to `check` is NEVER checked before it's assigned,
+ *      and never returned without having been checked — every candidate
+ *      this function commits to (by returning it) was the very last one
+ *      `check` was called with. There's no "decrement, re-render, then exit
+ *      the loop before measuring" tail.
+ *   2. `fontSize` never drops below AUTOFIT_MIN_FONT_SIZE. The decrement
+ *      itself is clamped (`Math.max`), not just the eventual return value —
+ *      a loop that decremented freely and only clamped what it returned
+ *      would still CHECK (and by extension render, in the real caller) an
+ *      out-of-bounds size, and an odd starting size stepping down by
+ *      AUTOFIT_STEP=2 skips straight over an even floor (e.g. 35 -> 33,
+ *      never landing on 34) unless the decrement itself is bounded.
+ *
+ * If `check` never reports clear — not even at the floor — that's an
+ * accepted degradation: the floor exists so type never shrinks below
+ * legibility, and "still slightly into the wordmark, but at the floor" is
+ * preferred over shrinking further. The floor's own (checked) result is
+ * what gets returned.
+ */
+const resolveAutofitFontSize = async <T>(
+  startFontSize: number,
+  check: (fontSize: number) => Promise<{clearsWordmark: boolean; result: T}>
+): Promise<{fontSize: number; result: T}> => {
+  let fontSize = startFontSize
+  for (;;) {
+    const {clearsWordmark, result} = await check(fontSize)
+    if (clearsWordmark || fontSize <= AUTOFIT_MIN_FONT_SIZE) return {fontSize, result}
+    fontSize = Math.max(AUTOFIT_MIN_FONT_SIZE, fontSize - AUTOFIT_STEP)
+  }
+}
+
+/**
+ * Exported for unit testing only — the same resolveAutofitFontSize the real
+ * renderer drives, so the boundary regression test exercises the exact
+ * production control flow (not a re-implementation of it) against a fast,
+ * synthetic `check` instead of paying for real Satori renders per candidate
+ * size.
+ */
+export const resolveAutofitFontSizeForTest = resolveAutofitFontSize
+
 // Renders the Satori SVG for an already-resolved (text, language, size) —
 // the layout step, before resvg rasterises it to PNG.
 //
@@ -654,18 +707,20 @@ export const measureQuestionTextBlock = (
 // margin harder just chases the next input shape that breaks it the same
 // way. Instead, for story/post we treat the estimate as a starting point
 // only and verify the *actual* rendered block against the *actual*
-// clearance boundary: measure it (measureQuestionTextBlock, no PNG
-// rasterisation — cheap relative to the render pipeline's dominant costs,
-// font decode and the final resvg pass), and if it still intrudes, shrink
-// one AUTOFIT_STEP and re-render. This is naturally bounded by the same
-// `fontSize > AUTOFIT_MIN_FONT_SIZE` floor the estimate loop uses, so it
-// can't run away; in practice (see the real-render sweep in
-// card-image.test.ts) it converges in 0-3 extra Satori calls for the inputs
-// that need correcting, since the estimate is usually only a step or two
-// short. OG is exempt: its byte-identical output is a hard constraint
-// (#161), and fontSizeFor already early-returns a fixed size for it with no
-// shrink loop at all.
-const renderSvg = async (text: string, language: string, size: CardSize): Promise<string> => {
+// clearance boundary via resolveAutofitFontSize above: measure it
+// (measureQuestionTextBlock, no PNG rasterisation — cheap relative to the
+// render pipeline's dominant costs, font decode and the final resvg pass),
+// and if it still intrudes, shrink and re-render. In practice (see the
+// real-render sweep in card-image.test.ts) it converges in 0-3 extra Satori
+// calls for the inputs that need correcting, since the estimate is usually
+// only a step or two short. OG is exempt: its byte-identical output is a
+// hard constraint (#161), and fontSizeFor already early-returns a fixed
+// size for it with no shrink loop at all.
+const renderSvg = async (
+  text: string,
+  language: string,
+  size: CardSize
+): Promise<{svg: string; fontSize: number}> => {
   const [fonts, mazeUri] = await Promise.all([fontsFor(language), buildMazeDataUri(size)])
   const satoriOptions = {
     width: size.width,
@@ -675,26 +730,28 @@ const renderSvg = async (text: string, language: string, size: CardSize): Promis
   }
 
   if (size.key === 'og') {
-    return satori(buildTree(text, language, mazeUri, size) as never, satoriOptions)
+    const svg = await satori(buildTree(text, language, mazeUri, size) as never, satoriOptions)
+    return {svg, fontSize: fontSizeFor(text, language, size)}
   }
 
-  let fontSize = fontSizeFor(text, language, size)
-  let svg = await satori(buildTree(text, language, mazeUri, size, fontSize) as never, satoriOptions)
+  const startFontSize = fontSizeFor(text, language, size)
   const clearanceLimit = size.height - size.padding - wordmarkClearanceFor(size)
-  while (fontSize > AUTOFIT_MIN_FONT_SIZE) {
-    const bounds = measureQuestionTextBlock(svg)
-    if (!bounds || bounds.bottom <= clearanceLimit) break
-    fontSize -= AUTOFIT_STEP
-    svg = await satori(buildTree(text, language, mazeUri, size, fontSize) as never, satoriOptions)
-  }
-  return svg
+  const {fontSize, result: svg} = await resolveAutofitFontSize(startFontSize, async (candidate) => {
+    const candidateSvg = await satori(
+      buildTree(text, language, mazeUri, size, candidate) as never,
+      satoriOptions
+    )
+    const bounds = measureQuestionTextBlock(candidateSvg)
+    return {clearsWordmark: !bounds || bounds.bottom <= clearanceLimit, result: candidateSvg}
+  })
+  return {svg, fontSize}
 }
 
 // Renders straight to PNG bytes for an already-resolved (text, language, size)
 // — the part shared by the cached OG build path and the uncached on-demand
 // story/post path below.
 const renderPng = async (text: string, language: string, size: CardSize): Promise<Buffer> => {
-  const svg = await renderSvg(text, language, size)
+  const {svg} = await renderSvg(text, language, size)
   const resvg = new Resvg(svg, {
     fitTo: {mode: 'width', value: size.width},
     background: BG_COLOR,
@@ -770,8 +827,25 @@ export const renderCardSvgForTest = async (
   sizeKey: CardSizeKey = 'og'
 ): Promise<string> => {
   const text = resolveQuestionText(id, language)
-  return renderSvg(text, language, CARD_SIZES[sizeKey])
+  const {svg} = await renderSvg(text, language, CARD_SIZES[sizeKey])
+  return svg
 }
+
+/**
+ * Exported for unit testing only — like renderCardSvgForTest, but (a) takes
+ * raw text directly instead of resolving a real dataset id, so a test can
+ * construct a synthetic pathological case (e.g. one that's still over the
+ * wordmark clearance even at AUTOFIT_MIN_FONT_SIZE — no real question does
+ * this today, but the boundary behaviour still needs a regression test) and
+ * (b) also returns the `fontSize` renderSvg actually settled on, so a test
+ * can assert the floor clamp directly instead of re-parsing it out of the
+ * SVG.
+ */
+export const renderSvgForTest = (
+  text: string,
+  language: string,
+  sizeKey: CardSizeKey
+): Promise<{svg: string; fontSize: number}> => renderSvg(text, language, CARD_SIZES[sizeKey])
 
 /** Every (language, id) pair that has question text — used for static prerender. */
 export const cardImagePaths = (): {language: string; id: string}[] => {

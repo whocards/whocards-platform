@@ -4,11 +4,14 @@ import sharp from 'sharp'
 import {describe, expect, it} from 'vitest'
 
 import {
+  AUTOFIT_MIN_FONT_SIZE_FOR_TEST,
   autofitEstimateForTest,
   CARD_SIZES,
   measureQuestionTextBlock,
   renderCardPng,
   renderCardSvgForTest,
+  renderSvgForTest,
+  resolveAutofitFontSizeForTest,
   SHARE_CARD_SIZE_KEYS,
   wordmarkClearanceFor,
 } from './card-image'
@@ -261,6 +264,83 @@ describe('autofit clears the wordmark for multi-paragraph (\\n\\n) questions (re
     const size = CARD_SIZES[sizeKey]
     expect(top).toBeGreaterThanOrEqual(size.padding)
     expect(bottom).toBeLessThan(size.height - size.padding - wordmarkClearanceFor(size))
+  })
+})
+
+// Round 3 of review on #169 found a real off-by-one: the shrink loop
+// re-rendered at the END of its body (decrement, then re-render), so the
+// LAST render — the one after the final decrement — was returned WITHOUT
+// ever being measured. Reproduced by the reviewer with a synthetic question
+// whose estimate started at an odd font size that never cleared: 39 -> 37 ->
+// 35 (still 2px over) -> decrements to 33, ONE BELOW AUTOFIT_MIN_FONT_SIZE
+// (34), and returns unmeasured. Not reachable by any real question in the
+// current dataset (the worst real gap, hu/3/story, converges at 113 — see
+// the describe block above), but it broke the "guaranteed by construction"
+// property that was the whole point of the round-2 fix.
+//
+// The fix moved the render+measure to the TOP of every loop iteration (see
+// resolveAutofitFontSize's doc comment) and clamped the decrement itself
+// with Math.max, not just the final return value. These tests pin both
+// halves of that fix directly against the exact function production uses —
+// not a re-implementation of it — so a regression here can't hide behind
+// "the test's copy of the logic happened to still be right".
+describe('autofit shrink loop never returns an unmeasured or sub-floor font size (regression: #169 round 3)', () => {
+  it('never checks (and so never renders) a font size below AUTOFIT_MIN_FONT_SIZE, even starting from odd parity', async () => {
+    // Mirrors the reviewer's exact repro shape: an odd starting size that
+    // never reports clear, at any size, all the way down. A buggy
+    // decrement (fontSize -= STEP with no clamp) would check 39, 37, 35,
+    // then finally CHECK 33 too, one below the floor — this predicate
+    // records every fontSize it's asked to check and asserts none of them
+    // ever go below the floor.
+    const checkedSizes: number[] = []
+    const {fontSize} = await resolveAutofitFontSizeForTest(39, (candidate) => {
+      checkedSizes.push(candidate)
+      return Promise.resolve({clearsWordmark: false, result: candidate})
+    })
+    expect(Math.min(...checkedSizes)).toBeGreaterThanOrEqual(AUTOFIT_MIN_FONT_SIZE_FOR_TEST)
+    expect(fontSize).toBe(AUTOFIT_MIN_FONT_SIZE_FOR_TEST)
+  })
+
+  it('returns the result from the SAME check call that decided to stop, never a stale unmeasured one', async () => {
+    // A predicate that clears only once it reaches a specific size (30, an
+    // unreachable-without-clamping value below the floor) proves the loop
+    // is checking the size it's about to accept, not the size before some
+    // unmeasured final decrement — if it accepted an unchecked trailing
+    // render, this predicate would never report `clearsWordmark: true` and
+    // the loop would instead bottom out at the floor (34) rather than
+    // "finding" 30.
+    const {fontSize, result} = await resolveAutofitFontSizeForTest(50, (candidate) =>
+      Promise.resolve({clearsWordmark: candidate <= 40, result: `checked-at-${candidate}`})
+    )
+    expect(fontSize).toBe(40)
+    expect(result).toBe('checked-at-40')
+  })
+
+  it('accepts the floor as an explicit degradation when nothing clears, and that render is measured', async () => {
+    // Real end-to-end confirmation (not just the pure resolver above): a
+    // synthetic question engineered to never fit — 80 short forced
+    // paragraphs, each one a guaranteed extra line — still returns a real,
+    // fully-rendered, MEASURABLE SVG at exactly AUTOFIT_MIN_FONT_SIZE for
+    // both on-demand sizes, even though it still doesn't clear the
+    // wordmark. That's accepted: the floor exists so type never shrinks
+    // below legibility, not so every possible question is guaranteed to
+    // clear the wordmark.
+    const synthetic = Array.from({length: 80}, (_, i) => `Overflow paragraph number ${i}`).join(
+      '\n\n'
+    )
+
+    for (const sizeKey of SHARE_CARD_SIZE_KEYS) {
+      const {svg, fontSize} = await renderSvgForTest(synthetic, 'en', sizeKey)
+      expect(fontSize).toBe(AUTOFIT_MIN_FONT_SIZE_FOR_TEST)
+
+      const bounds = measureQuestionTextBlock(svg)
+      expect(bounds).toBeDefined() // a real, measurable render was returned
+      const size = CARD_SIZES[sizeKey]
+      const limit = size.height - size.padding - wordmarkClearanceFor(size)
+      // Explicit, asserted degradation: even the floor doesn't clear here —
+      // that's expected for a text this pathological, not a bug.
+      expect(bounds?.bottom).toBeGreaterThan(limit)
+    }
   })
 })
 
