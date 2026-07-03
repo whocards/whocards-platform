@@ -22,7 +22,7 @@ import {DEFAULT_GAME, getDeck, getInitialNav, isPoolBacked, navReducer} from '@w
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 
-import {PickPlayer} from '@/components/pick-player'
+import {CARD_ASPECT, CARD_PADDING_X, CARD_PADDING_Y, PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
 import {QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
@@ -55,6 +55,13 @@ const RUBBER_BAND = 0.3
 // docs/design/163-light-mode/proposal.md amendment 2) while the canvas around it
 // themes, so DeckPlayer paints one small always-dark panel with this same texture
 // rather than forcing the whole screen dark.
+//
+// Re-opened (issue #173, on-device follow-up): the first pass sized that panel to
+// the Question's full fitted BUDGET box (the whole area between the top inset and
+// the bottom bar) — which spans most of the screen, so in Light theme it visually
+// WAS a second dark background. Fixed by giving the panel the same physical-card
+// geometry as Pick a Card's revealed face (CARD_ASPECT/CARD_PADDING_X/Y, see
+// pick-player.tsx) instead of the full budget — see cardWidth/cardHeight below.
 const cardTexture = require('../../../assets/images/background.png')
 
 // Card-enter animation durations (ms) and travel offsets (points).
@@ -383,6 +390,20 @@ const DeckPlayer = ({
   // window-derived fallback for the first paint, before onLayout reports the real box
   const measured = box ?? {width: winWidth - 64, height: winHeight - 220}
 
+  // --- Light-theme-only card geometry (issue #173 re-open): a physical-card
+  // aspect centred in the measured budget, the same formula Pick a Card's
+  // revealed face uses (pick-player.tsx) — so the panel behind the Question
+  // reads as a bounded card, not a second dark background. The Question's own
+  // box shrinks to the card's padded interior too, so fitFontSize fits it *for
+  // the panel it actually sits in*: text can't grow past edges the panel
+  // doesn't have (the #174 review's escape-the-panel finding). Dark theme is
+  // untouched — it keeps passing the full `measured` box below, exactly as
+  // before, so it stays pixel-unchanged.
+  const cardWidth = Math.round(Math.min(measured.width, measured.height * CARD_ASPECT))
+  const cardHeight = Math.round(cardWidth / CARD_ASPECT)
+  const cardInner = {width: cardWidth - CARD_PADDING_X * 2, height: cardHeight - CARD_PADDING_Y * 2}
+  const questionBox = isDark ? measured : cardInner
+
   // auto-hiding chrome — the card + gesture layer underneath spans the full
   // screen, so a tap anywhere (including the band the bottom bar occupies) reveals it
   const {chromeShown, revealChrome, bottomBarH, onBottomBarLayout, bottomChromeStyle} =
@@ -567,6 +588,27 @@ const DeckPlayer = ({
     reduceMotionSV,
   ])
 
+  // The animated Question itself — shared by both themes, only `questionBox`
+  // (dark: the full budget; light: the card's padded interior, see above)
+  // differs, so fitFontSize always fits against the box the Question actually
+  // renders inside.
+  const questionNode = languageReady ? (
+    <Animated.View style={cardStyle}>
+      <QuestionText
+        text={text}
+        language={language}
+        box={questionBox}
+        secondaries={secondary
+          .filter((code) => code !== language)
+          .map((code) => ({
+            language: code,
+            text: questions[questionId]?.[code] ?? '',
+          }))}
+        mirrored={tabletop}
+      />
+    </Animated.View>
+  ) : null
+
   return (
     <ScreenBackground>
       {/* Play is chrome-themed like every other screen now (issue #173); this
@@ -584,36 +626,41 @@ const DeckPlayer = ({
         <GestureDetector gesture={gesture}>
           <View className="flex-1 px-8" style={{paddingTop: insets.top, paddingBottom: bottomBarH}}>
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
-              {/* Light theme only: the Question needs an always-dark "card" behind it
-                  (issue #173 — the Card is the brand object, the canvas around it
-                  themes). Dark theme renders nothing here — the full-bleed
-                  ScreenBackground already IS this exact look, so dark theme stays
-                  pixel-unchanged; this panel exists purely to give Light theme back
-                  the same dark surface, at the same box the Question already fits to. */}
-              {!isDark ? (
-                <View
-                  pointerEvents="none"
-                  className="bg-darkest absolute inset-0 overflow-hidden rounded-[20px] border border-white/10"
-                >
-                  <Image source={cardTexture} contentFit="cover" style={StyleSheet.absoluteFill} />
+              {isDark ? (
+                // Dark theme is untouched: the Question sits directly on the
+                // full-bleed ScreenBackground, exactly as before #173.
+                questionNode
+              ) : (
+                // Light theme only: the Question sits on an always-dark, card-
+                // proportioned panel (issue #173 re-open — see cardWidth/
+                // cardHeight above) instead of the full budget box, so it reads
+                // as a bounded card rather than a second dark background. The
+                // panel background is `absolute inset-0` and `pointerEvents=
+                // "none"` (purely decorative, doesn't steal the swipe gesture);
+                // the padded content view is a plain sibling with no overflow
+                // clipping, so a swiping card's Question can still slide freely
+                // past the panel's edge exactly as it does in dark theme.
+                <View className="items-center">
+                  <View style={{width: cardWidth, height: cardHeight}}>
+                    <View
+                      pointerEvents="none"
+                      className="bg-darkest absolute inset-0 overflow-hidden rounded-[20px] border border-white/10"
+                    >
+                      <Image
+                        source={cardTexture}
+                        contentFit="cover"
+                        style={StyleSheet.absoluteFill}
+                      />
+                    </View>
+                    <View
+                      className="flex-1 justify-center"
+                      style={{paddingHorizontal: CARD_PADDING_X, paddingVertical: CARD_PADDING_Y}}
+                    >
+                      {questionNode}
+                    </View>
+                  </View>
                 </View>
-              ) : null}
-              {languageReady ? (
-                <Animated.View style={cardStyle}>
-                  <QuestionText
-                    text={text}
-                    language={language}
-                    box={measured}
-                    secondaries={secondary
-                      .filter((code) => code !== language)
-                      .map((code) => ({
-                        language: code,
-                        text: questions[questionId]?.[code] ?? '',
-                      }))}
-                    mirrored={tabletop}
-                  />
-                </Animated.View>
-              ) : null}
+              )}
             </View>
           </View>
         </GestureDetector>

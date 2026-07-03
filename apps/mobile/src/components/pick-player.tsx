@@ -39,10 +39,12 @@ import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 // interaction transitions — the deal is the one composed "moment of theatre" per card.
 const FLIP_MS = 450
 // Physical-card proportions (width / height, ~poker card) for the deck and the
-// flipped question card.
-const CARD_ASPECT = 0.72
-const CARD_PADDING_X = 28
-const CARD_PADDING_Y = 44
+// flipped question card. Exported: Classic play's light-theme card panel
+// (`app/play/[deck].tsx`, issue #173) reuses the exact same geometry so both
+// Games' "card" reads as the same brand object.
+export const CARD_ASPECT = 0.72
+export const CARD_PADDING_X = 28
+export const CARD_PADDING_Y = 44
 // The tap instruction sits in one place well below the deck: a fixed-height band
 // (so the card never jumps between phases) pushed down by a gap.
 const HINT_SPACE = 40
