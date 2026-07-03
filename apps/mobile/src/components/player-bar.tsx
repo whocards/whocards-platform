@@ -39,20 +39,11 @@ const BarButton = ({icon, label, onPress, accessibilityLabel, iconColor}: BarBut
 }
 
 type PlayerBarProps = {
-  showLanguage: boolean
-  /**
-   * Whether the sheet this button opens offers an actual language choice — false
-   * for a single-language deck, where the sheet is display-settings-only (issue
-   * #148 review: the button must not promise a language choice that isn't
-   * there). Defaults to true, the historical behavior.
-   */
-  multiLanguage?: boolean
   /** Hide Share while there is no card to share (e.g. the pick screen before a deal). */
   showShare?: boolean
   onPrevious: () => void
   onNext: () => void
   onShare: () => void
-  onLanguage: () => void
   /** Leave the player — same handler the old top-right close chip called (issue #186). */
   onExit: () => void
 }
@@ -67,18 +58,18 @@ type PlayerBarProps = {
  * Card itself, so — like the Library screen and every sheet (issue #163) — it
  * follows the Theme Display setting rather than always being dark.
  *
- * Exit lives here now (issue #186), not as a floating top-right chip — it's the
- * bar's only reason to sit right after Back, so once #176 drops the Language/
- * Display button the bar reads Prev · Exit · Share · Next unchanged.
+ * Exit lives here now (issue #186), not as a floating top-right chip — it sits
+ * right after Back. Used to also carry a Language/Display button that opened
+ * the in-play language sheet (issue #148); issue #176 moved every setting
+ * (Language, Tabletop mode, Game, Theme) into one Settings menu reachable only
+ * from the home screen — the play screens have no settings entry of their own
+ * anymore, so the bar reads Prev · Exit · Share · Next.
  */
 export const PlayerBar = ({
-  showLanguage,
-  multiLanguage = true,
   showShare = true,
   onPrevious,
   onNext,
   onShare,
-  onLanguage,
   onExit,
 }: PlayerBarProps) => {
   const insets = useSafeAreaInsets()
@@ -111,15 +102,6 @@ export const PlayerBar = ({
           label="Share"
           onPress={onShare}
           accessibilityLabel="share question"
-          iconColor={iconColor}
-        />
-      ) : null}
-      {showLanguage ? (
-        <BarButton
-          icon={multiLanguage ? 'language' : 'options-outline'}
-          label={multiLanguage ? 'Language' : 'Display'}
-          onPress={onLanguage}
-          accessibilityLabel={multiLanguage ? 'change language' : 'display settings'}
           iconColor={iconColor}
         />
       ) : null}

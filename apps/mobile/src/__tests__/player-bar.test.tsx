@@ -1,13 +1,12 @@
 /**
  * Tests for src/components/player-bar.tsx
  *
- * Covers the `multiLanguage` prop (issue #148 review, finding 1): the bottom-bar
- * button that opens the language/display-settings sheet is now always shown
- * (Tabletop mode is available on every deck, not just multi-language ones), so
- * its visible label and accessibilityLabel must stop promising a language
- * choice that isn't there for a single-language deck.
+ * Issue #176 removed the Language/Display button from this bar entirely — every
+ * setting (Language, Tabletop mode, Game, Theme) now lives behind the home
+ * screen's Settings menu, so the play screens have no settings entry of their
+ * own. This bar is back down to just navigation (Back/Next) + Share.
  *
- * Also covers the Theme Display setting reaching this bar (issue #173): this
+ * Still covers the Theme Display setting reaching this bar (issue #173): this
  * bar is chrome around the always-dark Card, not the Card itself, so its icon
  * color (a raw `Ionicons` prop, not expressible as a `dark:` class) must follow
  * the resolved scheme, same as every other themed sheet/screen.
@@ -53,43 +52,30 @@ const noop = () => {}
 
 const renderBar = (props: Partial<React.ComponentProps<typeof PlayerBar>> = {}) =>
   render(
-    <PlayerBar
-      showLanguage
-      onPrevious={noop}
-      onNext={noop}
-      onShare={noop}
-      onLanguage={noop}
-      onExit={noop}
-      {...props}
-    />
+    <PlayerBar onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} {...props} />
   )
 
-describe('PlayerBar — language/display button labeling', () => {
-  it('defaults to the "Language" label and accessibilityLabel (multiLanguage defaults true)', () => {
+describe('PlayerBar — no Language/Display button (issue #176)', () => {
+  it('never renders a Language or Display action — that setting moved to the home Settings menu', () => {
     renderBar()
-    expect(screen.getByText('Language')).toBeTruthy()
-    expect(screen.getByLabelText('change language')).toBeTruthy()
-  })
-
-  it('shows "Language" / "change language" for a multi-language deck', () => {
-    renderBar({multiLanguage: true})
-    expect(screen.getByText('Language')).toBeTruthy()
-    expect(screen.getByLabelText('change language')).toBeTruthy()
-    expect(screen.queryByText('Display')).toBeNull()
-  })
-
-  it('shows "Display" / "display settings" for a single-language deck — no language promise', () => {
-    renderBar({multiLanguage: false})
-    expect(screen.getByText('Display')).toBeTruthy()
-    expect(screen.getByLabelText('display settings')).toBeTruthy()
     expect(screen.queryByText('Language')).toBeNull()
+    expect(screen.queryByText('Display')).toBeNull()
     expect(screen.queryByLabelText('change language')).toBeNull()
+    expect(screen.queryByLabelText('display settings')).toBeNull()
   })
 
-  it('renders no button at all when showLanguage is false, regardless of multiLanguage', () => {
-    renderBar({showLanguage: false, multiLanguage: false})
-    expect(screen.queryByText('Display')).toBeNull()
-    expect(screen.queryByText('Language')).toBeNull()
+  it('renders Back, Share, and Next', () => {
+    renderBar()
+    expect(screen.getByLabelText('previous question')).toBeTruthy()
+    expect(screen.getByLabelText('share question')).toBeTruthy()
+    expect(screen.getByLabelText('next question')).toBeTruthy()
+  })
+
+  it('hides Share when showShare is false, keeping Back and Next', () => {
+    renderBar({showShare: false})
+    expect(screen.queryByLabelText('share question')).toBeNull()
+    expect(screen.getByLabelText('previous question')).toBeTruthy()
+    expect(screen.getByLabelText('next question')).toBeTruthy()
   })
 })
 
@@ -107,8 +93,8 @@ describe('PlayerBar — Exit button (issue #186)', () => {
     expect(onExit).toHaveBeenCalledTimes(1)
   })
 
-  it('is present regardless of showShare/showLanguage — Exit is the only exit once the top chip is gone', () => {
-    renderBar({showShare: false, showLanguage: false})
+  it('is present regardless of showShare — Exit is the only exit once the top chip is gone', () => {
+    renderBar({showShare: false})
     expect(screen.getByLabelText('exit deck')).toBeTruthy()
   })
 })

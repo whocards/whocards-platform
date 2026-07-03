@@ -5,6 +5,12 @@
 #
 # Tagged `screenshots` so the e2e quality gate (pnpm -F mobile e2e) skips it; run
 # it via:  pnpm -F mobile screenshots
+#
+# Issue #176 moved the language picker out of the play screen into the home
+# screen's Settings menu — capture 03 now shows it over the LANDING screen,
+# not over the card, and the flow returns to the player for capture 04.
+# NOTE: rewritten for the new Settings menu — not yet re-run on device in the
+# PR that made this change; regenerate the store assets before relying on them.
 appId: ${APP_ID}
 tags:
   - screenshots
@@ -35,16 +41,24 @@ tags:
     timeout: 4000
 - takeScreenshot: store-assets/${DEVICE}/02-card-en
 
-# 3) Language picker — reveal the chrome, open the sheet.
-- tapOn:
-    point: '50%,45%'
-- tapOn: 'change language'
+# 3) Language picker — back to the home screen, open Settings → Language.
+- tapOn: 'exit deck'
+- tapOn: 'Settings'
+- tapOn: 'Language: English'
 - assertVisible: 'Choose your language'
 - takeScreenshot: store-assets/${DEVICE}/03-language-picker
 
 # 4) Question card (Hebrew, RTL) — showcases the i18n / right-alignment, shot clean.
+# Re-open the SAME q=1 card via the deep link (not the generic Play button) so
+# capture 04 is directly comparable to capture 02 — same question, new language.
 - tapOn: 'Hebrew'
 - waitForAnimationToEnd
+- tapOn: 'close'
+- stopApp
+- openLink: mobile://play/library?q=1
+- tapOn:
+    text: 'Open'
+    optional: true
 - extendedWaitUntil:
     notVisible: 'next question'
     timeout: 4000

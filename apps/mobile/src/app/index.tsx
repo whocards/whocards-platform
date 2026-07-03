@@ -14,19 +14,16 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
-import type {GameId} from '@whocards/decks'
-import {DEFAULT_DECK_SLUG, DEFAULT_GAME, libraryDeck, resolveDeck} from '@whocards/decks'
+import {DEFAULT_DECK_SLUG, libraryDeck, resolveDeck} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
 
-import {GameModal} from '@/components/game-modal'
 import {PressableScale} from '@/components/pressable-scale'
 import {ScreenBackground} from '@/components/screen-background'
-import {ThemeModal} from '@/components/theme-modal'
+import {SecondaryButton} from '@/components/secondary-button'
+import {SettingsModal} from '@/components/settings-modal'
 import {useInternalMarker} from '@/hooks/use-internal-marker'
 import {useThemeSetting} from '@/hooks/use-theme-setting'
-import {getStoredGame, setStoredGame} from '@/lib/game-store'
-import {GAME_CATALOG} from '@/lib/games'
-import {impact, selection} from '@/lib/haptics'
+import {impact} from '@/lib/haptics'
 import {trpc} from '@/lib/trpc'
 
 // We launch with the original WhoCards deck; its content ships in-app for offline play.
@@ -47,14 +44,6 @@ export default function LandingScreen() {
   const {height: winHeight} = useWindowDimensions()
   const reduceMotion = useReducedMotion()
 
-  // the chosen Game — persisted globally, applied by the player on Play
-  const [game, setGame] = useState<GameId>(DEFAULT_GAME)
-  const [gameModalOpen, setGameModalOpen] = useState(false)
-  useEffect(() => {
-    void getStoredGame().then(setGame)
-  }, [])
-  const gameTitle = GAME_CATALOG.find((entry) => entry.id === game)?.title ?? game
-
   // the Theme Display setting (issue #163) — System-follow by default, with a
   // manual override. Every screen follows it now, including Play/Pick a Card's
   // chrome (issue #173) — only the Card itself stays dark in both themes.
@@ -62,9 +51,14 @@ export default function LandingScreen() {
   // button's play-glyph fill, the local `<StatusBar>` override) that can't be
   // expressed as a `dark:` class.
   const {theme, resolvedScheme, select: selectTheme} = useThemeSetting()
-  const [themeModalOpen, setThemeModalOpen] = useState(false)
   const isDark = resolvedScheme !== 'light'
-  const chromeColor = isDark ? colors.white : colors.darker
+
+  // Every setting (Game, Theme, Language, Tabletop mode) now lives behind one
+  // Settings menu, only reachable from this screen (issue #176) — Game/Theme
+  // used to be their own Library chips, Language/Tabletop lived in the
+  // play-screen sheet. See settings-modal.tsx for the menu itself and the
+  // per-deck Language scoping decision.
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
   // The hidden dev marker (issue #178) — a long-press on the wordmark below
   // toggles it. See use-internal-marker.ts.
@@ -184,66 +178,25 @@ export default function LandingScreen() {
               <Text className="text-darker font-sans text-base font-bold">Play</Text>
             </PressableScale>
           </Link>
-          <View className="flex-row items-center gap-2.5">
-            {/* quiet secondary controls (outline, never a second filled CTA — DESIGN.md) */}
-            {/* label mirrors the visible text so tests and screen readers see the
-                current Game (an icon-only 'choose game' label would hide it — the
-                accessibility tree collapses a button's children behind its label) */}
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel={`Game: ${gameTitle}`}
-              onPress={() => {
-                impact('light')
-                setGameModalOpen(true)
-              }}
-              className="border-darker/15 dark:border-white/25 active:bg-darker/5 dark:active:bg-white/10 flex-row items-center gap-1.5 rounded-full border px-4 py-2"
-            >
-              <Text className="text-darker/80 dark:text-white/80 font-sans text-sm">
-                Game: {gameTitle}
-              </Text>
-              <Ionicons name="chevron-forward" size={14} color={chromeColor} />
-            </PressableScale>
-            {/* the Theme Display setting (issue #163) — a per-Device presentation
-                choice (CONTEXT.md), not a Game: never affects which Card is drawn
-                or progress. Separate from the per-deck Language modal's "Display
-                settings" (Tabletop mode, issue #148) — this one is global and
-                reachable before any Deck is open, since it themes this very
-                screen; named "Theme" to avoid colliding with that sheet's name. */}
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel="Theme"
-              onPress={() => {
-                impact('light')
-                setThemeModalOpen(true)
-              }}
-              className="border-darker/15 dark:border-white/25 active:bg-darker/5 dark:active:bg-white/10 h-9 w-9 items-center justify-center rounded-full border"
-            >
-              <Ionicons name="contrast-outline" size={16} color={chromeColor} />
-            </PressableScale>
-          </View>
+          {/* the single Settings entry point (issue #176) — the app's first
+              secondary-button, ported from the website's `.btn-secondary`
+              (see secondary-button.tsx). Everything that used to be two
+              outline chips here (Game, Theme) plus the play-screen language
+              sheet (Language, Tabletop mode) now lives behind this one menu. */}
+          <SecondaryButton
+            label="Settings"
+            icon={<Ionicons name="settings-outline" size={18} color={colors.white} />}
+            onPress={() => setSettingsModalOpen(true)}
+          />
         </Animated.View>
 
-        <GameModal
-          visible={gameModalOpen}
-          current={game}
-          onSelect={(next) => {
-            selection()
-            setGame(next)
-            void setStoredGame(next)
-            setGameModalOpen(false)
-          }}
-          onClose={() => setGameModalOpen(false)}
-        />
-
-        <ThemeModal
-          visible={themeModalOpen}
-          current={theme}
-          onSelect={(next) => {
-            selection()
-            selectTheme(next)
-            setThemeModalOpen(false)
-          }}
-          onClose={() => setThemeModalOpen(false)}
+        <SettingsModal
+          visible={settingsModalOpen}
+          onClose={() => setSettingsModalOpen(false)}
+          deckSlug={deck.slug}
+          languages={deck.languages}
+          theme={theme}
+          onSelectTheme={selectTheme}
         />
       </SafeAreaView>
     </ScreenBackground>

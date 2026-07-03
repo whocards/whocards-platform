@@ -49,7 +49,7 @@ A Game whose draw ritual is an explicit deal: the player draws each Card deliber
 _Avoid_: card mode, deal mode, draw mode
 
 **Display setting**:
-A per-Device presentation choice — which languages a Card shows, how a Card animates — that never affects which Card is drawn or whose progress is remembered. Display settings compose freely with any Game. Showing a Question in a primary language plus up to two secondary languages is a Display setting; Pick a Card is not (it changes the draw ritual, so it is a Game).
+A per-Device presentation choice — which languages a Card shows, how a Card animates — that never affects which Card is drawn or whose progress is remembered. Display settings compose freely with any Game. Showing a Question in a primary language plus one secondary language (reduced from up to two by issue #176) is a Display setting; Pick a Card is not (it changes the draw ritual, so it is a Game).
 _Avoid_: mode, preference (unqualified), option
 
 **Offline play**:

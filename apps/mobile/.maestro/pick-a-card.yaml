@@ -1,9 +1,13 @@
-# The Pick a Card Game: choose it in the landing Game picker, then verify the
-# deal loop — Pick reveals a card, Next returns to the pick screen, Back re-reads
+# The Pick a Card Game: choose it from the home Settings menu (issue #176 moved
+# Game off the old Library chip into the Settings sheet), then verify the deal
+# loop — Pick reveals a card, Next returns to the pick screen, Back re-reads
 # the last card. Questions are shuffled, so the flow asserts on the pick button's
 # presence/absence rather than specific question text. Buttons are matched by
 # their accessibility labels (a button's children are collapsed behind its label
 # in the iOS accessibility tree).
+#
+# NOTE (issue #176): rewritten for the new Settings menu — not yet re-run on
+# device in the PR that made this change; run before relying on it.
 #
 # Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}
@@ -13,11 +17,13 @@ tags:
 ---
 - launchApp:
     clearState: true # start clean: default Game is Classic
+- tapOn: 'Settings'
 - assertVisible: 'Game: Classic'
 - tapOn: 'Game: Classic'
 - assertVisible: 'Choose your game'
 - tapOn: 'Pick a Card'
 - assertVisible: 'Game: Pick a Card'
+- tapOn: 'close'
 - tapOn: 'Play'
 
 # The pick screen: the deal button is the only card-area content.

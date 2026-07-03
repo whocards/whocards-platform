@@ -20,7 +20,6 @@ import {getInitialPick, pickReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 
-import {LanguageModal} from '@/components/language-modal'
 import {PlayerBar} from '@/components/player-bar'
 import {PressableScale} from '@/components/pressable-scale'
 import {QuestionText} from '@/components/question-text'
@@ -33,12 +32,7 @@ import {send} from '@/lib/answer-transport'
 import {incrementCardCount, incrementSessionCount} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
-import {
-  getStoredLanguage,
-  getStoredSecondaryLanguages,
-  setStoredLanguage,
-  setStoredSecondaryLanguages,
-} from '@/lib/language-store'
+import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 
 // Full card flip (deal → reveal) duration; DESIGN.md's 200–300 ms band applies to
@@ -118,11 +112,12 @@ export const PickPlayer = ({
 
   const defaultLanguage = languages[0]
   const [language, setLanguage] = useState(defaultLanguage)
-  // secondary display languages rendered under the primary (a Display setting)
+  // secondary display language rendered under the primary (a Display setting,
+  // issue #176: at most one now, not up to two) — read-only here, same as
+  // DeckPlayer: set from the home-screen Settings menu, not from this screen.
   const [secondary, setSecondary] = useState<string[]>([])
   // gate the first reveal on the stored-language read, mirroring DeckPlayer
   const [languageReady, setLanguageReady] = useState(false)
-  const [langModalOpen, setLangModalOpen] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
 
   useEffect(() => {
@@ -356,8 +351,6 @@ export const PickPlayer = ({
     [deckSlug, questionId, language]
   )
 
-  const openLanguage = useCallback(() => setLangModalOpen(true), [])
-
   // --- gestures: tap anywhere reveals the chrome. No swipes — the card itself is
   // the button in both phases (tap to deal, tap to put down); Back lives in the bar. ---
   const revealChromeStable = useCallback(() => revealChrome(), [revealChrome])
@@ -508,54 +501,13 @@ export const PickPlayer = ({
           style={bottomChromeStyle}
         >
           <PlayerBar
-            showLanguage={languages.length > 1}
             showShare={dealt}
             onPrevious={goPrevious}
             onNext={goNext}
             onShare={handleShare}
-            onLanguage={openLanguage}
             onExit={handleExit}
           />
         </Animated.View>
-
-        <LanguageModal
-          visible={langModalOpen}
-          languages={languages}
-          current={language}
-          secondary={secondary}
-          onSelect={(next) => {
-            selection()
-            if (next !== language) {
-              track({
-                name: EVENTS.LANGUAGE_CHANGED,
-                props: {deck_id: deckSlug, from: language, to: next},
-              })
-            }
-            setLanguage(next)
-            void setStoredLanguage(deckSlug, next)
-            // the new primary can't also be a secondary
-            if (secondary.includes(next)) {
-              const pruned = secondary.filter((code) => code !== next)
-              setSecondary(pruned)
-              void setStoredSecondaryLanguages(deckSlug, pruned)
-            }
-            setLangModalOpen(false)
-            revealChrome()
-          }}
-          onSecondaryChange={(next) => {
-            selection()
-            track({
-              name: EVENTS.SECONDARY_LANGUAGES_CHANGED,
-              props: {deck_id: deckSlug, secondary: next},
-            })
-            setSecondary(next)
-            void setStoredSecondaryLanguages(deckSlug, next)
-          }}
-          onClose={() => {
-            setLangModalOpen(false)
-            revealChrome()
-          }}
-        />
 
         <ShareModal
           visible={shareModalOpen}

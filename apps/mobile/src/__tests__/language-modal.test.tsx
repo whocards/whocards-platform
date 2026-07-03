@@ -8,16 +8,16 @@
  * so a future edit can't silently drop the inset (re-overlapping the clock) or
  * double-pad iOS.
  *
- * Also covers the Tabletop mode toggle (issue #148): it renders whenever the
- * caller supplies `onTabletopChange` (regardless of language count, unlike
- * "Also show"), reflects the `tabletop` prop in its checked state, and reports
- * the flipped value on press.
+ * Issue #176 moved Tabletop mode out of this sheet entirely (it's now an inline
+ * switch row in settings-modal.tsx, the sheet that now opens this one) and
+ * reduced the secondary/"Also show" language from up to 2 down to at most 1 —
+ * picking a different one now replaces, rather than appending until a cap
+ * blocks further picks.
  *
- * And covers the single-language-deck shape (issue #148 review, finding 1):
- * with one language there's no real choice to make, so the primary-language
- * list is an inert, always-checked row — hidden — and the sheet's title reads
- * "Display settings" instead of "Choose your language" so it stops promising
- * a language choice that isn't there.
+ * Also covers the single-language-deck shape (issue #148 review, finding 1,
+ * carried forward by #176): with one language there's no real choice to make,
+ * so the primary-language list is hidden rather than rendering one inert,
+ * always-checked row.
  */
 import React from 'react'
 import {Platform, StyleSheet} from 'react-native'
@@ -79,87 +79,27 @@ describe('LanguageModal header inset', () => {
   })
 })
 
-describe('LanguageModal — Tabletop mode toggle (#148)', () => {
-  it('is absent when the caller does not supply onTabletopChange', async () => {
-    render(
-      <LanguageModal
-        visible
-        languages={['en', 'he']}
-        current="en"
-        onSelect={() => {}}
-        onClose={() => {}}
-      />
-    )
+describe('LanguageModal — Tabletop mode moved out (issue #176)', () => {
+  it('never renders a Tabletop mode row — that setting lives in settings-modal.tsx now', async () => {
+    renderModal()
     await screen.findByText('Choose your language')
     expect(screen.queryByText('Tabletop mode')).toBeNull()
-  })
-
-  it('renders even for a single-language deck (unlike "Also show")', async () => {
-    render(
-      <LanguageModal
-        visible
-        languages={['en']}
-        current="en"
-        onSelect={() => {}}
-        onTabletopChange={() => {}}
-        onClose={() => {}}
-      />
-    )
-    // Single-language deck: the title is display-settings-only (see the
-    // dedicated describe block below), not "Choose your language".
-    await screen.findByText('Display settings')
-    expect(screen.getByText('Tabletop mode')).toBeTruthy()
-    expect(screen.queryByText('Also show')).toBeNull()
-  })
-
-  it('reflects the tabletop prop as the switch checked state', async () => {
-    render(
-      <LanguageModal
-        visible
-        languages={['en', 'he']}
-        current="en"
-        onSelect={() => {}}
-        tabletop
-        onTabletopChange={() => {}}
-        onClose={() => {}}
-      />
-    )
-    const toggle = await screen.findByLabelText('Tabletop mode')
-    expect(toggle.props.accessibilityState).toEqual({checked: true})
-  })
-
-  it('reports the flipped value on press', async () => {
-    const onTabletopChange = jest.fn()
-    render(
-      <LanguageModal
-        visible
-        languages={['en', 'he']}
-        current="en"
-        onSelect={() => {}}
-        tabletop={false}
-        onTabletopChange={onTabletopChange}
-        onClose={() => {}}
-      />
-    )
-    const toggle = await screen.findByLabelText('Tabletop mode')
-    fireEvent.press(toggle)
-    expect(onTabletopChange).toHaveBeenCalledWith(true)
+    expect(screen.queryByLabelText('Tabletop mode')).toBeNull()
   })
 })
 
-describe('LanguageModal — single-language deck (issue #148 review, finding 1)', () => {
-  it('titles the sheet "Display settings", not "Choose your language"', async () => {
+describe('LanguageModal — single-language deck (issue #148 review, carried by #176)', () => {
+  it('titles the sheet "Language", not "Choose your language"', async () => {
     render(
       <LanguageModal
         visible
         languages={['en']}
         current="en"
         onSelect={() => {}}
-        onTabletopChange={() => {}}
         onClose={() => {}}
       />
     )
-    await screen.findByText('Display settings')
+    await screen.findByText('Language')
     expect(screen.queryByText('Choose your language')).toBeNull()
   })
 
@@ -170,31 +110,35 @@ describe('LanguageModal — single-language deck (issue #148 review, finding 1)'
         languages={['en']}
         current="en"
         onSelect={() => {}}
-        onTabletopChange={() => {}}
         onClose={() => {}}
       />
     )
-    await screen.findByText('Display settings')
+    await screen.findByText('Language')
     expect(screen.queryByText('English')).toBeNull()
   })
 
-  it('still renders the Tabletop toggle when the language list is hidden', async () => {
-    render(
-      <LanguageModal
-        visible
-        languages={['en']}
-        current="en"
-        onSelect={() => {}}
-        tabletop
-        onTabletopChange={() => {}}
-        onClose={() => {}}
-      />
-    )
-    const toggle = await screen.findByLabelText('Tabletop mode')
-    expect(toggle.props.accessibilityState).toEqual({checked: true})
-  })
-
   it('keeps "Choose your language" and the language row for a multi-language deck', async () => {
+    renderModal()
+    await screen.findByText('Choose your language')
+    expect(screen.getByText('English')).toBeTruthy()
+  })
+})
+
+const renderWithSecondary = (secondary: string[], onSecondaryChange = jest.fn()) =>
+  render(
+    <LanguageModal
+      visible
+      languages={['en', 'he', 'es']}
+      current="en"
+      secondary={secondary}
+      onSelect={() => {}}
+      onSecondaryChange={onSecondaryChange}
+      onClose={() => {}}
+    />
+  )
+
+describe('LanguageModal — "Also show" secondary language (issue #176: at most 1)', () => {
+  it('is absent when the caller does not supply onSecondaryChange', async () => {
     render(
       <LanguageModal
         visible
@@ -205,6 +149,60 @@ describe('LanguageModal — single-language deck (issue #148 review, finding 1)'
       />
     )
     await screen.findByText('Choose your language')
-    expect(screen.getByText('English')).toBeTruthy()
+    expect(screen.queryByText('Also show')).toBeNull()
+  })
+
+  it('is absent for a single-language deck (no possible alternate)', async () => {
+    render(
+      <LanguageModal
+        visible
+        languages={['en']}
+        current="en"
+        onSelect={() => {}}
+        onSecondaryChange={() => {}}
+        onClose={() => {}}
+      />
+    )
+    await screen.findByText('Language')
+    expect(screen.queryByText('Also show')).toBeNull()
+  })
+
+  it('describes the cap as one more language, not several', async () => {
+    renderWithSecondary([])
+    await screen.findByText('Also show')
+    expect(screen.getByText('Show the question in one more language.')).toBeTruthy()
+  })
+
+  it('reflects the checked state of the current secondary', async () => {
+    renderWithSecondary(['he'])
+    const checked = await screen.findByLabelText('Hebrew')
+    expect(checked.props.accessibilityState).toEqual({checked: true})
+    const unchecked = screen.getByLabelText('Spanish')
+    expect(unchecked.props.accessibilityState).toEqual({checked: false})
+  })
+
+  it('picking a new secondary REPLACES the previous one (no append-until-cap)', async () => {
+    const onSecondaryChange = jest.fn()
+    renderWithSecondary(['he'], onSecondaryChange)
+    const spanish = await screen.findByLabelText('Spanish')
+    fireEvent.press(spanish)
+    expect(onSecondaryChange).toHaveBeenCalledWith(['es'])
+  })
+
+  it('pressing the already-chosen secondary clears it', async () => {
+    const onSecondaryChange = jest.fn()
+    renderWithSecondary(['he'], onSecondaryChange)
+    const hebrew = await screen.findByLabelText('Hebrew')
+    fireEvent.press(hebrew)
+    expect(onSecondaryChange).toHaveBeenCalledWith([])
+  })
+
+  it('never lists the current primary as a secondary checkbox option', async () => {
+    renderWithSecondary([])
+    await screen.findByText('Also show')
+    // Only "Also show" rows carry an accessibilityLabel (the primary-language
+    // rows above are matched by their Text content, not a label) — so a null
+    // result here means "English" (the current primary) never got a checkbox row.
+    expect(screen.queryByLabelText('English')).toBeNull()
   })
 })

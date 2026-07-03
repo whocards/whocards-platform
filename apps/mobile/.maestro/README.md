@@ -194,8 +194,12 @@ several sims booted, Maestro's iOS driver otherwise attaches to whichever booted
 
 ## Notes
 
-- Selectors use accessibility labels (`change language`, `exit deck`, `next question`,
-  `share question`) because the bar buttons collapse their inner text — match the label.
+- Selectors use accessibility labels (`exit deck`, `next question`, `share question`,
+  `Game: <title>`, `Theme: <label>`, `Language: <name>`) because these buttons/rows
+  collapse their inner text — match the label. Issue #176 moved Game/Theme/Language/
+  Tabletop mode into one Settings menu reachable only from the home screen (tap
+  `Settings`) — the play screens' bottom bar is back down to Back/Share/Next, no
+  settings button of its own.
 - The player chrome auto-hides after 3s; flows tap the card centre to re-reveal it before
   tapping a control, and wait for it to hide before shooting clean card screenshots.
 - iOS shows an "Open in WhoCards?" confirm when `openLink` fires while the app is

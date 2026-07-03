@@ -92,13 +92,13 @@ describe('secondary display languages', () => {
     expect(await getStoredSecondaryLanguages('test-deck-sec-missing')).toEqual([])
   })
 
-  it('persists and retrieves secondaries under their own key', async () => {
-    await setStoredSecondaryLanguages('test-deck-sec-rw', ['he', 'es'])
+  it('persists and retrieves the one secondary under its own key', async () => {
+    await setStoredSecondaryLanguages('test-deck-sec-rw', ['he'])
     expect(AsyncStorage.setItem).toHaveBeenCalledWith(
       'whocards-language-secondary:test-deck-sec-rw',
-      JSON.stringify(['he', 'es'])
+      JSON.stringify(['he'])
     )
-    expect(await getStoredSecondaryLanguages('test-deck-sec-rw')).toEqual(['he', 'es'])
+    expect(await getStoredSecondaryLanguages('test-deck-sec-rw')).toEqual(['he'])
   })
 
   it('reads persisted secondaries from AsyncStorage when the cache is cold', async () => {
@@ -109,9 +109,9 @@ describe('secondary display languages', () => {
     expect(await getStoredSecondaryLanguages('test-deck-sec-cold')).toEqual(['fr'])
   })
 
-  it('caps the stored list at two languages', async () => {
+  it('caps the stored list at one language (issue #176)', async () => {
     await setStoredSecondaryLanguages('test-deck-sec-cap', ['he', 'es', 'fr'])
-    expect(await getStoredSecondaryLanguages('test-deck-sec-cap')).toEqual(['he', 'es'])
+    expect(await getStoredSecondaryLanguages('test-deck-sec-cap')).toEqual(['he'])
   })
 
   it('treats a corrupt stored value as unset', async () => {
@@ -123,5 +123,34 @@ describe('secondary display languages', () => {
     await setStoredLanguage('test-deck-sec-iso', 'en')
     await setStoredSecondaryLanguages('test-deck-sec-iso', ['he'])
     expect(await getStoredLanguage('test-deck-sec-iso')).toBe('en')
+  })
+
+  // --- storage migration (issue #176): MAX_SECONDARY_LANGUAGES dropped from 2
+  // to 1. A legacy value written before this change can still be a 2-entry
+  // array sitting in a real device's AsyncStorage — the reader must migrate it
+  // transparently to just its first entry, not choke on it or keep serving 2. ---
+  describe('migration from the old up-to-2 cap', () => {
+    it('reads a legacy 2-entry array down to its first entry', async () => {
+      // Simulates a value written by a pre-#176 build (bypasses the current,
+      // already-capped setStoredSecondaryLanguages so it truly represents old data).
+      await AsyncStorage.setItem(
+        'whocards-language-secondary:test-deck-sec-legacy',
+        JSON.stringify(['he', 'es'])
+      )
+      expect(await getStoredSecondaryLanguages('test-deck-sec-legacy')).toEqual(['he'])
+    })
+
+    it('the next write re-persists the migrated, single-entry value', async () => {
+      await AsyncStorage.setItem(
+        'whocards-language-secondary:test-deck-sec-legacy-write',
+        JSON.stringify(['he', 'es'])
+      )
+      const migrated = await getStoredSecondaryLanguages('test-deck-sec-legacy-write')
+      await setStoredSecondaryLanguages('test-deck-sec-legacy-write', migrated)
+      expect(AsyncStorage.setItem).toHaveBeenLastCalledWith(
+        'whocards-language-secondary:test-deck-sec-legacy-write',
+        JSON.stringify(['he'])
+      )
+    })
   })
 })

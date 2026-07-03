@@ -2,6 +2,13 @@
 # Alignment is a pure function of writing direction, so en (LTR) + he (RTL) exercise
 # both branches; every other shipped language is LTR and behaves like en.
 #
+# Issue #176 moved the language sheet out of the play screen entirely — it's only
+# reachable from the home screen's Settings menu now, so this flow exits back to
+# the home screen to switch languages instead of opening a bar button mid-play.
+#
+# NOTE (issue #176): rewritten for the new Settings menu — not yet re-run on
+# device in the PR that made this change; run before relying on it.
+#
 # Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs a Release build on a booted device)
 appId: ${APP_ID}
 ---
@@ -20,14 +27,16 @@ appId: ${APP_ID}
     point: '50%,45%'
 - takeScreenshot: .maestro/artifacts/en-ltr
 
-# Re-reveal chrome (fresh 3s window) immediately before tapping — it auto-hides.
-# The bar button is accessible with label "change language" (the inner "Language"
-# Text is collapsed into it), so match the accessibility label.
-- tapOn:
-    point: '50%,45%'
-- tapOn: 'change language'
+# Exit back to the home screen, switch to Hebrew via the Settings menu (the
+# play screen has no settings entry of its own anymore), then reopen Play.
+- tapOn: 'exit deck'
+- tapOn: 'Settings'
+- assertVisible: 'Language: English'
+- tapOn: 'Language: English'
 - tapOn: 'Hebrew'
-- waitForAnimationToEnd # let the language sheet finish dismissing before capturing
+- waitForAnimationToEnd # let the nested sheet finish dismissing before continuing
+- tapOn: 'close'
+- tapOn: 'Play'
 
 # Back on the card in Hebrew — should now read RIGHT-aligned
 - tapOn:
