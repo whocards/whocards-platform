@@ -16,15 +16,6 @@ type ScreenBackgroundProps = {
   children: ReactNode
   /** optional 0–1 opacity for the texture (e.g. to fade it in on first launch) */
   textureOpacity?: SharedValue<number>
-  /**
-   * Force the dark canvas regardless of the Theme Display setting (issue #163,
-   * amendment: the Card is the brand object and stays dark in both themes).
-   * Classic play has no separate card frame — the Question sits directly on
-   * this background, so the "card" and the "canvas" are the same surface —
-   * DeckPlayer passes `forceDark` so it never themes. The Library screen (the
-   * only other caller) omits this and follows the Theme setting normally.
-   */
-  forceDark?: boolean
 }
 
 /**
@@ -32,11 +23,16 @@ type ScreenBackgroundProps = {
  * expo-image (memory-efficient decode + cache) absolutely filled behind the
  * content, since expo-image has no `ImageBackground` equivalent. The base colour
  * is always painted, so a `textureOpacity` fade reveals the texture over the
- * solid base. Follows the Theme Display setting unless `forceDark` is set.
+ * solid base. Follows the Theme Display setting (issue #163) — every caller
+ * themes now, including Play and Pick a Card (issue #173): the Card is the
+ * brand object and stays dark in both themes, but the chrome/canvas around it
+ * follows the theme like every other screen. Callers that need a Card to stay
+ * dark regardless of theme paint their own small dark panel behind it instead
+ * of forcing this whole canvas dark (see `app/play/[deck].tsx`).
  */
-export const ScreenBackground = ({children, textureOpacity, forceDark}: ScreenBackgroundProps) => {
+export const ScreenBackground = ({children, textureOpacity}: ScreenBackgroundProps) => {
   const {colorScheme} = useColorScheme()
-  const isDark = forceDark ?? colorScheme !== 'light'
+  const isDark = colorScheme !== 'light'
 
   const textureStyle = useAnimatedStyle(() => ({
     opacity: textureOpacity ? textureOpacity.get() : 1,

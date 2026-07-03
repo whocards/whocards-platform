@@ -1,7 +1,7 @@
 import {Stack} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
-import {colorScheme} from 'nativewind'
+import {colorScheme, useColorScheme} from 'nativewind'
 import {PostHogProvider} from 'posthog-react-native'
 import {useEffect} from 'react'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
@@ -44,22 +44,28 @@ export default function RootLayout() {
     return () => clearTimeout(fallback)
   }, [])
 
-  // Deliberately NOT theme-aware (issue #163): this is the color that shows through
-  // the gap during a Stack screen transition. Play and Pick a Card force dark
-  // regardless of the Theme setting (amendment 2) and are where transitions happen
-  // most (every "Play" tap, every hand-back), so `darkest` keeps that — the
-  // overwhelmingly common case — flash-free. The cost is the opposite: a Light-theme
-  // Library transitioning in/out can show a brief dark flash in the gap. Accepted
-  // trade-off, not an oversight — revisit if Light theme sees Library-heavy
-  // navigation patterns (e.g. a future screen between Library and Play).
+  // This is the color that shows through the gap during a Stack screen transition.
+  // Previously hardcoded to `darkest` because Play/Pick a Card forced dark regardless
+  // of the Theme setting (amendment 2) — that justification dissolved once issue #173
+  // themed those screens' chrome too, so every screen now themes and this gap color
+  // just follows suit, live, via NativeWind's `colorScheme`.
+  const {colorScheme: resolvedScheme} = useColorScheme()
+  const isDark = resolvedScheme !== 'light'
   const navigator = (
-    <Stack screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}} />
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: {backgroundColor: isDark ? colors.darkest : colors.canvasLight},
+      }}
+    />
   )
 
   return (
     <GestureHandlerRootView style={{flex: 1}}>
-      {/* Default bar: light (white icons) over the dark landing and player screens.
-          The language modal overrides this to dark while the white sheet is visible. */}
+      {/* Fallback default before any screen mounts its own override — every screen
+          that actually themes (Library, Play, Pick a Card) sets its own local
+          `<StatusBar>` (expo-status-bar: "last mounted wins, revert on unmount"),
+          so this only matters for the brief window before one of those mounts. */}
       <StatusBar style="light" />
       {/* ErrorBoundary outermost so it catches render throws from anywhere below,
           including PostHogProvider itself. PostHog autocapture wraps the navigator

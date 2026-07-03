@@ -1,9 +1,12 @@
 import {Ionicons} from '@expo/vector-icons'
+import {Image} from 'expo-image'
 import * as Linking from 'expo-linking'
 import {useLocalSearchParams, useRouter} from 'expo-router'
+import {StatusBar} from 'expo-status-bar'
+import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -52,6 +55,16 @@ const SWIPE_OFF_SCREEN = 400
 // Rubber-band resistance factor when swiping at a boundary (0–1, lower = more resistance)
 const RUBBER_BAND = 0.3
 
+// The same brand maze texture as Pick a Card's card backs / ScreenBackground's dark
+// canvas. Classic play has no separate card frame in dark theme — the Question sits
+// directly on the full-bleed ScreenBackground, which already renders this texture, so
+// dark theme needs nothing extra here. In Light theme (issue #173), the Question still
+// needs an always-dark "card" behind it (the Card is the brand object — CONTEXT.md/
+// docs/design/163-light-mode/proposal.md amendment 2) while the canvas around it
+// themes, so DeckPlayer paints one small always-dark panel with this same texture
+// rather than forcing the whole screen dark.
+const cardTexture = require('../../../assets/images/background.png')
+
 // Card-enter animation durations (ms) and travel offsets (points).
 // Subsequent swipes use CARD_ENTER_MS / CARD_ENTER_TRAVEL — snappy and unchanged.
 // The very first entrance (app open) uses a slower, more deliberate timing on both
@@ -99,9 +112,9 @@ export default function PlayScreen() {
 
   if (!deck) {
     return (
-      <ScreenBackground forceDark>
+      <ScreenBackground>
         <SafeAreaView className="flex-1 items-center justify-center">
-          <Text className="font-sans text-white">Deck not found.</Text>
+          <Text className="text-darker dark:text-white font-sans">Deck not found.</Text>
         </SafeAreaView>
       </ScreenBackground>
     )
@@ -111,7 +124,7 @@ export default function PlayScreen() {
   // resolves, so the player never mounts one Game and flips to another.
   if (game === null) {
     return (
-      <ScreenBackground forceDark>
+      <ScreenBackground>
         <View className="flex-1" />
       </ScreenBackground>
     )
@@ -166,6 +179,12 @@ const DeckPlayer = ({
 }: DeckPlayerProps) => {
   const router = useRouter()
   const reduceMotion = useReducedMotion()
+
+  // Themed (issue #173): the canvas/chrome around the Question follows the Theme
+  // Display setting like every other screen; only the small card panel behind the
+  // Question (below) stays hardcoded dark regardless of `isDark`.
+  const {colorScheme} = useColorScheme()
+  const isDark = colorScheme !== 'light'
 
   // the shared headless engine — identical behaviour to the web <Play> (ADR-0003)
   const reducer = useMemo(() => navReducer(questionIds), [questionIds])
@@ -560,7 +579,11 @@ const DeckPlayer = ({
   ])
 
   return (
-    <ScreenBackground forceDark>
+    <ScreenBackground>
+      {/* Play is chrome-themed like every other screen now (issue #173); this
+          screen's own override wins over the root default while it's mounted
+          (expo-status-bar: "last mounted wins, revert on unmount" — see index.tsx). */}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <View className="flex-1">
         {/* full-screen card + gesture layer: tap anywhere reveals the chrome, swipe
             navigates. The bars are overlays on top, so the whole screen — including
@@ -571,6 +594,20 @@ const DeckPlayer = ({
         <GestureDetector gesture={gesture}>
           <View className="flex-1 px-8" style={{paddingTop: topBarH, paddingBottom: bottomBarH}}>
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
+              {/* Light theme only: the Question needs an always-dark "card" behind it
+                  (issue #173 — the Card is the brand object, the canvas around it
+                  themes). Dark theme renders nothing here — the full-bleed
+                  ScreenBackground already IS this exact look, so dark theme stays
+                  pixel-unchanged; this panel exists purely to give Light theme back
+                  the same dark surface, at the same box the Question already fits to. */}
+              {!isDark ? (
+                <View
+                  pointerEvents="none"
+                  className="bg-darkest absolute inset-0 overflow-hidden rounded-[20px] border border-white/10"
+                >
+                  <Image source={cardTexture} contentFit="cover" style={StyleSheet.absoluteFill} />
+                </View>
+              ) : null}
               {languageReady ? (
                 <Animated.View style={cardStyle}>
                   <QuestionText
@@ -605,9 +642,9 @@ const DeckPlayer = ({
                 onPress={handleExit}
                 hitSlop={8}
                 accessibilityLabel="exit deck"
-                className="h-10 w-10 items-center justify-center rounded-full bg-darker/80 active:bg-darker"
+                className="h-10 w-10 items-center justify-center rounded-full border border-darker/10 bg-white/90 active:bg-white dark:border-white/10 dark:bg-darker/80 dark:active:bg-darker"
               >
-                <Ionicons name="close" size={22} color={colors.white} />
+                <Ionicons name="close" size={22} color={isDark ? colors.white : colors.darker} />
               </Pressable>
             </View>
           </SafeAreaView>

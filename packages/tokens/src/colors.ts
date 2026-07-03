@@ -30,12 +30,13 @@ export const colors = {
   white: '#f5f5f5',
   red: '#ee1e23',
 
-  // --- Light mode (issue #163) ---
+  // --- Light mode (issue #163, chrome extended to Play/Pick a Card in #173) ---
   // New, separately-named tokens only — every existing token above keeps its
   // current value and call sites unchanged (see docs/design/163-light-mode/proposal.md
-  // "Naming — what actually shipped"). Card faces (Classic play, Pick a Card) never
-  // read these — they stay dark in both themes. These cover the Library screen
-  // canvas and the Language/Game/Share/Display sheet surfaces only.
+  // "Naming — what actually shipped"). Card faces (Classic play's question card,
+  // Pick a Card's deck/faces) never read these — they stay dark in both themes. These
+  // cover the Library canvas, the Play/Pick a Card chrome around the Card (issue
+  // #173), and the Language/Game/Share/Theme sheet surfaces.
   canvasLight: '#f6f2fb',
   // Deepened variants for text/accents that only ever sat on a dark canvas or a
   // small icon before now — the flat tokens don't reliably clear WCAG AA once

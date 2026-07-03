@@ -183,11 +183,14 @@ carries its own colors regardless of theme.
 
 ### Play — Classic, and Pick a Card
 
-**Amendment 2: both stay exactly as they are today, in both themes.** No card frame in Classic
-(the question sits directly on the dark canvas+texture); the Pick a Card deck and revealed-card
-faces keep their existing dark treatment. The mocks for these two surfaces show today's actual
-(dark) app, relabeled to make the "unchanged" decision explicit rather than showing the
-since-reverted light treatment from the first pass.
+**Amendment 2 (as revised by issue #173): the cards stay dark; the chrome around them themes.**
+The first shipped reading of this amendment kept both play screens fully dark in both themes;
+the owner's on-device review (issue #173) corrected it — only the playing cards are the brand
+object. The canvas, status bar, close chip, player bar, and hint text follow the theme; the Pick
+a Card deck and revealed-card faces keep their existing dark treatment, and Classic play gains a
+bounded dark card panel behind the question in Light theme only (dark theme is unchanged — in
+full-bleed dark the panel would be invisible, so it isn't rendered). The mocks for these two
+surfaces predate that revision and still show the fully dark treatment.
 
 ### Sheets (Language / Game / Share / Theme)
 

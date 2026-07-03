@@ -1,6 +1,8 @@
 import {Ionicons} from '@expo/vector-icons'
 import {Image} from 'expo-image'
 import {useRouter} from 'expo-router'
+import {StatusBar} from 'expo-status-bar'
+import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
 import {AppState, Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
@@ -104,6 +106,13 @@ export const PickPlayer = ({
 }: PickPlayerProps) => {
   const router = useRouter()
   const reduceMotion = useReducedMotion()
+
+  // Themed (issue #173): the canvas/chrome around the deck follows the Theme
+  // Display setting like every other screen now; the deck/card faces below
+  // (CardBack, the revealed face) are untouched — they stay dark in both themes
+  // (amendment 2, docs/design/163-light-mode/proposal.md).
+  const {colorScheme} = useColorScheme()
+  const isDark = colorScheme !== 'light'
 
   const reducer = useMemo(() => pickReducer(questionIds), [questionIds])
   const [{nav, phase, dealt}, dispatch] = useReducer(reducer, questionIds, getInitialPick)
@@ -369,9 +378,15 @@ export const PickPlayer = ({
   )
 
   return (
-    // solid darkest backdrop (no screen texture) — the texture lives on the card
-    // backs here, and the printed cards sit on a plain table, not on themselves
-    <View className="bg-darkest flex-1">
+    // Solid backdrop (no screen texture) — the texture lives on the card backs
+    // here, and the printed cards sit on a plain table, not on themselves. Themed
+    // (issue #173): the table itself follows the Theme Display setting, the deck
+    // and cards on it stay dark in both themes (untouched below).
+    <View className="bg-canvasLight dark:bg-darkest flex-1">
+      {/* Pick a Card is chrome-themed like every other screen now (issue #173); this
+          screen's own override wins over the root default while it's mounted
+          (expo-status-bar: "last mounted wins, revert on unmount" — see index.tsx). */}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <View className="flex-1">
         <GestureDetector gesture={gesture}>
           <View className="flex-1 px-8" style={{paddingTop: topBarH, paddingBottom: bottomBarH}}>
@@ -446,7 +461,9 @@ export const PickPlayer = ({
                     style={{height: HINT_SPACE, marginTop: HINT_GAP}}
                     className="justify-center"
                   >
-                    <Text className="text-gray-dark font-sans text-sm">Tap for next card</Text>
+                    <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
+                      Tap for next card
+                    </Text>
                   </Pressable>
                 </View>
               ) : (
@@ -477,7 +494,9 @@ export const PickPlayer = ({
                     style={{height: HINT_SPACE, marginTop: HINT_GAP}}
                     className="justify-center"
                   >
-                    <Text className="text-gray-dark font-sans text-sm">Tap to pick a card</Text>
+                    <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
+                      Tap to pick a card
+                    </Text>
                   </Pressable>
                 </View>
               )}
@@ -498,9 +517,9 @@ export const PickPlayer = ({
                 onPress={handleExit}
                 hitSlop={8}
                 accessibilityLabel="exit deck"
-                className="h-10 w-10 items-center justify-center rounded-full bg-darker/80 active:bg-darker"
+                className="h-10 w-10 items-center justify-center rounded-full border border-darker/10 bg-white/90 active:bg-white dark:border-white/10 dark:bg-darker/80 dark:active:bg-darker"
               >
-                <Ionicons name="close" size={22} color={colors.white} />
+                <Ionicons name="close" size={22} color={isDark ? colors.white : colors.darker} />
               </Pressable>
             </View>
           </SafeAreaView>
