@@ -24,6 +24,19 @@
  * `fireEvent`, same as the existing swipe gestures elsewhere in this app
  * (e.g. pick-player.tsx's card swipe, also untested at this level); it needs
  * on-device/Maestro verification instead.
+ *
+ * And, from issue #192 (Android: dismissing the system share sheet left the
+ * app unresponsive; owner follow-up decision, 2026-07-03: the sheet must
+ * never auto-close on a share, on either platform):
+ * - neither the link row nor the image rows call `onClose` when their native
+ *   share signal resolves, on iOS or Android — the sheet only closes on an
+ *   explicit user action (X, swipe-down, backdrop tap)
+ * - the link row still skips its completion analytics (`onShare`) on an
+ *   explicit iOS cancel (`dismissedAction`) — the only platform where that
+ *   signal is trustworthy — but that no longer affects `onClose`, since
+ *   nothing here calls it anymore
+ * - a share, successful or cancelled, leaves the sheet immediately usable —
+ *   sharing again or picking a different row works without reopening it
  */
 import React from 'react'
 import {Share} from 'react-native'
@@ -106,7 +119,7 @@ describe('ShareModal', () => {
     expect(screen.queryByText('Post image')).toBeNull()
   })
 
-  it('shares the unchanged link payload and reports completion, without touching the network', async () => {
+  it('shares the unchanged link payload, reports completion, and leaves the sheet open', async () => {
     const onShare = jest.fn()
     const onClose = jest.fn()
     render(<ShareModal visible {...PROPS} onShare={onShare} onClose={onClose} />)
@@ -121,10 +134,19 @@ describe('ShareModal', () => {
     })
     expect(mockDownloadAndShareImage).not.toHaveBeenCalled()
     expect(onShare).toHaveBeenCalledWith('link')
-    expect(onClose).toHaveBeenCalled()
+    // Owner decision, 2026-07-03 (issue #192): a share never auto-closes this
+    // sheet, on either platform — see the file doc. The row stays usable too,
+    // so a second share (same row or a different one) works immediately.
+    expect(onClose).not.toHaveBeenCalled()
+    expect(screen.getByText('Share link')).toBeTruthy()
   })
 
-  it('does not report completion when the link share sheet is dismissed', async () => {
+  // iOS's Share.share reports an explicit cancel — the one platform where
+  // this signal is trustworthy (Android's always resolves `sharedAction`
+  // unconditionally the instant the chooser opens, whether the user shared or
+  // backed out, so it can never mean "cancelled" there). This still gates the
+  // completion analytics below, even though it no longer gates `onClose`.
+  it('does not report completion when the link share sheet is explicitly cancelled (iOS)', async () => {
     shareSpy.mockResolvedValue({action: Share.dismissedAction} as never)
     const onShare = jest.fn()
     const onClose = jest.fn()
@@ -138,7 +160,7 @@ describe('ShareModal', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('downloads and shares the story image, then reports completion', async () => {
+  it('downloads and shares the story image, reports completion, and leaves the sheet open', async () => {
     mockDownloadAndShareImage.mockResolvedValue(undefined)
     const onShare = jest.fn()
     const onClose = jest.fn()
@@ -150,7 +172,17 @@ describe('ShareModal', () => {
 
     expect(mockDownloadAndShareImage).toHaveBeenCalledWith(PROPS.storyImageUrl)
     expect(onShare).toHaveBeenCalledWith('story')
-    expect(onClose).toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+
+    // immediately usable again — no stuck spinner, no reopen needed, a
+    // different row works right away (issue #192 acceptance criteria)
+    mockDownloadAndShareImage.mockResolvedValue(undefined)
+    await act(async () => {
+      fireEvent.press(screen.getByText('Post image'))
+    })
+    expect(mockDownloadAndShareImage).toHaveBeenCalledWith(PROPS.postImageUrl)
+    expect(onShare).toHaveBeenCalledWith('post')
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('shows a graceful inline message on an image failure and keeps the sheet usable', async () => {
