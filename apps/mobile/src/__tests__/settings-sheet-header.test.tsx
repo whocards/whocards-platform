@@ -5,25 +5,23 @@
  * and language-modal.tsx; now every page in SettingsModal's single-Modal
  * pager renders one of these).
  *
- * Guards the Pixel-notch fix (#102): on Android, `statusBarTranslucent` draws
- * the sheet behind the status bar, so the header must add the top safe-area
- * inset to clear the display cutout. On iOS the sheet is bottom-anchored and
- * content-hugging (it doesn't reach the status bar in the normal case), so
- * the header keeps its original 16px (`py-4`) top padding there. We assert
- * the resolved header `paddingTop` per platform so a future edit can't
- * silently drop the inset (re-overlapping the clock) or double-pad iOS —
- * this used to be asserted separately in each of the four sheets' own test
- * files; now it only needs covering once, here.
+ * Guards the flat-16 header padding on BOTH platforms (owner on-device,
+ * 2026-07-03): the header lives in a bottom-anchored sheet capped at 80% of
+ * the window, so it can never reach the status bar — the old Android
+ * safe-area-inset guard (the #102-era Pixel-notch fix, from when this was a
+ * full-height pageSheet) only added a dead band above the title. We assert
+ * the resolved `paddingTop` per platform so a future edit can't silently
+ * re-add the inset or double-pad either side.
  */
 import React from 'react'
 import {Platform, StyleSheet} from 'react-native'
 import type {ViewStyle} from 'react-native'
 import {fireEvent, render, screen} from '@testing-library/react-native'
 
-const TOP_INSET = 47 // a representative status-bar/cutout height (e.g. a Pixel)
-
+// The header no longer reads safe-area insets at all; keep the mock so the
+// test would fail loudly (paddingTop != 16) if someone re-adds inset math.
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: TOP_INSET, bottom: 34, left: 0, right: 0}),
+  useSafeAreaInsets: () => ({top: 47, bottom: 34, left: 0, right: 0}),
 }))
 
 import {SettingsSheetHeader} from '../components/settings-sheet-header'
@@ -48,14 +46,18 @@ describe('SettingsSheetHeader — Android/iOS inset', () => {
     Object.defineProperty(Platform, 'OS', {configurable: true, value: originalOS})
   })
 
-  it('adds the top safe-area inset on Android so the title clears the status bar', async () => {
+  // The Android status-bar inset guard was removed (owner on-device feedback,
+  // 2026-07-03): this header sits in a bottom-anchored sheet capped at 80% of
+  // the window, so it can never reach the status bar — the inset only added a
+  // big dead band above the title. Flat 16 on both platforms.
+  it('uses flat 16px top padding on Android — a bottom sheet never meets the status bar', async () => {
     Object.defineProperty(Platform, 'OS', {configurable: true, value: 'android'})
     render(<SettingsSheetHeader title="Choose your language" icon="back" onPress={() => {}} />)
     await screen.findByText('Choose your language')
-    expect(headerPaddingTop()).toBe(TOP_INSET + 16)
+    expect(headerPaddingTop()).toBe(16)
   })
 
-  it('keeps the original 16px top padding on iOS (bottom-anchored, content-hugging sheet)', async () => {
+  it('uses flat 16px top padding on iOS (bottom-anchored, content-hugging sheet)', async () => {
     Object.defineProperty(Platform, 'OS', {configurable: true, value: 'ios'})
     render(<SettingsSheetHeader title="Choose your language" icon="back" onPress={() => {}} />)
     await screen.findByText('Choose your language')

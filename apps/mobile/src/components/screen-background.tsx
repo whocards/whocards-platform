@@ -11,11 +11,20 @@ import {colors} from '@whocards/tokens'
 // Theme Display setting (issue #163) — see docs/design/163-light-mode/proposal.md.
 const textureDark = require('../../assets/images/background.png')
 const textureLight = require('../../assets/images/background-light.png')
+// Mid-tone table variant (owner, live session): the Pick a Card table in dark
+// theme — lighter than the dark canvas, darker than the light one.
+const textureMid = require('../../assets/images/background-mid.png')
 
 type ScreenBackgroundProps = {
   children: ReactNode
   /** optional 0–1 opacity for the texture (e.g. to fade it in on first launch) */
   textureOpacity?: SharedValue<number>
+  /**
+   * Table variant (owner, live session 2026-07-03): the Pick a Card table —
+   * light canvas in light theme, mid-tone in dark theme (full light was too
+   * jarring against dark chrome).
+   */
+  table?: boolean
 }
 
 /**
@@ -30,19 +39,25 @@ type ScreenBackgroundProps = {
  * dark regardless of theme paint their own small dark panel behind it instead
  * of forcing this whole canvas dark (see `app/play/[deck].tsx`).
  */
-export const ScreenBackground = ({children, textureOpacity}: ScreenBackgroundProps) => {
+export const ScreenBackground = ({children, textureOpacity, table}: ScreenBackgroundProps) => {
   const {colorScheme} = useColorScheme()
   const isDark = colorScheme !== 'light'
+  const midTable = table && isDark
 
   const textureStyle = useAnimatedStyle(() => ({
     opacity: textureOpacity ? textureOpacity.get() : 1,
   }))
 
   return (
-    <View style={{flex: 1, backgroundColor: isDark ? colors.darkest : colors.canvasLight}}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: midTable ? '#332b4a' : isDark ? colors.darkest : colors.canvasLight,
+      }}
+    >
       <Animated.View style={[StyleSheet.absoluteFill, textureStyle]} pointerEvents="none">
         <Image
-          source={isDark ? textureDark : textureLight}
+          source={midTable ? textureMid : isDark ? textureDark : textureLight}
           contentFit="cover"
           style={StyleSheet.absoluteFill}
         />
