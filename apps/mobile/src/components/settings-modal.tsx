@@ -192,7 +192,7 @@ export const SettingsModal = ({
               below the display cutout, same guard the pageSheet header used. */}
           <View
             className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
-            style={{paddingTop: Platform.OS === 'android' ? insets.top : 16}}
+            style={{paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16}}
           >
             <Text className="text-darker dark:text-white font-title text-2xl">Settings</Text>
             <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
