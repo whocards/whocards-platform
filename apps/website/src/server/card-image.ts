@@ -218,10 +218,20 @@ const MAZE_SOURCE_WIDTH = 2467
 const MAZE_SOURCE_HEIGHT = 1722
 const MAZE_SOURCE_ASPECT = MAZE_SOURCE_WIDTH / MAZE_SOURCE_HEIGHT
 
-const mazeDataUriCache = new Map<CardSizeKey, Promise<string>>()
+// Cache key includes the colours (not just size.key) so a playground-only
+// call rendering with non-default colours (see PlaygroundCardOptions.theme
+// below) can never poison the entry a production /og or /share-card render
+// reads back. Every production call site omits `colors`, which resolves to
+// the same {bg: BG_COLOR, maze: MAZE_COLOR} default every time, so the key —
+// and therefore the cached bytes — is unchanged from before this was added.
+const mazeDataUriCache = new Map<string, Promise<string>>()
 
-const buildMazeDataUri = (size: CardSize): Promise<string> => {
-  let cached = mazeDataUriCache.get(size.key)
+const buildMazeDataUri = (
+  size: CardSize,
+  colors: {bg: string; maze: string} = {bg: BG_COLOR, maze: MAZE_COLOR}
+): Promise<string> => {
+  const cacheKey = `${size.key}|${colors.bg}|${colors.maze}`
+  let cached = mazeDataUriCache.get(cacheKey)
   if (!cached) {
     cached = (async () => {
       const raw = await readFile(join(publicDir(), 'background.svg'), 'utf8')
@@ -247,13 +257,13 @@ const buildMazeDataUri = (size: CardSize): Promise<string> => {
           /^<svg[^>]*>/,
           `<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="${viewBox}" fill="none">`
         )
-        .replace(/fill="url\(#b\)"/g, `fill="${MAZE_COLOR}"`)
+        .replace(/fill="url\(#b\)"/g, `fill="${colors.maze}"`)
         .replace(/fill-opacity="\.[0-9]+"/g, 'fill-opacity="1"')
-      const resvg = new Resvg(svg, {fitTo, background: BG_COLOR})
+      const resvg = new Resvg(svg, {fitTo, background: colors.bg})
       const png = resvg.render().asPng()
       return `data:image/png;base64,${Buffer.from(png).toString('base64')}`
     })()
-    mazeDataUriCache.set(size.key, cached)
+    mazeDataUriCache.set(cacheKey, cached)
   }
   return cached
 }
@@ -437,12 +447,14 @@ export const autofitEstimateForTest = (
   return {fontSize, blockHeight, availableHeight}
 }
 
-// The brand wordmark: white "WHOCARDS.CC" in the Aptly title face followed by
-// the two-tone question mark (magenta hook + yellow square dot), matching
+// The brand wordmark: "WHOCARDS.CC" in the Aptly title face followed by the
+// two-tone question mark (magenta hook + yellow square dot), matching
 // src/icons/logo.svg and the committed cards. `scale` is 1 at the OG size
 // (giving the original absolute px values) and <1 for the smaller-width
-// story/post canvases.
-const Wordmark = (scale: number) => {
+// story/post canvases. `textColor` defaults to TEXT_COLOR (white, every
+// production render) — the playground's light theme (PlaygroundCardOptions,
+// above) passes the dark equivalent so the wordmark stays legible.
+const Wordmark = (scale: number, textColor: string = TEXT_COLOR) => {
   const px = (value: number) => `${Math.round(value * scale)}px`
   return {
     type: 'div',
@@ -461,7 +473,7 @@ const Wordmark = (scale: number) => {
               fontFamily: 'Aptly',
               fontSize: px(44),
               fontWeight: 700,
-              color: TEXT_COLOR,
+              color: textColor,
             },
             children: 'WHOCARDS.CC',
           },
@@ -502,6 +514,38 @@ const Wordmark = (scale: number) => {
   }
 }
 
+/**
+ * Playground-only render options (issue #177) — never set by a production
+ * caller (renderCardPng / renderCardSvgForTest / renderSvgForTest all omit
+ * this argument, so `undefined` flows through and every colour/border falls
+ * back to the committed defaults below). Exploring these two owner-requested
+ * variants (a bounded card outline, a light theme) needed threading through
+ * buildTree/buildMazeDataUri themselves — they change what's drawn, not just
+ * a CardSize number — so unlike the padding/scale/alignment knobs (already
+ * plain CardSize fields the playground overrides by constructing its own
+ * CardSize) they couldn't stay fully outside this module. Deleting the
+ * playground later means deleting this type, the `playgroundOptions` params
+ * below, and the two dev-only files under src/pages/(api/)dev — nothing else
+ * in this module's production call sites changes.
+ */
+export type PlaygroundCardOptions = {
+  /** Draws a hairline border around the card, like the mobile app's always-dark card. */
+  cardOutline?: boolean
+  /** Defaults to 'dark' — the only theme every shipped card has ever used. */
+  theme?: 'light' | 'dark'
+}
+
+const LIGHT_BG_COLOR = '#f5f4f2'
+const LIGHT_MAZE_COLOR = '#e8e6e2'
+const LIGHT_TEXT_COLOR = '#262434'
+
+const paletteFor = (
+  options: PlaygroundCardOptions | undefined
+): {bg: string; maze: string; text: string} =>
+  options?.theme === 'light'
+    ? {bg: LIGHT_BG_COLOR, maze: LIGHT_MAZE_COLOR, text: LIGHT_TEXT_COLOR}
+    : {bg: BG_COLOR, maze: MAZE_COLOR, text: TEXT_COLOR}
+
 const buildTree = (
   rawText: string,
   language: string,
@@ -512,7 +556,8 @@ const buildTree = (
   // that estimate — passing it explicitly keeps "what font size did we
   // actually render at" unambiguous instead of two callers each re-deriving
   // it and risking drift.
-  fontSizeOverride?: number
+  fontSizeOverride?: number,
+  playgroundOptions?: PlaygroundCardOptions
 ) => {
   const rtl = isRtl(language)
   const fontFamily = `${fontFamilyFor(language)}, Golos Text`
@@ -520,6 +565,7 @@ const buildTree = (
   // For RTL we pre-reorder + pre-wrap the text and disable Satori wrapping;
   // for LTR we let Satori wrap normally.
   const text = rtl ? toVisualRtl(rawText, fontSize, size) : rawText
+  const {bg, text: textColor} = paletteFor(playgroundOptions)
   return {
     type: 'div',
     props: {
@@ -535,10 +581,21 @@ const buildTree = (
         // absolutely positioned and doesn't participate in this layout).
         flexDirection: 'column',
         justifyContent: size.verticalAlign,
-        backgroundColor: BG_COLOR,
+        backgroundColor: bg,
         backgroundImage: `url(${mazeUri})`,
         backgroundSize: `${size.width}px ${size.height}px`,
         padding: `${size.padding}px`,
+        // Playground-only "card as a bounded object" exploration (#177) — a
+        // hairline inset border so the card reads as a discrete object
+        // instead of bleeding to the canvas edge. Never set outside the
+        // playground (playgroundOptions is always undefined for every
+        // production render), so production output never gets a border.
+        ...(playgroundOptions?.cardOutline
+          ? {
+              boxSizing: 'border-box' as const,
+              border: `${Math.round(size.width * 0.006)}px solid ${textColor}`,
+            }
+          : {}),
       },
       children: [
         // Question text: filling the card width with even margins. Top-aligned
@@ -558,7 +615,7 @@ const buildTree = (
               fontSize: `${fontSize}px`,
               fontWeight: 400,
               lineHeight: 1.2,
-              color: TEXT_COLOR,
+              color: textColor,
               // RTL text is already wrapped into visual lines, so use `pre`
               // to keep those breaks; LTR wraps naturally with pre-wrap.
               whiteSpace: rtl ? 'pre' : 'pre-wrap',
@@ -579,7 +636,7 @@ const buildTree = (
               right: `${size.padding}px`,
               display: 'flex',
             },
-            children: [Wordmark(size.wordmarkScale)],
+            children: [Wordmark(size.wordmarkScale, textColor)],
           },
         },
       ],
@@ -716,12 +773,22 @@ export const resolveAutofitFontSizeForTest = resolveAutofitFontSize
 // only a step or two short. OG is exempt: its byte-identical output is a
 // hard constraint (#161), and fontSizeFor already early-returns a fixed
 // size for it with no shrink loop at all.
+// `playgroundOptions` is always omitted by every production call site
+// (renderCardPng -> renderPng -> renderSvg is the only other caller, and it
+// never passes a 4th argument), so `paletteFor(undefined)` below always
+// resolves to the committed dark palette for production — this parameter
+// exists solely for renderCardSvgForPlayground/renderCardPngForPlayground.
 const renderSvg = async (
   text: string,
   language: string,
-  size: CardSize
+  size: CardSize,
+  playgroundOptions?: PlaygroundCardOptions
 ): Promise<{svg: string; fontSize: number}> => {
-  const [fonts, mazeUri] = await Promise.all([fontsFor(language), buildMazeDataUri(size)])
+  const {bg, maze} = paletteFor(playgroundOptions)
+  const [fonts, mazeUri] = await Promise.all([
+    fontsFor(language),
+    buildMazeDataUri(size, {bg, maze}),
+  ])
   const satoriOptions = {
     width: size.width,
     height: size.height,
@@ -730,7 +797,10 @@ const renderSvg = async (
   }
 
   if (size.key === 'og') {
-    const svg = await satori(buildTree(text, language, mazeUri, size) as never, satoriOptions)
+    const svg = await satori(
+      buildTree(text, language, mazeUri, size, undefined, playgroundOptions) as never,
+      satoriOptions
+    )
     return {svg, fontSize: fontSizeFor(text, language, size)}
   }
 
@@ -738,7 +808,7 @@ const renderSvg = async (
   const clearanceLimit = size.height - size.padding - wordmarkClearanceFor(size)
   const {fontSize, result: svg} = await resolveAutofitFontSize(startFontSize, async (candidate) => {
     const candidateSvg = await satori(
-      buildTree(text, language, mazeUri, size, candidate) as never,
+      buildTree(text, language, mazeUri, size, candidate, playgroundOptions) as never,
       satoriOptions
     )
     const bounds = measureQuestionTextBlock(candidateSvg)
@@ -750,11 +820,17 @@ const renderSvg = async (
 // Renders straight to PNG bytes for an already-resolved (text, language, size)
 // — the part shared by the cached OG build path and the uncached on-demand
 // story/post path below.
-const renderPng = async (text: string, language: string, size: CardSize): Promise<Buffer> => {
-  const {svg} = await renderSvg(text, language, size)
+const renderPng = async (
+  text: string,
+  language: string,
+  size: CardSize,
+  playgroundOptions?: PlaygroundCardOptions
+): Promise<Buffer> => {
+  const {svg} = await renderSvg(text, language, size, playgroundOptions)
+  const {bg} = paletteFor(playgroundOptions)
   const resvg = new Resvg(svg, {
     fitTo: {mode: 'width', value: size.width},
-    background: BG_COLOR,
+    background: bg,
   })
   return Buffer.from(resvg.render().asPng())
 }
@@ -768,8 +844,10 @@ const renderPng = async (text: string, language: string, size: CardSize): Promis
  * immutable Cache-Control on the response already avoids re-rendering the
  * same (question, language, size) on every request.
  */
-// Shared by renderCardPng and the test-only renderCardSvgForTest below.
-const resolveQuestionText = (id: string, language: string): string => {
+// Shared by renderCardPng, the test-only renderCardSvgForTest below, and the
+// playground renderers further down (exported so the playground can produce
+// its own "unknown question" 400 without duplicating this lookup).
+export const resolveQuestionText = (id: string, language: string): string => {
   const entry = allQuestions[id]
   if (!entry) throw new ShareCardNotFoundError(`Unknown question id: ${id}`)
   const text = entry[language]
@@ -814,6 +892,72 @@ export const renderCardPng = async (
   }
 
   return png
+}
+
+/**
+ * Playground-only overrides (issue #177) for the CardSize fields that are
+ * already plain numbers/enums on `CardSize` — padding, the two scale
+ * factors, and the two alignment fields. Unlike PlaygroundCardOptions above
+ * (cardOutline/theme, genuinely new drawing behaviour), these don't need any
+ * buildTree/buildMazeDataUri changes at all: the playground just constructs
+ * its own CardSize by merging a preset with these, exactly like a caller
+ * picking a different preset would. Width/height are deliberately NOT
+ * overridable here — buildMazeDataUri's maze crop math is keyed to the real
+ * preset's aspect ratio, and an arbitrary size would need its own maze-crop
+ * cache entry to avoid the same cross-contamination risk `colors` (above)
+ * was made to avoid, for a knob the playground doesn't need (the three
+ * CARD_SIZES presets already cover og/story/post size comparison).
+ */
+export type CardSizeOverrides = Partial<
+  Pick<CardSize, 'padding' | 'wordmarkScale' | 'fontScale' | 'verticalAlign' | 'rtlJustify'>
+>
+
+// A naive `{...base, ...overrides}` spread would let an explicit `undefined`
+// in `overrides` (e.g. a query-param parser that always sets every key, some
+// of them to `undefined` for "not provided") stomp a real default from
+// `base` — merge field-by-field with `??` instead so "not provided" truly
+// means "keep the preset's value".
+const mergeCardSize = (base: CardSize, overrides: CardSizeOverrides): CardSize => ({
+  ...base,
+  padding: overrides.padding ?? base.padding,
+  wordmarkScale: overrides.wordmarkScale ?? base.wordmarkScale,
+  fontScale: overrides.fontScale ?? base.fontScale,
+  verticalAlign: overrides.verticalAlign ?? base.verticalAlign,
+  rtlJustify: overrides.rtlJustify ?? base.rtlJustify,
+})
+
+/**
+ * Playground-only renderer (issue #177): like renderCardSvgForTest below, but
+ * takes both kinds of playground override — the CardSize field overrides
+ * above, and the experimental cardOutline/theme render options — and also
+ * returns the resolved CardSize so a caller can report what actually
+ * rendered. Never touches the build cache (same as renderCardSvgForTest);
+ * exported only for the dev-only playground endpoint and its tests.
+ */
+export const renderCardSvgForPlayground = async (
+  language: string,
+  id: string,
+  sizeKey: CardSizeKey,
+  sizeOverrides: CardSizeOverrides = {},
+  playgroundOptions: PlaygroundCardOptions = {}
+): Promise<{svg: string; fontSize: number; size: CardSize}> => {
+  const text = resolveQuestionText(id, language)
+  const size = mergeCardSize(CARD_SIZES[sizeKey], sizeOverrides)
+  const {svg, fontSize} = await renderSvg(text, language, size, playgroundOptions)
+  return {svg, fontSize, size}
+}
+
+/** PNG counterpart of renderCardSvgForPlayground — same overrides, rasterised. */
+export const renderCardPngForPlayground = async (
+  language: string,
+  id: string,
+  sizeKey: CardSizeKey,
+  sizeOverrides: CardSizeOverrides = {},
+  playgroundOptions: PlaygroundCardOptions = {}
+): Promise<Buffer> => {
+  const text = resolveQuestionText(id, language)
+  const size = mergeCardSize(CARD_SIZES[sizeKey], sizeOverrides)
+  return renderPng(text, language, size, playgroundOptions)
 }
 
 /**
