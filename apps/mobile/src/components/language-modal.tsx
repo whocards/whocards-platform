@@ -1,4 +1,5 @@
 import {Ionicons} from '@expo/vector-icons'
+import {useColorScheme} from 'nativewind'
 import {StatusBar} from 'expo-status-bar'
 import {Modal, Platform, Pressable, ScrollView, Text, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
@@ -40,8 +41,11 @@ type LanguageModalProps = {
  * there's nothing to toggle on, i.e. no onTabletopChange either — the header
  * copy just describes what the sheet is, even if it turns out empty).
  *
- * Status bar is set to dark (dark icons) while this white sheet is open so the
- * system icons remain visible. The root layout's light bar is restored on close.
+ * Themed (issue #163, amendment 1): a dark surface in dark mode, the
+ * pre-existing light sheet surface in light mode — see
+ * docs/design/163-light-mode/proposal.md. The Theme Display setting itself
+ * lives on the Library screen, not in here (see theme-modal.tsx) — this sheet
+ * stays scoped to the deck-level Display settings it already owned.
  */
 export const LanguageModal = ({
   visible,
@@ -57,6 +61,9 @@ export const LanguageModal = ({
   const insets = useSafeAreaInsets()
   const hasLanguageChoice = languages.length > 1
   const showSecondary = onSecondaryChange !== undefined && hasLanguageChoice
+  const {colorScheme} = useColorScheme()
+  const isDark = colorScheme !== 'light'
+  const iconColor = isDark ? colors.white : colors.darker
 
   const toggleSecondary = (code: string) => {
     if (!onSecondaryChange) return
@@ -76,20 +83,20 @@ export const LanguageModal = ({
       onRequestClose={onClose}
       onDismiss={onClose}
     >
-      {/* Dark status-bar icons are legible over this white sheet. */}
-      <StatusBar style="dark" />
-      <View className="flex-1 bg-white">
+      {/* Dark sheet → light status-bar icons; light sheet → dark icons. */}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <View className="bg-white dark:bg-dark flex-1">
         {/* On Android, pageSheet renders behind the status bar, so push the header
             below the display cutout. On iOS the card sheet already insets itself. */}
         <View
-          className="border-gray-lighter flex-row items-center justify-between border-b px-5 py-4"
+          className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
           style={{paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16}}
         >
-          <Text className="text-darker font-title text-2xl">
+          <Text className="text-darker dark:text-white font-title text-2xl">
             {hasLanguageChoice ? 'Choose your language' : 'Display settings'}
           </Text>
           <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
-            <Ionicons name="close" size={24} color={colors.darker} />
+            <Ionicons name="close" size={24} color={iconColor} />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{paddingBottom: Math.max(insets.bottom, 24)}}>
@@ -104,11 +111,13 @@ export const LanguageModal = ({
                       selected ? 'bg-yellow-300/40' : ''
                     }`}
                   >
-                    <Text className="text-darker font-sans text-lg">
+                    <Text className="text-darker dark:text-white font-sans text-lg">
                       {getLanguageName(code) ?? code}
                     </Text>
                     {selected ? (
-                      <Text className="text-primary-dark text-lg font-bold">✓</Text>
+                      <Text className="text-accentOnLight dark:text-accentOnDark text-lg font-bold">
+                        ✓
+                      </Text>
                     ) : null}
                   </Pressable>
                 )
@@ -117,9 +126,9 @@ export const LanguageModal = ({
 
           {showSecondary ? (
             <>
-              <View className="border-gray-lighter mt-2 border-t px-5 pb-1 pt-5">
-                <Text className="text-darker font-title text-lg">Also show</Text>
-                <Text className="text-gray-dark font-sans text-sm">
+              <View className="border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5">
+                <Text className="text-darker dark:text-white font-title text-lg">Also show</Text>
+                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
                   Show the question in up to {MAX_SECONDARY_LANGUAGES} more languages.
                 </Text>
               </View>
@@ -141,7 +150,9 @@ export const LanguageModal = ({
                     >
                       <Text
                         className={`font-sans text-lg ${
-                          disabled ? 'text-gray-dark' : 'text-darker'
+                          disabled
+                            ? 'text-mutedOnLight dark:text-gray-dark'
+                            : 'text-darker dark:text-white'
                         }`}
                       >
                         {getLanguageName(code) ?? code}
@@ -149,7 +160,15 @@ export const LanguageModal = ({
                       <Ionicons
                         name={checked ? 'checkbox' : 'square-outline'}
                         size={20}
-                        color={checked ? colors.primary.dark : colors.gray.dark}
+                        color={
+                          checked
+                            ? isDark
+                              ? colors.accentOnDark
+                              : colors.accentOnLight
+                            : isDark
+                              ? colors.gray.dark
+                              : colors.mutedOnLight
+                        }
                       />
                     </Pressable>
                   )
@@ -163,12 +182,14 @@ export const LanguageModal = ({
                   deck skips the language list above, so a top border here would float
                   with nothing to separate from. */}
               <View
-                className={`border-gray-lighter px-5 pb-1 pt-5 ${
+                className={`border-gray-lighter dark:border-white/10 px-5 pb-1 pt-5 ${
                   hasLanguageChoice ? 'mt-2 border-t' : ''
                 }`}
               >
-                <Text className="text-darker font-title text-lg">Tabletop mode</Text>
-                <Text className="text-gray-dark font-sans text-sm">
+                <Text className="text-darker dark:text-white font-title text-lg">
+                  Tabletop mode
+                </Text>
+                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
                   Lay the phone flat on the table — the question mirrors on top so both sides can
                   read it at once.
                 </Text>
@@ -182,11 +203,21 @@ export const LanguageModal = ({
                   tabletop ? 'bg-yellow-300/40' : ''
                 }`}
               >
-                <Text className="text-darker font-sans text-lg">Two-way readable</Text>
+                <Text className="text-darker dark:text-white font-sans text-lg">
+                  Two-way readable
+                </Text>
                 <Ionicons
                   name={tabletop ? 'checkbox' : 'square-outline'}
                   size={20}
-                  color={tabletop ? colors.primary.dark : colors.gray.dark}
+                  color={
+                    tabletop
+                      ? isDark
+                        ? colors.accentOnDark
+                        : colors.accentOnLight
+                      : isDark
+                        ? colors.gray.dark
+                        : colors.mutedOnLight
+                  }
                 />
               </Pressable>
             </>

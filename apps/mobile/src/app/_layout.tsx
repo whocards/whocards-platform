@@ -1,6 +1,7 @@
 import {Stack} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
+import {colorScheme} from 'nativewind'
 import {PostHogProvider} from 'posthog-react-native'
 import {useEffect} from 'react'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
@@ -10,6 +11,7 @@ import {colors} from '@whocards/tokens'
 import {ErrorBoundary} from '@/components/error-boundary'
 import {getDeviceId} from '@/lib/device-id'
 import {initObservability, posthog} from '@/lib/observability'
+import {getStoredTheme} from '@/lib/theme-store'
 
 // dev → console (core default); release → PostHog. Must run before identify().
 initObservability()
@@ -17,6 +19,15 @@ initObservability()
 // Identify this device so all events share a stable distinct_id.
 // getDeviceId() is async on mobile (AsyncStorage backed).
 void getDeviceId().then((id) => identify(id))
+
+// Restore a previously-chosen Theme override as early as possible (issue #163,
+// a Display setting — CONTEXT.md), before the first paint that could show the
+// wrong scheme. NativeWind already follows the OS Appearance out of the box
+// with nothing called (`colorScheme.get()` falls back to it), so this only
+// needs to act when the player has an explicit stored override; calling
+// `colorScheme.set('system')` for the (common) unset/default case is a no-op
+// in effect, just an explicit one.
+void getStoredTheme().then((stored) => colorScheme.set(stored))
 
 import '../global.css'
 
@@ -33,6 +44,14 @@ export default function RootLayout() {
     return () => clearTimeout(fallback)
   }, [])
 
+  // Deliberately NOT theme-aware (issue #163): this is the color that shows through
+  // the gap during a Stack screen transition. Play and Pick a Card force dark
+  // regardless of the Theme setting (amendment 2) and are where transitions happen
+  // most (every "Play" tap, every hand-back), so `darkest` keeps that — the
+  // overwhelmingly common case — flash-free. The cost is the opposite: a Light-theme
+  // Library transitioning in/out can show a brief dark flash in the gap. Accepted
+  // trade-off, not an oversight — revisit if Light theme sees Library-heavy
+  // navigation patterns (e.g. a future screen between Library and Play).
   const navigator = (
     <Stack screenOptions={{headerShown: false, contentStyle: {backgroundColor: colors.darkest}}} />
   )

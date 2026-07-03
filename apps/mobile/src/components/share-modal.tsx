@@ -1,4 +1,5 @@
 import {Ionicons} from '@expo/vector-icons'
+import {useColorScheme} from 'nativewind'
 import {logWarn} from '@whocards/observability'
 import type {ShareFormat} from '@whocards/observability/events'
 import {useCallback, useEffect, useMemo, useState} from 'react'
@@ -97,6 +98,10 @@ type Row = {
  * file, which is what makes Instagram/TikTok/WhatsApp status show up as targets.
  * A download failure (offline, endpoint error) shows a brief inline message and
  * leaves the sheet open and usable — it never blocks the link row.
+ *
+ * Themed (issue #163, amendment 1): a dark surface in dark mode, the
+ * pre-existing light sheet surface in light mode — see
+ * docs/design/163-light-mode/proposal.md.
  */
 export const ShareModal = ({
   visible,
@@ -112,6 +117,12 @@ export const ShareModal = ({
   // other rows so a slow download can't be started twice from a double-tap.
   const [pending, setPending] = useState<ShareFormat | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Themed (issue #163, amendment 1): a dark surface in dark mode, the
+  // pre-existing light sheet surface in light mode.
+  const {colorScheme} = useColorScheme()
+  const isDark = colorScheme !== 'light'
+  const iconColor = isDark ? colors.white : colors.darker
+  const spinnerColor = isDark ? colors.gray.dark : colors.mutedOnLight
 
   // Story/Post are only offered when the caller supplied their URL (i.e. the
   // current deck is Pool-backed — see the prop docs above). A link-only sheet
@@ -245,12 +256,12 @@ export const ShareModal = ({
             accessibilityLabel="dismiss"
           />
           <View
-            className="rounded-t-3xl bg-white"
+            className="bg-white dark:bg-dark rounded-t-3xl"
             style={{paddingBottom: Math.max(insets.bottom, 24)}}
           >
             <GestureDetector gesture={swipeDown}>
               <View className="items-center pb-1 pt-3">
-                <View className="h-1 w-10 rounded-full bg-gray-lighter" />
+                <View className="bg-gray-lighter dark:bg-white/20 h-1 w-10 rounded-full" />
               </View>
             </GestureDetector>
 
@@ -269,9 +280,9 @@ export const ShareModal = ({
                   element). */}
               <Pressable onPress={() => {}} accessible={false}>
                 <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
-                  <Text className="text-darker font-title text-2xl">Share</Text>
+                  <Text className="text-darker dark:text-white font-title text-2xl">Share</Text>
                   <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
-                    <Ionicons name="close" size={24} color={colors.darker} />
+                    <Ionicons name="close" size={24} color={iconColor} />
                   </Pressable>
                 </View>
 
@@ -288,12 +299,14 @@ export const ShareModal = ({
                       accessibilityState={{disabled, busy: isPending}}
                       className={`flex-row items-center gap-3 px-5 py-4 ${disabled ? 'opacity-40' : ''}`}
                     >
-                      <Ionicons name={row.icon} size={22} color={colors.darker} />
-                      <Text className="text-darker font-sans text-lg">{row.label}</Text>
+                      <Ionicons name={row.icon} size={22} color={iconColor} />
+                      <Text className="text-darker dark:text-white font-sans text-lg">
+                        {row.label}
+                      </Text>
                       {isPending ? (
                         <ActivityIndicator
                           size="small"
-                          color={colors.gray.dark}
+                          color={spinnerColor}
                           style={{marginLeft: 'auto'}}
                         />
                       ) : null}
@@ -303,7 +316,9 @@ export const ShareModal = ({
 
                 {error ? (
                   <View className="px-5 pt-2">
-                    <Text className="text-red font-sans text-sm">{error}</Text>
+                    <Text className="text-errorOnLight dark:text-errorOnDark font-sans text-sm">
+                      {error}
+                    </Text>
                   </View>
                 ) : null}
               </Pressable>

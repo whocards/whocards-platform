@@ -1,4 +1,5 @@
 import {Ionicons} from '@expo/vector-icons'
+import {useColorScheme} from 'nativewind'
 import {StatusBar} from 'expo-status-bar'
 import {useEffect, useState} from 'react'
 import {Modal, Platform, Pressable, ScrollView, Text, View} from 'react-native'
@@ -23,10 +24,17 @@ type GameModalProps = {
  * `early_access` wear an "Included in early access" pill (ADR-0006): players
  * learn these are paid features before purchases exist, so the future paywall
  * is a communicated transition rather than a silent removal.
+ *
+ * Themed (issue #163, amendment 1): a dark surface in dark mode, the
+ * pre-existing light sheet surface in light mode — see
+ * docs/design/163-light-mode/proposal.md.
  */
 export const GameModal = ({visible, current, onSelect, onClose}: GameModalProps) => {
   const insets = useSafeAreaInsets()
   const [entitlements, setEntitlements] = useState<Partial<Record<GameId, Entitlement>>>({})
+  const {colorScheme} = useColorScheme()
+  const isDark = colorScheme !== 'light'
+  const iconColor = isDark ? colors.white : colors.darker
 
   useEffect(() => {
     if (!visible) return
@@ -49,18 +57,18 @@ export const GameModal = ({visible, current, onSelect, onClose}: GameModalProps)
       onRequestClose={onClose}
       onDismiss={onClose}
     >
-      {/* Dark status-bar icons are legible over this white sheet. */}
-      <StatusBar style="dark" />
-      <View className="flex-1 bg-white">
+      {/* Dark sheet → light status-bar icons; light sheet → dark icons. */}
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <View className="bg-white dark:bg-dark flex-1">
         {/* On Android, pageSheet renders behind the status bar, so push the header
             below the display cutout. On iOS the card sheet already insets itself. */}
         <View
-          className="border-gray-lighter flex-row items-center justify-between border-b px-5 py-4"
+          className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
           style={{paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16}}
         >
-          <Text className="text-darker font-title text-2xl">Choose your game</Text>
+          <Text className="text-darker dark:text-white font-title text-2xl">Choose your game</Text>
           <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
-            <Ionicons name="close" size={24} color={colors.darker} />
+            <Ionicons name="close" size={24} color={iconColor} />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{paddingBottom: Math.max(insets.bottom, 24)}}>
@@ -78,7 +86,9 @@ export const GameModal = ({visible, current, onSelect, onClose}: GameModalProps)
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center gap-2">
-                    <Text className="text-darker font-sans text-lg">{game.title}</Text>
+                    <Text className="text-darker dark:text-white font-sans text-lg">
+                      {game.title}
+                    </Text>
                     {entitlement?.granted && entitlement.reason === 'early_access' ? (
                       <View className="rounded-full bg-yellow-400 px-2 py-0.5">
                         <Text className="text-darker font-sans text-xs font-bold">
@@ -87,9 +97,15 @@ export const GameModal = ({visible, current, onSelect, onClose}: GameModalProps)
                       </View>
                     ) : null}
                   </View>
-                  {selected ? <Text className="text-primary-dark text-lg font-bold">✓</Text> : null}
+                  {selected ? (
+                    <Text className="text-accentOnLight dark:text-accentOnDark text-lg font-bold">
+                      ✓
+                    </Text>
+                  ) : null}
                 </View>
-                <Text className="text-gray-dark font-sans text-sm">{game.description}</Text>
+                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
+                  {game.description}
+                </Text>
               </Pressable>
             )
           })}

@@ -25,6 +25,7 @@ export const EVENTS = {
   LANGUAGE_CHANGED: 'language_changed',
   SECONDARY_LANGUAGES_CHANGED: 'secondary_languages_changed',
   TABLETOP_MODE_CHANGED: 'tabletop_mode_changed',
+  THEME_CHANGED: 'theme_changed',
   APP_REVIEW_ELIGIBLE: 'app_review_eligible',
   APP_REVIEW_REQUESTED: 'app_review_requested',
   SHARE_COMPLETED: 'share_completed',
@@ -80,6 +81,14 @@ export type SecondaryLanguagesChangedProps = {deck_id: string; secondary: string
  * was on when they flipped it, for context.
  */
 export type TabletopModeChangedProps = {deck_id: string; enabled: boolean}
+/**
+ * Theme setting changed (issue #163, a Display setting). Global and not
+ * deck-scoped — chosen from the Library screen's "Theme" sheet, outside any
+ * deck context — so unlike `TabletopModeChangedProps` this carries no
+ * `deck_id`. Records the new value only (the store, not a from/to pair),
+ * mirroring `SecondaryLanguagesChangedProps`.
+ */
+export type ThemeChangedProps = {theme: 'system' | 'light' | 'dark'}
 export type AppReviewEligibleProps = {
   app_version: string
   card_count: number

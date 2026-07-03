@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>#163 — Share sheet (compact bottom sheet, PR #166 shape) — light + dark</title>
+    <link rel="stylesheet" href="./assets/theme.css" />
+    <style>
+      .content {
+        position: relative;
+        z-index: 1;
+        height: 100%;
+      }
+      .backdrop-question {
+        position: absolute;
+        top: 90px;
+        left: 32px;
+        right: 32px;
+        font-family: 'golos-text';
+        font-weight: 600;
+        font-size: 34px;
+        line-height: 1.15;
+        opacity: 0.5;
+      }
+      .scrim {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+      }
+      /* compact bottom sheet — matches the real component (PR #166): rounded top
+     corners only, content-sized (not full height), a drag-handle pill, bottom-
+     anchored over a dimmed backdrop. */
+      .compact-sheet {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 24px 24px 0 0;
+        padding-bottom: 34px;
+      }
+      .handle-row {
+        display: flex;
+        justify-content: center;
+        padding: 12px 0 4px;
+      }
+      .handle-pill {
+        width: 40px;
+        height: 4px;
+        border-radius: 2px;
+      }
+      .compact-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 20px 8px;
+      }
+      .compact-title {
+        font-family: 'aptly';
+        font-weight: 500;
+        font-size: 22px;
+      }
+      .compact-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+      }
+      .compact-row span {
+        font-size: 17px;
+        font-family: 'golos-text';
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame-label">
+      <span>Share sheet — LIGHT theme (compact bottom sheet, PR #166 shape)</span>
+      <div class="phone">
+        <div class="screen">
+          <div class="notch"></div>
+          <img class="texture" src="./assets/background-light-final.png" alt="" />
+          <div class="content">
+            <p class="backdrop-question" style="color: var(--darker)">
+              What is something that makes you feel small?
+            </p>
+            <div class="scrim"></div>
+            <div class="compact-sheet" style="background: #fff">
+              <div class="handle-row">
+                <div class="handle-pill" style="background: var(--rule-light)"></div>
+              </div>
+              <div class="compact-header">
+                <span class="compact-title" style="color: var(--darker)">Share</span>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--darker)"
+                  stroke-width="2.2"
+                >
+                  <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="compact-row">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--darker)"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M10 13a5 5 0 007.07 0l2.83-2.83a5 5 0 00-7.07-7.07l-1.5 1.5M14 11a5 5 0 00-7.07 0L4.1 13.83a5 5 0 007.07 7.07l1.5-1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span style="color: var(--darker)">Share link</span>
+              </div>
+              <div class="compact-row">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--darker)"
+                  stroke-width="2"
+                >
+                  <rect x="7" y="2" width="10" height="20" rx="2" />
+                  <path d="M11 18h2" stroke-linecap="round" />
+                </svg>
+                <span style="color: var(--darker)">Story image</span>
+              </div>
+              <div class="compact-row">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--darker)"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span style="color: var(--darker)">Post image</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame-label">
+      <span
+        >Share sheet — DARK theme (amendment 1: sheets now theme; dark surface reuses `dark`
+        #262432)</span
+      >
+      <div class="phone">
+        <div class="screen" style="background: var(--darkest)">
+          <div class="notch"></div>
+          <img class="texture" src="./assets/background-dark.png" alt="" />
+          <div class="content">
+            <p class="backdrop-question" style="color: var(--white)">
+              What is something that makes you feel small?
+            </p>
+            <div class="scrim"></div>
+            <div class="compact-sheet" style="background: var(--dark)">
+              <div class="handle-row">
+                <div class="handle-pill" style="background: rgba(255, 255, 255, 0.2)"></div>
+              </div>
+              <div class="compact-header">
+                <span class="compact-title" style="color: var(--white)">Share</span>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--white)"
+                  stroke-width="2.2"
+                >
+                  <path d="M6 6l12 12M18 6L6 18" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="compact-row">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--white)"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M10 13a5 5 0 007.07 0l2.83-2.83a5 5 0 00-7.07-7.07l-1.5 1.5M14 11a5 5 0 00-7.07 0L4.1 13.83a5 5 0 007.07 7.07l1.5-1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span style="color: var(--white)">Share link</span>
+              </div>
+              <div class="compact-row">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--white)"
+                  stroke-width="2"
+                >
+                  <rect x="7" y="2" width="10" height="20" rx="2" />
+                  <path d="M11 18h2" stroke-linecap="round" />
+                </svg>
+                <span style="color: var(--white)">Story image</span>
+              </div>
+              <div class="compact-row">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--white)"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span style="color: var(--white)">Post image</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
