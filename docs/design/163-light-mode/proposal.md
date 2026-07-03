@@ -63,12 +63,12 @@ Rather than picking new hex values by eye, each new light token was derived to r
 off _its_ canvas (`background`, `#0d051f`). That keeps the light theme's sense of depth
 perceptually equivalent to the dark theme's, instead of just guessing at "light-mode-y" colors.
 
-| Elevation role                                                  | Dark token                | Dark hex      | Contrast vs. dark canvas | Light hex                                                     | Contrast vs. light canvas | Shipped?                              |
-| --------------------------------------------------------------- | ------------------------- | ------------- | -----------------------: | ------------------------------------------------------------- | ------------------------: | :------------------------------------ |
-| Canvas (Library screen background)                              | `darkest`                 | `#08001a`     |                        — | `canvasLight` `#F6F2FB`                                       |                         — | **yes**                               |
-| Sheet surface (Language/Game/Share/Theme modals)                | n/a (was hardcoded white) | —             |                        — | dark: reuse `dark` `#262432` · light: reuse `white` `#FFFFFF` |             1.29:1 (dark) | **yes** — amended, see below          |
-| ~~Mid surface (revealed question card, PlayerBar, close chip)~~ | ~~`darker`~~              | ~~`#111516`~~ |               ~~1.08:1~~ | ~~`#EFEAF7`~~                                                 |                ~~1.07:1~~ | **no — card stays dark, amendment 2** |
-| ~~Raised surface (deck-peek layers, card back)~~                | ~~`dark`~~                | ~~`#262432`~~ |               ~~1.30:1~~ | ~~`#DED4EC`~~                                                 |                ~~1.29:1~~ | **no — card stays dark, amendment 2** |
+| Elevation role                                                  | Dark token                | Dark hex      | Contrast vs. dark canvas | Light hex                                                                                         | Contrast vs. light canvas | Shipped?                              |
+| --------------------------------------------------------------- | ------------------------- | ------------- | -----------------------: | ------------------------------------------------------------------------------------------------- | ------------------------: | :------------------------------------ |
+| Canvas (Library screen background)                              | `darkest`                 | `#08001a`     |                        — | `canvasLight` `#EFE7F7` (deepened from `#F6F2FB`, issue #189 — see the texture recipe note below) |                         — | **yes**                               |
+| Sheet surface (Language/Game/Share/Theme modals)                | n/a (was hardcoded white) | —             |                        — | dark: reuse `dark` `#262432` · light: reuse `white` `#FFFFFF`                                     |             1.29:1 (dark) | **yes** — amended, see below          |
+| ~~Mid surface (revealed question card, PlayerBar, close chip)~~ | ~~`darker`~~              | ~~`#111516`~~ |               ~~1.08:1~~ | ~~`#EFEAF7`~~                                                                                     |                ~~1.07:1~~ | **no — card stays dark, amendment 2** |
+| ~~Raised surface (deck-peek layers, card back)~~                | ~~`dark`~~                | ~~`#262432`~~ |               ~~1.30:1~~ | ~~`#DED4EC`~~                                                                                     |                ~~1.29:1~~ | **no — card stays dark, amendment 2** |
 
 `ScreenBackground`'s dark canvas is actually `colors.darkest` (`#08001a`), not `background` — the
 original doc's role table (matching `docs/DESIGN.md`'s naming) rounded that to `background`;
@@ -103,21 +103,21 @@ needed to work on white). Checked directly rather than assumed — see the amend
 
 ### Full token mapping
 
-| Role                                                 | Dark token                     |    Dark value | Light proposal                                          |           Light value | Note                                                                                        |
-| ---------------------------------------------------- | ------------------------------ | ------------: | ------------------------------------------------------- | --------------------: | ------------------------------------------------------------------------------------------- |
-| Library canvas                                       | `darkest`                      |     `#08001a` | `canvasLight` (new)                                     |             `#F6F2FB` | Library/landing screen only — Play and Pick a Card force dark, see amendment 2              |
-| Sheet surface                                        | n/a (was always white)         |             — | reuse `dark` (dark theme) / reuse `white` (light theme) | `#262432` / `#FFFFFF` | amended — see above                                                                         |
-| Primary text (sheets, Library)                       | `white`                        |     `#f5f5f5` | reuse `darker`                                          |             `#111516` | already proven as sheet body text                                                           |
-| Muted / secondary text                               | `gray-dark`                    |     `#9698af` | `mutedOnLight` (new)                                    |             `#6B6D82` | the un-deepened value only just fails AA on light — see [contrast finding](#contrast-check) |
-| Hairline rule / border                               | `gray-lighter`                 |     `#dcdee9` | reuse as-is                                             |             `#dcdee9` | already the sheets' border color                                                            |
-| Primary accent (buttons)                             | `yellow-400` / `primary.light` |     `#f9d75f` | unchanged                                               |             `#f9d75f` | button always carries its own dark text; theme-independent                                  |
-| Secondary accent (checkmark, selection) — dark theme | `primary-dark`                 |     `#c058d2` | `accentOnDark` (new)                                    |             `#D485E2` | new combination — violet text never sat on a dark sheet before                              |
-| Secondary accent — light theme                       | `primary-dark`                 |     `#c058d2` | `accentOnLight` (new)                                   |             `#9A3AAC` | any place violet is set as legible copy                                                     |
-| Error, text scale — dark theme                       | `red`                          |     `#ee1e23` | `errorOnDark` (new)                                     |             `#FF5B5F` | new combination — error copy never sat on a dark sheet before                               |
-| Error, text scale — light theme                      | `red`                          |     `#ee1e23` | `errorOnLight` (new)                                    |             `#C9151A` | error copy needs AA; the flat token doesn't clear it on white                               |
-| Selection tint                                       | `bg-yellow-300/40`             |             — | unchanged                                               |                     — | works on both the white and the dark `#262432` sheet fill                                   |
-| Brand gradient (wordmark, display text)              | `gradients.primary`            | yellow→violet | unchanged                                               |                     — | works on either canvas — see [wordmark](#wordmark--the-maze-texture) below                  |
-| ~~Card mid/raised surfaces~~                         | ~~`darker`/`dark`~~            |             — | ~~`#EFEAF7`/`#DED4EC`~~                                 |                     — | **not shipped** — card stays dark in both themes (amendment 2)                              |
+| Role                                                 | Dark token                     |    Dark value | Light proposal                                          |           Light value | Note                                                                                                                                                   |
+| ---------------------------------------------------- | ------------------------------ | ------------: | ------------------------------------------------------- | --------------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Library canvas                                       | `darkest`                      |     `#08001a` | `canvasLight` (new)                                     |             `#EFE7F7` | Library/landing screen only — Play and Pick a Card force dark, see amendment 2; deepened from `#F6F2FB` per issue #189 (see texture recipe note below) |
+| Sheet surface                                        | n/a (was always white)         |             — | reuse `dark` (dark theme) / reuse `white` (light theme) | `#262432` / `#FFFFFF` | amended — see above                                                                                                                                    |
+| Primary text (sheets, Library)                       | `white`                        |     `#f5f5f5` | reuse `darker`                                          |             `#111516` | already proven as sheet body text                                                                                                                      |
+| Muted / secondary text                               | `gray-dark`                    |     `#9698af` | `mutedOnLight` (new)                                    |             `#6B6D82` | the un-deepened value only just fails AA on light — see [contrast finding](#contrast-check)                                                            |
+| Hairline rule / border                               | `gray-lighter`                 |     `#dcdee9` | reuse as-is                                             |             `#dcdee9` | already the sheets' border color                                                                                                                       |
+| Primary accent (buttons)                             | `yellow-400` / `primary.light` |     `#f9d75f` | unchanged                                               |             `#f9d75f` | button always carries its own dark text; theme-independent                                                                                             |
+| Secondary accent (checkmark, selection) — dark theme | `primary-dark`                 |     `#c058d2` | `accentOnDark` (new)                                    |             `#D485E2` | new combination — violet text never sat on a dark sheet before                                                                                         |
+| Secondary accent — light theme                       | `primary-dark`                 |     `#c058d2` | `accentOnLight` (new)                                   |             `#9A3AAC` | any place violet is set as legible copy                                                                                                                |
+| Error, text scale — dark theme                       | `red`                          |     `#ee1e23` | `errorOnDark` (new)                                     |             `#FF5B5F` | new combination — error copy never sat on a dark sheet before                                                                                          |
+| Error, text scale — light theme                      | `red`                          |     `#ee1e23` | `errorOnLight` (new)                                    |             `#C9151A` | error copy needs AA; the flat token doesn't clear it on white                                                                                          |
+| Selection tint                                       | `bg-yellow-300/40`             |             — | unchanged                                               |                     — | works on both the white and the dark `#262432` sheet fill                                                                                              |
+| Brand gradient (wordmark, display text)              | `gradients.primary`            | yellow→violet | unchanged                                               |                     — | works on either canvas — see [wordmark](#wordmark--the-maze-texture) below                                                                             |
+| ~~Card mid/raised surfaces~~                         | ~~`darker`/`dark`~~            |             — | ~~`#EFEAF7`/`#DED4EC`~~                                 |                     — | **not shipped** — card stays dark in both themes (amendment 2)                                                                                         |
 
 A neat discovery while deriving the deepened-yellow case: `colors.yellow[100]` (`#7e7552`)
 already existed in `packages/tokens/src/colors.ts`, unused anywhere in the app. It wasn't needed
@@ -145,19 +145,40 @@ unchanged. Every themed surface picks between an existing token and a new one vi
 - ~~**Card-back wordmark** change~~: not shipped. `pick-player.tsx`'s coded "WHO?CARDS" (`WHO`
   yellow-400, `?` primary-dark, `CARDS` white) is untouched — the card back stays dark in both
   themes (amendment 2), so `text-white` for `CARDS` is still correct.
-- **Maze texture** (new asset: `apps/mobile/assets/images/background-light.png`, used by
+- **Maze texture** (asset: `apps/mobile/assets/images/background-light.png`, used by
   `ScreenBackground` on the Library screen only): recolored from the same source path data as
-  the dark texture (`apps/website/public/background.svg`), gradient stops shifted from
-  `#08001A → #fff` to `#EDE6F6 → #C9B8E0` at `fill-opacity .16`. **Implementation note from
-  building the actual asset:** rasterizing this SVG with ImageMagick's SVG delegate produced
-  wrong output twice — first an accidental grayscale PNG (lost the tint entirely, fixed with
+  the dark texture (`apps/website/public/background.svg`).
+  **Regen recipe (current, issue #189 — replaces the ImageMagick approach below):** the owner's
+  first shipped light asset (gradient stops `#EDE6F6 → #C9B8E0` at `fill-opacity .16`, built via
+  the ImageMagick/Playwright pipeline described below) read as too bright on-device, with the
+  maze pattern nearly invisible against the canvas. Regenerated instead with
+  `apps/website`'s own `@resvg/resvg-js` (already a website dependency — see
+  `apps/website/src/server/print/render.ts` for its other usage), which handles
+  `background.svg`'s filter defs natively (no ImageMagick workaround needed): base fill
+  `#efe7f7`, maze stroke/fill recolored to `#b39fd1` at `fill-opacity .28`, rendered via
+  `resvg-js`'s `fitTo: {mode: 'width', value: 2400}` with `background: '#efe7f7'` baked directly
+  into the PNG (so `contentFit="cover"`'s edges/gaps can't show a seam against the canvas
+  underneath). **`canvasLight` (`packages/tokens/src/colors.ts`) was deepened to match this
+  asset's own base fill** (`#F6F2FB` → `#EFE7F7`) — `ScreenBackground` paints `canvasLight` as
+  the solid color _behind_ this texture (see its own doc comment), so the two need to agree:
+  before this change the flat canvas (visible for an instant before the texture image decodes,
+  and at any `contentFit="cover"` edge/gap) was visibly lighter than the texture laid over it.
+  `_layout.tsx`'s light `contentStyle` and `pick-player.tsx`'s `bg-canvasLight` both read the
+  same token, so both picked up the reconciled value automatically — no separate edit needed
+  there. Contrast re-checked against the deepened canvas: every `mutedOnLight`/`accentOnLight`/
+  `errorOnLight` pairing in the [contrast table](#contrast-check) only _gains_ margin against a
+  darker background, so nothing in that table needed re-deriving.
+  **Implementation note from building the original asset (superseded by the recipe above, kept
+  for context):** rasterizing this SVG with ImageMagick's SVG delegate produced wrong output
+  twice — first an accidental grayscale PNG (lost the tint entirely, fixed with
   `-type TrueColor -define png:color-type=2`), then solid black artifacts on some paths once
   opacity was pushed to 1 while iterating (ImageMagick's SVG delegate appears to mishandle the
   source SVG's inert `feDisplacementMap`/`feTurbulence` filter — `apps/website/public/background.svg`'s `disFilter`, `display="none"` but still present in the defs). The dark asset was presumably
-  rasterized some other way originally, since it doesn't hit this. Fix: render through the same
-  Chromium/Playwright pipeline already used for the mock screenshots (which handles the filter
-  fine) instead of ImageMagick's SVG rasterizer, then flatten and re-encode. See
-  `apps/mobile/assets/images/background-light.png`.
+  rasterized some other way originally, since it doesn't hit this. Fix at the time: render
+  through the same Chromium/Playwright pipeline already used for the mock screenshots (which
+  handles the filter fine) instead of ImageMagick's SVG rasterizer, then flatten and re-encode —
+  superseded by the `resvg-js` recipe above, which handles the filter directly and needs no
+  separate browser pipeline. See `apps/mobile/assets/images/background-light.png`.
 
 ## Mocks
 
@@ -176,7 +197,8 @@ Open [`mocks/index.html`](./mocks/index.html) for the interactive gallery. Stati
 The screen the issue calls "Library" is today's single-Deck landing (`app/index.tsx`) — per
 `docs/DESIGN.md`'s "Mobile v1 launch alignment", true Library browsing doesn't exist yet, so this
 mock is that same landing screen re-themed, not a new browse UI. This is the **only** screen
-whose canvas actually themes. Canvas `#F6F2FB` (light) / `#08001a` (dark, unchanged) + the
+whose canvas actually themes. Canvas `#EFE7F7` (light, deepened from `#F6F2FB` per issue #189) /
+`#08001a` (dark, unchanged) + the
 matching maze texture, wordmark unchanged in both, tagline/meta/chip text and borders swap via
 `dark:` variants. The yellow Play button is byte-for-byte the same component in both themes — it
 carries its own colors regardless of theme.
@@ -219,11 +241,28 @@ large text (≥ 24px, or ≥ 18.66px bold) and graphical/UI objects.
 
 ### Library canvas (light theme)
 
-| Pair                                                      |                                                                      Ratio | AA normal text |
-| --------------------------------------------------------- | -------------------------------------------------------------------------: | :------------: |
-| `darker` (#111516) text on canvas `canvasLight` `#F6F2FB` |                                                                  16.64 : 1 |      pass      |
-| Tagline `darker/80` on canvas                             | ~14+ : 1 (opacity reduces effective contrast slightly; comfortably passes) |      pass      |
-| `mutedOnLight` (#6B6D82) on canvas                        |                                                                   4.60 : 1 |      pass      |
+Recomputed against the deepened canvas (`#F6F2FB` → `#EFE7F7`, issue #189 — see the texture
+recipe note above). Darkening the canvas doesn't uniformly help every pairing the way the first
+pass of this token change assumed: it **increases** contrast against dark colors far from it on
+the lightness scale, but **decreases** contrast against colors already closer to it — exactly
+`mutedOnLight`'s situation, since it's a mid-tone gray, not a near-black.
+
+| Pair                                                      |                                                                      Ratio |              AA normal text              |
+| --------------------------------------------------------- | -------------------------------------------------------------------------: | :--------------------------------------: |
+| `darker` (#111516) text on canvas `canvasLight` `#EFE7F7` |                                                                  15.27 : 1 |                   pass                   |
+| Tagline `darker/80` on canvas                             | ~13+ : 1 (opacity reduces effective contrast slightly; comfortably passes) |                   pass                   |
+| `mutedOnLight` (#6B6D82) on canvas                        |                                                               **4.22 : 1** | **fails** (needs 4.5:1) — see flag below |
+
+**Flagged, not fixed here:** the "N cards · N languages" caption on the Library landing
+(`app/index.tsx`, `text-mutedOnLight ... text-sm` directly on the canvas via `ScreenBackground`)
+is the one real on-screen instance of this exact pairing, and it's normal-sized text (14px, under
+the 18.66px-bold/24px "large text" threshold), so it doesn't clear the large-text 3:1 exemption
+either — it's a genuine, if narrow (0.28 short), AA regression from deepening the canvas without
+also deepening `mutedOnLight`. Left as a flag rather than a fix in this pass: `mutedOnLight` is
+used far more broadly than this one caption (every sheet's secondary-value text, row descriptions,
+etc.), and picking its next value needs the same "same contrast step as its dark-theme equivalent"
+derivation the rest of this table used, not a hand-tuned nudge against one caller. Whoever
+resolves this flag should re-run that derivation against the new canvas value.
 
 ### Sheet surfaces (amended — both themes checked)
 

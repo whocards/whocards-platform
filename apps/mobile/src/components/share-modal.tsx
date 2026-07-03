@@ -106,8 +106,8 @@ type Row = {
  * override (issue #173): this sheet used to rely on always being opened from
  * an always-dark Play/Pick a Card screen (whose own root default was a fixed
  * `style="light"`), but now that those screens theme too, this sheet needs the
- * same `isDark` flip as every other themed sheet (language-modal.tsx,
- * game-modal.tsx, theme-modal.tsx) rather than inheriting whatever its opener
+ * same `isDark` flip as every other themed sheet (settings-modal.tsx and its
+ * settings-sheet-header.tsx) rather than inheriting whatever its opener
  * happened to set.
  */
 export const ShareModal = ({

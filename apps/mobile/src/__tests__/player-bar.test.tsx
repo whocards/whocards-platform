@@ -27,7 +27,8 @@ jest.mock('react-native-safe-area-context', () => ({
 
 afterEach(() => {
   // NativeWind's colorScheme is a global observable — reset it so a test that
-  // sets it doesn't bleed into whichever test runs next (mirrors theme-modal.test.tsx).
+  // sets it doesn't bleed into whichever test runs next (mirrors
+  // settings-modal.test.tsx).
   act(() => colorScheme.set('system'))
 })
 
