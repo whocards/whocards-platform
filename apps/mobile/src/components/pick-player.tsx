@@ -1,4 +1,6 @@
 import {Image} from 'expo-image'
+
+import {ScreenBackground} from '@/components/screen-background'
 import {useRouter} from 'expo-router'
 import {StatusBar} from 'expo-status-bar'
 import {useColorScheme} from 'nativewind'
@@ -373,11 +375,10 @@ export const PickPlayer = ({
   )
 
   return (
-    // Solid backdrop (no screen texture) — the texture lives on the card backs
-    // here, and the printed cards sit on a plain table, not on themselves. Themed
-    // (issue #173): the table itself follows the Theme Display setting, the deck
-    // and cards on it stay dark in both themes (untouched below).
-    <View className="bg-canvasLight dark:bg-darkest flex-1">
+    // Same textured canvas as the landing page (owner, live session 2026-07-03):
+    // the table is the brand backdrop, not a plain solid — the deck and cards on
+    // it stay dark in both themes (untouched below).
+    <ScreenBackground table>
       {/* Pick a Card is chrome-themed like every other screen now (issue #173); this
           screen's own override wins over the root default while it's mounted
           (expo-status-bar: "last mounted wins, revert on unmount" — see index.tsx). */}
@@ -541,6 +542,6 @@ export const PickPlayer = ({
           onClose={() => setShareModalOpen(false)}
         />
       </View>
-    </View>
+    </ScreenBackground>
   )
 }

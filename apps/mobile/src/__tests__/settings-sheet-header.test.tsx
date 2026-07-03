@@ -48,14 +48,18 @@ describe('SettingsSheetHeader — Android/iOS inset', () => {
     Object.defineProperty(Platform, 'OS', {configurable: true, value: originalOS})
   })
 
-  it('adds the top safe-area inset on Android so the title clears the status bar', async () => {
+  // The Android status-bar inset guard was removed (owner on-device feedback,
+  // 2026-07-03): this header sits in a bottom-anchored sheet capped at 80% of
+  // the window, so it can never reach the status bar — the inset only added a
+  // big dead band above the title. Flat 16 on both platforms.
+  it('uses flat 16px top padding on Android — a bottom sheet never meets the status bar', async () => {
     Object.defineProperty(Platform, 'OS', {configurable: true, value: 'android'})
     render(<SettingsSheetHeader title="Choose your language" icon="back" onPress={() => {}} />)
     await screen.findByText('Choose your language')
-    expect(headerPaddingTop()).toBe(TOP_INSET + 16)
+    expect(headerPaddingTop()).toBe(16)
   })
 
-  it('keeps the original 16px top padding on iOS (bottom-anchored, content-hugging sheet)', async () => {
+  it('uses flat 16px top padding on iOS (bottom-anchored, content-hugging sheet)', async () => {
     Object.defineProperty(Platform, 'OS', {configurable: true, value: 'ios'})
     render(<SettingsSheetHeader title="Choose your language" icon="back" onPress={() => {}} />)
     await screen.findByText('Choose your language')

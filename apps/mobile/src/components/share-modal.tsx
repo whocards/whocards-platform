@@ -260,11 +260,7 @@ export const ShareModal = ({
           {/* Dimmed backdrop — the card underneath stays visible. Tapping it
               dismisses; the sheet below swallows its own taps (see the no-op
               onPress) so tapping the sheet itself doesn't also close it. */}
-          <Pressable
-            className="absolute inset-0 bg-black/50"
-            onPress={onClose}
-            accessibilityLabel="dismiss"
-          />
+          <Pressable className="absolute inset-0" onPress={onClose} accessibilityLabel="dismiss" />
           <View
             className="bg-white dark:bg-dark rounded-t-3xl"
             style={{paddingBottom: Math.max(insets.bottom, 24)}}

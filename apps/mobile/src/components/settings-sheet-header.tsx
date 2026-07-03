@@ -1,7 +1,6 @@
 import {Ionicons} from '@expo/vector-icons'
 import {useColorScheme} from 'nativewind'
-import {Platform, Pressable, Text, View} from 'react-native'
-import {useSafeAreaInsets} from 'react-native-safe-area-context'
+import {Pressable, Text, View} from 'react-native'
 import {colors} from '@whocards/tokens'
 
 type SettingsSheetHeaderProps = {
@@ -32,7 +31,6 @@ type SettingsSheetHeaderProps = {
  * this app (the close button this replaces used the same "close" label).
  */
 export const SettingsSheetHeader = ({title, icon, onPress}: SettingsSheetHeaderProps) => {
-  const insets = useSafeAreaInsets()
   const {colorScheme} = useColorScheme()
   const isDark = colorScheme !== 'light'
   const iconColor = isDark ? colors.white : colors.darker
@@ -43,7 +41,7 @@ export const SettingsSheetHeader = ({title, icon, onPress}: SettingsSheetHeaderP
       // On Android with statusBarTranslucent, the sheet can otherwise sit
       // under the status bar/notch on a device in the rare case its content
       // pushes the header above the safe area.
-      style={{paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16}}
+      style={{paddingTop: 16}}
     >
       {icon === 'back' ? (
         <View className="flex-row items-center gap-1">
