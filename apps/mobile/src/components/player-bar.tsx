@@ -1,4 +1,5 @@
 import {Ionicons} from '@expo/vector-icons'
+import {useColorScheme} from 'nativewind'
 import {Text, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {colors} from '@whocards/tokens'
@@ -13,10 +14,11 @@ type BarButtonProps = {
   label: string
   onPress: () => void
   accessibilityLabel?: string
+  iconColor: string
 }
 
 /** One bottom-bar action: icon over a small label, sharing equal width with its peers. */
-const BarButton = ({icon, label, onPress, accessibilityLabel}: BarButtonProps) => {
+const BarButton = ({icon, label, onPress, accessibilityLabel, iconColor}: BarButtonProps) => {
   const handlePress = () => {
     impact('light')
     onPress()
@@ -30,8 +32,8 @@ const BarButton = ({icon, label, onPress, accessibilityLabel}: BarButtonProps) =
       hitSlop={6}
       className="flex-1 items-center gap-1 py-1"
     >
-      <Ionicons name={icon} size={24} color={colors.white} />
-      <Text className="text-gray-dark font-sans text-xs">{label}</Text>
+      <Ionicons name={icon} size={24} color={iconColor} />
+      <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-xs">{label}</Text>
     </PressableScale>
   )
 }
@@ -54,10 +56,14 @@ type PlayerBarProps = {
 }
 
 /**
- * The player's bottom action bar: a translucent dark toolbar of icon+label actions
+ * The player's bottom action bar: a translucent toolbar of icon+label actions
  * (the home for per-card actions like favorite / thumbs-down later). Navigation lives at
  * the edges (thumb-reachable), card actions in the middle. Each action takes an equal
  * share of the width, so the bar stays balanced as more are added.
+ *
+ * Themed (issue #173): this bar is chrome around the always-dark Card, not the
+ * Card itself, so — like the Library screen and every sheet (issue #163) — it
+ * follows the Theme Display setting rather than always being dark.
  */
 export const PlayerBar = ({
   showLanguage,
@@ -69,10 +75,13 @@ export const PlayerBar = ({
   onLanguage,
 }: PlayerBarProps) => {
   const insets = useSafeAreaInsets()
+  const {colorScheme} = useColorScheme()
+  const isDark = colorScheme !== 'light'
+  const iconColor = isDark ? colors.white : colors.darker
 
   return (
     <View
-      className="flex-row items-stretch border-t border-white/10 bg-darker/80 px-4 pt-2"
+      className="border-darker/10 bg-white/90 flex-row items-stretch border-t px-4 pt-2 dark:border-white/10 dark:bg-darker/80"
       style={{paddingBottom: Math.max(insets.bottom, 10)}}
     >
       <BarButton
@@ -80,6 +89,7 @@ export const PlayerBar = ({
         label="Back"
         onPress={onPrevious}
         accessibilityLabel="previous question"
+        iconColor={iconColor}
       />
       {showShare ? (
         <BarButton
@@ -87,6 +97,7 @@ export const PlayerBar = ({
           label="Share"
           onPress={onShare}
           accessibilityLabel="share question"
+          iconColor={iconColor}
         />
       ) : null}
       {showLanguage ? (
@@ -95,6 +106,7 @@ export const PlayerBar = ({
           label={multiLanguage ? 'Language' : 'Display'}
           onPress={onLanguage}
           accessibilityLabel={multiLanguage ? 'change language' : 'display settings'}
+          iconColor={iconColor}
         />
       ) : null}
       <BarButton
@@ -102,6 +114,7 @@ export const PlayerBar = ({
         label="Next"
         onPress={onNext}
         accessibilityLabel="next question"
+        iconColor={iconColor}
       />
     </View>
   )

@@ -55,11 +55,11 @@ export default function LandingScreen() {
   const gameTitle = GAME_CATALOG.find((entry) => entry.id === game)?.title ?? game
 
   // the Theme Display setting (issue #163) — System-follow by default, with a
-  // manual override; the Library canvas is the one screen that actually
-  // follows it (Play/Pick a Card force dark — the Card stays dark in both
-  // themes). `resolvedScheme` drives the raw-color props below (Ionicons, the
-  // Play button's play-glyph fill, the local `<StatusBar>` override) that
-  // can't be expressed as a `dark:` class.
+  // manual override. Every screen follows it now, including Play/Pick a Card's
+  // chrome (issue #173) — only the Card itself stays dark in both themes.
+  // `resolvedScheme` drives the raw-color props below (Ionicons, the Play
+  // button's play-glyph fill, the local `<StatusBar>` override) that can't be
+  // expressed as a `dark:` class.
   const {theme, resolvedScheme, select: selectTheme} = useThemeSetting()
   const [themeModalOpen, setThemeModalOpen] = useState(false)
   const isDark = resolvedScheme !== 'light'

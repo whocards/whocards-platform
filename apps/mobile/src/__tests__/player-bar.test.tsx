@@ -6,13 +6,27 @@
  * (Tabletop mode is available on every deck, not just multi-language ones), so
  * its visible label and accessibilityLabel must stop promising a language
  * choice that isn't there for a single-language deck.
+ *
+ * Also covers the Theme Display setting reaching this bar (issue #173): this
+ * bar is chrome around the always-dark Card, not the Card itself, so its icon
+ * color (a raw `Ionicons` prop, not expressible as a `dark:` class) must follow
+ * the resolved scheme, same as every other themed sheet/screen.
  */
 import React from 'react'
-import {render, screen} from '@testing-library/react-native'
+import {Ionicons} from '@expo/vector-icons'
+import {act, render, screen} from '@testing-library/react-native'
+import {colorScheme} from 'nativewind'
+import {colors} from '@whocards/tokens'
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
 }))
+
+afterEach(() => {
+  // NativeWind's colorScheme is a global observable — reset it so a test that
+  // sets it doesn't bleed into whichever test runs next (mirrors theme-modal.test.tsx).
+  act(() => colorScheme.set('system'))
+})
 
 // PressableScale drives its press animation through react-native-reanimated /
 // react-native-worklets, whose native module isn't available under plain
@@ -71,5 +85,27 @@ describe('PlayerBar — language/display button labeling', () => {
     renderBar({showLanguage: false, multiLanguage: false})
     expect(screen.queryByText('Display')).toBeNull()
     expect(screen.queryByText('Language')).toBeNull()
+  })
+})
+
+describe('PlayerBar — themed icon color (issue #173)', () => {
+  it('uses white icons when the resolved scheme is dark', () => {
+    act(() => colorScheme.set('dark'))
+    renderBar()
+    const icons = screen.UNSAFE_getAllByType(Ionicons)
+    expect(icons.length).toBeGreaterThan(0)
+    for (const icon of icons) {
+      expect(icon.props.color).toBe(colors.white)
+    }
+  })
+
+  it('uses darker icons when the resolved scheme is light', () => {
+    act(() => colorScheme.set('light'))
+    renderBar()
+    const icons = screen.UNSAFE_getAllByType(Ionicons)
+    expect(icons.length).toBeGreaterThan(0)
+    for (const icon of icons) {
+      expect(icon.props.color).toBe(colors.darker)
+    }
   })
 })

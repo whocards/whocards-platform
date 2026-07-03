@@ -1,4 +1,5 @@
 import {Ionicons} from '@expo/vector-icons'
+import {StatusBar} from 'expo-status-bar'
 import {useColorScheme} from 'nativewind'
 import {logWarn} from '@whocards/observability'
 import type {ShareFormat} from '@whocards/observability/events'
@@ -101,7 +102,13 @@ type Row = {
  *
  * Themed (issue #163, amendment 1): a dark surface in dark mode, the
  * pre-existing light sheet surface in light mode — see
- * docs/design/163-light-mode/proposal.md.
+ * docs/design/163-light-mode/proposal.md. Also sets its own `<StatusBar>`
+ * override (issue #173): this sheet used to rely on always being opened from
+ * an always-dark Play/Pick a Card screen (whose own root default was a fixed
+ * `style="light"`), but now that those screens theme too, this sheet needs the
+ * same `isDark` flip as every other themed sheet (language-modal.tsx,
+ * game-modal.tsx, theme-modal.tsx) rather than inheriting whatever its opener
+ * happened to set.
  */
 export const ShareModal = ({
   visible,
@@ -246,6 +253,9 @@ export const ShareModal = ({
           into a separate native surface that isn't a descendant of the app's
           top-level GestureHandlerRootView (see _layout.tsx). */}
       <GestureHandlerRootView style={{flex: 1}}>
+        {/* Dark sheet → light status-bar icons; light sheet → dark icons — same
+            pattern as every other themed sheet (issue #173). */}
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <View className="flex-1 justify-end">
           {/* Dimmed backdrop — the card underneath stays visible. Tapping it
               dismisses; the sheet below swallows its own taps (see the no-op

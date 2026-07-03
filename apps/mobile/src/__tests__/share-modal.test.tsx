@@ -28,6 +28,8 @@
 import React from 'react'
 import {Share} from 'react-native'
 import {act, fireEvent, render, screen} from '@testing-library/react-native'
+import {StatusBar} from 'expo-status-bar'
+import {colorScheme} from 'nativewind'
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
@@ -39,6 +41,12 @@ jest.mock('@/lib/share-image', () => ({
 }))
 
 import {ShareModal} from '../components/share-modal'
+
+afterEach(() => {
+  // NativeWind's colorScheme is a global observable — reset it so a test that
+  // sets it doesn't bleed into whichever test runs next (mirrors theme-modal.test.tsx).
+  act(() => colorScheme.set('system'))
+})
 
 const PROPS = {
   questionText: 'What is your favorite memory?',
@@ -193,5 +201,23 @@ describe('ShareModal', () => {
     fireEvent.press(screen.getByLabelText('close'))
 
     expect(onClose).toHaveBeenCalled()
+  })
+})
+
+// Issue #173: ShareModal used to have no local <StatusBar> override, on the
+// assumption its openers (Play/Pick a Card) were always dark. That assumption
+// broke once those screens theme too — this sheet now needs the same isDark
+// flip as every other themed sheet (see theme-modal.test.tsx).
+describe('ShareModal — StatusBar override (issue #173)', () => {
+  it('shows light (white) status-bar icons when the resolved scheme is dark', () => {
+    act(() => colorScheme.set('dark'))
+    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
+    expect(screen.UNSAFE_getByType(StatusBar).props.style).toBe('light')
+  })
+
+  it('shows dark status-bar icons when the resolved scheme is light', () => {
+    act(() => colorScheme.set('light'))
+    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
+    expect(screen.UNSAFE_getByType(StatusBar).props.style).toBe('dark')
   })
 })
