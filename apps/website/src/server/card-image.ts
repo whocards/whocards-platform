@@ -34,20 +34,41 @@ import questions from '~data/questions.json'
 /** A Share Card output size. `key` doubles as the on-demand endpoint's URL segment. */
 export type CardSizeKey = 'og' | 'story' | 'post'
 
-type CardSize = {
+export type CardSize = {
   key: CardSizeKey
   width: number
   height: number
   // Even padding around the card content, in px at this size.
   padding: number
   // The wordmark is tuned for the OG size (44px/52px); other sizes scale it
-  // by this factor rather than repeating the OG's absolute px values.
+  // by this factor rather than repeating the OG's absolute px values. OG's
+  // landscape frame gives the wordmark plenty of relative weight at 1x; the
+  // taller portrait sizes are viewed close-up (a phone screen, not a link
+  // preview) and need a visibly bigger mark to still read as deliberate
+  // rather than a shrunken afterthought in the corner.
   wordmarkScale: number
+  // Question text scales off the OG breakpoint table (fontSizeFor's `base`)
+  // by this factor. OG derives it from its own width (a no-op, factor 1);
+  // story/post do NOT just scale by width like the wordmark does — both are
+  // 1080px wide, but story is much taller (9:16 vs 4:5) and needs
+  // noticeably bigger type to carry that extra vertical frame instead of
+  // floating a small headline in a sea of background. Tuned by rendering
+  // real PNGs (see docs/design/161-share-card-polish), not derived.
+  fontScale: number
   // OG's design is top-aligned question text (matches the committed design
   // pixel-for-pixel). The taller portrait sizes centre the text block instead
   // between the top padding and the wordmark, which reads better on a 9:16/4:5
   // canvas than a wall of top-aligned text.
   verticalAlign: 'flex-start' | 'center'
+  // A single-line RTL question sits in a shrink-to-fit flex item, so
+  // `textAlign: right` has no box width left to move within — it visibly
+  // hugs the left edge (flexbox's default justify-content), same as LTR,
+  // even though multi-line RTL text (wrapped near the full column width)
+  // reads as right-aligned. That quirk is baked into OG's committed,
+  // byte-identical pixels (a past design already shipped and tested), so OG
+  // keeps it; story/post are new enough at this design pass to fix it
+  // properly with an explicit justify-content.
+  rtlJustify: 'flex-start' | 'flex-end'
 }
 
 export const CARD_SIZES: Record<CardSizeKey, CardSize> = {
@@ -57,23 +78,29 @@ export const CARD_SIZES: Record<CardSizeKey, CardSize> = {
     height: 630,
     padding: 64,
     wordmarkScale: 1,
+    fontScale: 1,
     verticalAlign: 'flex-start',
+    rtlJustify: 'flex-start',
   },
   story: {
     key: 'story',
     width: 1080,
     height: 1920,
     padding: 80,
-    wordmarkScale: 0.9,
+    wordmarkScale: 1.45,
+    fontScale: 1.85,
     verticalAlign: 'center',
+    rtlJustify: 'flex-end',
   },
   post: {
     key: 'post',
     width: 1080,
     height: 1350,
     padding: 72,
-    wordmarkScale: 0.9,
+    wordmarkScale: 1.2,
+    fontScale: 1.4,
     verticalAlign: 'center',
+    rtlJustify: 'flex-end',
   },
 }
 
@@ -237,7 +264,15 @@ const bidi = bidiFactory()
 
 // Rough max characters per visual line at a given font size, used to wrap RTL
 // text before reordering (Satori in this version does no bidi reordering, so we
-// reorder ourselves and feed it pre-broken visual-order lines).
+// reorder ourselves and feed it pre-broken visual-order lines). 0.52 is tuned
+// specifically for Hebrew's average glyph width for this *actual* wrap step —
+// deliberately a hair narrower than avgCharWidthFactor's 0.55 (the coarser
+// constant the autofit below uses to just *estimate* a line count across every
+// script). They're allowed to differ: a narrower actual-wrap factor means real
+// Hebrew wrapping fits comfortably inside the autofit's slightly more generous
+// per-line budget rather than the two disagreeing outward and letting text run
+// past what the autofit sized for. (The autofit's own AUTOFIT_SAFETY_MARGIN
+// absorbs the gap either way.)
 const maxCharsPerLine = (fontSize: number, size: CardSize): number =>
   Math.floor((size.width - size.padding * 2) / (fontSize * 0.52))
 
@@ -277,17 +312,129 @@ const toVisualRtl = (text: string, fontSize: number, size: CardSize): string => 
     .join('\n')
 }
 
+// The OG breakpoint table: short questions are set large, long ones shrink in
+// steps. Tuned for the OG size's 1200px landscape width — kept as its own
+// function (rather than inlined) so story/post can use it as their *starting
+// point* (via fontScale) without duplicating the thresholds.
+const baseFontSizeFor = (len: number): number =>
+  len <= 45 ? 92 : len <= 70 ? 82 : len <= 100 ? 72 : len <= 140 ? 58 : len <= 200 ? 48 : 42
+
+// CJK glyphs are roughly full-width squares — much wider per character than
+// a Latin/Hebrew average glyph — so a line-wrap estimate needs a different
+// factor per script or it wildly under-counts lines for zh/jp. (Matches the
+// spirit of maxCharsPerLine's RTL-only 0.52, generalized to every script the
+// autofit below has to reason about.)
+const avgCharWidthFactor = (language: string): number =>
+  language === 'zh' || language === 'jp' ? 1.15 : 0.55
+
+const AUTOFIT_LINE_HEIGHT = 1.2
+const AUTOFIT_MIN_FONT_SIZE = 34
+const AUTOFIT_STEP = 2
+// Exported so the boundary-clamp regression test asserts against the real
+// constant rather than a hardcoded copy of it that could silently drift.
+export const AUTOFIT_MIN_FONT_SIZE_FOR_TEST = AUTOFIT_MIN_FONT_SIZE
+// The estimate above is a heuristic, not a real layout pass — Satori's actual
+// wrap can land one line short/long of it (confirmed by rendering a long
+// Japanese question: estimated 10 lines, Satori wrapped 11). Padding the
+// estimated block height gives that a margin to be wrong in without the
+// text actually reaching the wordmark.
+const AUTOFIT_SAFETY_MARGIN = 1.08
+
+// Reserve room below the centred text block for the (now much bigger, see
+// CardSize.wordmarkScale) wordmark, so a long question can never grow into
+// it. Centering splits leftover space evenly top/bottom, so this clearance is
+// effectively "spent" on both sides — deliberately conservative, matching the
+// wordmark's own approximate glyph height plus a breathing gap. Exported (not
+// just inlined in fontSizeFor) so tests can assert against this exact budget
+// instead of re-deriving the formula themselves.
+export const wordmarkClearanceFor = (size: CardSize): number =>
+  Math.round(52 * size.wordmarkScale + 60)
+
+// Estimate how many visual lines `text` will render as, honouring forced
+// paragraph breaks (`\n`, or a blank line from `\n\n`) instead of flattening
+// them away. Both LTR (`whiteSpace: pre-wrap`) and RTL (`toVisualRtl`, which
+// explicitly keeps a `''` entry per blank paragraph) preserve every `\n` in
+// the source as a real line break in the render — confirmed against actual
+// Satori output: a short multi-paragraph question ("Who is a person you
+// admire?\n\nWhy?") renders as paragraph-1's wrapped lines, PLUS one blank
+// line for the `\n\n`, PLUS paragraph-2's wrapped lines, not the single
+// flattened-length estimate a naive `text.replace(/\s+/g, ' ')` would give.
+// A blank paragraph still consumes exactly one line of height even though it
+// has zero characters to wrap.
+const estimateLineCount = (text: string, charsPerLine: number): number =>
+  text.split('\n').reduce((total, paragraph) => {
+    const paragraphLen = paragraph.trim().length
+    return total + (paragraphLen === 0 ? 1 : Math.ceil(paragraphLen / charsPerLine))
+  }, 0)
+
 /**
- * Pick a font size so the question fills as much of the card as possible while
- * still fitting. Short questions are set large; long ones auto-shrink. The
- * thresholds are tuned for the OG size's 1200px width; other sizes scale the
- * result by their own width so text reads at a proportionally similar size.
+ * Pick a font size so the question fills as much of the card as possible
+ * while still fitting — the whole point of this design pass (#161): a small
+ * headline floating in a sea of background doesn't hold a 9:16/4:5 frame the
+ * way it holds the wide OG frame.
+ *
+ * OG keeps its original, byte-identical table (`size.fontScale` is 1, a
+ * no-op). Story/post start from that same table scaled *up* by their own
+ * `fontScale` (bigger type, tuned by rendering real PNGs — see
+ * docs/design/161-share-card-polish) and then shrink in steps, using an
+ * estimated wrapped-line count, until the block is projected to fit the
+ * available height without reaching the wordmark. Without this step a long
+ * CJK question at story's fontScale overflows both the top of the canvas
+ * and the wordmark — CJK characters are much wider than the Latin/Hebrew
+ * case the flat scale was tuned against.
  */
-const fontSizeFor = (text: string, size: CardSize): number => {
+const fontSizeFor = (text: string, language: string, size: CardSize): number => {
   const len = text.replace(/\s+/g, ' ').trim().length
-  const base =
-    len <= 45 ? 92 : len <= 70 ? 82 : len <= 100 ? 72 : len <= 140 ? 58 : len <= 200 ? 48 : 42
-  return Math.round(base * (size.width / CARD_SIZES.og.width))
+  const base = baseFontSizeFor(len)
+  if (size.key === 'og') return Math.round(base * size.fontScale)
+
+  const availableWidth = size.width - size.padding * 2
+  const wordmarkClearance = wordmarkClearanceFor(size)
+  const availableHeight = size.height - size.padding * 2 - wordmarkClearance * 2
+  const widthFactor = avgCharWidthFactor(language)
+
+  let fontSize = Math.round(base * size.fontScale)
+  while (fontSize > AUTOFIT_MIN_FONT_SIZE) {
+    const charsPerLine = Math.max(1, Math.floor(availableWidth / (fontSize * widthFactor)))
+    // text (not the flattened `len`) so forced paragraph breaks are counted
+    // as real lines instead of collapsing into the surrounding text — see
+    // estimateLineCount.
+    const lines = estimateLineCount(text, charsPerLine)
+    const blockHeight = lines * fontSize * AUTOFIT_LINE_HEIGHT * AUTOFIT_SAFETY_MARGIN
+    if (blockHeight <= availableHeight) break
+    fontSize -= AUTOFIT_STEP
+  }
+  // The shrink loop decrements by AUTOFIT_STEP while checking `> MIN`, so an
+  // odd starting size (base * fontScale frequently rounds to one, e.g. 133,
+  // 107, 89) can step past MIN to MIN - 1 on its last iteration instead of
+  // landing exactly on it. Clamp so callers can rely on MIN as a true floor.
+  return Math.max(fontSize, AUTOFIT_MIN_FONT_SIZE)
+}
+
+/**
+ * Exported for unit testing only — reproduces the autofit's own projected
+ * block height for a (text, language, size), using the exact same
+ * fontSizeFor/estimateLineCount/wordmarkClearanceFor this module renders
+ * with (not a re-derived formula), so a full-dataset sweep (every question
+ * id with an embedded `\n`, every language, both story and post) can assert
+ * "does the estimate itself ever project past the wordmark clearance" for
+ * all ~500 real (id, language, size) combinations without paying for a real
+ * Satori render per case.
+ */
+export const autofitEstimateForTest = (
+  text: string,
+  language: string,
+  size: CardSize
+): {fontSize: number; blockHeight: number; availableHeight: number} => {
+  const fontSize = fontSizeFor(text, language, size)
+  const availableWidth = size.width - size.padding * 2
+  const widthFactor = avgCharWidthFactor(language)
+  const charsPerLine = Math.max(1, Math.floor(availableWidth / (fontSize * widthFactor)))
+  const lines = estimateLineCount(text, charsPerLine)
+  const blockHeight = lines * fontSize * AUTOFIT_LINE_HEIGHT * AUTOFIT_SAFETY_MARGIN
+  const wordmarkClearance = wordmarkClearanceFor(size)
+  const availableHeight = size.height - size.padding * 2 - wordmarkClearance * 2
+  return {fontSize, blockHeight, availableHeight}
 }
 
 // The brand wordmark: white "WHOCARDS.CC" in the Aptly title face followed by
@@ -355,10 +502,21 @@ const Wordmark = (scale: number) => {
   }
 }
 
-const buildTree = (rawText: string, language: string, mazeUri: string, size: CardSize) => {
+const buildTree = (
+  rawText: string,
+  language: string,
+  mazeUri: string,
+  size: CardSize,
+  // renderSvg's shrink-and-remeasure loop (see below) needs to re-render at a
+  // smaller font size than fontSizeFor's own estimate without recomputing
+  // that estimate — passing it explicitly keeps "what font size did we
+  // actually render at" unambiguous instead of two callers each re-deriving
+  // it and risking drift.
+  fontSizeOverride?: number
+) => {
   const rtl = isRtl(language)
   const fontFamily = `${fontFamilyFor(language)}, Golos Text`
-  const fontSize = fontSizeFor(rawText, size)
+  const fontSize = fontSizeOverride ?? fontSizeFor(rawText, language, size)
   // For RTL we pre-reorder + pre-wrap the text and disable Satori wrapping;
   // for LTR we let Satori wrap normally.
   const text = rtl ? toVisualRtl(rawText, fontSize, size) : rawText
@@ -391,6 +549,11 @@ const buildTree = (rawText: string, language: string, mazeUri: string, size: Car
           props: {
             style: {
               display: 'flex',
+              // A shrink-to-fit single line (short RTL question) has no
+              // spare box width for `textAlign` to shift text within, so it
+              // silently hugs the flex default (flex-start/left) unless we
+              // justify the flex item itself — see CardSize.rtlJustify.
+              justifyContent: rtl ? size.rtlJustify : 'flex-start',
               fontFamily,
               fontSize: `${fontSize}px`,
               fontWeight: 400,
@@ -463,23 +626,132 @@ const ensureCacheDir = (): Promise<unknown> => {
 const cacheKey = (text: string, language: string): string =>
   createHash('sha256').update(`${language} ${text}`).digest('hex')
 
+// Satori emits a clip mask (`<mask id="satori_om-id-0">...<rect .../></mask>`)
+// for the question-text div right after the two full-canvas background rects
+// — its `y`/`height` are exactly where that div's content box landed. This is
+// the cheapest available "where did the text actually render" signal short of
+// decoding pixels, and it's the single source of truth both renderSvg's own
+// shrink-and-remeasure loop below AND the test suite use — so a change to how
+// this is read can't silently drift between "what the renderer checks" and
+// "what the tests check".
+export const measureQuestionTextBlock = (
+  svg: string
+): {top: number; bottom: number} | undefined => {
+  const match = svg.match(
+    /<mask id="satori_om-id-0"><rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"/
+  )
+  if (!match) return undefined
+  const top = Number(match[1])
+  return {top, bottom: top + Number(match[2])}
+}
+
+/**
+ * Pure control-flow core of the shrink-and-remeasure loop, extracted out of
+ * renderSvg (below) so its boundary behaviour can be unit-tested directly
+ * against a synthetic `check` — no Satori call, no real font metrics —
+ * instead of only indirectly through real renders. `check(fontSize)` renders
+ * (or, in a test, fakes rendering) at that size and reports whether it
+ * clears the wordmark; this function decides what to try next.
+ *
+ * Two invariants, both load-bearing (a real bug shipped from violating the
+ * second one — see #169's round-3 review):
+ *   1. `fontSize` passed to `check` is NEVER checked before it's assigned,
+ *      and never returned without having been checked — every candidate
+ *      this function commits to (by returning it) was the very last one
+ *      `check` was called with. There's no "decrement, re-render, then exit
+ *      the loop before measuring" tail.
+ *   2. `fontSize` never drops below AUTOFIT_MIN_FONT_SIZE. The decrement
+ *      itself is clamped (`Math.max`), not just the eventual return value —
+ *      a loop that decremented freely and only clamped what it returned
+ *      would still CHECK (and by extension render, in the real caller) an
+ *      out-of-bounds size, and an odd starting size stepping down by
+ *      AUTOFIT_STEP=2 skips straight over an even floor (e.g. 35 -> 33,
+ *      never landing on 34) unless the decrement itself is bounded.
+ *
+ * If `check` never reports clear — not even at the floor — that's an
+ * accepted degradation: the floor exists so type never shrinks below
+ * legibility, and "still slightly into the wordmark, but at the floor" is
+ * preferred over shrinking further. The floor's own (checked) result is
+ * what gets returned.
+ */
+const resolveAutofitFontSize = async <T>(
+  startFontSize: number,
+  check: (fontSize: number) => Promise<{clearsWordmark: boolean; result: T}>
+): Promise<{fontSize: number; result: T}> => {
+  let fontSize = startFontSize
+  for (;;) {
+    const {clearsWordmark, result} = await check(fontSize)
+    if (clearsWordmark || fontSize <= AUTOFIT_MIN_FONT_SIZE) return {fontSize, result}
+    fontSize = Math.max(AUTOFIT_MIN_FONT_SIZE, fontSize - AUTOFIT_STEP)
+  }
+}
+
+/**
+ * Exported for unit testing only — the same resolveAutofitFontSize the real
+ * renderer drives, so the boundary regression test exercises the exact
+ * production control flow (not a re-implementation of it) against a fast,
+ * synthetic `check` instead of paying for real Satori renders per candidate
+ * size.
+ */
+export const resolveAutofitFontSizeForTest = resolveAutofitFontSize
+
 // Renders the Satori SVG for an already-resolved (text, language, size) —
 // the layout step, before resvg rasterises it to PNG.
-const renderSvg = async (text: string, language: string, size: CardSize): Promise<string> => {
+//
+// fontSizeFor's line-count estimate (see above) only picks a starting font
+// size — it's a cheap heuristic (a flat chars-per-line ceiling per
+// paragraph), not a real layout pass, and #169 found real inputs (mostly
+// multi-paragraph Latin text) where Satori's actual word-wrap lands the
+// rendered block a few px past the wordmark-clearance boundary even after
+// the estimate itself projects a fit. Tuning the estimate or its safety
+// margin harder just chases the next input shape that breaks it the same
+// way. Instead, for story/post we treat the estimate as a starting point
+// only and verify the *actual* rendered block against the *actual*
+// clearance boundary via resolveAutofitFontSize above: measure it
+// (measureQuestionTextBlock, no PNG rasterisation — cheap relative to the
+// render pipeline's dominant costs, font decode and the final resvg pass),
+// and if it still intrudes, shrink and re-render. In practice (see the
+// real-render sweep in card-image.test.ts) it converges in 0-3 extra Satori
+// calls for the inputs that need correcting, since the estimate is usually
+// only a step or two short. OG is exempt: its byte-identical output is a
+// hard constraint (#161), and fontSizeFor already early-returns a fixed
+// size for it with no shrink loop at all.
+const renderSvg = async (
+  text: string,
+  language: string,
+  size: CardSize
+): Promise<{svg: string; fontSize: number}> => {
   const [fonts, mazeUri] = await Promise.all([fontsFor(language), buildMazeDataUri(size)])
-  return satori(buildTree(text, language, mazeUri, size) as never, {
+  const satoriOptions = {
     width: size.width,
     height: size.height,
     fonts,
     loadAdditionalAsset: async () => '',
+  }
+
+  if (size.key === 'og') {
+    const svg = await satori(buildTree(text, language, mazeUri, size) as never, satoriOptions)
+    return {svg, fontSize: fontSizeFor(text, language, size)}
+  }
+
+  const startFontSize = fontSizeFor(text, language, size)
+  const clearanceLimit = size.height - size.padding - wordmarkClearanceFor(size)
+  const {fontSize, result: svg} = await resolveAutofitFontSize(startFontSize, async (candidate) => {
+    const candidateSvg = await satori(
+      buildTree(text, language, mazeUri, size, candidate) as never,
+      satoriOptions
+    )
+    const bounds = measureQuestionTextBlock(candidateSvg)
+    return {clearsWordmark: !bounds || bounds.bottom <= clearanceLimit, result: candidateSvg}
   })
+  return {svg, fontSize}
 }
 
 // Renders straight to PNG bytes for an already-resolved (text, language, size)
 // — the part shared by the cached OG build path and the uncached on-demand
 // story/post path below.
 const renderPng = async (text: string, language: string, size: CardSize): Promise<Buffer> => {
-  const svg = await renderSvg(text, language, size)
+  const {svg} = await renderSvg(text, language, size)
   const resvg = new Resvg(svg, {
     fitTo: {mode: 'width', value: size.width},
     background: BG_COLOR,
@@ -555,8 +827,25 @@ export const renderCardSvgForTest = async (
   sizeKey: CardSizeKey = 'og'
 ): Promise<string> => {
   const text = resolveQuestionText(id, language)
-  return renderSvg(text, language, CARD_SIZES[sizeKey])
+  const {svg} = await renderSvg(text, language, CARD_SIZES[sizeKey])
+  return svg
 }
+
+/**
+ * Exported for unit testing only — like renderCardSvgForTest, but (a) takes
+ * raw text directly instead of resolving a real dataset id, so a test can
+ * construct a synthetic pathological case (e.g. one that's still over the
+ * wordmark clearance even at AUTOFIT_MIN_FONT_SIZE — no real question does
+ * this today, but the boundary behaviour still needs a regression test) and
+ * (b) also returns the `fontSize` renderSvg actually settled on, so a test
+ * can assert the floor clamp directly instead of re-parsing it out of the
+ * SVG.
+ */
+export const renderSvgForTest = (
+  text: string,
+  language: string,
+  sizeKey: CardSizeKey
+): Promise<{svg: string; fontSize: number}> => renderSvg(text, language, CARD_SIZES[sizeKey])
 
 /** Every (language, id) pair that has question text — used for static prerender. */
 export const cardImagePaths = (): {language: string; id: string}[] => {
