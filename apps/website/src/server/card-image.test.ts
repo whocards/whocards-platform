@@ -436,14 +436,20 @@ describe('autofit sweep (estimate-only, fast — not authoritative): every multi
 // only as a deliberate, reviewed OG-design change — never to "make the test
 // pass".
 //
-// The pin hashes the Satori SVG, NOT the resvg PNG: the SVG is pure-JS output
-// (fontSizeFor, buildTree, the embedded maze data URI, the decompressed fonts
-// — the whole design surface), so it's identical on every platform. The PNG is
-// not — resvg's native rasterizer produces different bytes on macOS and Linux,
-// which is exactly how the original PNG pins (recorded on macOS) went red on
-// CI while staying green locally. Everything after the SVG is resvg + the
-// BG_COLOR option, neither of which this pin is meant to guard.
+// The pin hashes the Satori SVG, NOT the resvg PNG, and strips the embedded
+// maze data URI first. resvg's native rasterizer produces different bytes on
+// macOS and Linux, which is exactly how the original PNG pins (recorded on
+// macOS) went red on CI while staying green locally — and the maze background
+// is itself a resvg-rasterized PNG embedded in the SVG as base64, so a raw
+// SVG hash inherits the same platform dependence. With the data URI
+// normalized away, what's hashed is the pure-JS design surface (fontSizeFor,
+// buildTree, the decompressed fonts, all Satori layout), identical on every
+// platform. The maze's presence is still asserted; its pixels are resvg's
+// business, not this pin's.
 const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex')
+
+const normalizeEmbeddedRasters = (svg: string): string =>
+  svg.replace(/data:image\/png;base64,[A-Za-z0-9+/=]+/g, 'data:image/png;base64,STRIPPED')
 
 describe('OG output stays byte-identical (regression: no automated pin on the #161 hard constraint)', () => {
   // PINNED_OG_HASHES: computed once from a real render and checked in below.
@@ -451,16 +457,24 @@ describe('OG output stays byte-identical (regression: no automated pin on the #1
   // reviewed design change (not a side effect of touching fontSizeFor /
   // buildTree / the maze pipeline) before updating the hash.
   const pinned: [language: string, id: string, sha256: string][] = [
-    ['en', '1', '8f6dda7346974614bba61544a91722eec389d32f85f0d2f98d74d6b12544fe93'],
-    ['he', '29', '0d0d5997b6311770210681e20652eed11ee64dda52e2da4980af7cb1ff11371a'],
-    ['zh', '21', '939fc05162f95e8a3bae54615339b3cc824b70ab33335c9ca08bdb2b1e1e90da'],
+    ['en', '1', '43e2ea40fad0e077ca2aa3c025d6b908c1342271e7f0f843df8deabdd39a49a4'],
+    ['he', '29', 'a6e5b8197c4a83a3fc3ddfe868a49e41b5a3d8c237fdf0b8074533072bcc1b38'],
+    ['zh', '21', '3aafab0dcda3386bbf5f07ba9c17f4432bfd84b607409f21f11fad9d3ee2a753'],
   ]
 
   it.each(pinned)(
     '%s/%s OG render matches its pinned checksum',
     async (language, id, expectedHash) => {
       const svg = await renderCardSvgForTest(language, id, 'og')
-      expect(sha256(svg)).toBe(expectedHash)
+      // The maze background must still be there — only its bytes are excused.
+      expect(svg).toContain('data:image/png;base64,')
+      const actualHash = sha256(normalizeEmbeddedRasters(svg))
+      if (actualHash !== expectedHash) {
+        // The assertion diff truncates 64-char hashes; log the full value so a
+        // deliberate re-pin never requires re-instrumenting this test.
+        console.info(`OG pin mismatch: ${language}/${id} rendered ${actualHash}`)
+      }
+      expect(actualHash).toBe(expectedHash)
     }
   )
 })
