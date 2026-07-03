@@ -205,14 +205,18 @@ carries its own colors regardless of theme.
 
 ### Play — Classic, and Pick a Card
 
-**Amendment 2 (as revised by issue #173): the cards stay dark; the chrome around them themes.**
-The first shipped reading of this amendment kept both play screens fully dark in both themes;
-the owner's on-device review (issue #173) corrected it — only the playing cards are the brand
-object. The canvas, status bar, close chip, player bar, and hint text follow the theme; the Pick
-a Card deck and revealed-card faces keep their existing dark treatment, and Classic play gains a
-bounded dark card panel behind the question in Light theme only (dark theme is unchanged — in
-full-bleed dark the panel would be invisible, so it isn't rendered). The mocks for these two
-surfaces predate that revision and still show the fully dark treatment.
+**Amendment 2 (final, issue #173 after live on-device iteration): only the Pick a Card cards
+are dark; everything else — including the classic question — follows the theme.** This line
+moved three times, so the full record: the first shipped reading kept both play screens fully
+dark in both themes; the owner's on-device review (issue #173) corrected that to "theme the
+chrome, keep the cards dark," which shipped as a dark panel behind the classic question — first
+full-budget (#174), then card-proportioned (#194) — and BOTH readings were rejected on-device:
+the owner's final clarification is that "cards" means the Pick a Card deck and revealed faces
+only. Classic play has NO panel in either theme: the question sits directly on the themed
+canvas, and its text follows the theme via `question-text.tsx`'s `themedText` prop (near-black
+`darker` in light — owner's explicit pick over brand violet — white in dark; card surfaces omit
+the prop and stay hardcoded white). Tabletop mode matches classic. Do not re-add a panel. The
+mocks for these surfaces predate all of this and still show the fully dark treatment.
 
 ### Sheets (Language / Game / Share / Theme)
 
@@ -352,9 +356,10 @@ Tailwind config changes needed.
   off-limits (see below). Instead, only the screens that actually theme set their own local
   `<StatusBar>` override (Library, and each sheet) — `expo-status-bar` already resolves this by
   "last mounted wins, revert on unmount," so this composes correctly with zero root-layout risk.
-- **Card surfaces read no theme state at all.** `question-text.tsx`, `player-bar.tsx` (as used
-  by Play/Pick a Card), and all of `pick-player.tsx` are untouched — they still hardcode the same
-  dark classes they did before this issue.
+- **Card surfaces read no theme state at all.** _(Historical: superseded by the final #173
+  design — `question-text.tsx` now takes a `themedText` prop, passed only by classic play; card
+  surfaces still omit it and keep the hardcoded dark classes, and `player-bar.tsx` self-themes
+  since #174/#187. See amendment 2 above for the full record.)_
 
 ## Overlapping in-flight work, and how it was reconciled
 
@@ -399,8 +404,9 @@ stale one.
 ## Out of scope
 
 - The app icon stays dark-only, per the issue. Not touched, not mocked.
-- Card faces (Classic play, Pick a Card) — always dark, per amendment 2. `pick-player.tsx`,
-  `question-text.tsx` untouched.
+- Card faces (Pick a Card) — always dark, per amendment 2 (final). _(Classic play was removed
+  from this list by the final #173 design: its question themes with the canvas — see amendment
+  2 above.)_
 - Store screenshots / marketing assets; `docs/DESIGN.md`'s "Mobile v1 launch alignment" section
   governs those separately and would need its own pass once a theme ships.
 - On-device verification (iOS/Android simulators, system-scheme switching, VoiceOver/TalkBack

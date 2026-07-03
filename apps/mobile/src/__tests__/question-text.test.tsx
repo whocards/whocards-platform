@@ -113,6 +113,48 @@ describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
   })
 })
 
+describe('QuestionText — themedText (issue #173, final)', () => {
+  const box = {width: 300, height: 400}
+  const question = 'What matters to you right now?'
+  const secondaryText = '¿Qué te importa ahora mismo?'
+
+  it('defaults to hardcoded white — card surfaces (Pick a Card) omit themedText', () => {
+    render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[{language: 'es', text: secondaryText}]}
+      />
+    )
+    expect(screen.getByText(question).props.className).toBe('text-white')
+    expect(screen.getByText(secondaryText).props.className).toBe('text-white/70')
+  })
+
+  it('follows the theme when themedText is set — classic play on the themed canvas', () => {
+    render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[{language: 'es', text: secondaryText}]}
+        themedText
+      />
+    )
+    expect(screen.getByText(question).props.className).toBe('text-darker dark:text-white')
+    expect(screen.getByText(secondaryText).props.className).toBe(
+      'text-darker/70 dark:text-white/70'
+    )
+  })
+
+  it('threads themedText through both mirrored (Tabletop) halves', () => {
+    render(<QuestionText text={question} language="en" box={box} mirrored themedText />)
+    for (const node of screen.getAllByText(question, {includeHiddenElements: true})) {
+      expect(node.props.className).toBe('text-darker dark:text-white')
+    }
+  })
+})
+
 describe('QuestionText — secondary language sizing (issue #189)', () => {
   const box = {width: 300, height: 400}
   const secondaryText = 'Hola'

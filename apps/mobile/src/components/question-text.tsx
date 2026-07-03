@@ -119,6 +119,15 @@ type QuestionTextProps = {
    * Never changes which Card is drawn, only how this one looks (CONTEXT.md).
    */
   mirrored?: boolean
+  /**
+   * Classic play (issue #173, final): the question sits directly on the themed
+   * canvas — it is not a card — so its text follows the Theme Display setting
+   * (near-black `darker` in Light, the owner's explicit pick over brand violet;
+   * white in Dark). Card surfaces (Pick a Card's faces, pick-player.tsx) omit
+   * this and keep the default: the Card itself is always dark in both themes, so
+   * its text stays hardcoded white regardless of Theme.
+   */
+  themedText?: boolean
 }
 
 /** One language's text block with the right script font, bidi direction, and alignment. */
@@ -127,14 +136,23 @@ const LanguageBlock = ({
   language,
   fontSize,
   muted,
-}: LanguageText & {fontSize: number; muted?: boolean}) => {
+  themedText,
+}: LanguageText & {fontSize: number; muted?: boolean; themedText?: boolean}) => {
   const direction = getDirection(language)
   // brand/script face where one exists; system font (with a weight) otherwise
   const font = questionFontFamily(language)
 
   return (
     <Text
-      className={muted ? 'text-white/70' : 'text-white'}
+      className={
+        themedText
+          ? muted
+            ? 'text-darker/70 dark:text-white/70'
+            : 'text-darker dark:text-white'
+          : muted
+            ? 'text-white/70'
+            : 'text-white'
+      }
       style={{
         fontSize,
         lineHeight: fontSize * LINE_HEIGHT_RATIO,
@@ -161,10 +179,19 @@ type QuestionFaceProps = {
    * secondary blocks to give long questions more room in half the box.
    */
   compact?: boolean
+  /** See QuestionTextProps.themedText. */
+  themedText?: boolean
 }
 
 /** One primary+secondaries stack, sized to fill `box`. The unit both faces share. */
-const QuestionFace = ({text, language, box, shown, compact = false}: QuestionFaceProps) => {
+const QuestionFace = ({
+  text,
+  language,
+  box,
+  shown,
+  compact = false,
+  themedText,
+}: QuestionFaceProps) => {
   const share = PRIMARY_SHARE[Math.min(shown.length, PRIMARY_SHARE.length - 1)] ?? 1
   const minFont = compact ? MIN_FONT_MIRRORED : MIN_FONT
   const fontSize = useMemo(
@@ -175,12 +202,14 @@ const QuestionFace = ({text, language, box, shown, compact = false}: QuestionFac
   const secondaryFont = fitSecondaryFontSize(fontSize, minFont, secondaryMin)
 
   if (shown.length === 0) {
-    return <LanguageBlock text={text} language={language} fontSize={fontSize} />
+    return (
+      <LanguageBlock text={text} language={language} fontSize={fontSize} themedText={themedText} />
+    )
   }
 
   return (
     <View>
-      <LanguageBlock text={text} language={language} fontSize={fontSize} />
+      <LanguageBlock text={text} language={language} fontSize={fontSize} themedText={themedText} />
       {shown.map((entry) => (
         <View key={entry.language} className={compact ? 'mt-2' : 'mt-4'}>
           <LanguageBlock
@@ -188,6 +217,7 @@ const QuestionFace = ({text, language, box, shown, compact = false}: QuestionFac
             language={entry.language}
             fontSize={secondaryFont}
             muted
+            themedText={themedText}
           />
         </View>
       ))}
@@ -243,11 +273,20 @@ export const QuestionText = ({
   box,
   secondaries = [],
   mirrored = false,
+  themedText = false,
 }: QuestionTextProps) => {
   const shown = secondaries.filter((entry) => entry.text)
 
   if (!mirrored) {
-    return <QuestionFace text={text} language={language} box={box} shown={shown} />
+    return (
+      <QuestionFace
+        text={text}
+        language={language}
+        box={box}
+        shown={shown}
+        themedText={themedText}
+      />
+    )
   }
 
   const halfBox = {width: box.width, height: Math.max(0, (box.height - MIRROR_GAP) / 2)}
@@ -259,10 +298,24 @@ export const QuestionText = ({
         importantForAccessibility="no-hide-descendants"
         style={{transform: [{rotate: '180deg'}]}}
       >
-        <QuestionFace text={text} language={language} box={halfBox} shown={shown} compact />
+        <QuestionFace
+          text={text}
+          language={language}
+          box={halfBox}
+          shown={shown}
+          compact
+          themedText={themedText}
+        />
       </View>
       <TabletopDivider />
-      <QuestionFace text={text} language={language} box={halfBox} shown={shown} compact />
+      <QuestionFace
+        text={text}
+        language={language}
+        box={halfBox}
+        shown={shown}
+        compact
+        themedText={themedText}
+      />
     </View>
   )
 }

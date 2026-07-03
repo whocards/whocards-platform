@@ -1,11 +1,10 @@
-import {Image} from 'expo-image'
 import * as Linking from 'expo-linking'
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import {StatusBar} from 'expo-status-bar'
 import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -22,7 +21,7 @@ import {DEFAULT_GAME, getDeck, getInitialNav, isPoolBacked, navReducer} from '@w
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 
-import {CARD_ASPECT, CARD_PADDING_X, CARD_PADDING_Y, PickPlayer} from '@/components/pick-player'
+import {PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
 import {QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
@@ -47,22 +46,25 @@ const SWIPE_OFF_SCREEN = 400
 // Rubber-band resistance factor when swiping at a boundary (0–1, lower = more resistance)
 const RUBBER_BAND = 0.3
 
-// The same brand maze texture as Pick a Card's card backs / ScreenBackground's dark
-// canvas. Classic play has no separate card frame in dark theme — the Question sits
-// directly on the full-bleed ScreenBackground, which already renders this texture, so
-// dark theme needs nothing extra here. In Light theme (issue #173), the Question still
-// needs an always-dark "card" behind it (the Card is the brand object — CONTEXT.md/
-// docs/design/163-light-mode/proposal.md amendment 2) while the canvas around it
-// themes, so DeckPlayer paints one small always-dark panel with this same texture
-// rather than forcing the whole screen dark.
-//
-// Re-opened (issue #173, on-device follow-up): the first pass sized that panel to
-// the Question's full fitted BUDGET box (the whole area between the top inset and
-// the bottom bar) — which spans most of the screen, so in Light theme it visually
-// WAS a second dark background. Fixed by giving the panel the same physical-card
-// geometry as Pick a Card's revealed face (CARD_ASPECT/CARD_PADDING_X/Y, see
-// pick-player.tsx) instead of the full budget — see cardWidth/cardHeight below.
-const cardTexture = require('../../../assets/images/background.png')
+// Classic play has no card frame at all, in either theme — the Question sits
+// directly on the themed canvas (ScreenBackground). History, so nobody re-adds a
+// panel here:
+//   - #174 gave Light theme an always-dark "card" panel behind the Question,
+//     reasoning the Card is the one brand object that should stay dark
+//     (docs/design/163-light-mode/proposal.md amendment 2).
+//   - #194 found that panel was sized to the Question's full fitted BUDGET box —
+//     nearly the whole screen — so in Light theme it visually WAS a second dark
+//     background; the fix shrank it to physical-card proportions
+//     (Pick a Card's CARD_ASPECT/CARD_PADDING_X/Y).
+//   - #173 (this state, on-device with the owner): reversed both. "Card" means
+//     Pick a Card's cards only — the classic Question is NOT a card, in any
+//     theme. There is no panel, sized or otherwise. Instead the Question's own
+//     TEXT follows the theme (QuestionText's `themedText`, below): near-black
+//     `darker` in Light (the owner's explicit pick over brand violet), white in
+//     Dark. Tabletop mirrors classic (same themed text + the violet divider).
+//     Dark theme is pixel-identical to pre-#174. Pick a Card's own dark cards
+//     (pick-player.tsx) are untouched by any of this — they stay dark in both
+//     themes.
 
 // Card-enter animation durations (ms) and travel offsets (points).
 // Subsequent swipes use CARD_ENTER_MS / CARD_ENTER_TRAVEL — snappy and unchanged.
@@ -180,8 +182,8 @@ const DeckPlayer = ({
   const reduceMotion = useReducedMotion()
 
   // Themed (issue #173): the canvas/chrome around the Question follows the Theme
-  // Display setting like every other screen; only the small card panel behind the
-  // Question (below) stays hardcoded dark regardless of `isDark`.
+  // Display setting like every other screen, and so does the Question's own text
+  // (QuestionText's `themedText`, below) — there's no unthemed surface left here.
   const {colorScheme} = useColorScheme()
   const isDark = colorScheme !== 'light'
 
@@ -389,20 +391,10 @@ const DeckPlayer = ({
   }, [])
   // window-derived fallback for the first paint, before onLayout reports the real box
   const measured = box ?? {width: winWidth - 64, height: winHeight - 220}
-
-  // --- Light-theme-only card geometry (issue #173 re-open): a physical-card
-  // aspect centred in the measured budget, the same formula Pick a Card's
-  // revealed face uses (pick-player.tsx) — so the panel behind the Question
-  // reads as a bounded card, not a second dark background. The Question's own
-  // box shrinks to the card's padded interior too, so fitFontSize fits it *for
-  // the panel it actually sits in*: text can't grow past edges the panel
-  // doesn't have (the #174 review's escape-the-panel finding). Dark theme is
-  // untouched — it keeps passing the full `measured` box below, exactly as
-  // before, so it stays pixel-unchanged.
-  const cardWidth = Math.round(Math.min(measured.width, measured.height * CARD_ASPECT))
-  const cardHeight = Math.round(cardWidth / CARD_ASPECT)
-  const cardInner = {width: cardWidth - CARD_PADDING_X * 2, height: cardHeight - CARD_PADDING_Y * 2}
-  const questionBox = isDark ? measured : cardInner
+  // No card geometry here (issue #173, final): the classic Question isn't a card in
+  // either theme, so it always fits to the full measured budget box — see the
+  // history note by the imports above for why this used to be conditional.
+  const questionBox = measured
 
   // auto-hiding chrome — the card + gesture layer underneath spans the full
   // screen, so a tap anywhere (including the band the bottom bar occupies) reveals it
@@ -588,13 +580,13 @@ const DeckPlayer = ({
     reduceMotionSV,
   ])
 
-  // The animated Question itself — shared by both themes, only `questionBox`
-  // (dark: the full budget; light: the card's padded interior, see above)
-  // differs, so fitFontSize always fits against the box the Question actually
-  // renders inside.
+  // The animated Question, on the themed canvas directly (issue #173, final — see
+  // the history note above the imports). `themedText` makes its own text follow
+  // the Theme Display setting instead of staying hardcoded white.
   const questionNode = languageReady ? (
     <Animated.View style={cardStyle}>
       <QuestionText
+        themedText
         text={text}
         language={language}
         box={questionBox}
@@ -626,41 +618,10 @@ const DeckPlayer = ({
         <GestureDetector gesture={gesture}>
           <View className="flex-1 px-8" style={{paddingTop: insets.top, paddingBottom: bottomBarH}}>
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
-              {isDark ? (
-                // Dark theme is untouched: the Question sits directly on the
-                // full-bleed ScreenBackground, exactly as before #173.
-                questionNode
-              ) : (
-                // Light theme only: the Question sits on an always-dark, card-
-                // proportioned panel (issue #173 re-open — see cardWidth/
-                // cardHeight above) instead of the full budget box, so it reads
-                // as a bounded card rather than a second dark background. The
-                // panel background is `absolute inset-0` and `pointerEvents=
-                // "none"` (purely decorative, doesn't steal the swipe gesture);
-                // the padded content view is a plain sibling with no overflow
-                // clipping, so a swiping card's Question can still slide freely
-                // past the panel's edge exactly as it does in dark theme.
-                <View className="items-center">
-                  <View style={{width: cardWidth, height: cardHeight}}>
-                    <View
-                      pointerEvents="none"
-                      className="bg-darkest absolute inset-0 overflow-hidden rounded-[20px] border border-white/10"
-                    >
-                      <Image
-                        source={cardTexture}
-                        contentFit="cover"
-                        style={StyleSheet.absoluteFill}
-                      />
-                    </View>
-                    <View
-                      className="flex-1 justify-center"
-                      style={{paddingHorizontal: CARD_PADDING_X, paddingVertical: CARD_PADDING_Y}}
-                    >
-                      {questionNode}
-                    </View>
-                  </View>
-                </View>
-              )}
+              {/* issue #173, final: the classic Question is NOT a card — no panel,
+                  in either theme. It sits directly on the themed canvas; its text
+                  follows the theme via QuestionText's `themedText` above. */}
+              {questionNode}
             </View>
           </View>
         </GestureDetector>
