@@ -1,0 +1,26 @@
+---
+export const prerender = false
+
+import {ImagePlayground} from '~components/ImagePlayground'
+import Layout from '~layouts/Layout.astro'
+
+// Dev-only Image Playground (issue #177) — renders every programmatically
+// generated image (Share Card og/story/post, print presets) with pickable
+// question/language/size, live URL-param overrides for the existing design
+// knobs, and two exploratory toggles (card outline, light/dark theme) for
+// the owner to evaluate before any share-image redesign. Never shipped to
+// production: hard-gated here and in the paired API route
+// (src/pages/api/dev/image-playground/card.png.ts), both return a 404
+// Response when `import.meta.env.DEV` is false, so the page cannot exist in
+// a production build. Also explicitly excluded from the sitemap
+// (astro.config.ts's `/dev` filter) and has no nav link anywhere in the site.
+if (!import.meta.env.DEV) {
+  return new Response(null, {status: 404})
+}
+---
+
+<Layout title='Image Playground (dev only)' noindex noFooter>
+  <section class='mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 pt-8 pb-16'>
+    <ImagePlayground client:only='react' />
+  </section>
+</Layout>
