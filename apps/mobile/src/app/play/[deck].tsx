@@ -1,4 +1,3 @@
-import {Ionicons} from '@expo/vector-icons'
 import {Image} from 'expo-image'
 import * as Linking from 'expo-linking'
 import {useLocalSearchParams, useRouter} from 'expo-router'
@@ -6,7 +5,7 @@ import {StatusBar} from 'expo-status-bar'
 import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -17,12 +16,11 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
-import {SafeAreaView} from 'react-native-safe-area-context'
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context'
 import type {GameId, NavAction, QuestionSet} from '@whocards/decks'
 import {DEFAULT_GAME, getDeck, getInitialNav, isPoolBacked, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
-import {colors} from '@whocards/tokens'
 
 import {LanguageModal} from '@/components/language-modal'
 import {PickPlayer} from '@/components/pick-player'
@@ -389,17 +387,13 @@ const DeckPlayer = ({
   const measured = box ?? {width: winWidth - 64, height: winHeight - 220}
 
   // auto-hiding chrome — the card + gesture layer underneath spans the full
-  // screen, so a tap anywhere (including the bands the bars occupy) reveals it
-  const {
-    chromeShown,
-    revealChrome,
-    topBarH,
-    bottomBarH,
-    onTopBarLayout,
-    onBottomBarLayout,
-    topChromeStyle,
-    bottomChromeStyle,
-  } = usePlayerChrome()
+  // screen, so a tap anywhere (including the band the bottom bar occupies) reveals it
+  const {chromeShown, revealChrome, bottomBarH, onBottomBarLayout, bottomChromeStyle} =
+    usePlayerChrome()
+  // The top-right close chip (and its reserved band) is gone — Exit moved into the
+  // bottom bar (issue #186). The card still needs to clear the status bar/notch, so
+  // its top padding is the raw safe-area inset now instead of a measured chip height.
+  const insets = useSafeAreaInsets()
 
   // --- Reanimated card enter/exit: translateX shared value ---
   // Positive = entering from the right (going "next"), negative = entering from left (going "prev")
@@ -586,13 +580,14 @@ const DeckPlayer = ({
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <View className="flex-1">
         {/* full-screen card + gesture layer: tap anywhere reveals the chrome, swipe
-            navigates. The bars are overlays on top, so the whole screen — including
-            the bands they occupy — stays a live tap/swipe target even while hidden.
-            Padded by the measured bar heights so the question sits between the bars.
+            navigates. The bottom bar is an overlay on top, so the whole screen —
+            including the band it occupies — stays a live tap/swipe target even while
+            hidden. Padded by the safe-area top inset and the measured bottom-bar
+            height so the question clears the notch and sits above the bar.
             Hidden until languageReady so the card never flips language mid-paint
             (ticket 0009 first-paint decision: gate on the single AsyncStorage read). */}
         <GestureDetector gesture={gesture}>
-          <View className="flex-1 px-8" style={{paddingTop: topBarH, paddingBottom: bottomBarH}}>
+          <View className="flex-1 px-8" style={{paddingTop: insets.top, paddingBottom: bottomBarH}}>
             <View className="flex-1 justify-center" onLayout={onBoxLayout}>
               {/* Light theme only: the Question needs an always-dark "card" behind it
                   (issue #173 — the Card is the brand object, the canvas around it
@@ -628,29 +623,9 @@ const DeckPlayer = ({
           </View>
         </GestureDetector>
 
-        {/* close — top-right chip; slides up out of view when the chrome hides.
-            box-none lets taps on the empty top band fall through to reveal the chrome. */}
-        <Animated.View
-          pointerEvents={chromeShown ? 'box-none' : 'none'}
-          onLayout={onTopBarLayout}
-          className="absolute inset-x-0 top-0"
-          style={topChromeStyle}
-        >
-          <SafeAreaView edges={['top', 'left', 'right']}>
-            <View className="items-end px-4 pt-2">
-              <Pressable
-                onPress={handleExit}
-                hitSlop={8}
-                accessibilityLabel="exit deck"
-                className="h-10 w-10 items-center justify-center rounded-full border border-darker/10 bg-white/90 active:bg-white dark:border-white/10 dark:bg-darker/80 dark:active:bg-darker"
-              >
-                <Ionicons name="close" size={22} color={isDark ? colors.white : colors.darker} />
-              </Pressable>
-            </View>
-          </SafeAreaView>
-        </Animated.View>
-
-        {/* bottom action bar — slides down out of view when the chrome hides */}
+        {/* bottom action bar — slides down out of view when the chrome hides. Exit
+            lives mid-bar now (issue #186); the top-right close chip is gone, so this
+            bar is the only exit while the chrome is hidden. */}
         <Animated.View
           pointerEvents={chromeShown ? 'box-none' : 'none'}
           onLayout={onBottomBarLayout}
@@ -668,6 +643,7 @@ const DeckPlayer = ({
             onNext={goNext}
             onShare={handleShare}
             onLanguage={openLanguage}
+            onExit={handleExit}
           />
         </Animated.View>
 

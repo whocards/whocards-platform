@@ -11,10 +11,14 @@
  * bar is chrome around the always-dark Card, not the Card itself, so its icon
  * color (a raw `Ionicons` prop, not expressible as a `dark:` class) must follow
  * the resolved scheme, same as every other themed sheet/screen.
+ *
+ * Also covers the Exit button (issue #186): the floating top-right close chip
+ * moved into this bar as a proper icon+label action, keeping its old
+ * `accessibilityLabel="exit deck"` for Maestro/VoiceOver continuity.
  */
 import React from 'react'
 import {Ionicons} from '@expo/vector-icons'
-import {act, render, screen} from '@testing-library/react-native'
+import {act, fireEvent, render, screen} from '@testing-library/react-native'
 import {colorScheme} from 'nativewind'
 import {colors} from '@whocards/tokens'
 
@@ -55,6 +59,7 @@ const renderBar = (props: Partial<React.ComponentProps<typeof PlayerBar>> = {}) 
       onNext={noop}
       onShare={noop}
       onLanguage={noop}
+      onExit={noop}
       {...props}
     />
   )
@@ -85,6 +90,26 @@ describe('PlayerBar — language/display button labeling', () => {
     renderBar({showLanguage: false, multiLanguage: false})
     expect(screen.queryByText('Display')).toBeNull()
     expect(screen.queryByText('Language')).toBeNull()
+  })
+})
+
+describe('PlayerBar — Exit button (issue #186)', () => {
+  it('renders an Exit action, mid-bar right after Back, with the legacy "exit deck" label', () => {
+    renderBar()
+    expect(screen.getByText('Exit')).toBeTruthy()
+    expect(screen.getByLabelText('exit deck')).toBeTruthy()
+  })
+
+  it('calls onExit when pressed', () => {
+    const onExit = jest.fn()
+    renderBar({onExit})
+    fireEvent.press(screen.getByLabelText('exit deck'))
+    expect(onExit).toHaveBeenCalledTimes(1)
+  })
+
+  it('is present regardless of showShare/showLanguage — Exit is the only exit once the top chip is gone', () => {
+    renderBar({showShare: false, showLanguage: false})
+    expect(screen.getByLabelText('exit deck')).toBeTruthy()
   })
 })
 

@@ -53,6 +53,8 @@ type PlayerBarProps = {
   onNext: () => void
   onShare: () => void
   onLanguage: () => void
+  /** Leave the player — same handler the old top-right close chip called (issue #186). */
+  onExit: () => void
 }
 
 /**
@@ -64,6 +66,10 @@ type PlayerBarProps = {
  * Themed (issue #173): this bar is chrome around the always-dark Card, not the
  * Card itself, so — like the Library screen and every sheet (issue #163) — it
  * follows the Theme Display setting rather than always being dark.
+ *
+ * Exit lives here now (issue #186), not as a floating top-right chip — it's the
+ * bar's only reason to sit right after Back, so once #176 drops the Language/
+ * Display button the bar reads Prev · Exit · Share · Next unchanged.
  */
 export const PlayerBar = ({
   showLanguage,
@@ -73,6 +79,7 @@ export const PlayerBar = ({
   onNext,
   onShare,
   onLanguage,
+  onExit,
 }: PlayerBarProps) => {
   const insets = useSafeAreaInsets()
   const {colorScheme} = useColorScheme()
@@ -89,6 +96,13 @@ export const PlayerBar = ({
         label="Back"
         onPress={onPrevious}
         accessibilityLabel="previous question"
+        iconColor={iconColor}
+      />
+      <BarButton
+        icon="close-outline"
+        label="Exit"
+        onPress={onExit}
+        accessibilityLabel="exit deck"
         iconColor={iconColor}
       />
       {showShare ? (

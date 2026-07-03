@@ -11,17 +11,21 @@ import {
 const CHROME_HIDE_MS = 3000
 
 /**
- * Auto-hiding player chrome: a single 0→1 progress slides the bars in and out —
- * the top bar up off the top edge, the bottom bar down off the bottom edge (a
- * slide, not a fade). Measured bar heights drive both the off-screen slide
- * distance and the card's padding, so the question never sits under a bar even
- * though the gesture layer runs full-bleed behind them. Shared by every player.
+ * Auto-hiding player chrome: a single 0→1 progress slides the bottom bar down
+ * off the bottom edge (a slide, not a fade). The bar's measured height drives
+ * both its off-screen slide distance and the card's bottom padding, so the
+ * question never sits under it even though the gesture layer runs full-bleed
+ * behind it. Shared by every player.
+ *
+ * There used to be a matching top bar (the floating close chip) with the same
+ * treatment; issue #186 moved Exit into the bottom bar and freed the top edge
+ * entirely, so the top-bar half of this hook went with it — re-add it here if
+ * a player ever needs a real top bar again.
  */
 export const usePlayerChrome = () => {
   const reduceMotion = useReducedMotion()
   const chromeProgress = useSharedValue(1)
   const [chromeShown, setChromeShown] = useState(true)
-  const [topBarH, setTopBarH] = useState(0)
   const [bottomBarH, setBottomBarH] = useState(0)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -46,19 +50,12 @@ export const usePlayerChrome = () => {
     }
   }, [revealChrome])
 
-  const onTopBarLayout = useCallback((event: LayoutChangeEvent) => {
-    setTopBarH(event.nativeEvent.layout.height)
-  }, [])
   const onBottomBarLayout = useCallback((event: LayoutChangeEvent) => {
     setBottomBarH(event.nativeEvent.layout.height)
   }, [])
 
-  // top bar slides up off the top edge; bottom bar slides down off the bottom edge.
-  // topBarH/bottomBarH are captured per render, so the slide distance corrects once
-  // the bars measure.
-  const topChromeStyle = useAnimatedStyle(() => ({
-    transform: [{translateY: interpolate(chromeProgress.get(), [0, 1], [-topBarH, 0])}],
-  }))
+  // bottom bar slides down off the bottom edge; bottomBarH is captured per
+  // render, so the slide distance corrects once the bar measures.
   const bottomChromeStyle = useAnimatedStyle(() => ({
     transform: [{translateY: interpolate(chromeProgress.get(), [0, 1], [bottomBarH, 0])}],
   }))
@@ -66,11 +63,8 @@ export const usePlayerChrome = () => {
   return {
     chromeShown,
     revealChrome,
-    topBarH,
     bottomBarH,
-    onTopBarLayout,
     onBottomBarLayout,
-    topChromeStyle,
     bottomChromeStyle,
   }
 }
