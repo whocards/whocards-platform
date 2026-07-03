@@ -22,7 +22,7 @@ import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/obse
 
 import {PlayerBar} from '@/components/player-bar'
 import {PressableScale} from '@/components/pressable-scale'
-import {QuestionText} from '@/components/question-text'
+import {LINE_HEIGHT_RATIO, QuestionText} from '@/components/question-text'
 import type {ShareFormat} from '@/components/share-modal'
 import {ShareModal} from '@/components/share-modal'
 import {usePlayerChrome} from '@/hooks/use-player-chrome'
@@ -53,6 +53,14 @@ const DECK_LAYERS = [
   {rotate: '-3deg', translateY: 10},
   {rotate: '2deg', translateY: 5},
 ] as const
+
+// The corner "?" glyph's own size — matches Tailwind's text-6xl fontSize, but
+// with an explicit lineHeight (the same ratio question-text.tsx uses for every
+// other piece of card text) instead of Tailwind's zero-headroom default, so the
+// glyph's ascender has room and isn't clipped by the face's overflow-hidden
+// (issue #189).
+const QUESTION_MARK_SIZE = 60
+const QUESTION_MARK_LINE_HEIGHT = QUESTION_MARK_SIZE * LINE_HEIGHT_RATIO
 
 // The same texture as the printed card backs (rasterized from the website's
 // bg-hero squiggle — also used by ScreenBackground).
@@ -415,7 +423,21 @@ export const PickPlayer = ({
                           contentFit="cover"
                           style={[StyleSheet.absoluteFill, {opacity: 0.4}]}
                         />
-                        <Text className="text-primary-dark absolute bottom-3 right-5 font-title text-6xl">
+                        {/* Tailwind's text-6xl sets lineHeight:1 — exactly fontSize, zero
+                            headroom above the glyph's own metrics. font-title's ascender on
+                            "?" sits taller than that box reports, so with no room to spare
+                            the parent's overflow-hidden clips its top (issue #189). The same
+                            LINE_HEIGHT_RATIO headroom question-text.tsx already gives every
+                            other piece of text on the card fixes it here too; growing the box
+                            upward while `bottom` stays put keeps the glyph's visual anchor in
+                            the same corner. */}
+                        <Text
+                          className="text-primary-dark absolute bottom-3 right-5 font-title"
+                          style={{
+                            fontSize: QUESTION_MARK_SIZE,
+                            lineHeight: QUESTION_MARK_LINE_HEIGHT,
+                          }}
+                        >
                           ?
                         </Text>
                         <View
