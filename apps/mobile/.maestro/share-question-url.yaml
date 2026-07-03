@@ -26,13 +26,15 @@ tags:
 # system share sheet (com.android.intentresolver) has indexed its targets — the sheet just
 # never appears — so retry the whole reveal → share → assert sequence; the second attempt
 # lands once the resolver is warm. (The chrome auto-hides between attempts, hence the
-# re-reveal tap inside the retry.)
+# re-reveal tap inside the retry.) Issue #176 removed the play-screen "change language"
+# button that used to prove the chrome was revealed — "share question" itself is now
+# that proof, since it's the button we're about to press.
 - retry:
     maxRetries: 2
     commands:
       - tapOn:
           point: '50%,45%'
-      - assertVisible: 'change language'
+      - assertVisible: 'share question'
       - tapOn: 'share question'
       # Android's share sheet previews the shared text, which now carries the web link.
       - assertVisible: '(?s).*whocards\.cc/play.*q=1.*'

@@ -1,7 +1,11 @@
 # The chosen Game survives an app relaunch (game-store persistence): pick the
-# Pick a Card Game, cold-restart, and the landing chip plus the player both
-# still use it. The landing chip's accessibility label mirrors its visible text
+# Pick a Card Game from the home Settings menu (issue #176 moved Game off the
+# old Library chip into the Settings sheet), cold-restart, and the Settings
+# row plus the player both still use it. Row labels mirror their visible text
 # ("Game: <title>"), which is what Maestro sees on iOS.
+#
+# NOTE (issue #176): rewritten for the new Settings menu — not yet re-run on
+# device in the PR that made this change; run before relying on it.
 #
 # Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}
@@ -11,14 +15,19 @@ tags:
 ---
 - launchApp:
     clearState: true
+- tapOn: 'Settings'
 - assertVisible: 'Game: Classic'
 - tapOn: 'Game: Classic'
+- assertVisible: 'Choose your game'
 - tapOn: 'Pick a Card'
 - assertVisible: 'Game: Pick a Card'
+- tapOn: 'close'
 
 # Relaunch WITHOUT clearing state — the stored Game is reapplied.
 - stopApp
 - launchApp
+- tapOn: 'Settings'
 - assertVisible: 'Game: Pick a Card'
+- tapOn: 'close'
 - tapOn: 'Play'
 - assertVisible: 'Pick a card'

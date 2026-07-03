@@ -22,7 +22,6 @@ import {DEFAULT_GAME, getDeck, getInitialNav, isPoolBacked, navReducer} from '@w
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
 
-import {LanguageModal} from '@/components/language-modal'
 import {PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
 import {QuestionText} from '@/components/question-text'
@@ -37,15 +36,10 @@ import {incrementCardCount, incrementSessionCount} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
 import {getStoredGame} from '@/lib/game-store'
 import {impact, selection} from '@/lib/haptics'
-import {
-  getStoredLanguage,
-  getStoredSecondaryLanguages,
-  setStoredLanguage,
-  setStoredSecondaryLanguages,
-} from '@/lib/language-store'
+import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
 import {parsePlayLink} from '@/lib/play-link'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
-import {getStoredTabletopMode, setStoredTabletopMode} from '@/lib/tabletop-store'
+import {getStoredTabletopMode} from '@/lib/tabletop-store'
 
 const SWIPE_THRESHOLD = 60
 // How far off-screen the card travels when a swipe commits (points)
@@ -204,7 +198,8 @@ const DeckPlayer = ({
   const linkLanguage =
     startLanguage && languages.includes(startLanguage) ? startLanguage : undefined
   const [language, setLanguage] = useState(linkLanguage ?? defaultLanguage)
-  // secondary display languages rendered under the primary (a Display setting)
+  // secondary display language rendered under the primary (a Display setting,
+  // issue #176: at most one now, not up to two)
   const [secondary, setSecondary] = useState<string[]>([])
   // Tabletop mode (issue #148, a Display setting): mirrors the Question 180° in
   // the bottom half so two sides of a flat phone can both read it. Global, not
@@ -215,12 +210,14 @@ const DeckPlayer = ({
   // fast local hit (~1-5 ms); holding the card behind it is the right trade-off
   // (ticket 0009 first-paint decision).
   const [languageReady, setLanguageReady] = useState(false)
-  const [langModalOpen, setLangModalOpen] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
 
-  // Seed language + secondaries + tabletop mode from storage on mount. Only apply
-  // stored languages still present in this deck's languages list (guard against
-  // decks dropping one).
+  // Seed language + secondaries + tabletop mode from storage on mount — READ
+  // only. Issue #176 moved every setting into the home-screen Settings menu;
+  // this screen just applies whatever was last chosen there (or on a previous
+  // visit, before #176), it doesn't offer a way to change them anymore. Only
+  // apply stored languages still present in this deck's languages list (guard
+  // against decks dropping one).
   useEffect(() => {
     const secondaries = getStoredSecondaryLanguages(deckSlug).then((stored) =>
       setSecondary(stored.filter((code) => languages.includes(code)))
@@ -487,8 +484,6 @@ const DeckPlayer = ({
     [deckSlug, questionId, language]
   )
 
-  const openLanguage = useCallback(() => setLangModalOpen(true), [])
-
   // --- UI-thread gesture: pan tracks finger; tap reveals chrome ---
   // isAtFirst ref is read on the UI thread via a shared value to avoid closure stale issues
   const isAtFirstSV = useSharedValue(isAtFirst)
@@ -633,68 +628,12 @@ const DeckPlayer = ({
           style={bottomChromeStyle}
         >
           <PlayerBar
-            // Always shown, not just for multi-language decks: this sheet also
-            // hosts Tabletop mode (issue #148), which every deck offers. The button's
-            // label/icon still tell the truth about whether a language choice is
-            // actually in there (see multiLanguage below).
-            showLanguage
-            multiLanguage={languages.length > 1}
             onPrevious={goPrevious}
             onNext={goNext}
             onShare={handleShare}
-            onLanguage={openLanguage}
             onExit={handleExit}
           />
         </Animated.View>
-
-        <LanguageModal
-          visible={langModalOpen}
-          languages={languages}
-          current={language}
-          secondary={secondary}
-          onSelect={(next) => {
-            selection()
-            if (next !== language) {
-              track({
-                name: EVENTS.LANGUAGE_CHANGED,
-                props: {deck_id: deckSlug, from: language, to: next},
-              })
-            }
-            setLanguage(next)
-            void setStoredLanguage(deckSlug, next)
-            // the new primary can't also be a secondary
-            if (secondary.includes(next)) {
-              const pruned = secondary.filter((code) => code !== next)
-              setSecondary(pruned)
-              void setStoredSecondaryLanguages(deckSlug, pruned)
-            }
-            setLangModalOpen(false)
-            revealChrome()
-          }}
-          onSecondaryChange={(next) => {
-            selection()
-            track({
-              name: EVENTS.SECONDARY_LANGUAGES_CHANGED,
-              props: {deck_id: deckSlug, secondary: next},
-            })
-            setSecondary(next)
-            void setStoredSecondaryLanguages(deckSlug, next)
-          }}
-          tabletop={tabletop}
-          onTabletopChange={(next) => {
-            selection()
-            track({
-              name: EVENTS.TABLETOP_MODE_CHANGED,
-              props: {deck_id: deckSlug, enabled: next},
-            })
-            setTabletop(next)
-            void setStoredTabletopMode(next)
-          }}
-          onClose={() => {
-            setLangModalOpen(false)
-            revealChrome()
-          }}
-        />
 
         <ShareModal
           visible={shareModalOpen}

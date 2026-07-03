@@ -6,20 +6,16 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {getLanguageName} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
 
-import {MAX_SECONDARY_LANGUAGES} from '@/lib/language-constants'
-
 type LanguageModalProps = {
   visible: boolean
   languages: string[]
   current: string
-  /** Secondary display languages shown under the primary on the card (max 2). */
+  /** The one secondary display language shown under the primary on the card
+   * (issue #176: reduced from up to 2 down to at most 1 — an empty array means
+   * "none chosen"). */
   secondary?: string[]
   onSelect: (language: string) => void
   onSecondaryChange?: (languages: string[]) => void
-  /** Tabletop mode (issue #148): the Card renders the Question twice, mirrored
-   * 180°, for two sides of a flat phone to read at once. */
-  tabletop?: boolean
-  onTabletopChange?: (enabled: boolean) => void
   onClose: () => void
 }
 
@@ -29,23 +25,24 @@ type LanguageModalProps = {
  * web's "Choose your language" modal. `onDismiss` keeps `visible` in sync when the
  * sheet is swiped away.
  *
- * Three sections: the primary language (single choice — drives sharing, deep
- * links, layout direction), "Also show" (a Display setting: up to two extra
- * languages rendered under the primary on the card), and Tabletop mode (issue
- * #148, a Display setting). The primary never appears in "Also show".
+ * Two sections: the primary language (single choice — drives sharing, deep
+ * links, layout direction) and "Also show" (a Display setting: one optional
+ * extra language rendered under the primary on the card, issue #176). The
+ * primary never appears in "Also show". Tabletop mode used to live in this
+ * sheet too (issue #148) — issue #176 moved it out to the top-level Settings
+ * menu (settings-modal.tsx) since it's a global, not per-deck, preference; this
+ * sheet is opened FROM that menu now, scoped to the one deck reachable from
+ * the home screen (see settings-modal.tsx's doc comment for the scoping
+ * decision), not from the play screens anymore.
  *
- * A single-language deck has no language choice to make, so the primary-language
- * list (and its "Choose your language" title) would be one inert, always-checked
- * row — this sheet becomes display-settings-only for that deck: the language
- * list is hidden and the title reads "Display settings" instead (still true when
- * there's nothing to toggle on, i.e. no onTabletopChange either — the header
- * copy just describes what the sheet is, even if it turns out empty).
+ * A single-language deck has no language choice to make (and, with only one
+ * language, no possible "Also show" alternate either) — the primary-language
+ * list is hidden in that case rather than rendering one inert, always-checked
+ * row.
  *
  * Themed (issue #163, amendment 1): a dark surface in dark mode, the
  * pre-existing light sheet surface in light mode — see
- * docs/design/163-light-mode/proposal.md. The Theme Display setting itself
- * lives on the Library screen, not in here (see theme-modal.tsx) — this sheet
- * stays scoped to the deck-level Display settings it already owned.
+ * docs/design/163-light-mode/proposal.md.
  */
 export const LanguageModal = ({
   visible,
@@ -54,8 +51,6 @@ export const LanguageModal = ({
   secondary = [],
   onSelect,
   onSecondaryChange,
-  tabletop = false,
-  onTabletopChange,
   onClose,
 }: LanguageModalProps) => {
   const insets = useSafeAreaInsets()
@@ -65,14 +60,12 @@ export const LanguageModal = ({
   const isDark = colorScheme !== 'light'
   const iconColor = isDark ? colors.white : colors.darker
 
+  // Exactly one secondary language, or none — picking a different one replaces
+  // whatever was chosen (no cap-reached "blocked" state to design for, unlike
+  // the old up-to-2 version); tapping the already-chosen row clears it.
   const toggleSecondary = (code: string) => {
     if (!onSecondaryChange) return
-    if (secondary.includes(code)) {
-      onSecondaryChange(secondary.filter((entry) => entry !== code))
-      return
-    }
-    if (secondary.length >= MAX_SECONDARY_LANGUAGES) return
-    onSecondaryChange([...secondary, code])
+    onSecondaryChange(secondary.includes(code) ? [] : [code])
   }
 
   return (
@@ -93,68 +86,67 @@ export const LanguageModal = ({
           style={{paddingTop: (Platform.OS === 'android' ? insets.top : 0) + 16}}
         >
           <Text className="text-darker dark:text-white font-title text-2xl">
-            {hasLanguageChoice ? 'Choose your language' : 'Display settings'}
+            {hasLanguageChoice ? 'Choose your language' : 'Language'}
           </Text>
           <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
             <Ionicons name="close" size={24} color={iconColor} />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{paddingBottom: Math.max(insets.bottom, 24)}}>
-          {hasLanguageChoice
-            ? languages.map((code) => {
-                const selected = code === current
-                return (
-                  <Pressable
-                    key={code}
-                    onPress={() => onSelect(code)}
-                    className={`flex-row items-center justify-between px-5 py-4 ${
-                      selected ? 'bg-yellow-300/40' : ''
-                    }`}
-                  >
-                    <Text className="text-darker dark:text-white font-sans text-lg">
-                      {getLanguageName(code) ?? code}
+          {hasLanguageChoice ? (
+            languages.map((code) => {
+              const selected = code === current
+              return (
+                <Pressable
+                  key={code}
+                  onPress={() => onSelect(code)}
+                  accessibilityRole="button"
+                  accessibilityState={{selected}}
+                  className={`flex-row items-center justify-between px-5 py-4 ${
+                    selected ? 'bg-yellow-300/40' : ''
+                  }`}
+                >
+                  <Text className="text-darker dark:text-white font-sans text-lg">
+                    {getLanguageName(code) ?? code}
+                  </Text>
+                  {selected ? (
+                    <Text className="text-accentOnLight dark:text-accentOnDark text-lg font-bold">
+                      ✓
                     </Text>
-                    {selected ? (
-                      <Text className="text-accentOnLight dark:text-accentOnDark text-lg font-bold">
-                        ✓
-                      </Text>
-                    ) : null}
-                  </Pressable>
-                )
-              })
-            : null}
+                  ) : null}
+                </Pressable>
+              )
+            })
+          ) : (
+            <Text className="text-mutedOnLight dark:text-gray-dark px-5 py-4 font-sans text-base">
+              This deck only has one language.
+            </Text>
+          )}
 
           {showSecondary ? (
             <>
               <View className="border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5">
                 <Text className="text-darker dark:text-white font-title text-lg">Also show</Text>
                 <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-                  Show the question in up to {MAX_SECONDARY_LANGUAGES} more languages.
+                  Show the question in one more language.
                 </Text>
               </View>
               {languages
                 .filter((code) => code !== current)
                 .map((code) => {
                   const checked = secondary.includes(code)
-                  const disabled = !checked && secondary.length >= MAX_SECONDARY_LANGUAGES
                   return (
                     <Pressable
                       key={`secondary-${code}`}
                       onPress={() => toggleSecondary(code)}
-                      disabled={disabled}
                       accessibilityRole="checkbox"
-                      accessibilityState={{checked, disabled}}
+                      accessibilityLabel={getLanguageName(code) ?? code}
+                      accessibilityState={{checked}}
                       className={`flex-row items-center justify-between px-5 py-3 ${
                         checked ? 'bg-yellow-300/40' : ''
                       }`}
                     >
-                      <Text
-                        className={`font-sans text-lg ${
-                          disabled
-                            ? 'text-mutedOnLight dark:text-gray-dark'
-                            : 'text-darker dark:text-white'
-                        }`}
-                      >
+                      <Text className="text-darker dark:text-white font-sans text-lg">
                         {getLanguageName(code) ?? code}
                       </Text>
                       <Ionicons
@@ -173,53 +165,6 @@ export const LanguageModal = ({
                     </Pressable>
                   )
                 })}
-            </>
-          ) : null}
-
-          {onTabletopChange ? (
-            <>
-              {/* No divider when this is the sheet's first section — a single-language
-                  deck skips the language list above, so a top border here would float
-                  with nothing to separate from. */}
-              <View
-                className={`border-gray-lighter dark:border-white/10 px-5 pb-1 pt-5 ${
-                  hasLanguageChoice ? 'mt-2 border-t' : ''
-                }`}
-              >
-                <Text className="text-darker dark:text-white font-title text-lg">
-                  Tabletop mode
-                </Text>
-                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-                  Lay the phone flat on the table — the question mirrors on top so both sides can
-                  read it at once.
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => onTabletopChange(!tabletop)}
-                accessibilityRole="switch"
-                accessibilityLabel="Tabletop mode"
-                accessibilityState={{checked: tabletop}}
-                className={`flex-row items-center justify-between px-5 py-3 ${
-                  tabletop ? 'bg-yellow-300/40' : ''
-                }`}
-              >
-                <Text className="text-darker dark:text-white font-sans text-lg">
-                  Two-way readable
-                </Text>
-                <Ionicons
-                  name={tabletop ? 'checkbox' : 'square-outline'}
-                  size={20}
-                  color={
-                    tabletop
-                      ? isDark
-                        ? colors.accentOnDark
-                        : colors.accentOnLight
-                      : isDark
-                        ? colors.gray.dark
-                        : colors.mutedOnLight
-                  }
-                />
-              </Pressable>
             </>
           ) : null}
         </ScrollView>

@@ -5,6 +5,14 @@
 # the title overlapping the status bar is the regression. The deterministic guard for
 # the inset math is the jest test (src/__tests__/language-modal.test.tsx).
 #
+# Issue #176 moved the language sheet out of the play screen and into the home
+# screen's Settings menu — it's now a NESTED sheet (Settings → Language), but the
+# inset math is per-sheet (each `<Modal>` gets its own safe-area context), so
+# nesting shouldn't change the regression this flow is guarding against.
+#
+# NOTE (issue #176): rewritten for the new Settings menu — not yet re-run on
+# device in the PR that made this change; run before relying on it.
+#
 # Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}
 tags:
@@ -13,12 +21,8 @@ tags:
 ---
 - launchApp:
     clearState: true
-- assertVisible: 'Play'
-- tapOn: 'Play'
-
-# Reveal the auto-hiding chrome (a tap anywhere), then open the language sheet.
-- tapOn:
-    point: '50%,45%'
-- tapOn: 'change language'
+- tapOn: 'Settings'
+- assertVisible: 'Language: English'
+- tapOn: 'Language: English'
 - assertVisible: 'Choose your language'
 - takeScreenshot: .maestro/artifacts/language-modal-inset
