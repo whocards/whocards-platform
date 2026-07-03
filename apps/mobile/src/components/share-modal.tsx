@@ -257,9 +257,10 @@ export const ShareModal = ({
             pattern as every other themed sheet (issue #173). */}
         <StatusBar style={isDark ? 'light' : 'dark'} />
         <View className="flex-1 justify-end">
-          {/* Dimmed backdrop — the card underneath stays visible. Tapping it
-              dismisses; the sheet below swallows its own taps (see the no-op
-              onPress) so tapping the sheet itself doesn't also close it. */}
+          {/* Transparent backdrop (owner on-device, 2026-07-03 — no dim, same
+              as the settings sheet). Tapping it dismisses; the sheet below
+              swallows its own taps (see the no-op onPress) so tapping the
+              sheet itself doesn't also close it. */}
           <Pressable className="absolute inset-0" onPress={onClose} accessibilityLabel="dismiss" />
           <View
             className="bg-white dark:bg-dark rounded-t-3xl"
