@@ -19,7 +19,7 @@ tags:
     optional: true
 - assertVisible: '(?s).*most interesting thing you have learned recently.*'
 
-# Reveal the chrome and exit — the close chip pops back to the landing.
+# Reveal the chrome and exit — the bar's Exit button pops back to the landing.
 - tapOn:
     point: '50%,45%'
 - tapOn: 'exit deck'

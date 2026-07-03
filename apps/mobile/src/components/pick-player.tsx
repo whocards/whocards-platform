@@ -1,4 +1,3 @@
-import {Ionicons} from '@expo/vector-icons'
 import {Image} from 'expo-image'
 import {useRouter} from 'expo-router'
 import {StatusBar} from 'expo-status-bar'
@@ -15,12 +14,11 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
-import {SafeAreaView} from 'react-native-safe-area-context'
+import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import type {QuestionSet} from '@whocards/decks'
 import {getInitialPick, pickReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
-import {colors} from '@whocards/tokens'
 
 import {LanguageModal} from '@/components/language-modal'
 import {PlayerBar} from '@/components/player-bar'
@@ -242,16 +240,12 @@ export const PickPlayer = ({
   // the question face's inner box (card padding subtracted) drives fitFontSize
   const cardInner = {width: cardWidth - CARD_PADDING_X * 2, height: cardHeight - CARD_PADDING_Y * 2}
 
-  const {
-    chromeShown,
-    revealChrome,
-    topBarH,
-    bottomBarH,
-    onTopBarLayout,
-    onBottomBarLayout,
-    topChromeStyle,
-    bottomChromeStyle,
-  } = usePlayerChrome()
+  const {chromeShown, revealChrome, bottomBarH, onBottomBarLayout, bottomChromeStyle} =
+    usePlayerChrome()
+  // The top-right close chip (and its reserved band) is gone — Exit moved into the
+  // bottom bar (issue #186). The deck/card still needs to clear the status bar/notch,
+  // so its top padding is the raw safe-area inset now instead of a measured chip height.
+  const insets = useSafeAreaInsets()
 
   // --- the deal: a reanimated 3D flip. Two absolutely-positioned faces with
   // backfaceVisibility hidden — the back rotates 0→180°, the face 180→360° —
@@ -389,7 +383,7 @@ export const PickPlayer = ({
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <View className="flex-1">
         <GestureDetector gesture={gesture}>
-          <View className="flex-1 px-8" style={{paddingTop: topBarH, paddingBottom: bottomBarH}}>
+          <View className="flex-1 px-8" style={{paddingTop: insets.top, paddingBottom: bottomBarH}}>
             <View className="flex-1 items-center justify-center" onLayout={onBoxLayout}>
               {!languageReady ? null : onCard ? (
                 <View className="items-center">
@@ -504,28 +498,9 @@ export const PickPlayer = ({
           </View>
         </GestureDetector>
 
-        {/* close — top-right chip; slides up out of view when the chrome hides */}
-        <Animated.View
-          pointerEvents={chromeShown ? 'box-none' : 'none'}
-          onLayout={onTopBarLayout}
-          className="absolute inset-x-0 top-0"
-          style={topChromeStyle}
-        >
-          <SafeAreaView edges={['top', 'left', 'right']}>
-            <View className="items-end px-4 pt-2">
-              <Pressable
-                onPress={handleExit}
-                hitSlop={8}
-                accessibilityLabel="exit deck"
-                className="h-10 w-10 items-center justify-center rounded-full border border-darker/10 bg-white/90 active:bg-white dark:border-white/10 dark:bg-darker/80 dark:active:bg-darker"
-              >
-                <Ionicons name="close" size={22} color={isDark ? colors.white : colors.darker} />
-              </Pressable>
-            </View>
-          </SafeAreaView>
-        </Animated.View>
-
-        {/* bottom action bar — Share only once a card has been dealt */}
+        {/* bottom action bar — Share only once a card has been dealt. Exit lives
+            mid-bar now (issue #186); the top-right close chip is gone, so this bar
+            is the only exit while the chrome is hidden. */}
         <Animated.View
           pointerEvents={chromeShown ? 'box-none' : 'none'}
           onLayout={onBottomBarLayout}
@@ -539,6 +514,7 @@ export const PickPlayer = ({
             onNext={goNext}
             onShare={handleShare}
             onLanguage={openLanguage}
+            onExit={handleExit}
           />
         </Animated.View>
 

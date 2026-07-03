@@ -36,7 +36,12 @@ tags:
 
 # Back re-reads the last dealt card.
 - tapOn:
-    point: '50%,10%' # reveal the chrome (above the deck, not on a card)
+    # reveal the chrome by tapping ABOVE the deck, not on a card. The deck is
+    # vertically centered between insets.top and the bottom bar (no more top
+    # chip band since #186), so on a short low-inset screen (SE-class: 667pt,
+    # ~20pt inset) its top edge sits around 9-10% — 6% keeps ~23pt of headroom
+    # there while staying well below the status bar on notched devices.
+    point: '50%,6%'
 - tapOn: 'previous question'
 - waitForAnimationToEnd
 - assertNotVisible: 'Pick a card'
