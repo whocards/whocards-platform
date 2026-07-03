@@ -1,17 +1,20 @@
-# Visual on-device check for the Pixel-notch fix (#102): the language sheet header
-# ("Choose your language" + close button) must sit BELOW the status bar / display
+# Visual on-device check for the Pixel-notch fix (#102): the language page header
+# ("Choose your language" + back chevron) must sit BELOW the status bar / display
 # cutout, not under the clock and system icons. Maestro has no coordinate assertion,
 # so this captures a screenshot for review on a device WITH a cutout (e.g. a Pixel) —
 # the title overlapping the status bar is the regression. The deterministic guard for
-# the inset math is the jest test (src/__tests__/language-modal.test.tsx).
+# the inset math is the jest test (src/__tests__/settings-sheet-header.test.tsx —
+# the header markup this page renders, same as every other page in the sheet).
 #
 # Issue #176 moved the language sheet out of the play screen and into the home
-# screen's Settings menu — it's now a NESTED sheet (Settings → Language), but the
-# inset math is per-sheet (each `<Modal>` gets its own safe-area context), so
-# nesting shouldn't change the regression this flow is guarding against.
+# screen's Settings menu (Settings → Language). Issue #189 (third pass) then
+# collapsed the whole sheet into a single Modal with internal sliding pages — the
+# inset math now lives in the one shared SettingsSheetHeader component every page
+# renders, not a per-Modal safe-area context, but the regression this flow guards
+# against (header under the cutout) is the same either way.
 #
-# NOTE (issue #176): rewritten for the new Settings menu — not yet re-run on
-# device in the PR that made this change; run before relying on it.
+# NOTE (issue #189, third pass): not yet re-run on device in the PR that made
+# this change; run before relying on it.
 #
 # Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}

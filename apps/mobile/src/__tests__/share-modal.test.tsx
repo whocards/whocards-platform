@@ -44,7 +44,8 @@ import {ShareModal} from '../components/share-modal'
 
 afterEach(() => {
   // NativeWind's colorScheme is a global observable — reset it so a test that
-  // sets it doesn't bleed into whichever test runs next (mirrors theme-modal.test.tsx).
+  // sets it doesn't bleed into whichever test runs next (mirrors
+  // settings-modal.test.tsx).
   act(() => colorScheme.set('system'))
 })
 
@@ -207,7 +208,8 @@ describe('ShareModal', () => {
 // Issue #173: ShareModal used to have no local <StatusBar> override, on the
 // assumption its openers (Play/Pick a Card) were always dark. That assumption
 // broke once those screens theme too — this sheet now needs the same isDark
-// flip as every other themed sheet (see theme-modal.test.tsx).
+// flip as every other themed sheet (see settings-modal.test.tsx's own
+// StatusBar-override coverage).
 describe('ShareModal — StatusBar override (issue #173)', () => {
   it('shows light (white) status-bar icons when the resolved scheme is dark', () => {
     act(() => colorScheme.set('dark'))

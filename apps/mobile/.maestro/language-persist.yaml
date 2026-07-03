@@ -7,8 +7,12 @@
 # screen's Settings menu, so the switch happens BEFORE the deep link is opened,
 # not from within the player.
 #
-# NOTE (issue #176): rewritten for the new Settings menu — not yet re-run on
-# device in the PR that made this change; run before relying on it.
+# NOTE (issue #189, third pass): Settings is now a single Modal with sliding
+# internal pages, not a stack of separate Modals — the header on the Language
+# page is a "back" chevron, not "close" (only the root menu page has "close"),
+# and picking a language does NOT auto-return to the menu (unlike Game/Theme),
+# so getting back to the menu needs an explicit "back" tap first. Not yet
+# re-run on device in the PR that made this change; run before relying on it.
 #
 # Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}
@@ -25,6 +29,7 @@ tags:
 - tapOn: 'Language: English'
 - tapOn: 'Hebrew'
 - waitForAnimationToEnd
+- tapOn: 'back' # Language doesn't auto-return to the menu (unlike Game/Theme)
 - tapOn: 'close'
 
 # The same card (q=1) now renders Hebrew, so the English text is absent from the start.

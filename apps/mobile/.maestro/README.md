@@ -200,6 +200,13 @@ several sims booted, Maestro's iOS driver otherwise attaches to whichever booted
   Tabletop mode into one Settings menu reachable only from the home screen (tap
   `Settings`) — the play screens' bottom bar is back down to Back/Share/Next, no
   settings button of its own.
+- Settings is a single Modal with sliding internal pages (issue #189, third pass), not
+  a stack of separate Modals: only the root menu page has a `close` (X) icon; every
+  pushed page (Game/Theme/Language) has a `back` (chevron) icon instead, which returns
+  to the menu rather than dismissing the whole sheet. Picking a Game or Theme option
+  auto-slides back to the menu on its own; picking a Language does not (so you can also
+  toggle "Also show" right after) — flows that switch language need an explicit
+  `tapOn: 'back'` before `tapOn: 'close'` to fully dismiss the sheet.
 - The player chrome auto-hides after 3s; flows tap the card centre to re-reveal it before
   tapping a control, and wait for it to hide before shooting clean card screenshots.
 - iOS shows an "Open in WhoCards?" confirm when `openLink` fires while the app is

@@ -129,7 +129,7 @@ export default function LandingScreen() {
   return (
     <ScreenBackground textureOpacity={bgOpacity}>
       {/* Library is the one screen that actually follows the Theme setting (issue
-          #163), so — like each themed sheet (game-modal, language-modal, theme-modal)
+          #163), so — like every themed sheet (settings-modal.tsx, share-modal.tsx)
           — it needs its own local override: the root `_layout.tsx` default is a fixed
           `style="light"` (white icons) for the always-dark Play/Pick a Card screens,
           which would go invisible over the near-white `canvasLight` background. */}
