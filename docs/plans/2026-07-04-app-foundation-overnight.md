@@ -159,7 +159,7 @@ organization/member/invitation`) — fully separate from website's `user`/
   a `discussionAgent` tRPC router (facilitator+, persists to `agent_message`),
   and a "Discuss with agent" panel per question in `/review`. Degrades
   correctly: `ANTHROPIC_API_KEY` is absent, so `status` reports
-  `{enabled:false}` and the UI shows "ask an admin to set ANTHROPIC_API_KEY"
+  `{enabled:false}` and the UI shows "ask an admin to set ANTHROPIC*API_KEY"
   instead of a compose box; verified the `send` mutation also fails clean
   (412 PRECONDITION_FAILED, not a crash) if called anyway. Not yet verified
   against a real key (none available tonight) — the request-construction code
@@ -170,7 +170,7 @@ organization/member/invitation`) — fully separate from website's `user`/
   `website:typecheck` failing with `Type 'Plugin<any>[]' is not assignable to
 type 'PluginOption'` in `astro.config.ts`. Root cause: apps/app's
   `@tailwindcss/vite` + `vite@8.1.3` gave pnpm's peer-dependency resolver a
-  second, newer "vite" to satisfy website's _own_ `@tailwindcss/vite@4.3.1`
+  second, newer "vite" to satisfy website's \_own* `@tailwindcss/vite@4.3.1`
   peer dependency against — it chose apps/app's vite 8 (rolldown-backed)
   instead of website's existing vite 7.3.5 (rollup-backed) purely because a
   satisfying version existed somewhere in the workspace, corrupting website's
@@ -197,3 +197,12 @@ pnpm-lock.yaml && pnpm install`) — incremental `pnpm install`/`--force`/
     vite-ecosystem dependency to a package, not just that package's own
     typecheck** — a sibling app's build tooling can silently break from pnpm's
     peer-dependency hoisting even when you never touch that sibling's files.
+
+Redeployed after this slice and re-verified against production:
+https://whocards-app.netlify.app 200s on `/` and `/sign-in`, 307s `/review`
+and `/admin/people` to sign-in when signed out, and the built CSS asset (the
+hand-written utility stylesheet) loads correctly. `whocards.cc` (the live
+website) also re-confirmed 200 — untouched throughout.
+
+**All 5 slices are now done** (slice 5 is the stretch goal, correctly
+degraded pending a real `ANTHROPIC_API_KEY`). Draft PR #215 updated.
