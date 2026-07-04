@@ -114,3 +114,41 @@ migration per ADR-0008 — do not touch them tonight).
   reason: `@better-auth/cli`'s optional Prisma/better-sqlite3 peers aren't needed
   for a Postgres+Drizzle app). Flagging in case it's a sign of something worth
   Avi's attention in this environment.
+- 2026-07-05 (night, continued) — **Slices 2-4 DONE.** better-auth (Drizzle
+  adapter) wired up: magic-link sign-in via Resend (reusing `@whocards/emails`'
+  brand components — new `MagicLinkEmail` template), Google provider scaffolded
+  but hidden (`GOOGLE_CLIENT_ID`/`SECRET` absent, as expected). All better-auth
+  tables are `app_`-prefixed (`app_user/session/account/verification/
+organization/member/invitation`) — fully separate from website's `user`/
+  `auth_*`/`account_*`. `avicharlop@gmail.com` auto-seeds as `owner` in a
+  default "WhoCards" org on first sign-in; anyone else who signs in lands on a
+  friendly "not yet invited" screen until an admin adds them via `/admin/people`
+  (roles: owner/admin/facilitator/reviewer/member, `ROLE_RANK` hierarchy).
+  Migration `0000_massive_ben_parker.sql` applied to prod — verified CREATE-only
+  before running it, and re-confirmed after that every pre-existing table
+  (`user`, `auth_*`, `account_*`, `whocards_*`, `answer`, etc.) is untouched.
+  `/review` (reviewer+ view/vote/comment, facilitator+ approve) loads the 5
+  `ai-at-work*.questions.json` variants side by side per question, tallies
+  votes, threads comments, and on approve assembles the 37-question deck and
+  emits a unified diff against `packages/decks/src/decks/ai-at-work.questions.json`
+  — this is a **read/emit only** action (patch text shown in the UI); the app
+  never writes to the repo, per the guardrails.
+  Verified end to end: local dev magic-link (owner seed + unprovisioned-user
+  path, both via the server-log link, no email dependency) and every tRPC
+  procedure exercised directly (invite/updateRole/variants/vote/comments/
+  approve/emitDiff produced a correct real diff); then confirmed the **deployed**
+  site too — https://whocards-app.netlify.app 200s on `/`, `/sign-in`, 307s
+  `/review` to sign-in when signed out, and a magic-link request against prod
+  returned 200 (Resend + DB both reachable from the Netlify function). Test
+  accounts cleaned from the DB after each pass; one real demo row intentionally
+  left (`ai-1` approved, with a vote and a comment) so the review UI isn't
+  empty on first load.
+  31 unit tests added (role-guard branches via a caller against the real tRPC
+  middleware, vote tally, deck assembly, ROLE_RANK) — all green. oxfmt/oxlint/
+  typecheck clean. Scope note: the plan's DB table list didn't include an
+  `invitation` table, so `/admin/people`'s "invite" pre-provisions the
+  user+membership row directly rather than building a token/accept-invite flow
+  — simpler, and sufficient since sign-in is magic-link (no separate signup
+  step to gate). better-auth's `admin` plugin (ban/impersonate) was scoped out
+  too — nothing tonight needs it; `organization` + our own `ROLE_RANK` gating
+  covers the RBAC surface. Redeployed after this slice.
