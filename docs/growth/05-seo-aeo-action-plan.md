@@ -2,8 +2,9 @@
 
 _Scope: `apps/website`. Audited against `main@cf1259d` (2026-07-04) — code inspection plus a real
 local production build (`pnpm --filter website build`) to verify what actually ships, not just
-what the source implies. Written for issue #207 (growth Lever 3, see `03-growth-strategy.md` §3
-and `docs/strategy/ai-at-work-business-plan.md` §8)._
+what the source implies. Written for issue #207 (growth Lever 3, see `03-growth-strategy.md` §3;
+the AI-at-work uncontested-intent angle this doc targets is Lever 5 in that same section — "AI-at-
+work B2B wedge" — and the exact target phrases are named in issue #207 itself)._
 
 **This supersedes `02-seo-audit.md` (2026-06-23).** That audit's P0 list — recover the question
 pages, fix homepage meta, add JSON-LD — is now **~80% shipped** (PR #66, PR #143 / issues #45–46).
@@ -220,7 +221,8 @@ lang>`, `Head.astro`'s `og:locale`, and the new hreflang tags.
   no new claim). Scoped to `index.astro` only; the sitewide fallback description in `Head.astro`
   (used by any page that doesn't set its own) is untouched.
 - **FAQ + `FAQPage` JSON-LD on `/ai-at-work`**, targeting the named uncontested intent ("how do I
-  talk to my team about AI") from the business plan §8. Four Q&A pairs, every answer paraphrased
+  talk to my team about AI") from issue #207 — the SEO/AEO angle on the AI-at-work B2B wedge
+  (growth Lever 5, `03-growth-strategy.md` §3). Four Q&A pairs, every answer paraphrased
   from copy already on the page (hero, value props, CTA) — no new stats or claims, same discipline
   PR #66 used for its meta descriptions. Added to `~constants/faqs.ts` as `aiAtWorkFaqs`, rendered
   with the same `<Accordion>` component the homepage FAQ already uses.
@@ -255,9 +257,10 @@ lang>`, `Head.astro`'s `og:locale`, and the new hreflang tags.
 4. Give `/ai-at-work` its own OG image (there's already a `TODO(OG)` comment in the source for
    this) — it currently falls back to the generic `social.png`.
 5. `og:locale` territory format (§6.2) — needs deliberate per-language territory picks.
-6. Localize the `/ai-at-work` page and its new FAQ into the other 13 languages — matches the
-   business plan §8's explicit "localize across the 14 languages (moat)" GTM move, and the
-   multilingual angle is one of WhoCards' few real defensible edges vs. English-only competitors.
+6. Localize the `/ai-at-work` page and its new FAQ into the other 13 languages — matches growth
+   Lever 3's "Localize 14×" directive (`03-growth-strategy.md` §3) applied to the AI-at-work wedge
+   specifically, and the multilingual angle is one of WhoCards' few real defensible edges vs.
+   English-only competitors.
 
 **P2 — compounding, more effort**
 

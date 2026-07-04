@@ -17,16 +17,18 @@ export const faqs = [
 ]
 
 // FAQ content for the /ai-at-work landing page (#207) — targets the
-// uncontested search/AEO intent named in docs/strategy/ai-at-work-business-plan.md
-// §8 ("AI team check-in questions", "how to talk to my team about AI"). Every
-// answer paraphrases copy that already exists on the page itself (hero,
-// value props, CTA) — no new stats or claims introduced, same discipline as
-// the on-page-derived meta descriptions added in #66.
+// uncontested search/AEO intent named in issue #207 ("AI team check-in
+// questions", "how to talk to my team about AI"), which is the SEO/AEO
+// angle on the AI-at-work B2B wedge (growth Lever 5, see
+// docs/growth/03-growth-strategy.md §3). Every answer paraphrases copy
+// that already exists on the page itself (hero, value props, CTA) — no
+// new stats or claims introduced, same discipline as the on-page-derived
+// meta descriptions added in #66.
 export const aiAtWorkFaqs = [
   {
     title: 'What is an AI Check-In?',
     content:
-      "A free, ~20-minute team check-in that surfaces what your people actually think about AI — before it quietly decides for them. It runs on WhoCards' conversation-card format: draw a question, ask it out loud, listen.",
+      "A free, ~20-minute team check-in that surfaces what your people actually think about AI — before it quietly decides for them. It runs on WhoCards' conversation-card format: draw a card, ask the question, listen.",
   },
   {
     title: 'How do I talk to my team about AI?',

@@ -259,7 +259,7 @@ const title = titles.join(' | ')
             '@id': canonicalUrl.toString(),
             name: mainLine,
             text: rawText,
-            inLanguage: language,
+            inLanguage: language && toBCP47LanguageTag(language),
             url: canonicalUrl.toString(),
             isPartOf: {'@type': 'WebSite', name: 'WhoCards', url: site?.toString()},
           },
