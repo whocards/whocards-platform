@@ -152,3 +152,48 @@ organization/member/invitation`) — fully separate from website's `user`/
   step to gate). better-auth's `admin` plugin (ban/impersonate) was scoped out
   too — nothing tonight needs it; `organization` + our own `ROLE_RANK` gating
   covers the RBAC surface. Redeployed after this slice.
+- 2026-07-05 (night, continued) — **Slice 5 (stretch) DONE**, plus a real
+  cross-app regression found and fixed. Discussion agent: reuses the raw-fetch
+  Anthropic Messages API pattern from the (unmerged) `feat/ai-at-work-question-lab`
+  branch's Question Lab (`server/agent/anthropic.ts`, no new SDK dependency),
+  a `discussionAgent` tRPC router (facilitator+, persists to `agent_message`),
+  and a "Discuss with agent" panel per question in `/review`. Degrades
+  correctly: `ANTHROPIC_API_KEY` is absent, so `status` reports
+  `{enabled:false}` and the UI shows "ask an admin to set ANTHROPIC_API_KEY"
+  instead of a compose box; verified the `send` mutation also fails clean
+  (412 PRECONDITION_FAILED, not a crash) if called anyway. Not yet verified
+  against a real key (none available tonight) — the request-construction code
+  is a direct mirror of the working reference implementation.
+  **Regression found + fixed: apps/app's vite dependency was breaking
+  apps/website's typecheck.** Running the full workspace `pnpm check` for the
+  first time (previously I'd only typechecked apps/app in isolation) turned up
+  `website:typecheck` failing with `Type 'Plugin<any>[]' is not assignable to
+type 'PluginOption'` in `astro.config.ts`. Root cause: apps/app's
+  `@tailwindcss/vite` + `vite@8.1.3` gave pnpm's peer-dependency resolver a
+  second, newer "vite" to satisfy website's _own_ `@tailwindcss/vite@4.3.1`
+  peer dependency against — it chose apps/app's vite 8 (rolldown-backed)
+  instead of website's existing vite 7.3.5 (rollup-backed) purely because a
+  satisfying version existed somewhere in the workspace, corrupting website's
+  plugin types as a side effect of a completely unrelated app's dependency
+  choice. This is NOT specific to Tailwind — merely having vite 8 installed
+  anywhere in the workspace was enough; removing just `@tailwindcss/vite` from
+  apps/app wasn't sufficient on its own (vitest's `vite: ^6||^7||^8` peer range
+  let it get pulled back in). Fix, in order of what actually worked: (1)
+  dropped `@tailwindcss/vite`/`tailwindcss` from apps/app entirely — its
+  utility classes are now a small hand-written CSS file
+  (`src/styles/app.css`, same class names, no JSX changes needed); (2)
+  downgraded apps/app to `vite@^7.3.6` + `@vitejs/plugin-react@^5.2.0` (the
+  last version supporting vite 7 — 6.x hard-requires vite 8) instead of the
+  upstream TanStack Start example's vite 8, and added `vite-tsconfig-paths`
+  (vite 8's built-in `resolve.tsconfigPaths` doesn't exist in 7); (3) a
+  **fresh `pnpm-lock.yaml` regenerated from scratch** (`rm -rf node_modules
+pnpm-lock.yaml && pnpm install`) — incremental `pnpm install`/`--force`/
+  `pnpm dedupe` all left stale vite-8 peer bindings in the lockfile from
+  earlier in the session; only a full re-resolve cleared them. Verified after:
+  `pnpm why vite` shows only 7.3.6 workspace-wide, `pnpm check` (format + lint
+  - typecheck + test) is green across all 18 tasks/11 packages — website's
+    own 284 tests and mobile's 218 still pass. **Lesson for future sessions
+    touching this repo: run the full `pnpm check` after adding any new
+    vite-ecosystem dependency to a package, not just that package's own
+    typecheck** — a sibling app's build tooling can silently break from pnpm's
+    peer-dependency hoisting even when you never touch that sibling's files.

@@ -30,6 +30,14 @@ function Review() {
     queryKey: ['questionReview.myVotes'],
     queryFn: () => trpc.questionReview.myVotes.query(),
   })
+  // Slice 5 (stretch): only facilitator+ can reach this procedure at all, and
+  // it degrades to `{enabled: false}` (never a crash) when ANTHROPIC_API_KEY
+  // is absent — see server/env.ts / server/agent/anthropic.ts.
+  const agentStatus = useQuery({
+    queryKey: ['discussionAgent.status'],
+    queryFn: () => trpc.discussionAgent.status.query(),
+    enabled: canApprove,
+  })
   const [showDiff, setShowDiff] = useState(false)
   const diff = useQuery({
     queryKey: ['questionReview.emitDiff'],
@@ -80,6 +88,7 @@ function Review() {
             question={question}
             myVote={myVotes.data?.[question.questionId]}
             canApprove={canApprove}
+            agentEnabled={agentStatus.data?.enabled ?? false}
           />
         ))}
       </div>
@@ -91,14 +100,19 @@ function QuestionCard({
   question,
   myVote,
   canApprove,
+  agentEnabled,
 }: {
   question: QuestionData
   myVote: VariantSlug | undefined
   canApprove: boolean
+  agentEnabled: boolean
 }) {
   const queryClient = useQueryClient()
   const [expanded, setExpanded] = useState(false)
   const [comment, setComment] = useState('')
+  const [agentExpanded, setAgentExpanded] = useState(false)
+  const [agentDraft, setAgentDraft] = useState('')
+  const questionText = question.review?.currentText ?? question.shippedText
 
   const invalidateQuestions = () =>
     queryClient.invalidateQueries({queryKey: ['questionReview.variants']})
@@ -130,6 +144,25 @@ function QuestionCard({
     onSuccess: () => {
       setComment('')
       queryClient.invalidateQueries({queryKey: ['questionReview.comments', question.questionId]})
+    },
+  })
+
+  const agentMessages = useQuery({
+    queryKey: ['discussionAgent.messages', question.questionId],
+    queryFn: () => trpc.discussionAgent.messages.list.query({questionId: question.questionId}),
+    enabled: agentExpanded && agentEnabled,
+  })
+
+  const sendToAgent = useMutation({
+    mutationFn: () =>
+      trpc.discussionAgent.messages.send.mutate({
+        questionId: question.questionId,
+        questionText,
+        content: agentDraft,
+      }),
+    onSuccess: () => {
+      setAgentDraft('')
+      queryClient.invalidateQueries({queryKey: ['discussionAgent.messages', question.questionId]})
     },
   })
 
@@ -214,6 +247,60 @@ function QuestionCard({
             </button>
           </form>
         </div>
+      ) : null}
+
+      {canApprove ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setAgentExpanded((v) => !v)}
+            className="mt-2 ml-3 text-xs text-gray-lighter underline"
+          >
+            {agentExpanded ? 'Hide agent' : 'Discuss with agent'}
+          </button>
+          {agentExpanded ? (
+            <div className="mt-2 flex flex-col gap-2 border-t border-gray-light/40 pt-2">
+              {agentEnabled ? (
+                <>
+                  {agentMessages.data?.map((m) => (
+                    <p key={m.id} className="text-sm">
+                      <span className="text-gray-lighter">
+                        {m.role === 'user' ? 'You' : 'Agent'}:
+                      </span>{' '}
+                      {m.content}
+                    </p>
+                  ))}
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      if (agentDraft.trim()) sendToAgent.mutate()
+                    }}
+                    className="flex gap-2"
+                  >
+                    <input
+                      value={agentDraft}
+                      onChange={(event) => setAgentDraft(event.target.value)}
+                      placeholder="Ask the agent about this question…"
+                      className="flex-1 rounded-full bg-darker px-3 py-1.5 text-sm text-white"
+                    />
+                    <button
+                      type="submit"
+                      disabled={sendToAgent.isPending}
+                      className="rounded-full bg-gray-light px-3 py-1.5 text-sm disabled:opacity-60"
+                    >
+                      {sendToAgent.isPending ? 'Thinking…' : 'Send'}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <p className="text-sm text-gray-lighter">
+                  Ask an admin to set <code className="text-xs">ANTHROPIC_API_KEY</code> to enable
+                  this.
+                </p>
+              )}
+            </div>
+          ) : null}
+        </>
       ) : null}
     </div>
   )
