@@ -2,6 +2,30 @@
 
 Mobile app releases (the `v*` tags that drive `mobile-release.yml`). Only commits that touched the mobile app or shared packages are listed.
 
+## [1.1.0](https://github.com/whocards/whocards-platform/compare/v1.0.1...v1.1.0) (2026-07-04)
+
+### Features
+
+- **mobile:** light mode — Theme Display setting ([#163](https://github.com/whocards/whocards-platform/issues/163)) ([#167](https://github.com/whocards/whocards-platform/issues/167)) ([eb7ab84](https://github.com/whocards/whocards-platform/commit/eb7ab844fe8298c15f7fdcbd342da53af54ee05a)), closes [#168](https://github.com/whocards/whocards-platform/issues/168)
+- **mobile:** Pick a Card looks and plays like the printed deck ([#160](https://github.com/whocards/whocards-platform/issues/160)) ([4415a43](https://github.com/whocards/whocards-platform/commit/4415a43391ab5a1c996d826b3f5a704ced6f72e4))
+- **mobile:** tabletop mode — two-way readable card ([#148](https://github.com/whocards/whocards-platform/issues/148)) ([#168](https://github.com/whocards/whocards-platform/issues/168)) ([8b60b49](https://github.com/whocards/whocards-platform/commit/8b60b49ecfce0c9d2a716c2597f7559f4283fa6e))
+- **observability:** flag internal/dev traffic instead of losing it ([#181](https://github.com/whocards/whocards-platform/issues/181)) ([85aaa97](https://github.com/whocards/whocards-platform/commit/85aaa9700fc004e6ea133b5610ebeb17d06e6cdd))
+- Pick a Card Game, multi-language cards, and the entitlement seam ([#150](https://github.com/whocards/whocards-platform/issues/150)) ([75a1b3c](https://github.com/whocards/whocards-platform/commit/75a1b3c7936b5c50fecd9cfa75300e3bdc955f76))
+- **website:** per-question Share sheet on /play with desktop download fallback ([#158](https://github.com/whocards/whocards-platform/issues/158)) ([26d905f](https://github.com/whocards/whocards-platform/commit/26d905f9adbcd872d42cce0668d2f3241eb8c4e3)), closes [#154](https://github.com/whocards/whocards-platform/issues/154) [#157](https://github.com/whocards/whocards-platform/issues/157) [#154](https://github.com/whocards/whocards-platform/issues/154) [#155](https://github.com/whocards/whocards-platform/issues/155)
+
+### Bug Fixes
+
+- **mobile:** classic question is not a card — no panel, themed text ([#173](https://github.com/whocards/whocards-platform/issues/173) final) ([#196](https://github.com/whocards/whocards-platform/issues/196)) ([0091eb4](https://github.com/whocards/whocards-platform/commit/0091eb4091be9b6551a992f2bda42e04ec66530c)), closes [#194](https://github.com/whocards/whocards-platform/issues/194)
+- **mobile:** light mode themes play-screen chrome, cards stay dark ([#174](https://github.com/whocards/whocards-platform/issues/174)) ([892a766](https://github.com/whocards/whocards-platform/commit/892a76693efd00c1b6d9c35133ef9cd976563edb)), closes [#167](https://github.com/whocards/whocards-platform/issues/167) [#167](https://github.com/whocards/whocards-platform/issues/167) [#173](https://github.com/whocards/whocards-platform/issues/173) [#173](https://github.com/whocards/whocards-platform/issues/173)
+- **mobile:** live-session polish batch — header inset, share dim, textured pick table ([#198](https://github.com/whocards/whocards-platform/issues/198)) ([fd93335](https://github.com/whocards/whocards-platform/commit/fd93335d33220c2916b695f2d3dc1484dc836ad3)), closes [#332b4a](https://github.com/whocards/whocards-platform/issues/332b4a) [#5c5182](https://github.com/whocards/whocards-platform/issues/5c5182)
+- **mobile:** make nested Game/Theme/Language sheets compact too ([#191](https://github.com/whocards/whocards-platform/issues/191)) ([5a6caff](https://github.com/whocards/whocards-platform/commit/5a6caffafc8dc15c33475fcd26ab71b72f92769f)), closes [#189](https://github.com/whocards/whocards-platform/issues/189) [#189](https://github.com/whocards/whocards-platform/issues/189) [#163](https://github.com/whocards/whocards-platform/issues/163) [#189](https://github.com/whocards/whocards-platform/issues/189)
+- **mobile:** re-seed the open deck from the raw URL on warm deep links ([#140](https://github.com/whocards/whocards-platform/issues/140)) ([87960a2](https://github.com/whocards/whocards-platform/commit/87960a24f5d78c75b2491658dd9dd7a52865f228))
+- **mobile:** route deep links to the linked question when the player is already open ([#137](https://github.com/whocards/whocards-platform/issues/137)) ([8b0c1a6](https://github.com/whocards/whocards-platform/commit/8b0c1a6f24a429bb85f9dc2d30ed858e370bc9f8))
+- **mobile:** share sheet presents as compact bottom sheet ([#166](https://github.com/whocards/whocards-platform/issues/166)) ([3c71d07](https://github.com/whocards/whocards-platform/commit/3c71d07f10afaadb1f907ef92e8a95e3bb963260)), closes [#159](https://github.com/whocards/whocards-platform/issues/159) [#162](https://github.com/whocards/whocards-platform/issues/162)
+- **mobile:** Share sheet stays open after the OS share sheet dismisses (Android freeze) ([#199](https://github.com/whocards/whocards-platform/issues/199)) ([d903f07](https://github.com/whocards/whocards-platform/commit/d903f07455208297c4ec73ed0e241b4ee567bcee)), closes [facebook/react-native#17073](https://github.com/facebook/react-native/issues/17073) [react-navigation/react-navigation#9757](https://github.com/react-navigation/react-navigation/issues/9757) [#192](https://github.com/whocards/whocards-platform/issues/192)
+- **mobile:** size Classic play's light-theme card panel like a card, not the full budget box ([#194](https://github.com/whocards/whocards-platform/issues/194)) ([c64e473](https://github.com/whocards/whocards-platform/commit/c64e473bc688111c9274a1eb1ca30e81a7931f9e)), closes [#174](https://github.com/whocards/whocards-platform/issues/174) [#174](https://github.com/whocards/whocards-platform/issues/174)
+- single source of truth for store IDs + fail-loud launch-blast URLs ([#165](https://github.com/whocards/whocards-platform/issues/165)) ([61310ed](https://github.com/whocards/whocards-platform/commit/61310edca0f06d2c47ec294d7358141d728fde99)), closes [#128](https://github.com/whocards/whocards-platform/issues/128)
+
 ## 1.0.1 (2026-06-29)
 
 ### Features
