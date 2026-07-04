@@ -1,5 +1,10 @@
 # WhoCards — SEO & Answer-Engine (AEO) Audit
 
+> **Superseded by [`05-seo-aeo-action-plan.md`](./05-seo-aeo-action-plan.md) (2026-07-04).** Most
+> of the P0/P1 list below has since shipped (PR #66, PR #143 / issues #45–46), and the 2026-07
+> doc re-audits the live code, verifies against a real build, and finds a couple of new bugs
+> these PRs didn't touch. Left here for history; read `05` for the current state.
+
 _Scope: `apps/website` (Astro static site, Netlify). Reviewed 2026-06-23 against the codebase
 and the PostHog acquisition data in `01-analytics-baseline.md`._
 
