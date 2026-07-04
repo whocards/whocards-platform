@@ -137,6 +137,18 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Publish OTA update
+      # Published per-platform (not --platform all) because `all` makes `expo export`
+      # also render the web target. This app doesn't ship a web build (web: { output:
+      # "static" } in app.json exists only for local `expo start --web` preview), and
+      # `expo-router`'s static render SSRs the route tree in Node, which throws
+      # "window is not defined" on this project — see #209. Splitting into two
+      # single-platform publishes avoids the web export entirely without touching
+      # expo.platforms in app.json, which would change the native fingerprint and stop
+      # this OTA from reaching already-installed builds (fingerprint policy: see #209).
+      - name: Publish OTA update (iOS)
         working-directory: apps/mobile
-        run: eas update --channel production --message "${{ github.ref_name }}" --non-interactive
+        run: eas update --platform ios --channel production --message "${{ github.ref_name }}" --non-interactive
+
+      - name: Publish OTA update (Android)
+        working-directory: apps/mobile
+        run: eas update --platform android --channel production --message "${{ github.ref_name }}" --non-interactive
