@@ -8,6 +8,7 @@ import BackgroundImages from '~components/ui/BackgroundImages.astro'
 import {APP_IOS_LAUNCHED, APP_STORE_APP_ID} from '~constants/app'
 import {mainLinks} from '~constants/navigation'
 import type {Link} from '~constants/navigation'
+import {toBCP47LanguageTag} from '~utils'
 import '~styles/base.css'
 import Footer from './Footer.astro'
 
@@ -42,7 +43,7 @@ const {
 ---
 
 <!doctype html>
-<html lang={lang} class='scroll-smooth bg-darkest'>
+<html lang={toBCP47LanguageTag(lang)} class='scroll-smooth bg-darkest'>
   <head>
     <Head
       title={title}

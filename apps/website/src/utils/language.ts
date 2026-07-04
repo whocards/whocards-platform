@@ -40,3 +40,19 @@ export const getCurrentLanguage = (url: string): Language => {
 
   return LANG_KEYS.includes(lang) ? lang : DEFAULT_LANGUAGE
 }
+
+// Our internal language keys double as URL segments (/jp/question/1) and are
+// intentionally left alone here — renaming them is a much larger, riskier
+// surface (deck data, print, mobile). This maps a key to the spec-correct
+// BCP-47 primary language subtag for contexts where that distinction matters:
+// the `<html lang>` attribute, `hreflang` alternates, and `og:locale` (#207).
+// Every key is already a valid subtag except `jp`, which is really the ISO
+// 3166-1 *country* code for Japan — the correct language subtag for Japanese
+// is `ja`. Region subtags (e.g. `pt-br`) are also upper-cased to convention
+// (`pt-BR`); functionally case-insensitive, but tools/crawlers expect it.
+const BCP47_OVERRIDES: Record<string, string> = {jp: 'ja'}
+
+export const toBCP47LanguageTag = (lang: string): string => {
+  const [primary, region] = (BCP47_OVERRIDES[lang] ?? lang).split('-')
+  return region ? `${primary}-${region.toUpperCase()}` : primary
+}

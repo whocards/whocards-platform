@@ -18,9 +18,18 @@ import Layout from '~layouts/Layout.astro'
 import {Image} from 'astro:assets'
 import bgRightImage from '~assets/images/bg-right-large.svg'
 import bgLeftImage from '~assets/images/bg-left-large.svg'
+
+// Homepage-specific title/description (#207): the sitewide default in
+// Head.astro is a good brand fallback for pages that don't set their own,
+// but the homepage is the highest-traffic page and was carrying zero target
+// keywords ("WhoCards" as the whole <title>). "66 questions" / "14 languages"
+// match the product's own copy below and the FAQ; no new claims invented.
+const title = 'Free Online Conversation Card Game & Deep Questions'
+const description =
+  'Play WhoCards free online — a conversation card game with 66 deep, honest questions in 14 languages. Real icebreakers for friends, teams, and family.'
 ---
 
-<Layout class='scrollbar-hide'>
+<Layout title={title} description={description} class='scrollbar-hide'>
   <div
     class='flex flex-col gap-4 lg:gap-5 px-8 md:pb-16 max-w-5xl lg:items-center h-[calc(100vh-4rem)] justify-center relative'
   >

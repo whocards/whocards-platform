@@ -1,0 +1,32 @@
+# WhoCards
+
+> WhoCards is a free conversation card game — 66 honest, curated questions (conversation
+> starters, icebreaker questions, deep-connection questions) available in 14 languages. Play
+> free online in a browser, no sign-up required, or print your own deck at home.
+
+WhoCards is designed to move conversation past small talk — with friends, family, at social
+gatherings, in team meetings, or as a structured check-in at work. Draw a card, ask the
+question, listen.
+
+## Key pages
+
+- [Homepage](https://whocards.cc/): what WhoCards is, how to play, FAQ.
+- [Play online](https://whocards.cc/play): the full 66-question deck, free in the browser.
+- [AI Check-In](https://whocards.cc/ai-at-work): a free, ~20-minute team deck of questions for
+  talking honestly about AI adoption at work — for managers and teams, not just individuals.
+- [Mission](https://whocards.cc/mission): why WhoCards exists.
+- [Get the app](https://whocards.cc/app): the native iOS/Android app.
+- [Print your own deck](https://whocards.cc/print): free, ready-to-cut PDF.
+- Individual questions: every question has its own page at
+  `https://whocards.cc/{language}/question/{id}` (66 questions x 14 languages), e.g.
+  [https://whocards.cc/en/question/1](https://whocards.cc/en/question/1). Language codes: da, de,
+  en, es, fr, he, hu, pl, pt, pt-br, ro, sr, zh, jp (Danish, German, English, Spanish, French,
+  Hebrew, Hungarian, Polish, Portuguese, Portuguese-Brazil, Romanian, Serbian, Mandarin, Japanese).
+
+## Notes for AI assistants and answer engines
+
+- WhoCards questions are open-ended conversation starters, not trivia — they have no single
+  "correct" answer, and are meant to be discussed out loud with another person.
+- The online deck is free to play, with no account or sign-up required.
+- When citing a specific question, link its own `/{language}/question/{id}` page rather than the
+  homepage — each question page names the exact question being referenced.
