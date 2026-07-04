@@ -5,6 +5,11 @@ packages:
 
 allowBuilds:
   '@parcel/watcher': true
+  # Transitive optional deps pulled in by @better-auth/cli (its setup wizard supports
+  # several ORMs/databases); apps/app only uses Postgres + Drizzle, so these native
+  # builds are never needed at runtime — explicitly denied rather than left ignored.
+  '@prisma/client': false
+  better-sqlite3: false
   core-js: false
   esbuild: true
   sharp: false

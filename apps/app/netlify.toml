@@ -1,0 +1,19 @@
+# Dedicated site for the authenticated app (ADR-0008) — separate from apps/website's
+# Netlify site. If this site is ever wired to Netlify's git-integration auto-deploy,
+# set Base directory = apps/app in the site's dashboard settings (same reason as
+# apps/website/netlify.toml — otherwise CI resolves these relative paths from the
+# repo root). Tonight this app is deployed via the CLI (`netlify build` + `netlify
+# deploy`) run with cwd=apps/app, so Base directory isn't required yet.
+[build.environment]
+NODE_VERSION = "22"
+
+[build]
+command = "pnpm build"
+# Verified against a real `netlify build` run (not just the docs): under Netlify's
+# own build orchestration, @netlify/vite-plugin-tanstack-start writes static assets
+# to dist/ and the SSR function under .netlify/functions-internal/ (auto-detected
+# by `netlify deploy`). A bare `vite build` outside Netlify's orchestration instead
+# writes to .output/ + .netlify/v1/functions/ — that layout is NOT what gets
+# deployed; always deploy via `netlify build && netlify deploy --prod`, never by
+# hand-picking a --dir from a manual `vite build`.
+publish = "dist"

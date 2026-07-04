@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+/* Brand tokens (see @whocards/tokens) translated to a Tailwind v4 CSS-first theme.
+   Kept minimal and hand-synced — this is an internal tool, not the marketing site,
+   so it borrows the palette without pulling in custom webfonts or the full preset. */
+@theme {
+  --color-yellow-300: #ffe37e;
+  --color-yellow-400: #f9d75f;
+  --color-yellow-500: #f6c944;
+
+  --color-gray: #65636e;
+  --color-gray-lighter: #dcdee9;
+  --color-gray-light: #474a69;
+  --color-gray-dark: #9698af;
+
+  --color-dark: #262432;
+  --color-darker: #111516;
+  --color-darkest: #08001a;
+  --color-background: #0d051f;
+  --color-white: #f5f5f5;
+  --color-red: #ee1e23;
+
+  --color-primary-light: #f9d75f;
+  --color-primary-dark: #c058d2;
+
+  --font-sans:
+    ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-white);
+  font-family: var(--font-sans);
+}
