@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 import {createRootRoute, HeadContent, Scripts} from '@tanstack/react-router'
 import {TanStackRouterDevtools} from '@tanstack/react-router-devtools'
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query'
+import {useState} from 'react'
 import appCss from '~/styles/app.css?url'
 
 import {DefaultCatchBoundary} from '~/components/DefaultCatchBoundary'
@@ -22,14 +24,18 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({children}: {children: React.ReactNode}) {
+  const [queryClient] = useState(() => new QueryClient())
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body>
-        {children}
-        {import.meta.env.DEV ? <TanStackRouterDevtools position="bottom-right" /> : null}
+        <QueryClientProvider client={queryClient}>
+          {children}
+          {import.meta.env.DEV ? <TanStackRouterDevtools position="bottom-right" /> : null}
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>

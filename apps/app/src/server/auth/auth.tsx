@@ -1,0 +1,83 @@
+import {drizzleAdapter} from '@better-auth/drizzle-adapter'
+import {betterAuth} from 'better-auth'
+import {magicLink, organization} from 'better-auth/plugins'
+import {MagicLinkEmail, magicLinkSubject, magicLinkText} from '@whocards/emails'
+import {sendEmail} from '@whocards/emails/resend'
+
+import {db, schema} from '../db'
+import {env} from '../env'
+import {roles} from './permissions'
+
+const googleProvider =
+  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+    ? {clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET}
+    : undefined
+
+// The Drizzle adapter looks up each model by the STRING key it's configured
+// with below (e.g. `app_verification`, matching `verification: {modelName:
+// 'app_verification'}`) — it indexes into this object by that exact string, not
+// by matching our camelCase schema.ts export names. So this is an explicit,
+// intentional map from adapter model-name -> our actual (camelCase) table
+// export, not just `schema` re-exported verbatim.
+const adapterSchema = {
+  app_user: schema.appUser,
+  app_session: schema.appSession,
+  app_account: schema.appAccount,
+  app_verification: schema.appVerification,
+  app_organization: schema.appOrganization,
+  app_member: schema.appMember,
+  app_invitation: schema.appInvitation,
+}
+
+export const auth = betterAuth({
+  baseURL: env.BETTER_AUTH_URL,
+  secret: env.BETTER_AUTH_SECRET,
+  database: drizzleAdapter(db, {
+    provider: 'pg',
+    schema: adapterSchema,
+    usePlural: false,
+  }),
+  // No email+password or Google-only-required flow — magic link is the primary
+  // (and, tonight, only guaranteed-working) sign-in method. Google is scaffolded
+  // and env-gated (see googleAuthEnabled) per the overnight build plan.
+  emailAndPassword: {enabled: false},
+  ...(googleProvider ? {socialProviders: {google: googleProvider}} : {}),
+  user: {modelName: 'app_user'},
+  session: {modelName: 'app_session'},
+  account: {modelName: 'app_account'},
+  verification: {modelName: 'app_verification'},
+  plugins: [
+    magicLink({
+      disableSignUp: false,
+      expiresIn: 60 * 15,
+      sendMagicLink: async ({email, url}) => {
+        // Dev/test verification path (plan requirement): read the link from the
+        // server log instead of an inbox. Real send still happens below so prod
+        // behaves identically to what we test tonight.
+        if (env.NODE_ENV !== 'production') {
+          // oxlint-disable-next-line no-console -- deliberate dev-only sign-in log, not an error
+          console.log(`[auth] magic link for ${email}: ${url}`)
+        }
+        await sendEmail({
+          apiKey: env.RESEND_API_KEY,
+          from: env.RESEND_FROM_EMAIL,
+          to: email,
+          subject: magicLinkSubject,
+          html: <MagicLinkEmail url={url} />,
+          text: magicLinkText({url}),
+        })
+      },
+    }),
+    organization({
+      schema: {
+        organization: {modelName: 'app_organization'},
+        member: {modelName: 'app_member'},
+        invitation: {modelName: 'app_invitation'},
+      },
+      roles,
+      // No self-serve org creation UI tonight — org(s) are provisioned by our own
+      // server-side bootstrap (see server/auth/bootstrap.ts), not by end users.
+      allowUserToCreateOrganization: false,
+    }),
+  ],
+})

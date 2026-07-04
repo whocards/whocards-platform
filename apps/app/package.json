@@ -14,7 +14,7 @@
     "db:generate": "pnpm with-env drizzle-kit generate",
     "db:migrate": "pnpm with-env drizzle-kit migrate",
     "db:studio": "pnpm with-env drizzle-kit studio",
-    "auth:generate": "pnpm with-env better-auth generate --config src/server/auth/auth.ts -y --output src/server/auth/auth-schema.generated.ts"
+    "auth:generate": "pnpm with-env better-auth generate --config src/server/auth/auth.tsx -y --output src/server/auth/auth-schema.generated.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.23",
