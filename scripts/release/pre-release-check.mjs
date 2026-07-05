@@ -22,16 +22,28 @@
 // RELEASE_SKIP_BOOT=1 to boot them yourself). Skip the whole gate with RELEASE_SKIP_E2E=1
 // (and run the flows yourself, or accept the risk for a hotfix).
 //
+// Before each platform's suite, we make sure a CURRENT app is actually installed on the
+// booted device — `e2e:ios`/`e2e:android` are bare `maestro test` invocations with no
+// build/install step of their own, so without this a fresh device dies instantly with
+// "Failed to get app binary directory". We build a self-contained Release sim/emulator
+// app (JS embedded, no Metro dependency needed) and install it whenever the installed
+// app is missing or was built from a different revision. Skip just the build (e.g. you
+// already installed a build yourself) with RELEASE_SKIP_BUILD=1 — the suite still runs.
+// That's distinct from RELEASE_SKIP_E2E=1, which skips the whole gate.
+//
 // A platform that passes is recorded against the current git revision in a temp file, so
-// a re-run on the same code skips suites that already passed (e.g. iOS passed but Android
-// failed → fix Android, re-run, only Android runs). The record is invalidated as soon as
-// the tree changes. Force a full re-run with RELEASE_FORCE_E2E=1 (or delete the file).
+// a re-run on the same code skips both the rebuild and the suite (e.g. iOS passed but
+// Android failed → fix Android, re-run, only Android rebuilds/retests). The record is
+// invalidated as soon as the tree changes, and is never trusted if the app isn't actually
+// installed on the booted device anymore (e.g. you erased the simulator). Force a full
+// re-run with RELEASE_FORCE_E2E=1 (or delete the file).
 
 import {execSync, spawn} from 'node:child_process'
 import {createHash} from 'node:crypto'
-import {existsSync, readFileSync, writeFileSync} from 'node:fs'
+import {existsSync, readdirSync, readFileSync, writeFileSync} from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 
 const only = process.argv[2]?.toLowerCase()
 if (only && only !== 'ios' && only !== 'android') {
@@ -41,6 +53,15 @@ if (only && only !== 'ios' && only !== 'android') {
 
 // Coarse synchronous sleep so we can poll for boot completion without async.
 const sleep = (seconds) => execSync(`sleep ${seconds}`)
+
+// This script is always invoked as `node scripts/release/pre-release-check.mjs` (or via a
+// pnpm script that shells out to the same), so resolve paths from its own location rather
+// than assuming process.cwd() is the repo root.
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const MOBILE_DIR = path.join(REPO_ROOT, 'apps', 'mobile')
+const IOS_DIR = path.join(MOBILE_DIR, 'ios')
+const ANDROID_DIR = path.join(MOBILE_DIR, 'android')
+const APP_ID = {ios: 'cc.whocards.mobile', android: 'com.whocards.mobile'}
 
 // The Android SDK tools usually aren't on PATH (only ANDROID_HOME is set), so resolve the
 // emulator/adb binaries from the SDK and fall back to a bare name (PATH) if not found.
@@ -55,9 +76,14 @@ function resolveAndroidTool(name, subdir) {
 const EMULATOR = resolveAndroidTool('emulator', 'emulator')
 const ADB = resolveAndroidTool('adb', 'platform-tools')
 
-// ── per-revision pass cache ────────────────────────────────────────────────────────────
-// Keyed to HEAD + working-tree state, so it only short-circuits when nothing changed.
+// ── per-revision cache ─────────────────────────────────────────────────────────────────
+// Keyed to HEAD + working-tree state, so it only short-circuits when nothing changed. One
+// record per platform tracks both "built" (a Release app for this revision was installed)
+// and "passed" (the e2e suite passed against that install) — a single coherent structure
+// instead of two drifting caches. `version` lets us safely reshape this later: a cache
+// written by an older version of this script is just treated as empty.
 const CACHE_FILE = path.join(os.tmpdir(), 'whocards-prerelease-e2e.json')
+const CACHE_VERSION = 2
 
 function revisionKey() {
   try {
@@ -88,25 +114,199 @@ function revisionKey() {
   }
 }
 
-function loadPassed(key) {
-  if (!key || process.env.RELEASE_FORCE_E2E) return new Set()
-  try {
-    const data = JSON.parse(readFileSync(CACHE_FILE, 'utf8'))
-    if (data.key === key && Array.isArray(data.passed)) return new Set(data.passed)
-  } catch {
-    // missing/corrupt/stale cache — treat as empty
-  }
-  return new Set()
+function emptyCache(key) {
+  return {version: CACHE_VERSION, key, platforms: {}}
 }
 
-function savePassed(key, passed) {
-  if (!key) return
+function loadCache(key) {
+  if (!key || process.env.RELEASE_FORCE_E2E) return emptyCache(key)
   try {
-    writeFileSync(CACHE_FILE, JSON.stringify({key, passed: [...passed]}))
+    const data = JSON.parse(readFileSync(CACHE_FILE, 'utf8'))
+    if (data.version === CACHE_VERSION && data.key === key && data.platforms) {
+      return data
+    }
+  } catch {
+    // missing/corrupt/stale/older-shape cache — treat as empty
+  }
+  return emptyCache(key)
+}
+
+function saveCache(cache) {
+  if (!cache.key) return
+  try {
+    writeFileSync(CACHE_FILE, JSON.stringify(cache))
   } catch {
     // best-effort cache; a write failure just means no skip next time
   }
 }
+
+function platformState(cache, id) {
+  return cache.platforms[id] ?? {built: false, passed: false}
+}
+
+// ── install checks ───────────────────────────────────────────────────────────────────
+// A cached "built"/"passed" record for this revision must never be trusted blindly — the
+// simulator could've been erased, or the emulator swapped, since the last run. These
+// confirm the app is actually on the currently-booted device right now.
+function getBootedIosUdid() {
+  try {
+    const {devices} = JSON.parse(
+      execSync('xcrun simctl list devices booted --json', {encoding: 'utf8'})
+    )
+    for (const list of Object.values(devices)) {
+      const booted = list.find((d) => d.state === 'Booted')
+      if (booted) return booted.udid
+    }
+  } catch {
+    // xcrun unavailable — no udid to report
+  }
+  return null
+}
+
+function getBootedAndroidSerial() {
+  try {
+    const serial = /(emulator-\d+)\s+device/.exec(
+      execSync(`"${ADB}" devices`, {encoding: 'utf8'})
+    )?.[1]
+    return serial ?? null
+  } catch {
+    return null
+  }
+}
+
+function isIosAppInstalled(udid) {
+  if (!udid) return false
+  try {
+    execSync(`xcrun simctl get_app_container ${udid} ${APP_ID.ios} app`, {stdio: 'ignore'})
+    return true
+  } catch {
+    return false
+  }
+}
+
+function isAndroidAppInstalled(serial) {
+  if (!serial) return false
+  try {
+    const out = execSync(`"${ADB}" -s ${serial} shell pm path ${APP_ID.android}`, {
+      encoding: 'utf8',
+    })
+    return out.includes('package:')
+  } catch {
+    return false
+  }
+}
+
+// ── self-provisioning build ─────────────────────────────────────────────────────────────
+// ios/ and android/ are gitignored Expo prebuild output — generate them if this is a
+// fresh checkout. `pnpm with-env` (defined in apps/mobile/package.json) loads the repo
+// root .env so EXPO_PUBLIC_* vars get inlined the same way `expo start`/`expo run:*` do.
+function ensurePrebuild(platform) {
+  const dir = platform === 'ios' ? IOS_DIR : ANDROID_DIR
+  if (existsSync(dir)) return
+  console.log(`   No ${platform}/ directory — running expo prebuild -p ${platform}…`)
+  // CI=1 is expo's own signal to skip interactive prompts (a bare --non-interactive flag
+  // doesn't exist on this expo-cli version and just prints a warning).
+  execSync(`pnpm with-env expo prebuild -p ${platform} --pnpm`, {
+    cwd: MOBILE_DIR,
+    stdio: 'inherit',
+    env: {...process.env, CI: '1'},
+  })
+}
+
+function findIosWorkspace() {
+  const workspace = readdirSync(IOS_DIR).find((f) => f.endsWith('.xcworkspace'))
+  if (!workspace) throw new Error('no .xcworkspace found in ios/ after prebuild')
+  return path.join(IOS_DIR, workspace)
+}
+
+function findIosScheme(workspace) {
+  const out = execSync(`xcodebuild -workspace "${workspace}" -list`, {encoding: 'utf8'})
+  const schemes = (out.split('Schemes:')[1] ?? '')
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  // The workspace an Expo prebuild generates always has a scheme named after the app
+  // itself (matching the .xcworkspace's own basename) — everything else listed is a pod
+  // target (Pods-*) or one of its transitive dependency schemes (ExpoModulesJSI,
+  // EASClient, etc.), which xcodebuild would happily "build" into nothing installable.
+  const appScheme = path.basename(workspace, path.extname(workspace))
+  if (schemes.includes(appScheme)) return appScheme
+  const fallback = schemes.find((s) => !/pods/i.test(s))
+  if (!fallback) throw new Error('could not determine an Xcode scheme from the workspace')
+  return fallback
+}
+
+// Builds a self-contained Release simulator app (JS bundle embedded, no Metro needed at
+// runtime) and installs it on the given booted simulator. Sim builds need no signing, but
+// `-allowProvisioningUpdates` keeps xcodebuild from stalling on a cert prompt regardless.
+function buildAndInstallIos(udid) {
+  ensurePrebuild('ios')
+  const workspace = findIosWorkspace()
+  const scheme = findIosScheme(workspace)
+  const derivedDataPath = path.join(IOS_DIR, 'build')
+  const buildCmd =
+    `pnpm with-env xcodebuild -workspace "${workspace}" -scheme "${scheme}" ` +
+    `-configuration Release -sdk iphonesimulator -destination "id=${udid}" ` +
+    `-derivedDataPath "${derivedDataPath}" -allowProvisioningUpdates build`
+  console.log(`   Building Release iOS sim app (scheme "${scheme}")… this can take a while.`)
+  try {
+    execSync(buildCmd, {cwd: MOBILE_DIR, stdio: 'inherit'})
+  } catch {
+    // Known react-native/Expo new-architecture flake on a from-scratch derived data dir:
+    // the ReactCodegen script phase that generates its own .cpp sources can lose the race
+    // against the compile step that consumes them ("Build input file cannot be found").
+    // The codegen output is on disk by the time the build fails, so a single retry is
+    // reliably a clean incremental build, not a full rebuild — cheap enough to just do it
+    // rather than surface a false failure.
+    console.warn(
+      '   pre-release: iOS build failed (possible codegen race on a fresh build) — retrying once…'
+    )
+    execSync(buildCmd, {cwd: MOBILE_DIR, stdio: 'inherit'})
+  }
+  const productsDir = path.join(derivedDataPath, 'Build', 'Products', 'Release-iphonesimulator')
+  const appName = existsSync(productsDir)
+    ? readdirSync(productsDir).find((f) => f.endsWith('.app'))
+    : null
+  if (!appName) throw new Error('iOS build finished but produced no .app bundle')
+  const appPath = path.join(productsDir, appName)
+  console.log(`   Installing ${appName} on ${udid}…`)
+  execSync(`xcrun simctl install ${udid} "${appPath}"`, {stdio: 'inherit'})
+}
+
+// JDK 17 is required for the current Gradle/AGP pin; `/usr/libexec/java_home` finds it on
+// macOS regardless of what's first on PATH (a newer JDK often is). Falls back to whatever
+// JAVA_HOME is already set so this doesn't hard-fail on non-Homebrew setups — gradlew will
+// complain loudly and specifically if the version is wrong.
+function findJdk17() {
+  try {
+    return execSync('/usr/libexec/java_home -v 17', {encoding: 'utf8'}).trim()
+  } catch {
+    return process.env.JAVA_HOME
+  }
+}
+
+// Builds a self-contained Release APK (JS bundle embedded) and installs it on the given
+// booted emulator.
+function buildAndInstallAndroid(serial) {
+  ensurePrebuild('android')
+  const javaHome = findJdk17()
+  console.log('   Building Release Android app (:app:assembleRelease)… this can take a while.')
+  execSync('pnpm with-env android/gradlew :app:assembleRelease', {
+    cwd: MOBILE_DIR,
+    stdio: 'inherit',
+    env: javaHome ? {...process.env, JAVA_HOME: javaHome} : process.env,
+  })
+  const apkDir = path.join(ANDROID_DIR, 'app', 'build', 'outputs', 'apk', 'release')
+  const apkName = existsSync(apkDir) ? readdirSync(apkDir).find((f) => f.endsWith('.apk')) : null
+  if (!apkName) throw new Error('Android build finished but produced no .apk')
+  const apkPath = path.join(apkDir, apkName)
+  console.log(`   Installing ${apkName} on ${serial}…`)
+  execSync(`"${ADB}" -s ${serial} install -r "${apkPath}"`, {stdio: 'inherit'})
+}
+
+const getBootedDevice = {ios: getBootedIosUdid, android: getBootedAndroidSerial}
+const isAppInstalled = {ios: isIosAppInstalled, android: isAndroidAppInstalled}
+const buildAndInstall = {ios: buildAndInstallIos, android: buildAndInstallAndroid}
 
 // ── device boot ──────────────────────────────────────────────────────────────────────
 // Each ensure*Booted() returns a "teardown handle" identifying a device WE booted (so it
@@ -338,7 +538,7 @@ const allSuites = [
 const suites = only ? allSuites.filter(([id]) => id === only) : allSuites
 
 const key = revisionKey()
-const passed = loadPassed(key)
+const cache = loadCache(key)
 
 console.log(
   `\n▶  pre-release: running Maestro e2e gate${only ? ` (${only})` : ''} (set RELEASE_SKIP_E2E=1 to skip)\n`
@@ -349,15 +549,49 @@ console.log(
 const booted = []
 
 for (const [id, label, device, cmd] of suites) {
-  if (passed.has(id)) {
+  const handle = boot[id]()
+  if (handle) booted.push(handle)
+
+  const deviceId = getBootedDevice[id]()
+  const installed = isAppInstalled[id](deviceId)
+  const state = platformState(cache, id)
+
+  if (process.env.RELEASE_SKIP_BUILD) {
+    console.log(`\n— ${label}: RELEASE_SKIP_BUILD set — assuming the installed build is current.`)
+  } else if (state.built && installed) {
+    console.log(`\n— ${label}: already built + installed for this revision — skipping build.`)
+  } else {
+    if (!deviceId) {
+      booted.forEach(teardown)
+      console.error(`\n✖  pre-release: no booted ${device} found to build for — aborting.\n`)
+      process.exit(1)
+    }
+    console.log(`\n— ${label}: installing a fresh Release build (missing or stale)…`)
+    try {
+      buildAndInstall[id](deviceId)
+    } catch (err) {
+      booted.forEach(teardown)
+      console.error(
+        `\n✖  pre-release: ${label} build/install failed — aborting.\n` +
+          `   ${err.message}\n` +
+          `   Skip with RELEASE_SKIP_BUILD=1 if you already have a current build installed.\n`
+      )
+      process.exit(1)
+    }
+    state.built = true
+    state.passed = false // a fresh install invalidates any previously recorded pass
+    cache.platforms[id] = state
+    saveCache(cache)
+  }
+
+  if (state.passed && installed) {
     console.log(
       `\n— ${label}: already passed for this revision — skipping (RELEASE_FORCE_E2E=1 to re-run).`
     )
     continue
   }
+
   console.log(`\n— ${label}: ${cmd}`)
-  const handle = boot[id]()
-  if (handle) booted.push(handle)
   try {
     execSync(cmd, {stdio: 'inherit'})
   } catch {
@@ -368,8 +602,9 @@ for (const [id, label, device, cmd] of suites) {
     )
     process.exit(1)
   }
-  passed.add(id)
-  savePassed(key, passed)
+  state.passed = true
+  cache.platforms[id] = state
+  saveCache(cache)
 }
 
 booted.forEach(teardown)
