@@ -7,12 +7,14 @@
 # only reachable from the home screen's Settings menu now, so the language
 # switch happens BEFORE tapping Play, not from within the player.
 #
-# NOTE (issue #189, third pass): Settings is now a single Modal with sliding
-# internal pages, not a stack of separate Modals — the header on the Language
-# page is a "back" chevron, not "close" (only the root menu page has "close"),
-# and picking a language does NOT auto-return to the menu (unlike Game/Theme),
-# so getting back to the menu needs an explicit "back" tap first. Not yet
-# re-run on device in the PR that made this change; run before relying on it.
+# NOTE (issue #189, fourth pass): Settings is a single Modal with sliding
+# internal pages. Picking a primary language now auto-returns to the menu —
+# same as Game/Theme — so no explicit "back" tap is needed after the pick
+# (settings-modal.tsx's Language onSelect calls goBack() itself); the menu's
+# own header is "close", not "back". (#216: this flow used to tap "back"
+# here for an older, third-pass behavior where the pick stayed put — that
+# tap started failing once the fourth pass added the auto-return, since by
+# the time it ran the sheet was already back on the menu page.)
 #
 # Run: pnpm --filter mobile e2e:ios  (or e2e:android)   (needs the app installed on a booted device)
 appId: ${APP_ID}
@@ -30,8 +32,7 @@ tags:
 - tapOn: 'Language: English'
 - assertVisible: 'Choose your language'
 - tapOn: 'Hebrew'
-- waitForAnimationToEnd # let the page settle before continuing
-- tapOn: 'back' # Language doesn't auto-return to the menu (unlike Game/Theme)
+- waitForAnimationToEnd # the pick auto-returns to the menu (settings-modal.tsx goBack())
 - tapOn: 'close'
 
 # Landing → player
