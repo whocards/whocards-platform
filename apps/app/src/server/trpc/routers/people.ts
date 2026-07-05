@@ -1,8 +1,9 @@
 import {and, eq} from 'drizzle-orm'
+import {TRPCError} from '@trpc/server'
 import {z} from 'zod'
 
 import {ensureDefaultOrganization} from '../../auth/bootstrap'
-import {ROLE_RANK} from '../../auth/permissions'
+import {canAssignRole, ROLE_RANK} from '../../auth/permissions'
 import {db} from '../../db'
 import {appMember, appUser} from '../../db/schema'
 import {env} from '../../env'
@@ -34,7 +35,14 @@ export const peopleRouter = createTRPCRouter({
    *  access already granted. */
   invite: roleProcedure('admin')
     .input(z.object({email: z.email(), role: roleSchema}))
-    .mutation(async ({input}) => {
+    .mutation(async ({ctx, input}) => {
+      if (!canAssignRole(ctx.membership.role, input.role)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only an owner can grant the owner role.',
+        })
+      }
+
       const org = await ensureDefaultOrganization()
       const email = input.email.toLowerCase().trim()
 
@@ -84,7 +92,14 @@ export const peopleRouter = createTRPCRouter({
 
   updateRole: roleProcedure('admin')
     .input(z.object({userId: z.string().min(1), role: roleSchema}))
-    .mutation(async ({input}) => {
+    .mutation(async ({ctx, input}) => {
+      if (!canAssignRole(ctx.membership.role, input.role)) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only an owner can grant the owner role.',
+        })
+      }
+
       const org = await ensureDefaultOrganization()
 
       const [target] = await db.select().from(appUser).where(eq(appUser.id, input.userId)).limit(1)

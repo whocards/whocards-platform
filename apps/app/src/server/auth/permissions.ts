@@ -32,3 +32,15 @@ export const isAppRole = (value: string): value is AppRole =>
 /** True when `role` is at least as senior as `min` in the ROLE_RANK hierarchy. */
 export const roleAtLeast = (role: AppRole, min: AppRole): boolean =>
   ROLE_RANK.indexOf(role) >= ROLE_RANK.indexOf(min)
+
+/**
+ * Whether `caller` is allowed to assign `target` to someone else.
+ * `people.ts`'s invite/updateRole are gated `roleProcedure('admin')`, but that
+ * only stops non-admins from calling them at all — nothing stopped an admin
+ * from minting a brand-new `owner` (or self-promoting) via the `role` input,
+ * since `roleSchema = z.enum(ROLE_RANK)` accepts the full hierarchy including
+ * the top. Granting `owner` is now restricted to existing owners; every other
+ * role (member..admin) stays open to any admin+, unchanged from today.
+ */
+export const canAssignRole = (caller: AppRole, target: AppRole): boolean =>
+  target === 'owner' ? caller === 'owner' : true

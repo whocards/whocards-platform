@@ -6,6 +6,7 @@ import {sendEmail} from '@whocards/emails/resend'
 
 import {db, schema} from '../db'
 import {env} from '../env'
+import {MAGIC_LINK_DISABLE_SIGNUP} from './magic-link-policy'
 import {roles} from './permissions'
 
 const googleProvider =
@@ -48,7 +49,9 @@ export const auth = betterAuth({
   verification: {modelName: 'app_verification'},
   plugins: [
     magicLink({
-      disableSignUp: false,
+      // Invite-only — see magic-link-policy.ts for exactly why this can't
+      // lock out the seeded owner or anyone people.ts's invite already added.
+      disableSignUp: MAGIC_LINK_DISABLE_SIGNUP,
       expiresIn: 60 * 15,
       sendMagicLink: async ({email, url}) => {
         // Dev/test verification path (plan requirement): read the link from the

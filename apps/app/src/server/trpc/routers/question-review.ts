@@ -1,4 +1,5 @@
 import {and, eq} from 'drizzle-orm'
+import {TRPCError} from '@trpc/server'
 import {createTwoFilesPatch} from 'diff'
 import {z} from 'zod'
 
@@ -44,6 +45,30 @@ const shippedTextFor = (questionId: string): string =>
  *  `'current'` — see decks-logic.ts's `buildNewQuestion` for that decision. */
 const hasLegacyVariants = (questionId: string): boolean =>
   (QUESTION_IDS as readonly string[]).includes(questionId)
+
+/**
+ * Guards vote/comments.add/approve against a client-supplied (deckSlug,
+ * questionId) that isn't real. Both became free-form strings (not the old
+ * hardcoded 37-id enum) once decks became a first-class concept — without
+ * this, a typo'd or stale id would silently write an orphan vote/comment/
+ * approval row with nothing to attach to. Checked against deck_question (the
+ * roster table) rather than `deck` directly: deckQuestion.deckSlug already
+ * has a real FK into `deck` (see schema.ts), so a roster hit implies the
+ * parent deck exists too — one query covers both.
+ */
+async function assertQuestionOnDeck(deckSlug: string, questionId: string): Promise<void> {
+  const [row] = await db
+    .select({id: deckQuestion.id})
+    .from(deckQuestion)
+    .where(and(eq(deckQuestion.deckSlug, deckSlug), eq(deckQuestion.questionId, questionId)))
+    .limit(1)
+  if (!row) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: `No question "${questionId}" on deck "${deckSlug}".`,
+    })
+  }
+}
 
 /** `reviewer+` can view/comment/vote (the plan's "facilitator+ can review" reads
  *  as the approve action below — reviewer is the named role for this surface).
@@ -118,6 +143,8 @@ export const questionReviewRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ctx, input}) => {
+      await assertQuestionOnDeck(input.deckSlug, input.questionId)
+
       await db
         .insert(questionVote)
         .values({
@@ -161,6 +188,8 @@ export const questionReviewRouter = createTRPCRouter({
         })
       )
       .mutation(async ({ctx, input}) => {
+        await assertQuestionOnDeck(input.deckSlug, input.questionId)
+
         await db.insert(questionComment).values({
           deckSlug: input.deckSlug,
           questionId: input.questionId,
@@ -180,6 +209,8 @@ export const questionReviewRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ctx, input}) => {
+      await assertQuestionOnDeck(input.deckSlug, input.questionId)
+
       const [existing] = await db
         .select()
         .from(questionReview)

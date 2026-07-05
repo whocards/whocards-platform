@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import {isAppRole, ROLE_RANK, roleAtLeast} from './permissions'
+import {canAssignRole, isAppRole, ROLE_RANK, roleAtLeast} from './permissions'
 
 describe('ROLE_RANK', () => {
   it('is the five roles, lowest to highest', () => {
@@ -50,5 +50,28 @@ describe('roleAtLeast', () => {
     expect(roleAtLeast('admin', 'admin')).toBe(true)
     expect(roleAtLeast('owner', 'admin')).toBe(true)
     expect(roleAtLeast('facilitator', 'admin')).toBe(false)
+  })
+})
+
+describe('canAssignRole', () => {
+  it('lets an owner grant every role, including owner', () => {
+    for (const target of ROLE_RANK) expect(canAssignRole('owner', target)).toBe(true)
+  })
+
+  it('lets an admin grant any role up to admin', () => {
+    expect(canAssignRole('admin', 'member')).toBe(true)
+    expect(canAssignRole('admin', 'reviewer')).toBe(true)
+    expect(canAssignRole('admin', 'facilitator')).toBe(true)
+    expect(canAssignRole('admin', 'admin')).toBe(true)
+  })
+
+  it('blocks an admin from granting owner — the deny path', () => {
+    expect(canAssignRole('admin', 'owner')).toBe(false)
+  })
+
+  it('blocks every below-owner role from granting owner', () => {
+    expect(canAssignRole('facilitator', 'owner')).toBe(false)
+    expect(canAssignRole('reviewer', 'owner')).toBe(false)
+    expect(canAssignRole('member', 'owner')).toBe(false)
   })
 })

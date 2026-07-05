@@ -1,6 +1,8 @@
 import {createEnv} from '@t3-oss/env-core'
 import {z} from 'zod'
 
+import {requiresExplicitBetterAuthUrl} from './env-logic'
+
 const optionalString = z.preprocess(
   (value) => (value === '' ? undefined : value),
   z.string().min(1).optional()
@@ -22,8 +24,13 @@ export const env = createEnv({
     // `openssl rand -hex 32` and set it in the root .env and on the Netlify site.
     BETTER_AUTH_SECRET: z.string().min(1),
     // Absolute origin this app is served from (no trailing slash), e.g.
-    // https://whocards-app.netlify.app. Falls back to localhost in dev.
-    BETTER_AUTH_URL: z.string().url().default('http://localhost:3100'),
+    // https://whocards-app.netlify.app. Required in production (see
+    // requiresExplicitBetterAuthUrl) — a missing value there must fail to
+    // boot rather than silently embed the wrong origin in magic-link emails.
+    // Falls back to localhost in dev/test for convenience.
+    BETTER_AUTH_URL: requiresExplicitBetterAuthUrl(process.env.NODE_ENV)
+      ? z.string().url()
+      : z.string().url().default('http://localhost:3100'),
     // Resend — reused from the existing website/emails setup for the magic-link email.
     RESEND_API_KEY: z.string().min(1),
     RESEND_FROM_EMAIL: z.string().default('WhoCards <hello@whocards.cc>'),

@@ -25,6 +25,16 @@ export const canTransitionDeckStatus = (from: DeckStatus, to: DeckStatus): boole
   return Math.abs(DECK_STATUSES.indexOf(from) - DECK_STATUSES.indexOf(to)) === 1
 }
 
+/**
+ * The statuses a deck-detail `<select>` should actually offer from its current
+ * status: itself (no-op) plus whatever `canTransitionDeckStatus` allows (one
+ * step forward/back), in DECK_STATUSES order. Keeps the UI from ever showing
+ * an option the server will reject — see decks/$slug.tsx, which used to render
+ * all 4 statuses unconditionally.
+ */
+export const nextStatusOptions = (current: DeckStatus): DeckStatus[] =>
+  DECK_STATUSES.filter((status) => canTransitionDeckStatus(current, status))
+
 /** Minimum role for each decks.ts procedure — named so the router and its
  *  guard tests (decks-logic.test.ts) reference one source of truth instead of
  *  duplicating role-string literals. Matches the founder's brief: reviewer

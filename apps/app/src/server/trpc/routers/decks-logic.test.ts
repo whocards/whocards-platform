@@ -7,6 +7,7 @@ import {
   DECKS_MIN_ROLE,
   groupByAct,
   isDeckStatus,
+  nextStatusOptions,
 } from './decks-logic'
 import type {DeckStatus} from './decks-logic'
 
@@ -55,6 +56,29 @@ describe('canTransitionDeckStatus', () => {
     expect(canTransitionDeckStatus('shipped', 'draft')).toBe(false)
     expect(canTransitionDeckStatus('shipped', 'in_review')).toBe(false)
     expect(canTransitionDeckStatus('approved', 'draft')).toBe(false)
+  })
+})
+
+describe('nextStatusOptions', () => {
+  it('includes the current status plus its adjacent steps only', () => {
+    expect(nextStatusOptions('draft')).toEqual(['draft', 'in_review'])
+    expect(nextStatusOptions('in_review')).toEqual(['draft', 'in_review', 'approved'])
+    expect(nextStatusOptions('approved')).toEqual(['in_review', 'approved', 'shipped'])
+    expect(nextStatusOptions('shipped')).toEqual(['approved', 'shipped'])
+  })
+
+  it('never includes a status canTransitionDeckStatus would reject', () => {
+    for (const current of DECK_STATUSES) {
+      for (const option of nextStatusOptions(current)) {
+        expect(canTransitionDeckStatus(current, option)).toBe(true)
+      }
+    }
+  })
+
+  it('always includes the current status itself (so the select has a match)', () => {
+    for (const current of DECK_STATUSES) {
+      expect(nextStatusOptions(current)).toContain(current)
+    }
   })
 })
 

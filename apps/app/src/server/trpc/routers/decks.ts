@@ -130,8 +130,18 @@ export const decksRouter = createTRPCRouter({
         existingRoster.length
       )
 
-      await db.insert(deckQuestion).values({...record.deckQuestion, createdBy: ctx.user.id})
-      const [created] = await db.insert(questionReview).values(record.questionReview).returning()
+      // Both inserts (the roster row + its initial review row) succeed or fail
+      // together — without this, a failure on the second insert would orphan a
+      // roster row with no review row, which renders as a blank-text question
+      // (variantTexts falls back to `{current: ''}` in question-review.ts).
+      const created = await db.transaction(async (tx) => {
+        await tx.insert(deckQuestion).values({...record.deckQuestion, createdBy: ctx.user.id})
+        const [createdReview] = await tx
+          .insert(questionReview)
+          .values(record.questionReview)
+          .returning()
+        return createdReview
+      })
       return created
     }),
 })

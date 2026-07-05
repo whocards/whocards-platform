@@ -4,7 +4,7 @@ import {useState} from 'react'
 
 import {trpc} from '~/lib/trpc'
 import {roleAtLeast} from '~/server/auth/permissions'
-import {DECK_STATUSES, groupByAct} from '~/server/trpc/routers/decks-logic'
+import {groupByAct, nextStatusOptions} from '~/server/trpc/routers/decks-logic'
 import type {DeckStatus} from '~/server/trpc/routers/decks-logic'
 
 type QuestionData = Awaited<
@@ -55,7 +55,7 @@ function DeckDetail() {
   })
   const [showDiff, setShowDiff] = useState(false)
   const diff = useQuery({
-    queryKey: ['questionReview.emitDiff'],
+    queryKey: ['questionReview.emitDiff', slug],
     queryFn: () => trpc.questionReview.emitDiff.query(),
     enabled: showDiff && Boolean(deckMeta.data?.canEmitDiff),
   })
@@ -106,7 +106,7 @@ function DeckDetail() {
               disabled={updateStatus.isPending}
               className="min-h-11 rounded-full bg-gray-light px-4 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {DECK_STATUSES.map((status) => (
+              {nextStatusOptions(deckMeta.data.status).map((status) => (
                 <option key={status} value={status}>
                   {STATUS_LABEL[status]}
                 </option>
@@ -116,6 +116,9 @@ function DeckDetail() {
             <span className="flex min-h-11 items-center justify-center rounded-full bg-gray-light px-4 text-sm font-semibold">
               {STATUS_LABEL[deckMeta.data.status]}
             </span>
+          ) : null}
+          {updateStatus.isError ? (
+            <p className="text-sm text-red">{updateStatus.error.message}</p>
           ) : null}
 
           {deckMeta.data?.canEmitDiff && canApprove ? (
