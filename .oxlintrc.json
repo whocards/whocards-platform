@@ -83,6 +83,7 @@
     "**/.netlify/**",
     "**/.expo/**",
     "**/.turbo/**",
-    "**/drizzle/**"
+    "**/drizzle/**",
+    "**/routeTree.gen.ts"
   ]
 }

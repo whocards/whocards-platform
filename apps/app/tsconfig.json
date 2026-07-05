@@ -1,0 +1,20 @@
+{
+  "extends": "@whocards/typescript-config/base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "noEmit": true,
+    // This is an app, not a library other packages import — unlike the base
+    // preset's default (meant for packages/*), it never needs to emit or be
+    // checked for declaration-emit portability (avoids TS2742 on inferred
+    // better-auth/drizzle types that reference deep pnpm node_modules paths).
+    "declaration": false,
+    "declarationMap": false,
+    "paths": {
+      "~/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", ".output", ".tanstack"]
+}
