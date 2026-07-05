@@ -2,7 +2,8 @@ import {eq} from 'drizzle-orm'
 import {TRPCError} from '@trpc/server'
 import {z} from 'zod'
 
-import {ensureAiAtWorkDeck} from '../../decks/bootstrap'
+import {ensureAiAtWorkDeck, ensureLibraryDeck} from '../../decks/bootstrap'
+import {LIBRARY_DECK} from '../../decks/bootstrap-logic'
 import {db} from '../../db'
 import {deck, deckQuestion, questionReview} from '../../db/schema'
 import {createTRPCRouter, roleProcedure} from '../trpc'
@@ -28,7 +29,7 @@ export const decksRouter = createTRPCRouter({
   /** Decks overview: one row per deck with approve/total counts, for the
    *  "grouped by status" landing page. */
   list: roleProcedure(DECKS_MIN_ROLE.view).query(async () => {
-    await ensureAiAtWorkDeck()
+    await Promise.all([ensureAiAtWorkDeck(), ensureLibraryDeck()])
 
     const [decks, roster, reviews] = await Promise.all([
       db.select().from(deck),
@@ -67,6 +68,7 @@ export const decksRouter = createTRPCRouter({
     .input(z.object({slug: z.string().min(1)}))
     .query(async ({input}) => {
       if (input.slug === DECK_SLUG) await ensureAiAtWorkDeck()
+      else if (input.slug === LIBRARY_DECK.slug) await ensureLibraryDeck()
 
       const [row] = await db.select().from(deck).where(eq(deck.slug, input.slug)).limit(1)
       if (!row) throw new TRPCError({code: 'NOT_FOUND', message: `No deck "${input.slug}".`})
