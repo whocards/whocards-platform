@@ -30,9 +30,20 @@ const adapterSchema = {
   app_invitation: schema.appInvitation,
 }
 
+// The Netlify site's BETTER_AUTH_URL is still the old *.netlify.app subdomain,
+// but the app is served at app.whocards.cc. baseURL builds the magic-link email
+// URL and validates the browser's callbackURL/cookie origin — so in production
+// it MUST be the canonical domain, or the browser sign-in from app.whocards.cc
+// is rejected as an untrusted origin (403 INVALID_CALLBACK_URL) and "Couldn't
+// send that link" appears. trustedOrigins additionally keeps the raw
+// *.netlify.app host working (and localhost in dev).
+const canonicalBaseURL =
+  env.NODE_ENV === 'production' ? 'https://app.whocards.cc' : env.BETTER_AUTH_URL
+
 export const auth = betterAuth({
-  baseURL: env.BETTER_AUTH_URL,
+  baseURL: canonicalBaseURL,
   secret: env.BETTER_AUTH_SECRET,
+  trustedOrigins: ['https://app.whocards.cc', 'https://whocards-app.netlify.app'],
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: adapterSchema,
