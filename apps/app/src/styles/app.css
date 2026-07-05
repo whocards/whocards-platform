@@ -13,6 +13,11 @@
  * Revisit if this app's styling needs grow enough to want the real thing. */
 
 :root {
+  /* Tell the browser this app is dark so native controls (buttons, inputs,
+   * scrollbars, form widgets) render dark instead of their default light —
+   * otherwise iOS/Safari paints them as white boxes on the dark background. */
+  color-scheme: dark;
+
   --color-yellow-300: #ffe37e;
   --color-yellow-400: #f9d75f;
   --color-yellow-500: #f6c944;
@@ -52,9 +57,26 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font-family: inherit;
   border: none;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+button:active:not(:disabled) {
+  opacity: 0.6;
+}
+
+button:disabled {
+  cursor: default;
 }
 
 a {
@@ -80,6 +102,9 @@ a {
 }
 .items-end {
   align-items: flex-end;
+}
+.items-start {
+  align-items: flex-start;
 }
 .justify-between {
   justify-content: space-between;

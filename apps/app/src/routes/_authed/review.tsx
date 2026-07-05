@@ -55,6 +55,12 @@ function Review() {
           <p className="text-sm text-gray-lighter">
             {approvedCount}/{questions.data?.length ?? 37} questions approved
           </p>
+          <p className="mt-1 text-xs text-gray-dark">
+            Tap a wording to vote for it
+            {canApprove
+              ? '; tap Approve to lock the version to ship.'
+              : '. A facilitator locks the final version.'}
+          </p>
         </div>
         {canApprove ? (
           <button
@@ -120,7 +126,44 @@ function QuestionCard({
   const vote = useMutation({
     mutationFn: (variant: VariantSlug) =>
       trpc.questionReview.vote.mutate({questionId: question.questionId, variant}),
-    onSuccess: () => {
+    // Optimistic: reflect the vote instantly so a slow serverless round-trip
+    // never feels like a dead tap; reconcile (or roll back) once it settles.
+    onMutate: async (variant) => {
+      await queryClient.cancelQueries({queryKey: ['questionReview.variants']})
+      await queryClient.cancelQueries({queryKey: ['questionReview.myVotes']})
+      const prevVariants = queryClient.getQueryData<QuestionData[]>(['questionReview.variants'])
+      const prevVotes = queryClient.getQueryData<Record<string, VariantSlug>>([
+        'questionReview.myVotes',
+      ])
+      const previous = prevVotes?.[question.questionId]
+      queryClient.setQueryData<Record<string, VariantSlug>>(['questionReview.myVotes'], (old) => ({
+        ...old,
+        [question.questionId]: variant,
+      }))
+      queryClient.setQueryData<QuestionData[]>(['questionReview.variants'], (old) =>
+        old?.map((q) => {
+          if (q.questionId !== question.questionId) return q
+          const voteTally = {...q.voteTally}
+          if (previous && previous !== variant) {
+            voteTally[previous] = Math.max(0, (voteTally[previous] ?? 0) - 1)
+          }
+          if (previous !== variant) {
+            voteTally[variant] = (voteTally[variant] ?? 0) + 1
+          }
+          return {...q, voteTally}
+        })
+      )
+      return {prevVariants, prevVotes}
+    },
+    onError: (_error, _variant, context) => {
+      if (context?.prevVariants) {
+        queryClient.setQueryData(['questionReview.variants'], context.prevVariants)
+      }
+      if (context?.prevVotes) {
+        queryClient.setQueryData(['questionReview.myVotes'], context.prevVotes)
+      }
+    },
+    onSettled: () => {
       invalidateQuestions()
       queryClient.invalidateQueries({queryKey: ['questionReview.myVotes']})
     },
@@ -204,9 +247,18 @@ function QuestionCard({
                 <button
                   type="button"
                   onClick={() => approve.mutate(text)}
-                  className="rounded-full bg-transparent px-3 py-1 text-xs text-gray-lighter underline"
+                  disabled={approve.isPending}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold disabled:opacity-60 ${
+                    question.review?.currentText === text
+                      ? 'bg-yellow-400 text-darker'
+                      : 'bg-darker text-gray-lighter'
+                  }`}
                 >
-                  Approve this
+                  {approve.isPending
+                    ? 'Approving…'
+                    : question.review?.currentText === text
+                      ? '✓ Approved'
+                      : 'Approve'}
                 </button>
               ) : null}
             </div>
@@ -242,8 +294,12 @@ function QuestionCard({
               placeholder="Add a comment…"
               className="flex-1 rounded-full bg-darker px-3 py-1.5 text-sm text-white"
             />
-            <button type="submit" className="rounded-full bg-gray-light px-3 py-1.5 text-sm">
-              Send
+            <button
+              type="submit"
+              disabled={addComment.isPending || !comment.trim()}
+              className="rounded-full bg-gray-light px-3 py-1.5 text-sm disabled:opacity-60"
+            >
+              {addComment.isPending ? 'Sending…' : 'Send'}
             </button>
           </form>
         </div>
