@@ -1,8 +1,10 @@
 ---
 import {Icon} from 'astro-icon/components'
+import Accordion from '~components/ui/Accordion.astro'
 import Button from '~components/ui/Button.astro'
 import PreorderSection from '~components/Purchase/PreorderSection.astro'
 import WhatCard from '~components/Purchase/WhatCard.astro'
+import {aiAtWorkFaqs} from '~constants/faqs'
 import {env} from '~env'
 import Layout from '~layouts/Layout.astro'
 
@@ -171,7 +173,15 @@ const stats = [
     </p>
   </PreorderSection>
 
-  <!-- 5. FOOTER CTA back to the deck -->
+  <!-- 5. FAQ (#207) — targets the named uncontested search/AEO intent
+       ("how to talk to my team about AI"); content mirrors the sections above,
+       see aiAtWorkFaqs in ~constants/faqs. Default slot (like the sections
+       above), so it inherits the same contained width/padding. -->
+  <PreorderSection subtitle='faqs' title='Questions about the AI Check-In' class='pb-4 lg:pb-10'>
+    <Accordion name='ai-at-work-faqs' contents={aiAtWorkFaqs} class='max-w-2xl' />
+  </PreorderSection>
+
+  <!-- 6. FOOTER CTA back to the deck -->
   <div class='w-full px-5 pb-12 lg:max-w-7xl xl:px-0'>
     <div
       class='relative flex flex-col items-center overflow-hidden rounded-3xl border border-gray-dark bg-background px-5 py-16 text-center lg:gap-5'
@@ -193,6 +203,19 @@ const stats = [
       </span>
     </div>
   </div>
+  <script
+    is:inline
+    type='application/ld+json'
+    set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: aiAtWorkFaqs.map((f) => ({
+        '@type': 'Question',
+        name: f.title,
+        acceptedAnswer: {'@type': 'Answer', text: f.content},
+      })),
+    })}
+  />
 </Layout>
 
 {
