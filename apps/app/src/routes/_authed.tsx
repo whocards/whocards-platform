@@ -41,6 +41,9 @@ function AuthedLayout() {
             <Link to="/decks" activeProps={{className: 'text-yellow-400'}}>
               Decks
             </Link>
+            <Link to="/facilitate" activeProps={{className: 'text-yellow-400'}}>
+              Facilitate
+            </Link>
             {isAdmin ? (
               <Link to="/admin/people" activeProps={{className: 'text-yellow-400'}}>
                 Admin › People
@@ -96,6 +99,14 @@ function AuthedLayout() {
               className="flex min-h-11 items-center rounded-xl px-3 py-2"
             >
               Decks
+            </Link>
+            <Link
+              to="/facilitate"
+              onClick={() => setMenuOpen(false)}
+              activeProps={{className: 'text-yellow-400'}}
+              className="flex min-h-11 items-center rounded-xl px-3 py-2"
+            >
+              Facilitate
             </Link>
             {isAdmin ? (
               <Link

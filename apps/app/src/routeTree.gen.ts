@@ -13,6 +13,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedReviewRouteImport } from './routes/_authed/review'
+import { Route as AuthedFacilitateRouteImport } from './routes/_authed/facilitate'
 import { Route as AuthedDecksIndexRouteImport } from './routes/_authed/decks/index'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -36,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthedReviewRoute = AuthedReviewRouteImport.update({
   id: '/review',
   path: '/review',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedFacilitateRoute = AuthedFacilitateRouteImport.update({
+  id: '/facilitate',
+  path: '/facilitate',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedDecksIndexRoute = AuthedDecksIndexRouteImport.update({
@@ -67,6 +73,7 @@ const AuthedAdminPeopleRoute = AuthedAdminPeopleRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
+  '/facilitate': typeof AuthedFacilitateRoute
   '/review': typeof AuthedReviewRoute
   '/admin/people': typeof AuthedAdminPeopleRoute
   '/decks/$slug': typeof AuthedDecksSlugRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
+  '/facilitate': typeof AuthedFacilitateRoute
   '/review': typeof AuthedReviewRoute
   '/admin/people': typeof AuthedAdminPeopleRoute
   '/decks/$slug': typeof AuthedDecksSlugRoute
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/sign-in': typeof SignInRoute
+  '/_authed/facilitate': typeof AuthedFacilitateRoute
   '/_authed/review': typeof AuthedReviewRoute
   '/_authed/admin/people': typeof AuthedAdminPeopleRoute
   '/_authed/decks/$slug': typeof AuthedDecksSlugRoute
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/sign-in'
+    | '/facilitate'
     | '/review'
     | '/admin/people'
     | '/decks/$slug'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/sign-in'
+    | '/facilitate'
     | '/review'
     | '/admin/people'
     | '/decks/$slug'
@@ -122,6 +133,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authed'
     | '/sign-in'
+    | '/_authed/facilitate'
     | '/_authed/review'
     | '/_authed/admin/people'
     | '/_authed/decks/$slug'
@@ -168,6 +180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedReviewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/facilitate': {
+      id: '/_authed/facilitate'
+      path: '/facilitate'
+      fullPath: '/facilitate'
+      preLoaderRoute: typeof AuthedFacilitateRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/decks/': {
       id: '/_authed/decks/'
       path: '/decks'
@@ -207,6 +226,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedFacilitateRoute: typeof AuthedFacilitateRoute
   AuthedReviewRoute: typeof AuthedReviewRoute
   AuthedAdminPeopleRoute: typeof AuthedAdminPeopleRoute
   AuthedDecksSlugRoute: typeof AuthedDecksSlugRoute
@@ -214,6 +234,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedFacilitateRoute: AuthedFacilitateRoute,
   AuthedReviewRoute: AuthedReviewRoute,
   AuthedAdminPeopleRoute: AuthedAdminPeopleRoute,
   AuthedDecksSlugRoute: AuthedDecksSlugRoute,
