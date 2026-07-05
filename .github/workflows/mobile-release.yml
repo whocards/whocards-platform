@@ -145,10 +145,16 @@ jobs:
       # single-platform publishes avoids the web export entirely without touching
       # expo.platforms in app.json, which would change the native fingerprint and stop
       # this OTA from reaching already-installed builds (fingerprint policy: see #209).
+      # ref_name goes through env (not inlined into run:) to avoid template injection —
+      # a crafted tag name could otherwise execute shell with EXPO_TOKEN in scope (#209 review).
       - name: Publish OTA update (iOS)
         working-directory: apps/mobile
-        run: eas update --platform ios --channel production --message "${{ github.ref_name }}" --non-interactive
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: eas update --platform ios --channel production --message "$REF_NAME" --non-interactive
 
       - name: Publish OTA update (Android)
         working-directory: apps/mobile
-        run: eas update --platform android --channel production --message "${{ github.ref_name }}" --non-interactive
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: eas update --platform android --channel production --message "$REF_NAME" --non-interactive
