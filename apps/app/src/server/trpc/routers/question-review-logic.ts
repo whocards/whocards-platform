@@ -2,6 +2,13 @@
 // a database (see question-review.test.ts). question-review.ts wires this up to
 // Drizzle queries and the tRPC procedures.
 
+/** The one deck imported from PR #144's variant pick (see decks.ts's
+ *  `ensureAiAtWorkDeck` for where the `deck`/`deck_question` rows get seeded).
+ *  Lives here (not question-review.ts) so route files and decks.ts can import
+ *  it without pulling in DB code — question-review.ts re-exports it for the
+ *  existing import sites (discussion-agent.ts). */
+export const DECK_SLUG = 'ai-at-work'
+
 export const ACTS = [
   {label: 'Act 1 — Name the fear', range: [1, 9]},
   {label: 'Act 2 — Map the work', range: [10, 18]},

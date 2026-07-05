@@ -13,8 +13,10 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedReviewRouteImport } from './routes/_authed/review'
+import { Route as AuthedDecksIndexRouteImport } from './routes/_authed/decks/index'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthedDecksSlugRouteImport } from './routes/_authed/decks/$slug'
 import { Route as AuthedAdminPeopleRouteImport } from './routes/_authed/admin/people'
 
 const SignInRoute = SignInRouteImport.update({
@@ -36,6 +38,11 @@ const AuthedReviewRoute = AuthedReviewRouteImport.update({
   path: '/review',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedDecksIndexRoute = AuthedDecksIndexRouteImport.update({
+  id: '/decks/',
+  path: '/decks/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
   id: '/api/trpc/$',
   path: '/api/trpc/$',
@@ -45,6 +52,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedDecksSlugRoute = AuthedDecksSlugRouteImport.update({
+  id: '/decks/$slug',
+  path: '/decks/$slug',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAdminPeopleRoute = AuthedAdminPeopleRouteImport.update({
   id: '/admin/people',
@@ -57,16 +69,20 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/review': typeof AuthedReviewRoute
   '/admin/people': typeof AuthedAdminPeopleRoute
+  '/decks/$slug': typeof AuthedDecksSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/decks/': typeof AuthedDecksIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/review': typeof AuthedReviewRoute
   '/admin/people': typeof AuthedAdminPeopleRoute
+  '/decks/$slug': typeof AuthedDecksSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/decks': typeof AuthedDecksIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -75,8 +91,10 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/_authed/review': typeof AuthedReviewRoute
   '/_authed/admin/people': typeof AuthedAdminPeopleRoute
+  '/_authed/decks/$slug': typeof AuthedDecksSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/trpc/$': typeof ApiTrpcSplatRoute
+  '/_authed/decks/': typeof AuthedDecksIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -85,16 +103,20 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/review'
     | '/admin/people'
+    | '/decks/$slug'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/decks/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/sign-in'
     | '/review'
     | '/admin/people'
+    | '/decks/$slug'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/decks'
   id:
     | '__root__'
     | '/'
@@ -102,8 +124,10 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/_authed/review'
     | '/_authed/admin/people'
+    | '/_authed/decks/$slug'
     | '/api/auth/$'
     | '/api/trpc/$'
+    | '/_authed/decks/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,6 +168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedReviewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/decks/': {
+      id: '/_authed/decks/'
+      path: '/decks'
+      fullPath: '/decks/'
+      preLoaderRoute: typeof AuthedDecksIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/api/trpc/$': {
       id: '/api/trpc/$'
       path: '/api/trpc/$'
@@ -158,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/decks/$slug': {
+      id: '/_authed/decks/$slug'
+      path: '/decks/$slug'
+      fullPath: '/decks/$slug'
+      preLoaderRoute: typeof AuthedDecksSlugRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/admin/people': {
       id: '/_authed/admin/people'
       path: '/admin/people'
@@ -171,11 +209,15 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedReviewRoute: typeof AuthedReviewRoute
   AuthedAdminPeopleRoute: typeof AuthedAdminPeopleRoute
+  AuthedDecksSlugRoute: typeof AuthedDecksSlugRoute
+  AuthedDecksIndexRoute: typeof AuthedDecksIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedReviewRoute: AuthedReviewRoute,
   AuthedAdminPeopleRoute: AuthedAdminPeopleRoute,
+  AuthedDecksSlugRoute: AuthedDecksSlugRoute,
+  AuthedDecksIndexRoute: AuthedDecksIndexRoute,
 }
 
 const AuthedRouteWithChildren =

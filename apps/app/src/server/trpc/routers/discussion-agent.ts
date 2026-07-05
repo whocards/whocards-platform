@@ -7,25 +7,29 @@ import {db} from '../../db'
 import {agentMessage} from '../../db/schema'
 import {agentEnabled} from '../../env'
 import {createTRPCRouter, roleProcedure} from '../trpc'
-import {DECK_SLUG} from './question-review'
 
 // Slice 5 (stretch, per the overnight plan) — reuses the question-lab's
 // Anthropic call pattern (server/agent/anthropic.ts) as a per-question
 // "discuss with an agent" thread, gated to facilitator+. Degrades gracefully
 // (never crashes) when ANTHROPIC_API_KEY is absent — see `status` below, which
-// the UI checks before ever showing a compose box.
+// the UI checks before ever showing a compose box. Deck-scoped (`deckSlug`
+// input) for the same reason as question-review.ts: decks are now a
+// first-class concept, not a hardcoded constant.
 export const discussionAgentRouter = createTRPCRouter({
   status: roleProcedure('facilitator').query(() => ({enabled: agentEnabled})),
 
   messages: createTRPCRouter({
     list: roleProcedure('facilitator')
-      .input(z.object({questionId: z.string()}))
+      .input(z.object({deckSlug: z.string().min(1), questionId: z.string().min(1)}))
       .query(async ({input}) =>
         db
           .select()
           .from(agentMessage)
           .where(
-            and(eq(agentMessage.deckSlug, DECK_SLUG), eq(agentMessage.questionId, input.questionId))
+            and(
+              eq(agentMessage.deckSlug, input.deckSlug),
+              eq(agentMessage.questionId, input.questionId)
+            )
           )
           .orderBy(agentMessage.createdAt)
       ),
@@ -33,7 +37,8 @@ export const discussionAgentRouter = createTRPCRouter({
     send: roleProcedure('facilitator')
       .input(
         z.object({
-          questionId: z.string(),
+          deckSlug: z.string().min(1),
+          questionId: z.string().min(1),
           questionText: z.string(),
           content: z.string().min(1).max(4000),
         })
@@ -50,12 +55,15 @@ export const discussionAgentRouter = createTRPCRouter({
           .select()
           .from(agentMessage)
           .where(
-            and(eq(agentMessage.deckSlug, DECK_SLUG), eq(agentMessage.questionId, input.questionId))
+            and(
+              eq(agentMessage.deckSlug, input.deckSlug),
+              eq(agentMessage.questionId, input.questionId)
+            )
           )
           .orderBy(agentMessage.createdAt)
 
         await db.insert(agentMessage).values({
-          deckSlug: DECK_SLUG,
+          deckSlug: input.deckSlug,
           questionId: input.questionId,
           role: 'user',
           content: input.content,
@@ -70,7 +78,7 @@ export const discussionAgentRouter = createTRPCRouter({
         const [assistantMessage] = await db
           .insert(agentMessage)
           .values({
-            deckSlug: DECK_SLUG,
+            deckSlug: input.deckSlug,
             questionId: input.questionId,
             role: 'assistant',
             content: reply,

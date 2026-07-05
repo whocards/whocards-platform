@@ -5,7 +5,7 @@ import {getCurrentMember} from '~/server/auth/session'
 export const Route = createFileRoute('/')({
   beforeLoad: async () => {
     const member = await getCurrentMember()
-    if (member?.membership) throw redirect({to: '/review'})
+    if (member?.membership) throw redirect({to: '/decks'})
     return {member}
   },
   component: Home,

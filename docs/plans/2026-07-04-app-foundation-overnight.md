@@ -206,3 +206,132 @@ website) also re-confirmed 200 — untouched throughout.
 
 **All 5 slices are now done** (slice 5 is the stretch goal, correctly
 degraded pending a real `ANTHROPIC_API_KEY`). Draft PR #215 updated.
+
+- 2026-07-05 — **Founder feedback pass on the review surface** (live, phone
+  in hand): mobile spacing, a crammed flat list, decks-with-status, an
+  add-question flow, and "there's no way to navigate." Same branch, PR #215.
+
+  **New DB: `deck` + `deck_question`.** Additive-only again — verified the
+  generated migration (`0001_odd_silver_centurion.sql`) is CREATE-only (2 new
+  tables; the only `ALTER TABLE` statements add FK constraints _on those new
+  tables_, nothing pre-existing is touched) before applying it with
+  `db:migrate`, then re-confirmed against the live DB: all 31 tables present
+  (29 before + `deck`/`deck_question`), `question_review` still has its 4
+  rows, website's `user` table still has its 121 — nothing else moved.
+  `deck.status` is plain `text` (not a pgEnum), same reasoning as
+  `appMember.role`: a new status is a code change, not a migration.
+  Deliberately did **not** add a FK from the existing `question_review` /
+  `question_comment` / `question_vote` / `agent_message` tables to `deck` —
+  that would need an `ALTER TABLE` on a pre-existing table, which fails the
+  "verify CREATE-only" bar. Those tables keep their original loose
+  `(deck_slug, question_id)` text match; only the new `deck_question` roster
+  table gets a real FK into `deck`. The ai-at-work deck's row + its 37-question
+  roster aren't seeded by the migration itself (no hand-written data-migration
+  SQL) — `server/decks/bootstrap.ts`'s `ensureAiAtWorkDeck()` seeds them
+  idempotently on first read, the same "ensure it exists" pattern
+  `auth/bootstrap.ts` already uses for the default org/owner membership.
+  Verified end to end against the live DB with a throwaway script (not
+  committed): first call seeds the deck row + all 37 roster rows with correct
+  act labels/order, a second call is a no-op (37, not 74), and a simulated
+  `addQuestion` insert + cleanup round-tripped correctly through the real FK.
+
+  **Deck-centric review surface.** `/decks` (overview, grouped by status —
+  in_review first, then draft/approved/shipped, empty groups hidden) →
+  `/decks/$slug` (detail: header with title/description/status + a
+  facilitator+ status-change select, questions grouped into sections by
+  `actLabel` — this is the fix for "crammed flat list with no separation" —
+  same vote/comment/approve/diff-per-question flow as before, just deck-scoped
+  now). `/review` still exists as a redirect to `/decks/ai-at-work` (not
+  deleted) since it was open on a phone mid-session; the nav's "Review" slot
+  is now labeled "Decks" and points at the overview.
+
+  **Deck-scoping the existing router.** `questionReview.{variants, myVotes,
+vote, comments.*, approve}` and `discussionAgent.messages.*` all gained a
+  required `deckSlug` input (were hardcoded to the one `DECK_SLUG` constant).
+  `emitDiff` stays ai-at-work-only and takes no `deckSlug` — per the
+  constraint, it's the one deck with a shippable JSON file
+  (`packages/decks/src/decks/ai-at-work.questions.json`); `decks.get` exposes
+  this as `canEmitDiff` so the UI only shows the "Generate diff" button on
+  that deck. `emitDiff` and `variants` now read the question roster live from
+  `deck_question` instead of the old static 37-id `QUESTION_IDS` array, so a
+  question added to the ai-at-work deck via `addQuestion` flows into the diff
+  too, not just the original 37. Also fixed a real latent bug while doing
+  this: `vote`'s `questionId` input was `z.enum(QUESTION_IDS)`, which would
+  have rejected votes on any newly-added question outright — loosened to
+  `z.string().min(1)`.
+
+  **Add-question shape (flagging for confirmation).** `decks.addQuestion`
+  (facilitator+) takes `{deckSlug, actLabel, text}` and creates one
+  `deck_question` roster row + one `question_review` row (status `draft`,
+  `currentText` = the given text) — **one wording, not the 5-way variant set**
+  the imported ai-at-work questions have. That variant set is a one-time
+  artifact of PR #144's candidate-wording pick, not a general feature, so
+  building real multi-variant authoring for new questions felt like scope
+  creep under time pressure. A facilitator can still vote/comment/approve/edit
+  the single wording via the existing flow — the "variants" concept degrades
+  to a single `{current: text}` entry (see `question-review.ts`'s
+  `hasLegacyVariants`), so the same UI renders both shapes with no branching
+  in the component. **Ask Avi:** is single-wording good enough, or is
+  multi-variant authoring for new questions worth a follow-up (`question_variant`
+  table)? Reversible either way — nothing above depends on staying
+  single-wording.
+
+  **Deck status transitions (flagging for confirmation).** `updateStatus`
+  only allows moving one step forward or back in `draft → in_review →
+approved → shipped` (`decks-logic.ts`'s `canTransitionDeckStatus`) — you
+  can't jump `draft` straight to `shipped`. This was a judgment call to keep
+  status meaningful as a progress indicator; **ask Avi** if unrestricted jumps
+  are wanted instead (one-line change: drop the adjacency check, keep the
+  same-status no-op).
+
+  **Navigation.** `_authed.tsx` now renders a real nav on every authed page
+  (previously: logo + user email + sign-out only, no way to get anywhere) —
+  Home, Decks, Admin › People (admin+ only, same `roleAtLeast` gate as the
+  route itself), Sign out. One responsive breakpoint (768px): a hamburger +
+  slide-down panel below it, a plain inline row above. Caught and fixed a
+  well-known TanStack Router gotcha in the same change: `Link to="/"` without
+  `activeOptions={{exact: true}}` is active-styled on _every_ page (prefix
+  matching), which would've made "Home" permanently highlighted.
+
+  **Mobile spacing pass.** Every tap target that used to rely on padding
+  alone (Vote/Approve/Sign out/hamburger/comment-send/etc.) now has
+  `min-h-11` (44px, the standard minimum comfortable tap target) plus
+  `flex items-center justify-center` so the label stays centered in the taller
+  box. The per-variant row inside a question card now always stacks (text on
+  top, a full-width Vote/Approve button row below) rather than a
+  side-by-side row that got cramped against long question text on a narrow
+  phone. New `app.css` utilities (same hand-written-Tailwind convention as
+  before): `.min-h-11`/`.min-w-11`, `.gap-5`/`.gap-8`, `.mb-1`/`.mb-3`,
+  `.mt-1`, `.pb-2`, `.text-base`, one `md:` (768px) breakpoint
+  (`.hidden`/`.md\:flex`/`.md\:hidden`/`.md\:p-6`/`.md\:text-2xl`), and a small
+  non-utility `.hamburger-icon` rule (three CSS-drawn bars, no icon library).
+
+  **RBAC, server-enforced.** `decks.list`/`decks.get` (+ the existing
+  view/vote/comment procedures) require `reviewer+`; `decks.updateStatus`/
+  `decks.addQuestion` (+ the existing `approve`) require `facilitator+`;
+  `people.*` still requires `admin+` — all via the same `roleProcedure`
+  middleware as before (`trpc.test.ts`'s generic guard coverage already
+  applies to every procedure built on it). Named the role minimums as
+  constants (`decks-logic.ts`'s `DECKS_MIN_ROLE`) instead of inlining the
+  string at each `roleProcedure(...)` call, so the RBAC contract is one
+  greppable place and the tests can assert against it directly.
+
+  **Tests.** New `decks-logic.test.ts` (mirrors the existing
+  `question-review-logic.ts`/`.test.ts` split — DB-free pure logic only, same
+  as this codebase's established pattern; router files that touch Drizzle
+  stay untested directly, same as `question-review.ts`/`people.ts` today):
+  `canTransitionDeckStatus`'s full adjacency matrix, `groupByAct`'s ordering/
+  grouping, `buildNewQuestion`'s shaping + blank-input rejection, and
+  `DECKS_MIN_ROLE`'s values. 48 tests total (was 31), all green.
+
+  **Verified:** `pnpm --filter app typecheck` clean, `pnpm --filter app build`
+  clean, whole-workspace `pnpm check` green (18/18 tasks — website 284 tests +
+  mobile 218 tests unaffected), migration applied + re-verified against the
+  live shared Postgres, bootstrap seeding + add-question verified end to end
+  against that same live DB via a throwaway script (deleted, never committed;
+  test data cleaned up after). Not yet verified in a real browser/phone — no
+  emulator/browser driving was in scope for this pass (server + logic changes
+  verified directly against the DB; UI changes verified via typecheck +
+  build only) — **Avi, please do an on-device pass** on `/decks`, a deck
+  detail page (both the vote/approve flow and the add-question form), and the
+  hamburger menu at phone width before merging.

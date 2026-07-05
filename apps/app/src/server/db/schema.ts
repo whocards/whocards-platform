@@ -2,6 +2,7 @@ import {relations} from 'drizzle-orm'
 import {
   boolean,
   index,
+  integer,
   pgTable,
   serial,
   text,
@@ -283,4 +284,71 @@ export const questionVoteRelations = relations(questionVote, ({one}) => ({
 
 export const agentMessageRelations = relations(agentMessage, ({one}) => ({
   author: one(appUser, {fields: [agentMessage.authorId], references: [appUser.id]}),
+}))
+
+// ---------------------------------------------------------------------------
+// Decks (added 2026-07-05, founder feedback pass — see
+// docs/plans/2026-07-04-app-foundation-overnight.md's status log for the
+// design writeup). A deck is a named, sluggable set of questions moving through
+// a review pipeline (`status`); `deckQuestion` is its roster — which question
+// ids belong to it, their act/section label (for grouping the review UI), and
+// display order. Review/vote/comment state for a question id stays entirely in
+// the existing `question_review`/`question_vote`/`question_comment` tables
+// above, UNCHANGED — this keeps tonight's migration pure `CREATE TABLE` (no
+// `ALTER`/`DROP` on anything pre-existing). The link between a deckQuestion row
+// and its question_review/vote/comment rows is a loose (deckSlug, questionId)
+// match, same as those tables already used before decks existed; only
+// deckQuestion.deckSlug gets a real FK, since deck/deckQuestion are both new.
+// `status` is plain text (not a pgEnum), same rationale as appMember.role
+// above: adding a status is a code change, not a migration.
+// ---------------------------------------------------------------------------
+
+export const deck = pgTable(
+  'deck',
+  {
+    id: serial('id').primaryKey(),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    status: text('status').default('draft').notNull(), // draft | in_review | approved | shipped
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [unique('deck_slug_unique').on(table.slug)]
+)
+
+/** A deck's question roster. Adding a question to a deck (facilitator+, see
+ *  decks.ts's `addQuestion`) inserts one row here plus one `question_review`
+ *  row (its initial text, status 'draft') — the roster row owns membership +
+ *  section grouping, the review row owns workflow state, unchanged from how
+ *  question_review already worked pre-decks. */
+export const deckQuestion = pgTable(
+  'deck_question',
+  {
+    id: serial('id').primaryKey(),
+    deckSlug: text('deck_slug')
+      .notNull()
+      .references(() => deck.slug),
+    questionId: text('question_id').notNull(),
+    actLabel: text('act_label').notNull(),
+    sortOrder: integer('sort_order').default(0).notNull(),
+    createdBy: text('created_by').references(() => appUser.id),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    unique('deck_question_deck_question_unique').on(table.deckSlug, table.questionId),
+    index('deck_question_deck_slug_idx').on(table.deckSlug),
+  ]
+)
+
+export const deckRelations = relations(deck, ({many}) => ({
+  questions: many(deckQuestion),
+}))
+
+export const deckQuestionRelations = relations(deckQuestion, ({one}) => ({
+  deck: one(deck, {fields: [deckQuestion.deckSlug], references: [deck.slug]}),
+  creator: one(appUser, {fields: [deckQuestion.createdBy], references: [appUser.id]}),
 }))
