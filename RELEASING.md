@@ -22,6 +22,10 @@ version, tags, and pushes — with confirmation prompts along the way.
 
 1. **Boot a simulator and an emulator.** The release command runs the Maestro e2e suite
    (`e2e:ios` + `e2e:android`) as a hard gate — CI does not run e2e (see `mobile-gate.yml`).
+   The gate self-provisions: if the booted device doesn't already have a current build
+   installed, it builds a self-contained Release sim/emulator app and installs it before
+   running the suite — no manual build/install step needed. Skip just that step with
+   `RELEASE_SKIP_BUILD=1` (assumes the installed build is current; the suite still runs).
 2. **Be on `main`, clean and up to date.** release-it refuses otherwise
    (`requireBranch`, `requireCleanWorkingDir`, `requireUpstream`).
 3. **Export a GitHub token** for the release notes (release-it creates a GitHub Release):
@@ -54,6 +58,10 @@ What it does, in order:
 
 - `RELEASE_SKIP_E2E=1 pnpm release` — skip the e2e gate (no devices booted, or a hotfix
   you've validated another way). Use sparingly.
+- `RELEASE_SKIP_BUILD=1 pnpm release` — skip only the self-provisioned build/install step
+  (you already have a current build installed); the e2e suite still runs.
+- `RELEASE_FORCE_E2E=1 pnpm release` — bust the per-revision build/pass cache and force a
+  full rebuild + re-run even if this revision already passed.
 - `pnpm release minor` / `patch` / `major` — force the bump instead of the recommendation.
 
 ## After the tag is pushed

@@ -57,8 +57,7 @@ tags:
 # Re-open the SAME q=1 card via the deep link (not the generic Play button) so
 # capture 04 is directly comparable to capture 02 — same question, new language.
 - tapOn: 'Hebrew'
-- waitForAnimationToEnd
-- tapOn: 'back' # Language doesn't auto-return to the menu (unlike Game/Theme)
+- waitForAnimationToEnd # the pick auto-returns to the menu (settings-modal.tsx goBack()) — #216
 - tapOn: 'close'
 - stopApp
 - openLink: mobile://play/library?q=1
