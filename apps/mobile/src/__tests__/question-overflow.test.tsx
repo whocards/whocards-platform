@@ -21,6 +21,7 @@ import {
   CHAR_WIDTH_RATIO,
   estimateBlockHeight,
   LINE_HEIGHT_RATIO,
+  MIRROR_GAP,
   QuestionText,
 } from '../components/question-text'
 
@@ -36,8 +37,17 @@ const playBox = (win: {width: number; height: number}) => ({
   height: win.height - 220,
 })
 
-// mt-4 between the primary block and each secondary block (question-text.tsx)
+// mt-4 between the primary block and each secondary block (question-text.tsx);
+// the tailwind classes cannot be imported, so these mirror mt-4 / mt-2
 const SECONDARY_GAP = 16
+const SECONDARY_GAP_MIRRORED = 8
+
+// The backstop's hard readability floors — deliberately re-encoded here rather
+// than imported, so silently lowering them into unreadable territory fails this
+// test instead of retuning it.
+const HARD_MIN_PRIMARY = 12
+const HARD_MIN_PRIMARY_MIRRORED = 10
+const HARD_MIN_SECONDARY = 8
 
 const longestWordLength = (text: string) =>
   text
@@ -82,6 +92,7 @@ describe.each([
     )
     const fontSize = getAllByText(longest.text)[0].props.style.fontSize
 
+    expect(fontSize).toBeGreaterThanOrEqual(HARD_MIN_PRIMARY)
     expect(longestWordLength(longest.text) * fontSize * CHAR_WIDTH_RATIO).toBeLessThanOrEqual(
       box.width
     )
@@ -99,9 +110,13 @@ describe.each([
     )
     const primarySize = getAllByText(longestTranslated.text)[0].props.style.fontSize
 
+    expect(primarySize).toBeGreaterThanOrEqual(HARD_MIN_PRIMARY)
     let stackHeight = estimateBlockHeight(longestTranslated.text, primarySize, box.width)
     for (const secondary of secondaries) {
       const secondarySize = getAllByText(secondary.text)[0].props.style.fontSize
+      // readable, and never louder than the primary (support, not focus)
+      expect(secondarySize).toBeGreaterThanOrEqual(HARD_MIN_SECONDARY)
+      expect(secondarySize).toBeLessThanOrEqual(primarySize)
       expect(
         longestWordLength(secondary.text) * secondarySize * CHAR_WIDTH_RATIO
       ).toBeLessThanOrEqual(box.width)
@@ -121,6 +136,7 @@ describe.each([
     const cjk = 'あ'.repeat(150)
     const {getAllByText} = render(<QuestionText text={cjk} language="jp" box={box} />)
     const fontSize = getAllByText(cjk)[0].props.style.fontSize
+    expect(fontSize).toBeGreaterThanOrEqual(HARD_MIN_PRIMARY)
 
     // Independent oracle — plain character wrapping at 1em advance, computed
     // here rather than via estimateBlockHeight so a model bug in the estimator
@@ -147,14 +163,13 @@ describe('estimateBlockHeight — independent oracles', () => {
 })
 
 describe('QuestionText — Tabletop (mirrored) halves fit an iPhone SE in portrait', () => {
-  // Each mirrored half gets (box.height − MIRROR_GAP 28) / 2 with tighter
-  // floors and an mt-2 (8pt) gap. Landscape Tabletop with 2 secondaries is
-  // excluded: the halves are so short that even the hard floors cannot fit the
-  // longest questions — a design question (drop secondaries? disallow the
-  // combination?) beyond this overflow backstop.
+  // Each mirrored half gets (box.height − MIRROR_GAP) / 2 with tighter floors
+  // and an mt-2 (8pt) gap. Landscape Tabletop with 2 secondaries is excluded:
+  // the halves are so short that even the hard floors cannot fit the longest
+  // questions — a design question (drop secondaries? disallow the combination?)
+  // beyond this overflow backstop.
   const box = playBox(SE_PORTRAIT)
-  const halfHeight = (box.height - 28) / 2
-  const MIRRORED_GAP = 8
+  const halfHeight = (box.height - MIRROR_GAP) / 2
 
   it('fits the longest translated question with 2 secondaries in each half', () => {
     const {getAllByText} = render(
@@ -169,11 +184,15 @@ describe('QuestionText — Tabletop (mirrored) halves fit an iPhone SE in portra
     const primarySize = getAllByText(longestTranslated.text, {includeHiddenElements: true})[0].props
       .style.fontSize
 
+    expect(primarySize).toBeGreaterThanOrEqual(HARD_MIN_PRIMARY_MIRRORED)
     let stackHeight = estimateBlockHeight(longestTranslated.text, primarySize, box.width)
     for (const secondary of secondaries) {
       const secondarySize = getAllByText(secondary.text, {includeHiddenElements: true})[0].props
         .style.fontSize
-      stackHeight += MIRRORED_GAP + estimateBlockHeight(secondary.text, secondarySize, box.width)
+      expect(secondarySize).toBeGreaterThanOrEqual(HARD_MIN_SECONDARY)
+      expect(secondarySize).toBeLessThanOrEqual(primarySize)
+      stackHeight +=
+        SECONDARY_GAP_MIRRORED + estimateBlockHeight(secondary.text, secondarySize, box.width)
     }
     expect(stackHeight).toBeLessThanOrEqual(halfHeight)
   })
