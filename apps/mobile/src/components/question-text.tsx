@@ -152,7 +152,8 @@ export const fitSecondaryFontSize = (
 // up more than a few points, since the Question stays the hero (soul.md test 3).
 const MIN_FONT_MIRRORED = 16
 const SECONDARY_MIN_MIRRORED = 11
-const MIRROR_GAP = 28
+// exported so the overflow regression test computes each half's real budget
+export const MIRROR_GAP = 28
 
 type LanguageText = {language: string; text: string}
 
