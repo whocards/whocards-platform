@@ -17,7 +17,12 @@ import React from 'react'
 import {render} from '@testing-library/react-native'
 import {getAllDecks} from '@whocards/decks'
 
-import {CHAR_WIDTH_RATIO, estimateBlockHeight, QuestionText} from '../components/question-text'
+import {
+  CHAR_WIDTH_RATIO,
+  estimateBlockHeight,
+  LINE_HEIGHT_RATIO,
+  QuestionText,
+} from '../components/question-text'
 
 // iPhone SE (3rd gen), the smallest iPhone the app targets, in pt.
 const SE_PORTRAIT = {width: 375, height: 667}
@@ -107,5 +112,69 @@ describe.each([
       longestWordLength(longestTranslated.text) * primarySize * CHAR_WIDTH_RATIO
     ).toBeLessThanOrEqual(box.width)
     expect(stackHeight).toBeLessThanOrEqual(box.height)
+  })
+
+  it('fits a long space-less CJK question, primary only — checked against independent char math', () => {
+    // Longer than any zh/jp question shipped today (max 70 chars) so the CJK
+    // wrap path stays covered as decks grow. No spaces: the whole sentence is
+    // one "word" that must wrap mid-word at the full-width (~1em) advance.
+    const cjk = 'あ'.repeat(150)
+    const {getAllByText} = render(<QuestionText text={cjk} language="jp" box={box} />)
+    const fontSize = getAllByText(cjk)[0].props.style.fontSize
+
+    // Independent oracle — plain character wrapping at 1em advance, computed
+    // here rather than via estimateBlockHeight so a model bug in the estimator
+    // cannot hide itself (full-width glyphs: charsPerLine = width / fontSize).
+    const charsPerLine = Math.floor(box.width / fontSize)
+    const lines = Math.ceil(cjk.length / charsPerLine)
+    expect(lines * fontSize * LINE_HEIGHT_RATIO).toBeLessThanOrEqual(box.height)
+  })
+})
+
+describe('estimateBlockHeight — independent oracles', () => {
+  it('counts mid-word wraps for space-less CJK text (hand-computed expectation)', () => {
+    // 120 full-width chars, 311pt wide, 22pt font → floor(311 / (22 × 1.0)) =
+    // 14 chars per line → ceil(120 / 14) = 9 lines → 9 × 22 × 1.15 = 227.7pt.
+    // The pre-fix greedy wrap counted this as 2 lines (50.6pt).
+    expect(estimateBlockHeight('あ'.repeat(120), 22, 311)).toBeCloseTo(227.7)
+  })
+
+  it('counts explicit \\n\\n breaks (hand-computed expectation)', () => {
+    // At 10pt in a 500pt column every paragraph fits on one line, so the only
+    // extra height is the blank line: 3 lines × 10 × 1.15 = 34.5pt.
+    expect(estimateBlockHeight('one two\n\nthree', 10, 500)).toBeCloseTo(34.5)
+  })
+})
+
+describe('QuestionText — Tabletop (mirrored) halves fit an iPhone SE in portrait', () => {
+  // Each mirrored half gets (box.height − MIRROR_GAP 28) / 2 with tighter
+  // floors and an mt-2 (8pt) gap. Landscape Tabletop with 2 secondaries is
+  // excluded: the halves are so short that even the hard floors cannot fit the
+  // longest questions — a design question (drop secondaries? disallow the
+  // combination?) beyond this overflow backstop.
+  const box = playBox(SE_PORTRAIT)
+  const halfHeight = (box.height - 28) / 2
+  const MIRRORED_GAP = 8
+
+  it('fits the longest translated question with 2 secondaries in each half', () => {
+    const {getAllByText} = render(
+      <QuestionText
+        text={longestTranslated.text}
+        language={longestTranslated.language}
+        box={box}
+        secondaries={secondaries}
+        mirrored
+      />
+    )
+    const primarySize = getAllByText(longestTranslated.text, {includeHiddenElements: true})[0].props
+      .style.fontSize
+
+    let stackHeight = estimateBlockHeight(longestTranslated.text, primarySize, box.width)
+    for (const secondary of secondaries) {
+      const secondarySize = getAllByText(secondary.text, {includeHiddenElements: true})[0].props
+        .style.fontSize
+      stackHeight += MIRRORED_GAP + estimateBlockHeight(secondary.text, secondarySize, box.width)
+    }
+    expect(stackHeight).toBeLessThanOrEqual(halfHeight)
   })
 })

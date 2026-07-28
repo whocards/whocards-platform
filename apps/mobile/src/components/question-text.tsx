@@ -58,17 +58,26 @@ export const fitFontSize = (
   return Math.round(Math.max(minFont, Math.min(MAX_FONT, raw, widthCap)))
 }
 
+// CJK text breaks both Latin-face assumptions: there are no spaces (a whole
+// sentence is one "word" that wraps mid-word, glyph by glyph) and each glyph is
+// full-width — ~1em of advance, not the 0.54 of the semibold Latin face.
+const CJK_CHAR_WIDTH_RATIO = 1
+const CJK_RE = /[\u3000-\u30ff\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]/
+
 /**
  * Estimated rendered height of one text block at `fontSize` in a `width`-pt
  * column: a greedy word-wrap (like a text engine) at the same glyph metrics
  * fitFontSize sizes against, honoring the explicit \n\n breaks some questions
- * carry — the two things fitFontSize's pure area estimate cannot see. Used by
- * the overflow backstop in QuestionFace and by the overflow regression test.
+ * carry — the things fitFontSize's pure area estimate cannot see. A word longer
+ * than a full line (a CJK sentence, which has no spaces) wraps mid-word at the
+ * CJK full-width glyph advance. Used by the overflow backstop in QuestionFace
+ * and by the overflow regression test.
  */
 export const estimateBlockHeight = (text: string, fontSize: number, width: number) => {
-  const maxChars = Math.max(1, Math.floor(width / (fontSize * CHAR_WIDTH_RATIO)))
   let lines = 0
   for (const paragraph of text.trim().split('\n')) {
+    const ratio = CJK_RE.test(paragraph) ? CJK_CHAR_WIDTH_RATIO : CHAR_WIDTH_RATIO
+    const maxChars = Math.max(1, Math.floor(width / (fontSize * ratio)))
     const words = paragraph.split(/\s+/).filter(Boolean)
     if (words.length === 0) {
       lines += 1 // a blank line from a \n\n break still occupies a line
@@ -76,6 +85,13 @@ export const estimateBlockHeight = (text: string, fontSize: number, width: numbe
     }
     let lineLen = 0
     for (const word of words) {
+      if (word.length > maxChars) {
+        // longer than a whole line — wraps mid-word (space-less CJK sentences)
+        if (lineLen > 0) lines += 1
+        lines += Math.floor(word.length / maxChars)
+        lineLen = word.length % maxChars
+        continue
+      }
       const needed = lineLen === 0 ? word.length : lineLen + 1 + word.length
       if (needed <= maxChars) {
         lineLen = needed
@@ -84,7 +100,7 @@ export const estimateBlockHeight = (text: string, fontSize: number, width: numbe
         lineLen = word.length
       }
     }
-    lines += 1
+    if (lineLen > 0) lines += 1
   }
   return lines * fontSize * LINE_HEIGHT_RATIO
 }
@@ -234,6 +250,9 @@ const QuestionFace = ({
   const share = PRIMARY_SHARE[Math.min(shown.length, PRIMARY_SHARE.length - 1)] ?? 1
   const minFont = compact ? MIN_FONT_MIRRORED : MIN_FONT
   const secondaryMin = compact ? SECONDARY_MIN_MIRRORED : SECONDARY_MIN
+  // `shown` is a fresh array every render (QuestionText filters it inline), so
+  // the memo keys on its content instead of its identity
+  const shownKey = shown.map((s) => `${s.language}:${s.text}`).join(' ')
   const {fontSize, secondaryFont} = useMemo(() => {
     let size = fitFontSize(text, box.width, box.height * share, minFont)
     let secondarySize = fitSecondaryFontSize(size, minFont, secondaryMin)
@@ -256,7 +275,8 @@ const QuestionFace = ({
       secondarySize = Math.max(ABS_MIN_SECONDARY, Math.round(size * secondaryRatio))
     }
     return {fontSize: size, secondaryFont: secondarySize}
-  }, [text, box.width, box.height, share, minFont, secondaryMin, compact, shown])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shownKey stands in for shown
+  }, [text, box.width, box.height, share, minFont, secondaryMin, compact, shownKey])
 
   if (shown.length === 0) {
     return (
