@@ -36,4 +36,4 @@ npm-debug.log*
 *.tsbuildinfo
 
 # local experiments scratch
-experiments/
+/experiments/
