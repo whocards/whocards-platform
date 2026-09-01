@@ -3,7 +3,7 @@
 # Push the website's PUBLIC_POSTHOG_* env vars to Netlify via the Netlify CLI.
 # These are client-exposed (PUBLIC_ prefix) and read by apps/website at build time
 # (src/components/PostHog.astro). The managed reverse-proxy host lives here too —
-# point PUBLIC_POSTHOG_HOST at your CNAME subdomain (e.g. https://e.whocards.cc) so
+# point PUBLIC_POSTHOG_HOST at our CNAME subdomain (https://who.whocards.cc) so
 # events skip browser ad-blockers; see docs / issue #4 for the DNS setup.
 #
 # Web config lives in Netlify, not GitHub Actions — the mobile-only release workflows
@@ -16,7 +16,7 @@
 #
 # Or pass them inline:
 #   PUBLIC_POSTHOG_KEY=phc_xxx \
-#   PUBLIC_POSTHOG_HOST=https://e.whocards.cc \
+#   PUBLIC_POSTHOG_HOST=https://who.whocards.cc \
 #   PUBLIC_POSTHOG_UI_HOST=https://eu.posthog.com \
 #   ./apps/website/scripts/set-web-env.sh
 #
@@ -37,7 +37,7 @@ netlify status >/dev/null 2>&1 || {
 }
 
 : "${PUBLIC_POSTHOG_KEY:?set PUBLIC_POSTHOG_KEY — the PostHog project API key (phc_...)}"
-PUBLIC_POSTHOG_HOST="${PUBLIC_POSTHOG_HOST:-https://eu.i.posthog.com}"
+PUBLIC_POSTHOG_HOST="${PUBLIC_POSTHOG_HOST:-https://who.whocards.cc}"
 PUBLIC_POSTHOG_UI_HOST="${PUBLIC_POSTHOG_UI_HOST:-https://eu.posthog.com}"
 
 # Optional explicit site target (else the linked site is used). Guarded array
