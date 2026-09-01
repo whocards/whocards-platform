@@ -27,8 +27,7 @@ const ORIGINAL_OPT_IN = process.env.EXPO_PUBLIC_RECORD_ANSWERS
 const freshSend = (): typeof Send => {
   let fn!: typeof Send
   jest.isolateModules(() => {
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- jest.isolateModules requires CJS `require`, which is untyped; the module shape is known from the `import type` above.
-    fn = (require('../lib/answer-transport') as {send: typeof Send}).send
+    fn = jest.requireActual<{send: typeof Send}>('../lib/answer-transport').send
   })
   return fn
 }

@@ -39,10 +39,9 @@ const CARD_SIZE_OPTIONS: {key: CardSizeKey; label: string}[] = [
   {key: 'post', label: 'Post · 1080×1350'},
 ]
 
-// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Object.keys widens to string[]; questions' keys are QuestionId by construction (QuestionId = keyof typeof questions).
-const QUESTION_IDS = Object.keys(questions).toSorted(
-  (a, b) => Number(a) - Number(b)
-) as QuestionId[]
+const QUESTION_IDS = Object.keys(questions)
+  .filter(isQuestionId)
+  .toSorted((a, b) => Number(a) - Number(b))
 
 const isCardSizeKey = (value: string): value is CardSizeKey =>
   CARD_SIZE_OPTIONS.some((opt) => opt.key === value)
@@ -374,8 +373,7 @@ function CardVariantCard({
 }
 
 function PrintPlayground() {
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Object.keys widens to string[]; PHYSICAL_LAYOUTS' keys are LayoutId by construction.
-  const presetIds = Object.keys(PHYSICAL_LAYOUTS) as LayoutId[]
+  const presetIds = Object.keys(PHYSICAL_LAYOUTS).filter(isLayoutId)
   const [preset, setPreset] = useState<LayoutId>(presetIds[0])
   const [lang, setLang] = useState<Language>('en')
 

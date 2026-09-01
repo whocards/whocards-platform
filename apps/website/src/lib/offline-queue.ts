@@ -34,14 +34,32 @@ export type Send = (event: AnswerEvent) => Promise<void>
 
 const hasStorage = (): boolean => typeof window !== 'undefined' && !!window.localStorage
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+/**
+ * localStorage persists across deploys — a queue written by an older build
+ * (e.g. before a field was renamed) can be read by newer code. Guard the
+ * shape at read time rather than trusting the cast blindly, so a stale/
+ * corrupt entry is dropped like unparseable JSON instead of crashing a
+ * later `send`.
+ */
+const isQueuedEvent = (value: unknown): value is QueuedEvent =>
+  isRecord(value) &&
+  typeof value.deviceId === 'string' &&
+  typeof value.deckSlug === 'string' &&
+  typeof value.questionId === 'string' &&
+  typeof value.language === 'string' &&
+  typeof value['_id'] === 'string' &&
+  typeof value['_attempts'] === 'number'
+
 const read = (): QueuedEvent[] => {
   if (!hasStorage()) return []
   try {
     const raw = localStorage.getItem(QUEUE_KEY)
     if (!raw) return []
-    const parsed = JSON.parse(raw)
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- queue is only ever written by `write` below with QueuedEvent[]; no external writer, so no schema validation is warranted here.
-    return Array.isArray(parsed) ? (parsed as QueuedEvent[]) : []
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter(isQueuedEvent) : []
   } catch {
     // corrupt payload — reset rather than wedging play forever
     return []

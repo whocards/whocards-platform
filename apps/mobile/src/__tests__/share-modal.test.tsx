@@ -74,8 +74,9 @@ describe('ShareModal', () => {
 
   beforeEach(() => {
     mockDownloadAndShareImage.mockReset()
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- mockResolvedValue's generic doesn't infer from the spied overload; `as never` is the standard jest stand-in here, only the resolved value's shape matters to the test.
-    shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({action: 'sharedAction'} as never)
+    shareSpy = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({action: 'sharedAction', activityType: undefined})
   })
 
   afterEach(() => {

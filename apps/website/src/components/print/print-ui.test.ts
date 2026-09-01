@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import {PHYSICAL_LAYOUTS} from '../../server/print/presets'
+import {isLayoutId, PHYSICAL_LAYOUTS} from '../../server/print/presets'
 
 import {
   buildCalibrationDownloadUrl,
@@ -13,10 +13,8 @@ import {
 
 describe('layoutUpCount', () => {
   it('multiplies cols by rows', () => {
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- layoutUpCount only reads cols/rows off its grid param; a minimal stand-in is enough for this test.
-    expect(layoutUpCount({cols: 2, rows: 5} as never)).toBe(10)
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- same stand-in as above.
-    expect(layoutUpCount({cols: 2, rows: 4} as never)).toBe(8)
+    expect(layoutUpCount({...PHYSICAL_LAYOUTS['us-letter-10up'], cols: 2, rows: 5})).toBe(10)
+    expect(layoutUpCount({...PHYSICAL_LAYOUTS['us-letter-10up'], cols: 2, rows: 4})).toBe(8)
   })
 })
 
@@ -34,10 +32,10 @@ describe('getDefaultPresetId', () => {
   })
 
   it('returns undefined when nothing is supported', () => {
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- fromEntries/entries widens keys to string; every PHYSICAL_LAYOUTS key/shape is preserved 1:1 by this map, just toggling `supported`.
-    const layouts = Object.fromEntries(
-      Object.entries(PHYSICAL_LAYOUTS).map(([id, layout]) => [id, {...layout, supported: false}])
-    ) as typeof PHYSICAL_LAYOUTS
+    const layouts: typeof PHYSICAL_LAYOUTS = {...PHYSICAL_LAYOUTS}
+    for (const id of Object.keys(layouts).filter(isLayoutId)) {
+      layouts[id] = {...layouts[id], supported: false}
+    }
     expect(getDefaultPresetId(layouts)).toBeUndefined()
   })
 })

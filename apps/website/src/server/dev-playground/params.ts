@@ -9,12 +9,12 @@
 
 import type {CardSize, CardSizeKey} from '~server/card-image'
 import {CARD_SIZES} from '~server/card-image'
+import {objectKeys} from '~utils/helpers'
 
 export const describeRaw = (raw: string | null): string =>
   raw === null ? 'missing' : JSON.stringify(raw)
 
-// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Object.keys widens to string[]; CARD_SIZES' keys are CardSizeKey by construction (CardSizeKey = keyof typeof CARD_SIZES).
-const CARD_SIZE_KEYS = Object.keys(CARD_SIZES) as CardSizeKey[]
+const CARD_SIZE_KEYS = objectKeys(CARD_SIZES)
 
 const isCardSizeKey = (value: string): value is CardSizeKey =>
   (CARD_SIZE_KEYS as string[]).includes(value)
@@ -39,20 +39,22 @@ const parseBoundedNumber = (
   return {ok: true, value}
 }
 
+const includesMember = <T extends string>(allowed: readonly T[], raw: string): raw is T =>
+  (allowed as readonly string[]).includes(raw)
+
 const parseEnum = <T extends string>(
   raw: string | null,
   name: string,
   allowed: readonly T[]
 ): ParamResult<T | undefined> => {
   if (raw === null || raw === '') return {ok: true, value: undefined}
-  if (!(allowed as readonly string[]).includes(raw)) {
+  if (!includesMember(allowed, raw)) {
     return {
       ok: false,
       error: `${name} must be one of: ${allowed.join(', ')} (got ${describeRaw(raw)})`,
     }
   }
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the includes() check above is exactly this generic helper's runtime validation that `raw` is a member of `allowed: readonly T[]`; there's no narrower way to express "validated member of T" for a generic T.
-  return {ok: true, value: raw as T}
+  return {ok: true, value: raw}
 }
 
 const parseBoolean = (raw: string | null, name: string): ParamResult<boolean> => {

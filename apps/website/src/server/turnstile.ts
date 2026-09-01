@@ -1,3 +1,4 @@
+import {z} from 'zod'
 import type {ZodIssue} from 'zod'
 
 // Cloudflare Turnstile server-side verification. The client widget only produces a
@@ -30,8 +31,8 @@ export async function verifyTurnstile(
       body,
       signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
     })
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- res.json() is `any`; this is an external API boundary (Cloudflare Turnstile) with no runtime schema validation in place.
-    const data = (await res.json()) as {success: boolean}
+    const turnstileResponseSchema = z.object({success: z.boolean()})
+    const data = turnstileResponseSchema.parse(await res.json())
     return data.success ? {ok: true} : {ok: false, reason: 'failed'}
   } catch {
     // Network error or timeout — treat as a failed (retryable) check, not a crash.
