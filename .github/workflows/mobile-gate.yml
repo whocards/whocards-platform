@@ -45,6 +45,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Restore turbo's local cache (.turbo/cache) so unchanged packages'
+      # typecheck/test tasks are cache hits. Keyed on sha so every run saves a
+      # fresh entry; restore-keys falls back to the newest previous one.
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
       # Report high+ severity advisories on every run. Complements pnpm's
       # minimumReleaseAge quarantine (pnpm-workspace.yaml), which can't catch
       # already-aged bad versions. CI only: network call, so not in pre-commit.
