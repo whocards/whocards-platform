@@ -20,6 +20,12 @@ on:
   # and must always run the full checks regardless of what changed.
   workflow_call: {}
 
+# A new push to the same ref supersedes any in-flight run — don't burn minutes
+# finishing a gate for a commit that's already been replaced.
+concurrency:
+  group: mobile-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   gate:
     name: Quality gate
@@ -38,6 +44,16 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Report high+ severity advisories on every run. Complements pnpm's
+      # minimumReleaseAge quarantine (pnpm-workspace.yaml), which can't catch
+      # already-aged bad versions. CI only: network call, so not in pre-commit.
+      # continue-on-error until the pre-existing backlog (24 high, all
+      # transitive as of 2026-09-01) is burned down — then drop it to make
+      # this a hard gate like life's `bun audit` step.
+      - name: Dependency audit (high+, report-only)
+        continue-on-error: true
+        run: pnpm audit --prod --audit-level=high
 
       - name: Format check
         run: pnpm format
