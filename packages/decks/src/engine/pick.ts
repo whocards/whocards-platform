@@ -36,6 +36,10 @@ export const pickReducer = (questionIds: QuestionId[]) => {
         const previous = nav(state.nav, {type: 'previous'})
         return previous === state.nav ? state : {...state, nav: previous}
       }
+      default: {
+        const exhaustiveCheck: never = action
+        throw new Error(`unreachable pick action: ${JSON.stringify(exhaustiveCheck)}`)
+      }
     }
   }
 }

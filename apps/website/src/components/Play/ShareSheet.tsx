@@ -93,7 +93,7 @@ export const ShareSheet = ({
 
   useEffect(() => {
     const dialog = ref.current
-    if (!dialog) return
+    if (!dialog) return undefined
 
     // Fires on Escape and on `dialog.close()` alike — keeps the parent's `open`
     // state in sync regardless of how the dialog closed.

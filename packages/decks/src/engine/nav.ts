@@ -24,6 +24,10 @@ export const navReducer =
       }
       case 'reset':
         return getInitialNav(questionIds, action.startId)
+      default: {
+        const exhaustiveCheck: never = action
+        throw new Error(`unreachable nav action: ${JSON.stringify(exhaustiveCheck)}`)
+      }
     }
   }
 

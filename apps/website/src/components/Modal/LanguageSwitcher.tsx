@@ -34,7 +34,7 @@ export const LanguageSwitcher = () => {
     // capture the node so the cleanup removes the listener from the same element
     // (not a possibly-changed ref.current), with a stable handler and a one-shot mount
     const dialog = ref.current
-    if (!dialog) return
+    if (!dialog) return undefined
 
     const handleBackdropClick = (event: MouseEvent) => {
       if (dialog === event.target) window.langsModal.close()

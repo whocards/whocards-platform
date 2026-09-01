@@ -20,7 +20,7 @@
     // findings (mostly narrowing casts + untyped vi.fn mocks in tests).
     // Re-enable one per follow-up PR, fixing or inline-suppressing findings.
     "typescript/no-unsafe-type-assertion": "off",
-    "typescript/consistent-return": "off",
+    "typescript/consistent-return": "error",
     "vitest/require-mock-type-parameters": "off",
     "vitest/require-to-throw-message": "off",
     "node/no-process-env": "error",

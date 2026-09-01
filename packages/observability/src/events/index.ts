@@ -202,6 +202,11 @@ export const eventsFor = (
     case 'reset':
       // A deep-link jump into the open deck — not a next/previous nav step.
       return []
+
+    default: {
+      const exhaustiveCheck: never = action
+      throw new Error(`unreachable nav action: ${JSON.stringify(exhaustiveCheck)}`)
+    }
   }
 }
 
