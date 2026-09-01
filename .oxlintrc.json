@@ -21,7 +21,7 @@
     // Re-enable one per follow-up PR, fixing or inline-suppressing findings.
     "typescript/no-unsafe-type-assertion": "off",
     "typescript/consistent-return": "error",
-    "vitest/require-mock-type-parameters": "off",
+    "vitest/require-mock-type-parameters": "error",
     "vitest/require-to-throw-message": "off",
     "node/no-process-env": "error",
     "no-unused-vars": [
