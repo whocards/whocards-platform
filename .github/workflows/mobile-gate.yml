@@ -79,7 +79,6 @@ jobs:
   audit:
     name: Dependency audit (high+, report-only)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
 
@@ -95,5 +94,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Step-level continue-on-error keeps the check row green with a warning
+      # annotation; job-level would mark the row failed on every PR.
       - name: Audit
+        continue-on-error: true
         run: pnpm audit --prod --audit-level=high
