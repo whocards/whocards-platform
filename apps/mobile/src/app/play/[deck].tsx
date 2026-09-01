@@ -101,7 +101,7 @@ export default function PlayScreen() {
   // player is open instead, catch the link here and switch to the classic player
   // at the linked question (deep links always open classic).
   useEffect(() => {
-    if (game !== 'pick' || !deckSlug) return
+    if (game !== 'pick' || !deckSlug) return undefined
     const sub = Linking.addEventListener('url', ({url}) => {
       const link = parsePlayLink(url)
       if (!link || link.deck !== deckSlug || !link.q) return
@@ -327,7 +327,7 @@ const DeckPlayer = ({
   // Card count for in-app review eligibility increments on the same questionId key
   // (same over-count caveat as above).
   useEffect(() => {
-    if (!questionId) return
+    if (!questionId) return undefined
     let cancelled = false
     void getDeviceId().then((deviceId) => {
       if (cancelled) return

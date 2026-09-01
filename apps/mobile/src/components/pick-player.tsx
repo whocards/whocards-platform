@@ -210,7 +210,7 @@ export const PickPlayer = ({
 
   // one Answer per Card served — only a revealed card counts (phase === 'card')
   useEffect(() => {
-    if (!onCard || !questionId) return
+    if (!onCard || !questionId) return undefined
     let cancelled = false
     void getDeviceId().then((deviceId) => {
       if (cancelled) return
