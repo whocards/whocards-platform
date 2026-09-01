@@ -171,12 +171,14 @@ export const ShareModal = ({
   ]
 
   // Clear stale state whenever the sheet is (re)opened for a (possibly new) card.
+  /* oxlint-disable react/set-state-in-effect -- intentional reset-on-open; restructuring to key-based reset needs on-device verification */
   useEffect(() => {
     if (visible) {
       setPending(null)
       setError(null)
     }
   }, [visible])
+  /* oxlint-enable react/set-state-in-effect */
 
   const shareLink = useCallback(() => {
     setError(null)

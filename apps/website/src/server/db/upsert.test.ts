@@ -74,7 +74,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
     })
     const rows = await db.select().from(schema.emailConsent)
     expect(rows).toHaveLength(1)
-    expect(rows[0]!.consentType).toBe('app_launch')
+    expect(rows[0].consentType).toBe('app_launch')
     const newsletterRows = rows.filter((r) => r.consentType === 'newsletter')
     expect(newsletterRows).toHaveLength(0)
   })
@@ -90,7 +90,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       consentType: 'app_launch',
       consentSource: 'app_page',
     })
-    expect(second!.id).toBe(first!.id)
+    expect(second.id).toBe(first.id)
     const rows = await db.select().from(schema.emailConsent)
     expect(rows).toHaveLength(1)
   })
@@ -108,7 +108,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
     await db
       .update(schema.emailConsent)
       .set({consentedAt: fixedConsentedAt})
-      .where(eq(schema.emailConsent.id, first!.id))
+      .where(eq(schema.emailConsent.id, first.id))
 
     // Simulate a later re-signup
     const second = await upsertConsent(db, {
@@ -117,7 +117,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       consentSource: 'app_page',
     })
     // consentedAt must be the original (seeded) timestamp, not overwritten
-    expect(new Date(second!.consentedAt).toISOString()).toBe(fixedConsentedAt)
+    expect(new Date(second.consentedAt).toISOString()).toBe(fixedConsentedAt)
   })
 
   it('non-destructive resubscribe: clears unsubscribe fields and reuses same row', async () => {
@@ -147,8 +147,8 @@ describe('upsertConsent — email_consent table (#119)', () => {
       .select()
       .from(schema.emailConsent)
       .where(eq(schema.emailConsent.email, 'unsub@example.com'))
-    expect(unsubRow!.unsubscribedAt).not.toBeNull()
-    expect(unsubRow!.unsubscribeSource).toBe('user_request')
+    expect(unsubRow.unsubscribedAt).not.toBeNull()
+    expect(unsubRow.unsubscribeSource).toBe('user_request')
 
     // Re-subscribe: upsertConsent should clear unsubscribe fields
     const resub = await upsertConsent(db, {
@@ -157,14 +157,14 @@ describe('upsertConsent — email_consent table (#119)', () => {
       consentSource: 'app_page_return',
     })
     // The row id should be the same (upsert, not a new insert)
-    expect(resub!.id).toBe(initial!.id)
+    expect(resub.id).toBe(initial.id)
     // Unsubscribe fields are cleared
-    expect(resub!.unsubscribedAt).toBeNull()
-    expect(resub!.unsubscribeSource).toBeNull()
+    expect(resub.unsubscribedAt).toBeNull()
+    expect(resub.unsubscribeSource).toBeNull()
     // Provider sync state is reset so reconciliation re-adds the contact to Resend
     // (needsSync() keys off providerSyncedAt IS NULL). The contact id is kept.
-    expect(resub!.providerSyncedAt).toBeNull()
-    expect(resub!.providerSyncError).toBeNull()
+    expect(resub.providerSyncedAt).toBeNull()
+    expect(resub.providerSyncError).toBeNull()
   })
 
   it('links userId when provided, coalesces on re-upsert', async () => {
@@ -177,9 +177,9 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'linked@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
-      userId: user!.id,
+      userId: user.id,
     })
-    expect(row!.userId).toBe(user!.id)
+    expect(row.userId).toBe(user.id)
 
     // Re-upsert without userId — should NOT null the existing link
     const row2 = await upsertConsent(db, {
@@ -188,7 +188,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       consentSource: 'app_page',
       userId: null,
     })
-    expect(row2!.userId).toBe(user!.id) // preserved
+    expect(row2.userId).toBe(user.id) // preserved
   })
 
   it('updates name when new value provided; keeps existing when null', async () => {
@@ -204,7 +204,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       consentType: 'app_launch',
       consentSource: 'app_page',
     })
-    expect(updated!.name).toBe('Updated')
+    expect(updated.name).toBe('Updated')
 
     // Now upsert with no name — should keep 'Updated'
     const kept = await upsertConsent(db, {
@@ -212,6 +212,6 @@ describe('upsertConsent — email_consent table (#119)', () => {
       consentType: 'app_launch',
       consentSource: 'app_page',
     })
-    expect(kept!.name).toBe('Updated')
+    expect(kept.name).toBe('Updated')
   })
 })

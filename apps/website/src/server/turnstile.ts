@@ -40,7 +40,7 @@ export async function verifyTurnstile(
 
 /** Shape a Turnstile failure into the form's `errors` record (keyed like a ZodIssue). */
 export const turnstileError = (message: string): Record<string, ZodIssue> => ({
-  'cf-turnstile-response': {code: 'custom', message, path: ['cf-turnstile-response']} as ZodIssue,
+  'cf-turnstile-response': {code: 'custom', message, path: ['cf-turnstile-response']},
 })
 
 /** Standard user-facing copy for the two Turnstile failure modes. */

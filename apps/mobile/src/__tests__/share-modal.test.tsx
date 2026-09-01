@@ -147,7 +147,7 @@ describe('ShareModal', () => {
   // backed out, so it can never mean "cancelled" there). This still gates the
   // completion analytics below, even though it no longer gates `onClose`.
   it('does not report completion when the link share sheet is explicitly cancelled (iOS)', async () => {
-    shareSpy.mockResolvedValue({action: Share.dismissedAction} as never)
+    shareSpy.mockResolvedValue({action: Share.dismissedAction})
     const onShare = jest.fn()
     const onClose = jest.fn()
     render(<ShareModal visible {...PROPS} onShare={onShare} onClose={onClose} />)

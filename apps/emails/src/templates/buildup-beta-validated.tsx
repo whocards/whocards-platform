@@ -81,10 +81,7 @@ export function BetaValidatedEmail({
   )
 }
 
-export function betaValidatedText({
-  playUrl = DEFAULT_PLAY_URL,
-  greeting = 'Hi there,',
-}: Required<BetaValidatedProps>) {
+export function betaValidatedText({playUrl, greeting}: Required<BetaValidatedProps>) {
   return `WhoCards passed its final test.
 
 ${greeting}

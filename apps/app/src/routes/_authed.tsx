@@ -15,8 +15,9 @@ export const Route = createFileRoute('/_authed')({
   component: AuthedLayout,
 })
 
-const signOut = () =>
-  authClient.signOut({fetchOptions: {onSuccess: () => location.assign('/sign-in')}})
+const signOut = () => {
+  void authClient.signOut({fetchOptions: {onSuccess: () => location.assign('/sign-in')}})
+}
 
 /** Every authed page gets this nav (founder feedback, 2026-07-05: "there's no
  *  way to navigate"). One breakpoint: a hamburger + slide-down panel below

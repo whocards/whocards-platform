@@ -11,7 +11,7 @@ const isInternal = isInternalDeployContext(env.CONTEXT)
 
 <meta name='whocards-internal' content={isInternal ? 'true' : 'false'} />
 <script>
-  import posthog from 'posthog-js'
+  import {posthog} from 'posthog-js'
   import {env} from '~env'
   import {initObservability} from '~lib/observability'
   import {identify} from '@whocards/observability'

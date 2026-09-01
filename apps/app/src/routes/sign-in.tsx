@@ -41,7 +41,12 @@ function SignIn() {
           Check <span className="text-white">{email}</span> for a sign-in link.
         </p>
       ) : (
-        <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-3">
+        <form
+          onSubmit={(event) => {
+            void submit(event)
+          }}
+          className="flex w-full max-w-sm flex-col gap-3"
+        >
           <input
             type="email"
             required
@@ -67,7 +72,9 @@ function SignIn() {
       {googleEnabled ? (
         <button
           type="button"
-          onClick={() => authClient.signIn.social({provider: 'google', callbackURL: '/'})}
+          onClick={() => {
+            void authClient.signIn.social({provider: 'google', callbackURL: '/'})
+          }}
           className="rounded-full border border-gray-light px-4 py-3 text-sm font-semibold"
         >
           Continue with Google

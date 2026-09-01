@@ -64,8 +64,8 @@ const nextVariantKey = (): string => `variant-${(variantCounter += 1)}`
 
 const defaultVariant = (overrides: Partial<CardVariant> = {}): CardVariant => ({
   key: nextVariantKey(),
-  id: '1' as QuestionId,
-  language: 'en' as Language,
+  id: '1',
+  language: 'en',
   size: 'og',
   padding: '',
   wordmarkScale: '',
@@ -401,6 +401,7 @@ function PrintPlayground() {
       )}
 
       {supported && (
+        // oxlint-disable-next-line react/iframe-missing-sandbox -- dev-only playground previewing our own same-origin print route; sandboxing would break its scripts
         <iframe
           key={printUrl}
           title='Print preset preview'

@@ -32,7 +32,6 @@ beforeEach(async () => {
 const freshGetDeviceId = (): (() => Promise<string>) => {
   let fn!: () => Promise<string>
   jest.isolateModules(() => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     fn = require('../lib/device-id').getDeviceId
   })
   return fn

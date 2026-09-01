@@ -163,7 +163,7 @@ export const eventsFor = (
             from_question_id: fromId,
             to_question_id: toId,
             language: ctx.language,
-          } satisfies QuestionNextProps as EventProps,
+          } satisfies QuestionNextProps,
         },
       ]
 
@@ -171,7 +171,7 @@ export const eventsFor = (
       if (next.ids.length > prev.ids.length) {
         events.push({
           name: EVENTS.DECK_CYCLED,
-          props: {deck_id: ctx.deck_id, game: ctx.game} satisfies DeckCycledProps as EventProps,
+          props: {deck_id: ctx.deck_id, game: ctx.game} satisfies DeckCycledProps,
         })
       }
 
@@ -194,7 +194,7 @@ export const eventsFor = (
             from_question_id: fromId,
             to_question_id: toId,
             language: ctx.language,
-          } satisfies QuestionPreviousProps as EventProps,
+          } satisfies QuestionPreviousProps,
         },
       ]
     }
@@ -248,7 +248,7 @@ export const createViewTracker = (
       reason,
     }
     state = null
-    emit(EVENTS.QUESTION_VIEWED, props as EventProps)
+    emit(EVENTS.QUESTION_VIEWED, props)
   }
 
   return {startView, endView}
