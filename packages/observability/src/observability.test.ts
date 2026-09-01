@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
-import type {ObservabilityProvider, LogEntry, EventProps} from './index'
+import type {ObservabilityProvider, LogEntry, EventProps, EventName} from './index'
 import {
   configureObservability,
   logError,
@@ -63,11 +63,11 @@ describe('dev mode → console', () => {
 
 describe('prod mode + provider → provider receives calls (not console)', () => {
   it('logError routes to captureError and does NOT call console', () => {
-    const captureError = vi.fn()
+    const captureError = vi.fn<(entry: LogEntry) => void>()
     const provider: ObservabilityProvider = {
       captureError,
-      captureEvent: vi.fn(),
-      identify: vi.fn(),
+      captureEvent: vi.fn<(name: EventName, props?: EventProps) => void>(),
+      identify: vi.fn<(id: string, props?: EventProps) => void>(),
     }
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     configureObservability({dev: false, provider})
@@ -83,11 +83,11 @@ describe('prod mode + provider → provider receives calls (not console)', () =>
   })
 
   it('logWarn routes to captureError with warn level', () => {
-    const captureError = vi.fn()
+    const captureError = vi.fn<(entry: LogEntry) => void>()
     const provider: ObservabilityProvider = {
       captureError,
-      captureEvent: vi.fn(),
-      identify: vi.fn(),
+      captureEvent: vi.fn<(name: EventName, props?: EventProps) => void>(),
+      identify: vi.fn<(id: string, props?: EventProps) => void>(),
     }
     configureObservability({dev: false, provider})
 
@@ -100,11 +100,11 @@ describe('prod mode + provider → provider receives calls (not console)', () =>
   })
 
   it('trackEvent routes to captureEvent', () => {
-    const captureEvent = vi.fn()
+    const captureEvent = vi.fn<(name: EventName, props?: EventProps) => void>()
     const provider: ObservabilityProvider = {
-      captureError: vi.fn(),
+      captureError: vi.fn<(entry: LogEntry) => void>(),
       captureEvent,
-      identify: vi.fn(),
+      identify: vi.fn<(id: string, props?: EventProps) => void>(),
     }
     configureObservability({dev: false, provider})
 
@@ -117,10 +117,10 @@ describe('prod mode + provider → provider receives calls (not console)', () =>
   })
 
   it('identify routes to provider.identify', () => {
-    const identifyMock = vi.fn()
+    const identifyMock = vi.fn<(id: string, props?: EventProps) => void>()
     const provider: ObservabilityProvider = {
-      captureError: vi.fn(),
-      captureEvent: vi.fn(),
+      captureError: vi.fn<(entry: LogEntry) => void>(),
+      captureEvent: vi.fn<(name: EventName, props?: EventProps) => void>(),
       identify: identifyMock,
     }
     configureObservability({dev: false, provider})
@@ -166,8 +166,8 @@ describe('never throws even when provider throws', () => {
       captureError: () => {
         throw new Error('provider exploded')
       },
-      captureEvent: vi.fn(),
-      identify: vi.fn(),
+      captureEvent: vi.fn<(name: EventName, props?: EventProps) => void>(),
+      identify: vi.fn<(id: string, props?: EventProps) => void>(),
     }
     configureObservability({dev: false, provider})
 
@@ -176,11 +176,11 @@ describe('never throws even when provider throws', () => {
 
   it('swallows captureEvent throws', () => {
     const provider: ObservabilityProvider = {
-      captureError: vi.fn(),
+      captureError: vi.fn<(entry: LogEntry) => void>(),
       captureEvent: () => {
         throw new Error('event exploded')
       },
-      identify: vi.fn(),
+      identify: vi.fn<(id: string, props?: EventProps) => void>(),
     }
     configureObservability({dev: false, provider})
 

@@ -1,6 +1,7 @@
 import {describe, expect, it, vi} from 'vitest'
 
 import {createCaller} from './index'
+import type {Context} from './trpc'
 
 // the content routers are context-free; a no-op recordAnswer satisfies the port
 const caller = createCaller({recordAnswer: async () => {}})
@@ -35,7 +36,7 @@ describe('pool router', () => {
 
 describe('answers router', () => {
   it('record hands a valid Answer to the recordAnswer port (type defaults to "answered")', async () => {
-    const recordAnswer = vi.fn(async () => {})
+    const recordAnswer = vi.fn<Context['recordAnswer']>(async () => {})
     await createCaller({recordAnswer}).answers.record({
       deviceId: 'dev-1',
       deckSlug: 'library',
@@ -52,7 +53,7 @@ describe('answers router', () => {
   })
 
   it('record rejects an empty deviceId without touching the port', async () => {
-    const recordAnswer = vi.fn(async () => {})
+    const recordAnswer = vi.fn<Context['recordAnswer']>(async () => {})
     await expect(
       createCaller({recordAnswer}).answers.record({
         deviceId: '',

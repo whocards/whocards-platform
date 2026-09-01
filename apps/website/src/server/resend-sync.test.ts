@@ -70,10 +70,12 @@ function makeFakeContacts(overrides: Partial<ResendContactsPort> = {}): ResendCo
   }
 }
 
+type LogFn = (msg: string, ...args: unknown[]) => void
+
 const silentLogger: SyncDeps['logger'] = {
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
+  info: vi.fn<LogFn>(),
+  warn: vi.fn<LogFn>(),
+  error: vi.fn<LogFn>(),
 }
 
 // ---------------------------------------------------------------------------

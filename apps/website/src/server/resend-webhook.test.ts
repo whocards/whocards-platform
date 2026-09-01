@@ -54,10 +54,12 @@ function signPayload(
   }
 }
 
+type LogFn = (msg: string, ...args: unknown[]) => void
+
 const silentLogger = {
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
+  info: vi.fn<LogFn>(),
+  warn: vi.fn<LogFn>(),
+  error: vi.fn<LogFn>(),
 }
 
 const TEST_SEGMENT_IDS: DispatchSegmentIds = {

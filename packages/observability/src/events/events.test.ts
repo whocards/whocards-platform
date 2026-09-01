@@ -2,6 +2,9 @@ import {describe, expect, it, vi, afterEach} from 'vitest'
 import {configureObservability} from '../index'
 import {eventsFor, createViewTracker, EVENTS, GAMES, track} from './index'
 import type {NavState, NavAction} from '@whocards/decks/engine'
+import type {EventProps} from '../index'
+
+type EmitFn = (name: string, props?: EventProps) => void
 
 afterEach(() => {
   // reset to dev (safe fallback)
@@ -106,7 +109,7 @@ describe('createViewTracker — dwell tracking', () => {
   it('emits question_viewed with correct dwell_ms', () => {
     let t = 0
     const now = () => t
-    const emit = vi.fn()
+    const emit = vi.fn<EmitFn>()
     const tracker = createViewTracker(emit, now)
 
     tracker.startView({deck_id: 'friends', question_id: 'q1', language: 'en'})
@@ -126,7 +129,7 @@ describe('createViewTracker — dwell tracking', () => {
   it('clamps dwell_ms to >= 0 even with a bad clock', () => {
     let t = 100
     const now = () => t
-    const emit = vi.fn()
+    const emit = vi.fn<EmitFn>()
     const tracker = createViewTracker(emit, now)
 
     tracker.startView({deck_id: 'friends', question_id: 'q1', language: 'en'})
@@ -138,7 +141,7 @@ describe('createViewTracker — dwell tracking', () => {
   })
 
   it('is a no-op when endView called with no active view', () => {
-    const emit = vi.fn()
+    const emit = vi.fn<EmitFn>()
     const tracker = createViewTracker(emit)
 
     tracker.endView('backgrounded')
@@ -150,7 +153,7 @@ describe('createViewTracker — dwell tracking', () => {
     for (const reason of reasons) {
       let t = 0
       const now = () => t
-      const emit = vi.fn()
+      const emit = vi.fn<EmitFn>()
       const tracker = createViewTracker(emit, now)
       tracker.startView({deck_id: 'friends', question_id: 'q1', language: 'en'})
       t = 100
@@ -163,7 +166,7 @@ describe('createViewTracker — dwell tracking', () => {
   it('clears state after endView — subsequent endView is no-op', () => {
     let t = 0
     const now = () => t
-    const emit = vi.fn()
+    const emit = vi.fn<EmitFn>()
     const tracker = createViewTracker(emit, now)
 
     tracker.startView({deck_id: 'friends', question_id: 'q1', language: 'en'})
@@ -177,7 +180,7 @@ describe('createViewTracker — dwell tracking', () => {
   it('startView restarts tracking for a new question', () => {
     let t = 0
     const now = () => t
-    const emit = vi.fn()
+    const emit = vi.fn<EmitFn>()
     const tracker = createViewTracker(emit, now)
 
     tracker.startView({deck_id: 'friends', question_id: 'q1', language: 'en'})
