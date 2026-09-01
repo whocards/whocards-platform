@@ -122,7 +122,9 @@ export const toError = (value: unknown): Error | undefined => {
   if (value instanceof Error) return value
   if (typeof value === 'object') {
     try {
-      return new Error(JSON.stringify(value))
+      // ?? covers stringify returning undefined (a toJSON() that returns
+      // undefined) — that path doesn't throw, so the catch alone misses it.
+      return new Error(JSON.stringify(value) ?? '[unserializable thrown value]')
     } catch {
       return new Error('[unserializable thrown value]')
     }
