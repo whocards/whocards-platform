@@ -44,6 +44,7 @@ const read = async (): Promise<AnswerEvent[]> => {
   if (!raw) return []
   try {
     const parsed: unknown = JSON.parse(raw)
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- queue is only ever written by `write` below with AnswerEvent[]; no external writer, so no schema validation is warranted here.
     return Array.isArray(parsed) ? (parsed as AnswerEvent[]) : []
   } catch {
     // corrupt blob — drop it rather than wedge every future flush

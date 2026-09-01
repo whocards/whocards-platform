@@ -59,6 +59,7 @@ type TrpcModule = {getBaseUrl: () => string}
 const freshGetBaseUrl = (): (() => string) => {
   let fn!: () => string
   jest.isolateModules(() => {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- jest.isolateModules requires CJS `require`, which is untyped; TrpcModule mirrors the module's known shape.
     fn = (require('../lib/trpc') as TrpcModule).getBaseUrl
   })
   return fn

@@ -66,9 +66,11 @@ const posthogProvider: ObservabilityProvider = {
     }
   },
   captureEvent(name: string, props?: Record<string, unknown>): void {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- ObservabilityProvider's EventProps is Record<string, unknown>; PostHog's PHProps requires JSON-serialisable values. Callers only ever pass JSON-safe event props.
     posthog?.capture(name, props as PHProps)
   },
   identify(id: string, props?: Record<string, unknown>): void {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- same JsonType boundary as captureEvent above.
     posthog?.identify(id, props as PHProps)
   },
   reset(): void {

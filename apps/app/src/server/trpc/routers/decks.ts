@@ -11,11 +11,24 @@ import {
   canTransitionDeckStatus,
   DECK_STATUSES,
   DECKS_MIN_ROLE,
+  isDeckStatus,
 } from './decks-logic'
 import type {DeckStatus} from './decks-logic'
 import {DECK_SLUG} from './question-review-logic'
 
 const deckStatusSchema = z.enum(DECK_STATUSES)
+
+/** DB is the source of truth for `status`; a value outside DECK_STATUSES means
+ *  corrupt data, not a type-level concern — surface it loudly instead of casting. */
+const toDeckStatus = (status: string): DeckStatus => {
+  if (!isDeckStatus(status)) {
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: `Corrupt deck status "${status}".`,
+    })
+  }
+  return status
+}
 
 /**
  * Deck overview + roster management (RBAC per the founder brief: reviewer
@@ -51,7 +64,7 @@ export const decksRouter = createTRPCRouter({
           slug: row.slug,
           title: row.title,
           description: row.description,
-          status: row.status as DeckStatus,
+          status: toDeckStatus(row.status),
           totalQuestions: questions.length,
           approvedQuestions,
           updatedAt: row.updatedAt,
@@ -75,7 +88,7 @@ export const decksRouter = createTRPCRouter({
         slug: row.slug,
         title: row.title,
         description: row.description,
-        status: row.status as DeckStatus,
+        status: toDeckStatus(row.status),
         canEmitDiff: row.slug === DECK_SLUG,
       }
     }),
@@ -88,7 +101,7 @@ export const decksRouter = createTRPCRouter({
       const [row] = await db.select().from(deck).where(eq(deck.slug, input.slug)).limit(1)
       if (!row) throw new TRPCError({code: 'NOT_FOUND', message: `No deck "${input.slug}".`})
 
-      const from = row.status as DeckStatus
+      const from = toDeckStatus(row.status)
       if (!canTransitionDeckStatus(from, input.status)) {
         throw new TRPCError({
           code: 'BAD_REQUEST',

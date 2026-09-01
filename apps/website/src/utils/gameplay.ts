@@ -21,6 +21,7 @@ function swap(ids: QuestionIds, i: number, j: number): QuestionIds {
 }
 
 export function generateGame(): QuestionIds {
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Object.keys widens to string[]; questions' keys are QuestionId by construction (QuestionId = keyof typeof questions).
   const ids = Object.keys(questions) as QuestionIds
   shuffle(ids)
   return ids

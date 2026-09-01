@@ -1,4 +1,4 @@
-import {logError} from '@whocards/observability'
+import {logError, toError} from '@whocards/observability'
 import type {APIRoute} from 'astro'
 
 import type {CardSizeKey} from '~server/card-image'
@@ -47,6 +47,7 @@ export const GET: APIRoute = async ({params}) => {
     if (!(error instanceof ShareCardNotFoundError)) {
       logError('share-card render failed', error)
     }
-    return new Response(`Failed to render card: ${(error as Error).message}`, {status: 404})
+    const message = toError(error)?.message ?? String(error)
+    return new Response(`Failed to render card: ${message}`, {status: 404})
   }
 }

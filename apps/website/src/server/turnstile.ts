@@ -30,6 +30,7 @@ export async function verifyTurnstile(
       body,
       signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
     })
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- res.json() is `any`; this is an external API boundary (Cloudflare Turnstile) with no runtime schema validation in place.
     const data = (await res.json()) as {success: boolean}
     return data.success ? {ok: true} : {ok: false, reason: 'failed'}
   } catch {

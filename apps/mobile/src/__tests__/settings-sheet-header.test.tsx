@@ -33,6 +33,7 @@ import {SettingsSheetHeader} from '../components/settings-sheet-header'
 const headerPaddingTop = (): number => {
   let node: ReturnType<typeof screen.getByText> | null = screen.getByText('Choose your language')
   while (node) {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- react-test-renderer types ReactTestInstance.props as `any`; the style shape here is controlled by the component under test.
     const flat = StyleSheet.flatten(node.props?.style as ViewStyle | undefined)
     if (flat && typeof flat.paddingTop === 'number') return flat.paddingTop
     node = node.parent

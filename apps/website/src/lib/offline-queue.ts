@@ -40,6 +40,7 @@ const read = (): QueuedEvent[] => {
     const raw = localStorage.getItem(QUEUE_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw)
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- queue is only ever written by `write` below with QueuedEvent[]; no external writer, so no schema validation is warranted here.
     return Array.isArray(parsed) ? (parsed as QueuedEvent[]) : []
   } catch {
     // corrupt payload — reset rather than wedging play forever

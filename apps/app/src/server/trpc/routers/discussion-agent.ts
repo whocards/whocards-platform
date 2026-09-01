@@ -3,10 +3,16 @@ import {TRPCError} from '@trpc/server'
 import {z} from 'zod'
 
 import {askAgent} from '../../agent/anthropic'
+import type {AgentMessage} from '../../agent/anthropic'
 import {db} from '../../db'
 import {agentMessage} from '../../db/schema'
 import {agentEnabled} from '../../env'
 import {createTRPCRouter, roleProcedure} from '../trpc'
+
+/** agent_message.role is a plain text column (no DB-level enum); this app only ever
+ *  writes 'user' | 'assistant' — surface corruption loudly rather than cast past it. */
+const isAgentRole = (value: string): value is AgentMessage['role'] =>
+  value === 'user' || value === 'assistant'
 
 // Slice 5 (stretch, per the overnight plan) — reuses the question-lab's
 // Anthropic call pattern (server/agent/anthropic.ts) as a per-question
@@ -71,7 +77,15 @@ export const discussionAgentRouter = createTRPCRouter({
         })
 
         const reply = await askAgent(input.questionText, [
-          ...prior.map((m) => ({role: m.role as 'user' | 'assistant', content: m.content})),
+          ...prior.map((m) => {
+            if (!isAgentRole(m.role)) {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: `Corrupt agent_message role "${m.role}".`,
+              })
+            }
+            return {role: m.role, content: m.content}
+          }),
           {role: 'user', content: input.content},
         ])
 

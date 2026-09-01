@@ -52,6 +52,7 @@ export async function askAgent(
     throw new Error(`Anthropic API error (${response.status}): ${body.slice(0, 300)}`)
   }
 
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- response.json() is `any`; this is an external API boundary with no runtime schema validation in place. Callers only read `.text` off blocks that pass the typeof guard below.
   const data = (await response.json()) as {content?: Array<{type: string; text?: string}>}
   return (data.content ?? [])
     .filter((block) => block.type === 'text' && typeof block.text === 'string')

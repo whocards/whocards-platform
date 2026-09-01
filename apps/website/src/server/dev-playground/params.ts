@@ -13,6 +13,7 @@ import {CARD_SIZES} from '~server/card-image'
 export const describeRaw = (raw: string | null): string =>
   raw === null ? 'missing' : JSON.stringify(raw)
 
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Object.keys widens to string[]; CARD_SIZES' keys are CardSizeKey by construction (CardSizeKey = keyof typeof CARD_SIZES).
 const CARD_SIZE_KEYS = Object.keys(CARD_SIZES) as CardSizeKey[]
 
 const isCardSizeKey = (value: string): value is CardSizeKey =>
@@ -50,6 +51,7 @@ const parseEnum = <T extends string>(
       error: `${name} must be one of: ${allowed.join(', ')} (got ${describeRaw(raw)})`,
     }
   }
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the includes() check above is exactly this generic helper's runtime validation that `raw` is a member of `allowed: readonly T[]`; there's no narrower way to express "validated member of T" for a generic T.
   return {ok: true, value: raw as T}
 }
 

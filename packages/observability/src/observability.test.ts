@@ -77,7 +77,7 @@ describe('prod mode + provider → provider receives calls (not console)', () =>
     expect(captureError).toHaveBeenCalledOnce()
     expect(consoleSpy).not.toHaveBeenCalled()
 
-    const entry = captureError.mock.calls[0]?.[0] as LogEntry
+    const entry = captureError.mock.calls[0]?.[0]
     expect(entry?.level).toBe('error')
     expect(entry?.message).toBe('prod error')
   })
@@ -93,7 +93,7 @@ describe('prod mode + provider → provider receives calls (not console)', () =>
 
     logWarn('prod warning', new Error('boom'), {attempt: 1})
 
-    const entry = captureError.mock.calls[0]?.[0] as LogEntry
+    const entry = captureError.mock.calls[0]?.[0]
     expect(entry?.level).toBe('warn')
     expect(entry?.error).toBeInstanceOf(Error)
     expect(entry?.context).toEqual({attempt: 1})
@@ -111,7 +111,7 @@ describe('prod mode + provider → provider receives calls (not console)', () =>
     trackEvent('game_started', {deck_id: 'friends', game: 'wh', language: 'en'})
 
     expect(captureEvent).toHaveBeenCalledOnce()
-    const [name, props] = captureEvent.mock.calls[0] as [string, EventProps]
+    const [name, props] = captureEvent.mock.calls[0] ?? []
     expect(name).toBe('game_started')
     expect(props).toEqual({deck_id: 'friends', game: 'wh', language: 'en'})
   })
@@ -128,7 +128,7 @@ describe('prod mode + provider → provider receives calls (not console)', () =>
     identify('device-abc', {plan: 'free'})
 
     expect(identifyMock).toHaveBeenCalledOnce()
-    const [id, props] = identifyMock.mock.calls[0] as [string, EventProps]
+    const [id, props] = identifyMock.mock.calls[0] ?? []
     expect(id).toBe('device-abc')
     expect(props).toEqual({plan: 'free'})
   })

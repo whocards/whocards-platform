@@ -99,6 +99,7 @@ describe('layoutFor', () => {
   })
 
   it('keeps every card inside the page bounds', () => {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Object.keys widens to string[]; PHYSICAL_LAYOUTS' keys are LayoutId by construction (LayoutId = the union PHYSICAL_LAYOUTS is a Record over).
     for (const id of Object.keys(PHYSICAL_LAYOUTS) as LayoutId[]) {
       const out = layoutFor(id)!
       for (const r of out.cardRects) {

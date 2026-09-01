@@ -16,6 +16,7 @@ describe('colors', () => {
 
 describe('fonts', () => {
   it('leads each stack with its primary family', () => {
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Object.keys widens to string[]; fonts' keys are a closed, known set so the narrowing is sound.
     for (const key of Object.keys(fonts) as (keyof typeof fonts)[]) {
       expect(fonts[key].stack[0]).toBe(fonts[key].family)
     }
