@@ -1,4 +1,4 @@
-import type {Deck, QuestionSet} from '../types'
+import type {Deck} from '../types'
 import aiAtWorkQuestions from './ai-at-work.questions.json'
 
 /**
@@ -12,7 +12,7 @@ export const aiAtWorkDeck: Deck = {
   title: 'AI Check-In',
   description:
     'A 20-minute team check-in for talking honestly about AI at work — the fear, what stays human, and the norms you want to live by.',
-  source: {kind: 'inline', questions: aiAtWorkQuestions as QuestionSet},
+  source: {kind: 'inline', questions: aiAtWorkQuestions},
   languages: ['en'],
   questionClassName: 'text-white',
   oldBg: true,

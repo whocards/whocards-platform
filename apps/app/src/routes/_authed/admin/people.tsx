@@ -26,7 +26,7 @@ function People() {
     mutationFn: () => trpc.people.invite.mutate({email, role}),
     onSuccess: () => {
       setEmail('')
-      queryClient.invalidateQueries({queryKey: ['people.list']})
+      void queryClient.invalidateQueries({queryKey: ['people.list']})
     },
   })
 

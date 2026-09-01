@@ -211,7 +211,7 @@ describe('RTL single-line alignment (regression: shrink-to-fit flex item ignores
 // longest for en/he/jp, but for zh specifically id 21 is longer (45 chars vs
 // 29's 42) — and 21 is also a multi-paragraph (`\n\n`) question, exactly the
 // shape that exposed the wordmark-collision regression fixed alongside this
-// test (see the describe block below). Using 29 for zh here would silently
+// test — see the describe block below. Using 29 for zh here would silently
 // miss that shape.
 describe('autofit never overflows the frame or the wordmark (regression: CJK width underestimate)', () => {
   it.each(['story', 'post'] as const)('%s: Mandarin stays within the frame', async (sizeKey) => {
@@ -397,6 +397,7 @@ describe('autofit REAL sweep: every multi-paragraph question, every language, ev
 // through review). Kept as a cheap early signal / for iterating on the
 // estimate's tuning without paying for a real render.
 describe('autofit sweep (estimate-only, fast — not authoritative): every multi-paragraph question, every language, every on-demand size', () => {
+  // oxlint-disable-next-line vitest/expect-expect -- deliberately assertion-free: informational sweep, logged not asserted (see comment at the end)
   it('never projects the text block past the wordmark clearance', () => {
     const incursions: string[] = []
     for (const {id, language} of multiParagraphCases) {

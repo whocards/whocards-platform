@@ -40,8 +40,7 @@ export const makeSegmentIdResolver =
 
 /** Selecting shape for get/update — mirrors the SDK's SelectingField. */
 export type ResendSelectingField =
-  | {id: string; email?: undefined | null}
-  | {email: string; id?: undefined | null}
+  {id: string; email?: undefined | null} | {email: string; id?: undefined | null}
 
 export type ResendContactsPort = {
   /** Create a contact (with optional segment membership). Returns {data: {id}, error}. */
@@ -287,7 +286,7 @@ export async function syncEmailConsents<T extends PgQueryResultHKT>(
   const summaries: EmailSyncSummary[] = []
 
   for (const row of rows) {
-    const result = await syncConsentToResend(row as ConsentRowForSync, deps)
+    const result = await syncConsentToResend(row, deps)
     await applyProviderSyncResult(db, row.id, result)
     summaries.push({consentId: row.id, consentType: row.consentType, result})
   }
@@ -389,7 +388,7 @@ export async function reconcile<T extends PgQueryResultHKT>(
   if (apply) {
     // --- apply mode: sync + write ---
     for (const row of toSync) {
-      const result = await syncConsentToResend(row as ConsentRowForSync, deps)
+      const result = await syncConsentToResend(row, deps)
       await applyProviderSyncResult(db, row.id, result)
       if (result.status === 'synced') synced++
       else if (result.status === 'skipped') skipped++

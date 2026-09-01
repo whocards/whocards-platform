@@ -3,7 +3,7 @@ import languageNames from './languages.json'
 import questions from './questions.json'
 
 /** The master, multilingual store of Question content (the Pool). */
-export const pool: Pool = questions as Pool
+export const pool: Pool = questions
 
 /** Every question id in the Pool, in pool order. */
 export const poolQuestionIds: QuestionId[] = Object.keys(pool)

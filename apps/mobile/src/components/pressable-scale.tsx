@@ -65,7 +65,7 @@ export const PressableScale = ({
         'worklet'
         if (onPress) runOnJS(onPress)()
       })
-    if (hitSlop != null) tap.hitSlop(hitSlop as number)
+    if (hitSlop != null) tap.hitSlop(hitSlop)
     return tap
   }, [onPress, disabled, hitSlop, pressed])
 

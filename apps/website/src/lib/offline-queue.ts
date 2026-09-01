@@ -59,7 +59,7 @@ const write = (events: QueuedEvent[]): void => {
 const strip = ({_id: _, _attempts: __, ...event}: QueuedEvent): AnswerEvent => event
 
 /** True while the browser believes it is offline (best-effort; missing => online). */
-const isOffline = (): boolean => typeof navigator !== 'undefined' && navigator.onLine === false
+const isOffline = (): boolean => typeof navigator !== 'undefined' && !navigator.onLine
 
 /** Guard so overlapping triggers (online + serve + load) don't double-send. */
 let flushing = false

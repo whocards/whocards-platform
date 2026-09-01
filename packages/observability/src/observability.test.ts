@@ -63,8 +63,9 @@ describe('dev mode → console', () => {
 
 describe('prod mode + provider → provider receives calls (not console)', () => {
   it('logError routes to captureError and does NOT call console', () => {
+    const captureError = vi.fn()
     const provider: ObservabilityProvider = {
-      captureError: vi.fn(),
+      captureError,
       captureEvent: vi.fn(),
       identify: vi.fn(),
     }
@@ -73,17 +74,18 @@ describe('prod mode + provider → provider receives calls (not console)', () =>
 
     logError('prod error')
 
-    expect(provider.captureError).toHaveBeenCalledOnce()
+    expect(captureError).toHaveBeenCalledOnce()
     expect(consoleSpy).not.toHaveBeenCalled()
 
-    const entry = (provider.captureError as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as LogEntry
+    const entry = captureError.mock.calls[0]?.[0] as LogEntry
     expect(entry?.level).toBe('error')
     expect(entry?.message).toBe('prod error')
   })
 
   it('logWarn routes to captureError with warn level', () => {
+    const captureError = vi.fn()
     const provider: ObservabilityProvider = {
-      captureError: vi.fn(),
+      captureError,
       captureEvent: vi.fn(),
       identify: vi.fn(),
     }
@@ -91,46 +93,42 @@ describe('prod mode + provider → provider receives calls (not console)', () =>
 
     logWarn('prod warning', new Error('boom'), {attempt: 1})
 
-    const entry = (provider.captureError as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as LogEntry
+    const entry = captureError.mock.calls[0]?.[0] as LogEntry
     expect(entry?.level).toBe('warn')
     expect(entry?.error).toBeInstanceOf(Error)
     expect(entry?.context).toEqual({attempt: 1})
   })
 
   it('trackEvent routes to captureEvent', () => {
+    const captureEvent = vi.fn()
     const provider: ObservabilityProvider = {
       captureError: vi.fn(),
-      captureEvent: vi.fn(),
+      captureEvent,
       identify: vi.fn(),
     }
     configureObservability({dev: false, provider})
 
     trackEvent('game_started', {deck_id: 'friends', game: 'wh', language: 'en'})
 
-    expect(provider.captureEvent).toHaveBeenCalledOnce()
-    const [name, props] = (provider.captureEvent as ReturnType<typeof vi.fn>).mock.calls[0] as [
-      string,
-      EventProps,
-    ]
+    expect(captureEvent).toHaveBeenCalledOnce()
+    const [name, props] = captureEvent.mock.calls[0] as [string, EventProps]
     expect(name).toBe('game_started')
     expect(props).toEqual({deck_id: 'friends', game: 'wh', language: 'en'})
   })
 
   it('identify routes to provider.identify', () => {
+    const identifyMock = vi.fn()
     const provider: ObservabilityProvider = {
       captureError: vi.fn(),
       captureEvent: vi.fn(),
-      identify: vi.fn(),
+      identify: identifyMock,
     }
     configureObservability({dev: false, provider})
 
     identify('device-abc', {plan: 'free'})
 
-    expect(provider.identify).toHaveBeenCalledOnce()
-    const [id, props] = (provider.identify as ReturnType<typeof vi.fn>).mock.calls[0] as [
-      string,
-      EventProps,
-    ]
+    expect(identifyMock).toHaveBeenCalledOnce()
+    const [id, props] = identifyMock.mock.calls[0] as [string, EventProps]
     expect(id).toBe('device-abc')
     expect(props).toEqual({plan: 'free'})
   })

@@ -72,10 +72,7 @@ export function WaitlistLiveEmail({
   )
 }
 
-export function waitlistLiveText({
-  appUrl = DEFAULT_APP_URL,
-  greeting = 'Hi there,',
-}: Required<WaitlistLiveProps>) {
+export function waitlistLiveText({appUrl, greeting}: Required<WaitlistLiveProps>) {
   return `WhoCards is coming to your pocket.
 
 ${greeting}

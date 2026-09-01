@@ -62,7 +62,6 @@ const freshObservability = (
         ...envOverrides,
       },
     }))
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     mod = require('../lib/observability')
   })
   return mod

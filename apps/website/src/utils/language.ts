@@ -10,7 +10,7 @@ export const LANGUAGES: {[K in Language]: string} = languages
 /**
  * Gets the language display name or throws an error if not found
  */
-export const getLangName = (key?: string | Language): string => {
+export const getLangName = (key?: string): string => {
   if (!languages[key as Language]) {
     throw Error('getLangName: invalid language')
   }

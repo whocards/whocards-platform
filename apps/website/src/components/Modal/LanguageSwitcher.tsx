@@ -101,7 +101,7 @@ type QuestionLinkProps = {
   lang: Language
   selected: boolean
   useButton: boolean
-} & PropsWithChildren<unknown>
+} & PropsWithChildren
 
 const QuestionButton = (props: QuestionLinkProps) => {
   return (

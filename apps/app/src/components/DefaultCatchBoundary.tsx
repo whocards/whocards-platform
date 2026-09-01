@@ -10,7 +10,9 @@ export function DefaultCatchBoundary({error}: ErrorComponentProps) {
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          onClick={() => router.invalidate()}
+          onClick={() => {
+            void router.invalidate()
+          }}
           className="rounded-full bg-gray-light px-4 py-2 text-sm font-bold text-white uppercase"
         >
           Try again

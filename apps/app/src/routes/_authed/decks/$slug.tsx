@@ -160,7 +160,7 @@ function DeckDetail() {
               defaultActLabel={groups.at(-1)?.actLabel ?? ''}
               onDone={() => {
                 setShowAddQuestion(false)
-                queryClient.invalidateQueries({queryKey: ['questionReview.variants', slug]})
+                void queryClient.invalidateQueries({queryKey: ['questionReview.variants', slug]})
               }}
             />
           ) : null}
@@ -326,8 +326,8 @@ function QuestionCard({
       }
     },
     onSettled: () => {
-      invalidateQuestions()
-      queryClient.invalidateQueries({queryKey: myVotesKey})
+      void invalidateQuestions()
+      void queryClient.invalidateQueries({queryKey: myVotesKey})
     },
   })
 
@@ -353,7 +353,7 @@ function QuestionCard({
       }),
     onSuccess: () => {
       setComment('')
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['questionReview.comments', deckSlug, question.questionId],
       })
     },
@@ -376,7 +376,7 @@ function QuestionCard({
       }),
     onSuccess: () => {
       setAgentDraft('')
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['discussionAgent.messages', deckSlug, question.questionId],
       })
     },

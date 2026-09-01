@@ -344,12 +344,12 @@ describe('SettingsModal — single Modal, internal pages (issue #189, third/four
     // every render (like any prop), so the version bound to "still on the
     // Game page" would forever evaluate that same branch — a stale-closure
     // testing artifact, not how a real re-render behaves.
-    act(() => screen.UNSAFE_getByType(Modal).props.onRequestClose())
+    void act(() => screen.UNSAFE_getByType(Modal).props.onRequestClose())
     // First press: popped back to the menu, sheet still open.
     await waitFor(() => expect(screen.queryByText('Choose your game')).toBeNull())
     expect(onClose).not.toHaveBeenCalled()
 
-    act(() => screen.UNSAFE_getByType(Modal).props.onRequestClose())
+    void act(() => screen.UNSAFE_getByType(Modal).props.onRequestClose())
     // Second press, now on the menu: closes the sheet.
     expect(onClose).toHaveBeenCalled()
   })

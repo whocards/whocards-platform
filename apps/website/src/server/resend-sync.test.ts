@@ -158,7 +158,7 @@ describe('idempotent sync', () => {
     expect(fakeContacts.createCalls).toHaveLength(2)
     expect(fakeContacts.getCalls).toHaveLength(1)
     expect(fakeContacts.addCalls).toHaveLength(1)
-    expect(fakeContacts.addCalls[0]!.segmentId).toBe('nl-seg-1')
+    expect(fakeContacts.addCalls[0].segmentId).toBe('nl-seg-1')
   })
 
   it('converges when create returns a generic application_error containing "already exist"', async () => {
@@ -204,7 +204,7 @@ describe('idempotent sync', () => {
     // Falls through to get + addToSegment → synced.
     expect(result.status).toBe('synced')
     expect(fakeContacts.addCalls).toHaveLength(1)
-    expect(fakeContacts.addCalls[0]!.segmentId).toBe('wl-seg-2')
+    expect(fakeContacts.addCalls[0].segmentId).toBe('wl-seg-2')
   })
 
   it('surfaces failed only for definitely-fatal errors (auth failure)', async () => {
@@ -238,7 +238,7 @@ describe('idempotent sync', () => {
       consentSource: 'app_page',
     })
     // Simulate a prior failed sync recorded in DB.
-    await applyProviderSyncResult(db, row!.id, {status: 'failed', error: 'prior error'})
+    await applyProviderSyncResult(db, row.id, {status: 'failed', error: 'prior error'})
 
     // Now the second sync: create returns already_exists → falls through to segment add → synced.
     const fakeContacts = makeFakeContacts({
@@ -254,16 +254,16 @@ describe('idempotent sync', () => {
     }
 
     const summaries = await syncEmailConsents(db, 'retry@example.com', deps)
-    expect(summaries[0]!.result.status).toBe('synced')
+    expect(summaries[0].result.status).toBe('synced')
 
     // DB: provider_sync_error must be cleared.
     const [updated] = await db
       .select()
       .from(schema.emailConsent)
-      .where(eq(schema.emailConsent.id, row!.id))
-    expect(updated!.providerSyncError).toBeNull()
-    expect(updated!.providerContactId).toBe('contact-123')
-    expect(updated!.providerSyncedAt).not.toBeNull()
+      .where(eq(schema.emailConsent.id, row.id))
+    expect(updated.providerSyncError).toBeNull()
+    expect(updated.providerContactId).toBe('contact-123')
+    expect(updated.providerSyncedAt).not.toBeNull()
   })
 })
 
@@ -353,16 +353,16 @@ describe('provider failure → retry state', () => {
     expect(row).toBeDefined()
 
     const failResult = {status: 'failed' as const, error: 'network timeout'}
-    await applyProviderSyncResult(db, row!.id, failResult)
+    await applyProviderSyncResult(db, row.id, failResult)
 
     const [updated] = await db
       .select()
       .from(schema.emailConsent)
-      .where(eq(schema.emailConsent.id, row!.id))
+      .where(eq(schema.emailConsent.id, row.id))
 
-    expect(updated!.providerSyncError).toBe('network timeout')
-    expect(updated!.providerSyncedAt).toBeNull()
-    expect(updated!.providerContactId).toBeNull()
+    expect(updated.providerSyncError).toBe('network timeout')
+    expect(updated.providerSyncedAt).toBeNull()
+    expect(updated.providerContactId).toBeNull()
   })
 
   it('successful sync after prior failure clears provider_sync_error', async () => {
@@ -372,8 +372,8 @@ describe('provider failure → retry state', () => {
       consentSource: 'app_page',
     })
 
-    await applyProviderSyncResult(db, row!.id, {status: 'failed', error: 'first failure'})
-    await applyProviderSyncResult(db, row!.id, {
+    await applyProviderSyncResult(db, row.id, {status: 'failed', error: 'first failure'})
+    await applyProviderSyncResult(db, row.id, {
       status: 'synced',
       contactId: 'c-999',
       segmentId: 'seg-123',
@@ -382,12 +382,12 @@ describe('provider failure → retry state', () => {
     const [updated] = await db
       .select()
       .from(schema.emailConsent)
-      .where(eq(schema.emailConsent.id, row!.id))
+      .where(eq(schema.emailConsent.id, row.id))
 
-    expect(updated!.providerSyncError).toBeNull()
-    expect(updated!.providerContactId).toBe('c-999')
-    expect(updated!.providerSegmentId).toBe('seg-123')
-    expect(updated!.providerSyncedAt).not.toBeNull()
+    expect(updated.providerSyncError).toBeNull()
+    expect(updated.providerContactId).toBe('c-999')
+    expect(updated.providerSegmentId).toBe('seg-123')
+    expect(updated.providerSyncedAt).not.toBeNull()
   })
 
   it('skipped result leaves DB row unchanged', async () => {
@@ -397,16 +397,16 @@ describe('provider failure → retry state', () => {
       consentSource: 'app_page',
     })
 
-    await applyProviderSyncResult(db, row!.id, {status: 'skipped', reason: 'no_segment_configured'})
+    await applyProviderSyncResult(db, row.id, {status: 'skipped', reason: 'no_segment_configured'})
 
     const [unchanged] = await db
       .select()
       .from(schema.emailConsent)
-      .where(eq(schema.emailConsent.id, row!.id))
+      .where(eq(schema.emailConsent.id, row.id))
 
-    expect(unchanged!.providerSyncError).toBeNull()
-    expect(unchanged!.providerSyncedAt).toBeNull()
-    expect(unchanged!.providerContactId).toBeNull()
+    expect(unchanged.providerSyncError).toBeNull()
+    expect(unchanged.providerSyncedAt).toBeNull()
+    expect(unchanged.providerContactId).toBeNull()
   })
 
   it('syncEmailConsents records error in DB when create causes a fatal auth failure', async () => {
@@ -429,11 +429,11 @@ describe('provider failure → retry state', () => {
     })
 
     const summaries = await syncEmailConsents(db, 'err@example.com', deps)
-    expect(summaries[0]!.result.status).toBe('failed')
+    expect(summaries[0].result.status).toBe('failed')
 
     const rows = await db.select().from(schema.emailConsent)
-    expect(rows[0]!.providerSyncError).toBe('Invalid API key')
-    expect(rows[0]!.providerSyncedAt).toBeNull()
+    expect(rows[0].providerSyncError).toBe('Invalid API key')
+    expect(rows[0].providerSyncedAt).toBeNull()
   })
 })
 
@@ -611,11 +611,11 @@ describe('reconcile() — apply mode', () => {
     const [updated] = await db
       .select()
       .from(schema.emailConsent)
-      .where(eq(schema.emailConsent.id, row!.id))
-    expect(updated!.providerContactId).toBe('contact-123')
-    expect(updated!.providerSegmentId).toBe('nl-seg-1')
-    expect(updated!.providerSyncedAt).not.toBeNull()
-    expect(updated!.providerSyncError).toBeNull()
+      .where(eq(schema.emailConsent.id, row.id))
+    expect(updated.providerContactId).toBe('contact-123')
+    expect(updated.providerSegmentId).toBe('nl-seg-1')
+    expect(updated.providerSyncedAt).not.toBeNull()
+    expect(updated.providerSyncError).toBeNull()
   })
 
   it('backfills legacy newsletter user consent then syncs it', async () => {
@@ -642,8 +642,8 @@ describe('reconcile() — apply mode', () => {
     // A newsletter consent row was created and synced.
     const rows = await db.select().from(schema.emailConsent)
     expect(rows).toHaveLength(1)
-    expect(rows[0]!.consentSource).toBe('legacy_user_newsletter')
-    expect(rows[0]!.providerContactId).toBe('contact-123')
+    expect(rows[0].consentSource).toBe('legacy_user_newsletter')
+    expect(rows[0].providerContactId).toBe('contact-123')
   })
 })
 
@@ -658,10 +658,10 @@ describe('applyProviderSyncResult — synced', () => {
       email: 'ok@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
-      userId: user!.id,
+      userId: user.id,
     })
 
-    await applyProviderSyncResult(db, row!.id, {
+    await applyProviderSyncResult(db, row.id, {
       status: 'synced',
       contactId: 'c-abc-123',
       segmentId: 'seg-xyz',
@@ -670,11 +670,11 @@ describe('applyProviderSyncResult — synced', () => {
     const [updated] = await db
       .select()
       .from(schema.emailConsent)
-      .where(eq(schema.emailConsent.id, row!.id))
+      .where(eq(schema.emailConsent.id, row.id))
 
-    expect(updated!.providerContactId).toBe('c-abc-123')
-    expect(updated!.providerSegmentId).toBe('seg-xyz')
-    expect(updated!.providerSyncedAt).not.toBeNull()
-    expect(updated!.providerSyncError).toBeNull()
+    expect(updated.providerContactId).toBe('c-abc-123')
+    expect(updated.providerSegmentId).toBe('seg-xyz')
+    expect(updated.providerSyncedAt).not.toBeNull()
+    expect(updated.providerSyncError).toBeNull()
   })
 })

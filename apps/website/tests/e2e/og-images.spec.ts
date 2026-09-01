@@ -57,7 +57,7 @@ for (const card of ['/og/en/1.png', '/og/he/1.png']) {
 }
 
 // The new /play screen (#41) is SSR, so the static dist/ e2e harness can't serve
-// it (same limitation as /contact). Asserting its per-question og:image ->
+// it — same limitation as /contact —. Asserting its per-question og:image ->
 // /og/{lang}/{id}.png needs an SSR-capable server (e.g. `netlify dev`); enable
 // this once the e2e harness can run functions.
 test.fixme('TODO: SSR /play exposes per-question og:image (needs functions-capable server)', async () => {

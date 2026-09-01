@@ -43,12 +43,14 @@ export const usePlayerChrome = () => {
     hideTimer.current = setTimeout(() => setChromeVisible(0), CHROME_HIDE_MS)
   }, [setChromeVisible])
 
+  /* oxlint-disable react/set-state-in-effect -- intentional show-chrome-on-mount + auto-hide timer; restructuring needs on-device verification */
   useEffect(() => {
     revealChrome()
     return () => {
       if (hideTimer.current) clearTimeout(hideTimer.current)
     }
   }, [revealChrome])
+  /* oxlint-enable react/set-state-in-effect */
 
   const onBottomBarLayout = useCallback((event: LayoutChangeEvent) => {
     setBottomBarH(event.nativeEvent.layout.height)

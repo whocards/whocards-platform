@@ -59,7 +59,7 @@ const segmentIdFor = makeSegmentIdResolver(
 
 // Resend contacts port — only used in --apply mode; never constructed in dry-run.
 const buildResendContacts = () => {
-  const resend = new Resend(RESEND_API_KEY!)
+  const resend = new Resend(RESEND_API_KEY)
   return {
     create: (payload: Parameters<typeof resend.contacts.create>[0]) =>
       resend.contacts.create(payload),

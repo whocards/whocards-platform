@@ -191,7 +191,9 @@ export const ShareSheet = ({
       <div key={format} className='flex flex-col'>
         <button
           type='button'
-          onClick={() => handleImageRow(format)}
+          onClick={() => {
+            void handleImageRow(format)
+          }}
           disabled={state === 'busy'}
           aria-busy={state === 'busy'}
           className='who-modal btn-ghost flex w-full items-center px-4 py-3 text-left disabled:opacity-60'
@@ -228,7 +230,9 @@ export const ShareSheet = ({
         <div className='flex flex-col pb-4'>
           <button
             type='button'
-            onClick={handleShareLink}
+            onClick={() => {
+              void handleShareLink()
+            }}
             className='who-modal btn-ghost flex w-full items-center px-4 py-3 text-left'
           >
             {linkCopied ? 'Link copied!' : 'Share link'}
