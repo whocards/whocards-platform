@@ -61,7 +61,7 @@ describe('answers router', () => {
         questionId: '1',
         language: 'en',
       })
-    ).rejects.toThrow()
+    ).rejects.toThrow(/too_small/)
     expect(recordAnswer).not.toHaveBeenCalled()
   })
 })

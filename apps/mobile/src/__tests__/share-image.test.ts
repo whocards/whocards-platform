@@ -62,7 +62,7 @@ describe('downloadAndShareImage', () => {
 
     await expect(
       downloadAndShareImage('https://whocards.cc/share-card/story/en/q-1.png')
-    ).rejects.toThrow()
+    ).rejects.toThrow('Sharing is not available on this device')
     expect(mockDownloadFileAsync).not.toHaveBeenCalled()
   })
 

@@ -95,7 +95,7 @@ describe('verifyResendSignature', () => {
 
     expect(() =>
       verifyResendSignature({secret: TEST_SECRET, payload: tamperedPayload, headers})
-    ).toThrow()
+    ).toThrow('No matching signature found')
   })
 
   it('throws when the signature header is tampered', () => {
@@ -108,7 +108,7 @@ describe('verifyResendSignature', () => {
         payload,
         headers: {...headers, 'svix-signature': 'v1,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=='},
       })
-    ).toThrow()
+    ).toThrow('No matching signature found')
   })
 
   it('throws when a wrong secret is used', () => {
@@ -116,7 +116,9 @@ describe('verifyResendSignature', () => {
     const headers = signPayload(payload)
     const wrongSecret = 'whsec_' + Buffer.from('b'.repeat(32)).toString('base64')
 
-    expect(() => verifyResendSignature({secret: wrongSecret, payload, headers})).toThrow()
+    expect(() => verifyResendSignature({secret: wrongSecret, payload, headers})).toThrow(
+      'No matching signature found'
+    )
   })
 })
 
