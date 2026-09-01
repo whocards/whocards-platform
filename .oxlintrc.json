@@ -22,7 +22,7 @@
     "typescript/no-unsafe-type-assertion": "off",
     "typescript/consistent-return": "error",
     "vitest/require-mock-type-parameters": "error",
-    "vitest/require-to-throw-message": "off",
+    "vitest/require-to-throw-message": "error",
     "node/no-process-env": "error",
     "no-unused-vars": [
       "error",
