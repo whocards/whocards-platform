@@ -55,16 +55,6 @@ jobs:
           key: turbo-${{ runner.os }}-${{ github.sha }}
           restore-keys: turbo-${{ runner.os }}-
 
-      # Report high+ severity advisories on every run. Complements pnpm's
-      # minimumReleaseAge quarantine (pnpm-workspace.yaml), which can't catch
-      # already-aged bad versions. CI only: network call, so not in pre-commit.
-      # continue-on-error until the pre-existing backlog (24 high, all
-      # transitive as of 2026-09-01) is burned down — then drop it to make
-      # this a hard gate like life's `bun audit` step.
-      - name: Dependency audit (high+, report-only)
-        continue-on-error: true
-        run: pnpm audit --prod --audit-level=high
-
       - name: Format check
         run: pnpm format
 
@@ -79,3 +69,31 @@ jobs:
       # for a per-PR gate. Instead it runs locally as a hard gate in the release command
       # (`pnpm release` → scripts/release/pre-release-check.mjs) right before a tag goes out.
       # See RELEASING.md. Revisit CI e2e (Maestro Cloud / EAS Workflows) if cadence grows.
+
+  # Separate job so the audit's ~3min of registry calls never sits on the
+  # gate's critical path (#237). Report-only (continue-on-error) until the
+  # pre-existing backlog — 24 high, all transitive as of 2026-09-01 — is
+  # burned down (#235); then drop it to make this a hard gate. Complements
+  # pnpm's minimumReleaseAge quarantine (pnpm-workspace.yaml), which can't
+  # catch already-aged bad versions. CI only: network call, not pre-commit.
+  audit:
+    name: Dependency audit (high+, report-only)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node from .nvmrc
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit
+        run: pnpm audit --prod --audit-level=high
