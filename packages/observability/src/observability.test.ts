@@ -228,4 +228,26 @@ describe('toError — non-Error value normalisation', () => {
     expect(result).toBeInstanceOf(Error)
     expect(result?.message).toBe('404')
   })
+
+  it('uses the message of an error-like object (cross-realm / duck-typed errors)', () => {
+    const result = toError({message: 'connection refused', name: 'FetchError'})
+    expect(result).toBeInstanceOf(Error)
+    expect(result?.message).toBe('connection refused')
+  })
+
+  it('serialises a plain object instead of collapsing to [object Object]', () => {
+    const result = toError({status: 500, code: 'ECONNRESET'})
+    expect(result?.message).toBe('{"status":500,"code":"ECONNRESET"}')
+  })
+
+  it('falls back when stringify returns undefined (toJSON returning undefined)', () => {
+    const result = toError({toJSON: () => undefined})
+    expect(result?.message).toBe('[unserializable thrown value]')
+  })
+
+  it('falls back when stringify throws (cyclic object)', () => {
+    const cyclic: {self?: unknown} = {}
+    cyclic.self = cyclic
+    expect(toError(cyclic)?.message).toBe('[unserializable thrown value]')
+  })
 })
