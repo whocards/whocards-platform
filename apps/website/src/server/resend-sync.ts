@@ -15,6 +15,7 @@
 
 import {and, eq, isNotNull, isNull, or} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
+import {isConsentType} from './consent'
 import type {ConsentType} from './consent'
 import * as schema from './db/schema'
 
@@ -136,7 +137,9 @@ export async function syncConsentToResend(
   const {resendContacts, segmentIdFor, logger} = deps
   const log = logger ?? console
 
-  const segmentId = segmentIdFor(consent.consentType as ConsentType)
+  const segmentId = isConsentType(consent.consentType)
+    ? segmentIdFor(consent.consentType)
+    : undefined
   if (!segmentId) {
     log.info('resend-sync: no segment configured for %s — skipping', consent.consentType)
     return {status: 'skipped', reason: 'no_segment_configured'}
@@ -408,7 +411,7 @@ export async function reconcile<T extends PgQueryResultHKT>(
   } else {
     // --- dry-run mode: count only, zero Resend/DB writes ---
     for (const row of toSync) {
-      const segId = deps.segmentIdFor(row.consentType as ConsentType)
+      const segId = isConsentType(row.consentType) ? deps.segmentIdFor(row.consentType) : undefined
       if (segId) wouldSync++
       else skipped++
     }

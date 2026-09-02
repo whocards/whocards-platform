@@ -40,6 +40,7 @@ export const getDirection = (language: LanguageCode): 'ltr' | 'rtl' => {
   if (typeof Intl === 'undefined' || !('Locale' in Intl)) return 'ltr'
   try {
     // getTextInfo() is the newer method; textInfo is the older accessor.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Intl.Locale's TS type omits getTextInfo/textInfo (real, engine-dependent members); no safe narrowing exists.
     const locale = new Intl.Locale(language) as unknown as LocaleWithTextInfo
     const info = typeof locale.getTextInfo === 'function' ? locale.getTextInfo() : locale.textInfo
     return info?.direction === 'rtl' ? 'rtl' : 'ltr'

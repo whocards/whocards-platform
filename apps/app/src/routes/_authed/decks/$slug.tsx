@@ -4,7 +4,7 @@ import {useState} from 'react'
 
 import {trpc} from '~/lib/trpc'
 import {roleAtLeast} from '~/server/auth/permissions'
-import {groupByAct, nextStatusOptions} from '~/server/trpc/routers/decks-logic'
+import {groupByAct, isDeckStatus, nextStatusOptions} from '~/server/trpc/routers/decks-logic'
 import type {DeckStatus} from '~/server/trpc/routers/decks-logic'
 
 type QuestionData = Awaited<
@@ -102,7 +102,12 @@ function DeckDetail() {
           {deckMeta.data && canApprove ? (
             <select
               value={deckMeta.data.status}
-              onChange={(event) => updateStatus.mutate(event.target.value as DeckStatus)}
+              onChange={(event) => {
+                // The <option> values are always nextStatusOptions(...) below, so this
+                // is only false if the DOM value is tampered with — bail rather than cast.
+                const {value} = event.target
+                if (isDeckStatus(value)) updateStatus.mutate(value)
+              }}
               disabled={updateStatus.isPending}
               className="min-h-11 rounded-full bg-gray-light px-4 text-sm font-semibold text-white disabled:opacity-60"
             >

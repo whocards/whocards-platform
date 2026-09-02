@@ -1,3 +1,4 @@
+import {z} from 'zod'
 import {env} from '../env'
 
 // Mirrors the raw-fetch pattern from the dev-only Question Lab
@@ -52,7 +53,10 @@ export async function askAgent(
     throw new Error(`Anthropic API error (${response.status}): ${body.slice(0, 300)}`)
   }
 
-  const data = (await response.json()) as {content?: Array<{type: string; text?: string}>}
+  const anthropicResponseSchema = z.object({
+    content: z.array(z.object({type: z.string(), text: z.string().optional()})).optional(),
+  })
+  const data = anthropicResponseSchema.parse(await response.json())
   return (data.content ?? [])
     .filter((block) => block.type === 'text' && typeof block.text === 'string')
     .map((block) => block.text)

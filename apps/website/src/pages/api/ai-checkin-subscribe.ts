@@ -42,6 +42,9 @@ const DECK_URL = 'https://whocards.cc/play/ai-at-work'
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json'}})
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
 const buildEmailHtml = () => {
   const items = starterQuestions
     .map(
@@ -82,11 +85,7 @@ export const POST: APIRoute = async ({request, clientAddress}) => {
   // email. Required, like every other WhoCards form. The token is read from the
   // raw body (verified separately, never a schema field).
   const turnstileToken =
-    body &&
-    typeof body === 'object' &&
-    typeof (body as Record<string, unknown>).turnstileToken === 'string'
-      ? ((body as Record<string, unknown>).turnstileToken as string)
-      : ''
+    isRecord(body) && typeof body.turnstileToken === 'string' ? body.turnstileToken : ''
   const turnstile = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY, clientAddress)
   if (!turnstile.ok) {
     return json(

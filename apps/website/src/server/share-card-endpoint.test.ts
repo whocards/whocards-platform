@@ -9,7 +9,9 @@ import {GET} from '../pages/share-card/[size]/[language]/[id].png'
 
 // `GET` only reads `params`, so a minimal fake context is enough — no need to
 // spin up a full Astro request pipeline for these assertions.
-const context = (params: Record<string, string | undefined>): APIContext => ({params}) as APIContext
+const context = (params: Record<string, string | undefined>): APIContext =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- GET only reads `params`; a full APIContext mock isn't worth building for these assertions.
+  ({params}) as APIContext
 
 describe('GET /share-card/[size]/[language]/[id].png', () => {
   it('returns a story PNG with immutable cache headers', async () => {

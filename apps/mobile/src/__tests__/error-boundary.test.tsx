@@ -25,7 +25,7 @@ beforeEach(() => {
 
 afterEach(() => {
   jest.restoreAllMocks()
-  ;(logError as jest.Mock).mockClear()
+  jest.mocked(logError).mockClear()
 })
 
 // A child that unconditionally throws during render.

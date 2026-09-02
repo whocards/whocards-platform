@@ -129,7 +129,7 @@ export const ShareSheet = ({
         // AbortError = the player closed the OS sheet without picking a target —
         // not a failure, and not a completed share (CONTEXT.md: share is never a
         // game event, but it IS only a growth event when it actually happens).
-        if ((error as Error)?.name !== 'AbortError') {
+        if (!(error instanceof Error) || error.name !== 'AbortError') {
           logWarn('share-sheet: navigator.share failed', error)
         }
       }
@@ -173,7 +173,7 @@ export const ShareSheet = ({
       setImageState((state) => ({...state, [format]: 'idle'}))
       emitShareCompleted(format)
     } catch (error) {
-      if ((error as Error)?.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         // player closed the OS sheet without picking a target — not a failure
         setImageState((state) => ({...state, [format]: 'idle'}))
         return

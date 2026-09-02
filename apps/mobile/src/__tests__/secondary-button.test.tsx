@@ -15,9 +15,13 @@ import {fireEvent, render, screen} from '@testing-library/react-native'
 jest.mock('@/components/pressable-scale', () => {
   const RN = require('react-native')
   return {
-    PressableScale: ({onPress, children, ...accessibility}: Record<string, unknown>) => (
+    PressableScale: ({
+      onPress,
+      children,
+      ...accessibility
+    }: {onPress?: () => void; children?: React.ReactNode} & Record<string, unknown>) => (
       <RN.Pressable onPress={onPress} {...accessibility}>
-        {children as React.ReactNode}
+        {children}
       </RN.Pressable>
     ),
   }

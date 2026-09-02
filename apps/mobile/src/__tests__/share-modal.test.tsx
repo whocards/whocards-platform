@@ -74,7 +74,9 @@ describe('ShareModal', () => {
 
   beforeEach(() => {
     mockDownloadAndShareImage.mockReset()
-    shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({action: 'sharedAction'} as never)
+    shareSpy = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({action: 'sharedAction', activityType: undefined})
   })
 
   afterEach(() => {

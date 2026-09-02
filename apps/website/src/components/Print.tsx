@@ -24,6 +24,7 @@ import {LANGUAGES, cn} from '~utils'
 // @types/react 18 doesn't include bigint in ReactNode, but iconify-icon's
 // ForwardRefExoticComponent return type does. Double-cast via unknown is type-only,
 // no runtime effect.
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see comment above.
 const Icon = _Icon as unknown as ComponentType<IconifyIconProps>
 
 const PRESET_LAYOUTS = Object.values(PHYSICAL_LAYOUTS)

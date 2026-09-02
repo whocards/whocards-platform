@@ -26,6 +26,23 @@ const QUEUE_KEY = 'whocards-answer-queue'
  */
 const MAX_QUEUE = 500
 
+/**
+ * AsyncStorage persists across app/deploy versions — a queue written by an
+ * older build (e.g. before a field was renamed) can be read by newer code.
+ * Guard the shape at read time rather than trusting the cast blindly, so a
+ * stale/corrupt entry is dropped like unparseable JSON instead of crashing
+ * a later `send`.
+ */
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const isAnswerEvent = (value: unknown): value is AnswerEvent =>
+  isRecord(value) &&
+  typeof value.deviceId === 'string' &&
+  typeof value.deckSlug === 'string' &&
+  typeof value.questionId === 'string' &&
+  typeof value.language === 'string'
+
 // serialise reads/writes so concurrent enqueue + flush don't clobber the store
 let lock: Promise<void> = Promise.resolve()
 
@@ -44,7 +61,7 @@ const read = async (): Promise<AnswerEvent[]> => {
   if (!raw) return []
   try {
     const parsed: unknown = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as AnswerEvent[]) : []
+    return Array.isArray(parsed) ? parsed.filter(isAnswerEvent) : []
   } catch {
     // corrupt blob — drop it rather than wedge every future flush
     return []

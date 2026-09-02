@@ -111,14 +111,14 @@ import {
 } from '../lib/language-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '../lib/tabletop-store'
 
-const mockedGetStoredGame = getStoredGame as jest.Mock
-const mockedSetStoredGame = setStoredGame as jest.Mock
-const mockedGetStoredTabletopMode = getStoredTabletopMode as jest.Mock
-const mockedSetStoredTabletopMode = setStoredTabletopMode as jest.Mock
-const mockedGetStoredLanguage = getStoredLanguage as jest.Mock
-const mockedGetStoredSecondaryLanguages = getStoredSecondaryLanguages as jest.Mock
-const mockedSetStoredLanguage = setStoredLanguage as jest.Mock
-const mockedTrack = track as jest.Mock
+const mockedGetStoredGame = jest.mocked(getStoredGame)
+const mockedSetStoredGame = jest.mocked(setStoredGame)
+const mockedGetStoredTabletopMode = jest.mocked(getStoredTabletopMode)
+const mockedSetStoredTabletopMode = jest.mocked(setStoredTabletopMode)
+const mockedGetStoredLanguage = jest.mocked(getStoredLanguage)
+const mockedGetStoredSecondaryLanguages = jest.mocked(getStoredSecondaryLanguages)
+const mockedSetStoredLanguage = jest.mocked(setStoredLanguage)
+const mockedTrack = jest.mocked(track)
 
 beforeEach(() => {
   jest.clearAllMocks()

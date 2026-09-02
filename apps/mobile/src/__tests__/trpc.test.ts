@@ -59,7 +59,7 @@ type TrpcModule = {getBaseUrl: () => string}
 const freshGetBaseUrl = (): (() => string) => {
   let fn!: () => string
   jest.isolateModules(() => {
-    fn = (require('../lib/trpc') as TrpcModule).getBaseUrl
+    fn = jest.requireActual<TrpcModule>('../lib/trpc').getBaseUrl
   })
   return fn
 }

@@ -1,4 +1,5 @@
 import type {APIRoute} from 'astro'
+import {toError} from '@whocards/observability'
 
 import {cardImagePaths, renderCardPng} from '~server/card-image'
 
@@ -27,6 +28,7 @@ export const GET: APIRoute = async ({params}) => {
       },
     })
   } catch (error) {
-    return new Response(`Failed to render card: ${(error as Error).message}`, {status: 404})
+    const message = toError(error)?.message ?? String(error)
+    return new Response(`Failed to render card: ${message}`, {status: 404})
   }
 }

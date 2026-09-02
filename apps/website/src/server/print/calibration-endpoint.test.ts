@@ -8,6 +8,7 @@ import {describe, expect, it} from 'vitest'
 import {GET} from '../../pages/api/calibration.pdf'
 
 const context = (query: string): APIContext =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- GET only reads `url.searchParams`; a full APIContext mock isn't worth building for these assertions.
   ({url: new URL(`https://whocards.cc/api/calibration.pdf${query}`)}) as APIContext
 
 describe('GET /api/calibration.pdf', () => {
