@@ -8,6 +8,7 @@ import robotsTxt from 'astro-robots-txt'
 import {defineConfig, passthroughImageService} from 'astro/config'
 import {SITE_URL as site} from './src/env.node'
 import {shouldIncludeInSitemap} from './src/seo/indexation'
+import {isCleanSitemapPage} from './src/seo/sitemap'
 
 // https://astro.build/config
 export default defineConfig({
@@ -34,7 +35,11 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap({
-      filter: shouldIncludeInSitemap,
+      // With build.format "file", Astro reports emitted files such as
+      // /index.html and /mission.html as pages alongside their public routes.
+      // Apply the shared indexation policy, then keep only the extensionless
+      // URLs that Netlify actually serves.
+      filter: (page) => shouldIncludeInSitemap(page) && isCleanSitemapPage(page),
     }),
     robotsTxt(),
     react(),
