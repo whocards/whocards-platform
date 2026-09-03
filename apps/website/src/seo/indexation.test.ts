@@ -46,4 +46,16 @@ describe('search indexation policy', () => {
     expect(isNoindexRoute(pathname)).toBe(false)
     expect(shouldIncludeInSitemap(`${site}${pathname}`)).toBe(false)
   })
+
+  it.each([
+    '/android-testers.html',
+    '/android-testers-birthday-present.html',
+    '/events/hajnalig/play.html',
+    '/events/hajnalig/2025/play.html',
+  ])(
+    'recognizes file-format production pathname %s as noindex',
+    (pathname) => {
+      expect(isNoindexRoute(pathname)).toBe(true)
+    }
+  )
 })

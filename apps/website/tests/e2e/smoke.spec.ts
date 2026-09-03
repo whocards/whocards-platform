@@ -68,3 +68,18 @@ test('unknown route serves the 404 page', async ({request}) => {
   const response = await request.get('/this-route-does-not-exist')
   expect(response.status()).toBe(404)
 })
+
+test('production HTML aligns robots metadata with temporary route policy', async ({page}) => {
+  for (const route of [
+    '/android-testers',
+    '/android-testers-birthday-present',
+    '/events/hajnalig/play',
+    '/events/hajnalig/2025/play',
+  ]) {
+    await page.goto(route)
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow')
+  }
+
+  await page.goto('/mission')
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
+})
