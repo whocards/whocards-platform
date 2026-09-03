@@ -7,7 +7,7 @@
     "with-env": "dotenv -e ../../.env${ENV:+.${ENV}} --",
     "dev": "pnpm with-env astro dev",
     "start": "pnpm with-env astro dev",
-    "build": "pnpm with-env astro build",
+    "build": "pnpm with-env astro build && node scripts/seo-postbuild.mjs",
     "preview": "pnpm with-env astro preview",
     "typecheck": "astro sync && astro check",
     "test": "vitest run",
