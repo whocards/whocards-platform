@@ -8,15 +8,19 @@ const languageRedirects = new Set(Object.keys(languages).map((language) => `/${l
  * cannot disagree.
  */
 export function isNoindexRoute(pathname: string): boolean {
+  // `build.format: 'file'` exposes prerendered routes to Astro layouts with
+  // their emitted `.html` suffix, while sitemap URLs use clean paths.
+  const route = pathname.endsWith('.html') ? pathname.slice(0, -'.html'.length) : pathname
+
   return (
-    pathname === '/404' ||
-    pathname === '/android-testers' ||
-    pathname === '/android-testers-birthday-present' ||
-    pathname.endsWith('/images') ||
-    pathname === '/events/hajnalig/play' ||
-    /^\/events\/hajnalig\/[^/]+\/play$/.test(pathname) ||
-    pathname === '/dev' ||
-    pathname.startsWith('/dev/')
+    route === '/404' ||
+    route === '/android-testers' ||
+    route === '/android-testers-birthday-present' ||
+    route.endsWith('/images') ||
+    route === '/events/hajnalig/play' ||
+    /^\/events\/hajnalig\/[^/]+\/play$/.test(route) ||
+    route === '/dev' ||
+    route.startsWith('/dev/')
   )
 }
 
