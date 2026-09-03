@@ -22,6 +22,37 @@ test.beforeEach(async ({page}) => {
   await page.addInitScript(() => window.localStorage.clear())
 })
 
+test('has intent-aligned metadata and a crawlable link to the AI check-in', async ({page}) => {
+  await page.goto('/play')
+
+  await expect(page).toHaveTitle('WhoCards | Play a Free Online Conversation Card Game')
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    'content',
+    /Play WhoCards free online/
+  )
+  await expect(page.locator('a[href="/ai-at-work"]')).toHaveText(
+    'Try these AI team check-in questions'
+  )
+  await expect(page.getByText('More conversation decks')).toBeVisible()
+  await expect(page.locator('details')).not.toHaveAttribute('open', '')
+})
+
+test('keeps the optional deck link away from the question on a narrow landscape viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({width: 667, height: 375})
+  await page.goto('/play?q=1&lang=en')
+
+  const questionBox = await heading(page).boundingBox()
+  const moreDecksBox = await page.getByText('More conversation decks').boundingBox()
+
+  expect(questionBox).not.toBeNull()
+  expect(moreDecksBox).not.toBeNull()
+  expect((questionBox?.y ?? 0) + (questionBox?.height ?? 0)).toBeLessThanOrEqual(
+    moreDecksBox?.y ?? 0
+  )
+})
+
 test('loads the question selected by ?q= in the requested language', async ({page}) => {
   await page.goto('/play?q=1&lang=en')
   await expect(heading(page)).toHaveText(q1.en)
