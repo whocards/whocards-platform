@@ -7,6 +7,7 @@ import {eventMainLinks} from '~constants/navigation'
 import bgLeft from '~icons/bg-left.svg'
 import bgRight from '~icons/bg-right.svg'
 import Head from '~layouts/Head.astro'
+import {isNoindexRoute} from '~seo/indexation'
 import '~styles/base.css'
 
 export type Props = {
@@ -22,7 +23,7 @@ const {class: mainClasses, title = 'Hajnalig', description = 'Hajnalig'} = Astro
 <!doctype html>
 <html lang='hu' class='scroll-smooth'>
   <head>
-    <Head title={title} description={description} />
+    <Head title={title} description={description} noindex={isNoindexRoute(Astro.url.pathname)} />
     <PostHog />
   </head>
   <body

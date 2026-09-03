@@ -7,11 +7,7 @@ import icon from 'astro-icon'
 import robotsTxt from 'astro-robots-txt'
 import {defineConfig, passthroughImageService} from 'astro/config'
 import {SITE_URL as site} from './src/env.node'
-import languages from './src/data/languages.json'
-
-// `/[language]` routes are 301 redirects to `/` (see src/pages/[language]/index.astro),
-// so keep them — and the noindexed image-preview pages — out of the sitemap.
-const langRoutes = new Set(Object.keys(languages).map((lang) => `/${lang}`))
+import {shouldIncludeInSitemap} from './src/seo/indexation'
 
 // https://astro.build/config
 export default defineConfig({
@@ -37,18 +33,8 @@ export default defineConfig({
   trailingSlash: 'never',
   integrations: [
     mdx(),
-    // Keep noindexed utility pages (/images, /[language]/images) out of the
-    // sitemap so we don't advertise pages we ask crawlers not to index.
     sitemap({
-      filter: (page) => {
-        const {pathname} = new URL(page)
-        // /dev/* (e.g. the Image Playground, issue #177) is a dev-only tool
-        // gated to 404 in production — astro-sitemap otherwise lists every
-        // SSR route regardless of the runtime DEV gate, so exclude it explicitly.
-        return (
-          !pathname.endsWith('/images') && !langRoutes.has(pathname) && !pathname.startsWith('/dev')
-        )
-      },
+      filter: shouldIncludeInSitemap,
     }),
     robotsTxt(),
     react(),
