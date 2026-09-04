@@ -18,12 +18,20 @@ export const questionFontFamily = (language: string): string | undefined => {
 // --- dynamic question sizing: grow the text to fill its box, recomputed on rotation ---
 export const LINE_HEIGHT_RATIO = 1.15
 // average glyph advance / line height as fractions of the font size (semibold sans)
-const CHAR_WIDTH_RATIO = 0.54
+export const CHAR_WIDTH_RATIO = 0.54
 // fraction of the box the text aims to cover — kept well under 1 so ragged wrapping
 // and real-device font metrics (taller than this estimate) still leave breathing room
 const FILL = 0.5
 const MIN_FONT = 22
 const MAX_FONT = 96
+// Hard floors for the overflow backstop below — MIN_FONT/SECONDARY_MIN are soft
+// readability targets, but when even they cannot fit the box (a long question on
+// a small phone in landscape, worst with 2 secondaries), small text beats text
+// running off-screen. The mirrored halves get a lower hard floor for the same
+// reason their soft floors are lower.
+const ABS_MIN_FONT = 12
+const ABS_MIN_FONT_MIRRORED = 10
+const ABS_MIN_SECONDARY = 8
 
 /**
  * Largest font that lets `text` fill — without overflowing — a `width`×`height` box.
@@ -48,6 +56,53 @@ export const fitFontSize = (
   const longestWord = trimmed.split(/\s+/).reduce((max, word) => Math.max(max, word.length), 1)
   const widthCap = (width * 0.9) / (longestWord * CHAR_WIDTH_RATIO)
   return Math.round(Math.max(minFont, Math.min(MAX_FONT, raw, widthCap)))
+}
+
+// CJK text breaks both Latin-face assumptions: there are no spaces (a whole
+// sentence is one "word" that wraps mid-word, glyph by glyph) and each glyph is
+// full-width — ~1em of advance, not the 0.54 of the semibold Latin face.
+const CJK_CHAR_WIDTH_RATIO = 1
+const CJK_RE = /[\u3000-\u30ff\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]/
+
+/**
+ * Estimated rendered height of one text block at `fontSize` in a `width`-pt
+ * column: a greedy word-wrap (like a text engine) at the same glyph metrics
+ * fitFontSize sizes against, honoring the explicit \n\n breaks some questions
+ * carry — the things fitFontSize's pure area estimate cannot see. A word longer
+ * than a full line (a CJK sentence, which has no spaces) wraps mid-word at the
+ * CJK full-width glyph advance. Used by the overflow backstop in QuestionFace
+ * and by the overflow regression test.
+ */
+export const estimateBlockHeight = (text: string, fontSize: number, width: number) => {
+  let lines = 0
+  for (const paragraph of text.trim().split('\n')) {
+    const ratio = CJK_RE.test(paragraph) ? CJK_CHAR_WIDTH_RATIO : CHAR_WIDTH_RATIO
+    const maxChars = Math.max(1, Math.floor(width / (fontSize * ratio)))
+    const words = paragraph.split(/\s+/).filter(Boolean)
+    if (words.length === 0) {
+      lines += 1 // a blank line from a \n\n break still occupies a line
+      continue
+    }
+    let lineLen = 0
+    for (const word of words) {
+      if (word.length > maxChars) {
+        // longer than a whole line — wraps mid-word (space-less CJK sentences)
+        if (lineLen > 0) lines += 1
+        lines += Math.floor(word.length / maxChars)
+        lineLen = word.length % maxChars
+        continue
+      }
+      const needed = lineLen === 0 ? word.length : lineLen + 1 + word.length
+      if (needed <= maxChars) {
+        lineLen = needed
+      } else {
+        lines += 1
+        lineLen = word.length
+      }
+    }
+    if (lineLen > 0) lines += 1
+  }
+  return lines * fontSize * LINE_HEIGHT_RATIO
 }
 
 // The primary's share of the box height when secondaries are shown — the
@@ -97,7 +152,8 @@ export const fitSecondaryFontSize = (
 // up more than a few points, since the Question stays the hero (soul.md test 3).
 const MIN_FONT_MIRRORED = 16
 const SECONDARY_MIN_MIRRORED = 11
-const MIRROR_GAP = 28
+// exported so the overflow regression test computes each half's real budget
+export const MIRROR_GAP = 28
 
 type LanguageText = {language: string; text: string}
 
@@ -194,12 +250,34 @@ const QuestionFace = ({
 }: QuestionFaceProps) => {
   const share = PRIMARY_SHARE[Math.min(shown.length, PRIMARY_SHARE.length - 1)] ?? 1
   const minFont = compact ? MIN_FONT_MIRRORED : MIN_FONT
-  const fontSize = useMemo(
-    () => fitFontSize(text, box.width, box.height * share, minFont),
-    [text, box.width, box.height, share, minFont]
-  )
   const secondaryMin = compact ? SECONDARY_MIN_MIRRORED : SECONDARY_MIN
-  const secondaryFont = fitSecondaryFontSize(fontSize, minFont, secondaryMin)
+  // `shown` is a fresh array every render (QuestionText filters it inline), so
+  // the memo keys on its content instead of its identity
+  const shownKey = shown.map((s) => `${s.language}:${s.text}`).join(' ')
+  const {fontSize, secondaryFont} = useMemo(() => {
+    let size = fitFontSize(text, box.width, box.height * share, minFont)
+    let secondarySize = fitSecondaryFontSize(size, minFont, secondaryMin)
+    if (box.width <= 0 || box.height <= 0) return {fontSize: size, secondaryFont: secondarySize}
+
+    // Overflow backstop: the fit above is an area estimate floored at minFont,
+    // and nothing downstream clips or scrolls — on a small phone (worst in
+    // landscape with 2 secondaries) the floored stack can run past the box.
+    // Wrap-estimate the whole stack and walk both sizes down together, below
+    // the soft floors if that is what fitting takes, stopping at the hard
+    // ABS_MIN floors.
+    const gap = compact ? 8 : 16 // the mt-2 / mt-4 between blocks below
+    const secondaryRatio = secondarySize / size
+    const absMinFont = compact ? ABS_MIN_FONT_MIRRORED : ABS_MIN_FONT
+    const stackHeight = () =>
+      estimateBlockHeight(text, size, box.width) +
+      shown.reduce((sum, s) => sum + gap + estimateBlockHeight(s.text, secondarySize, box.width), 0)
+    while (size > absMinFont && stackHeight() > box.height) {
+      size -= 1
+      secondarySize = Math.max(ABS_MIN_SECONDARY, Math.round(size * secondaryRatio))
+    }
+    return {fontSize: size, secondaryFont: secondarySize}
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shownKey stands in for shown
+  }, [text, box.width, box.height, share, minFont, secondaryMin, compact, shownKey])
 
   if (shown.length === 0) {
     return (
