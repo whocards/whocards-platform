@@ -4,14 +4,12 @@ import {readFile, stat, unlink} from 'node:fs/promises'
 import {extname, join, normalize} from 'node:path'
 import {gzipSync} from 'node:zlib'
 
-const PORT = 4173
 const MAX_LCP_MS = 2_500
 const MAX_CLS = 0.1
 const MIN_ACCESSIBILITY_SCORE = 0.82
 const RUNS = Number.parseInt(process.env.LIGHTHOUSE_RUNS ?? '3', 10)
-const CHROME_PATH =
-  process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const DIST = new URL('../dist/', import.meta.url).pathname
+let serverUrl
 
 const mimeTypes = {
   '.css': 'text/css',
@@ -34,7 +32,7 @@ const resolveFile = async (pathname) => {
 
 const serveRequest = async (request, response) => {
   try {
-    const file = await resolveFile(new URL(request.url, `http://127.0.0.1:${PORT}`).pathname)
+    const file = await resolveFile(new URL(request.url, serverUrl).pathname)
     const body = await readFile(file)
     const shouldCompress = /gzip/.test(request.headers['accept-encoding'] ?? '')
     const headers = {
@@ -61,11 +59,14 @@ const readReport = async (outputPath) => {
 const runLighthouse = (index) =>
   new Promise((resolve, reject) => {
     const outputPath = `/tmp/whocards-mobile-lighthouse-${process.pid}-${index}.json`
+    const chromePathArgs = process.env.CHROME_PATH
+      ? [`--chrome-path=${process.env.CHROME_PATH}`]
+      : []
     const lighthouse = spawn(
       join(DIST, '../node_modules/.bin/lighthouse'),
       [
-        `http://127.0.0.1:${PORT}/`,
-        `--chrome-path=${CHROME_PATH}`,
+        serverUrl,
+        ...chromePathArgs,
         '--chrome-flags=--headless=new --no-sandbox',
         '--throttling-method=devtools',
         '--only-categories=performance,accessibility',
@@ -82,7 +83,21 @@ const runLighthouse = (index) =>
     })
   })
 
-await new Promise((resolve) => server.listen(PORT, '127.0.0.1', resolve))
+await new Promise((resolve, reject) => {
+  const handleError = (error) => reject(error)
+  server.once('error', handleError)
+  server.listen(0, '127.0.0.1', () => {
+    server.off('error', handleError)
+    resolve()
+  })
+})
+
+const address = server.address()
+if (!address || typeof address === 'string') {
+  server.close()
+  throw new Error('Could not determine the Lighthouse server port')
+}
+serverUrl = `http://127.0.0.1:${address.port}/`
 
 try {
   const reports = []
