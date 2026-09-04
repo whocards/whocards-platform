@@ -1,14 +1,16 @@
 import {spawn} from 'node:child_process'
 import {createServer} from 'node:http'
 import {readFile, stat, unlink} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
 import {extname, join, normalize} from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {gzipSync} from 'node:zlib'
 
 const MAX_LCP_MS = 2_500
 const MAX_CLS = 0.1
 const MIN_ACCESSIBILITY_SCORE = 0.82
 const RUNS = Number.parseInt(process.env.LIGHTHOUSE_RUNS ?? '3', 10)
-const DIST = new URL('../dist/', import.meta.url).pathname
+const DIST = fileURLToPath(new URL('../dist/', import.meta.url))
 let serverUrl
 
 const mimeTypes = {
@@ -56,9 +58,14 @@ const readReport = async (outputPath) => {
   return report
 }
 
+const medianOf = (values) => {
+  const sortedValues = values.toSorted((a, b) => a - b)
+  return sortedValues[Math.floor(sortedValues.length / 2)]
+}
+
 const runLighthouse = (index) =>
   new Promise((resolve, reject) => {
-    const outputPath = `/tmp/whocards-mobile-lighthouse-${process.pid}-${index}.json`
+    const outputPath = join(tmpdir(), `whocards-mobile-lighthouse-${process.pid}-${index}.json`)
     const chromePathArgs = process.env.CHROME_PATH
       ? [`--chrome-path=${process.env.CHROME_PATH}`]
       : []
@@ -103,21 +110,28 @@ try {
   const reports = []
   for (let index = 0; index < RUNS; index += 1) reports.push(await runLighthouse(index))
 
-  const samples = reports
-    .map((report) => {
-      const metrics = report.audits.metrics.details.items[0]
-      return {
-        accessibility: report.categories.accessibility.score,
-        cls: metrics.observedCumulativeLayoutShift,
-        lcp: metrics.observedLargestContentfulPaint,
-        simulatedLcp: report.audits['largest-contentful-paint'].numericValue,
-        lcpElement: report.audits['lcp-breakdown-insight']?.details?.items?.find(
-          (item) => item.type === 'node',
-        )?.snippet,
-      }
-    })
-    .toSorted((a, b) => a.lcp - b.lcp)
-  const median = samples[Math.floor(samples.length / 2)]
+  const samples = reports.map((report) => {
+    const metrics = report.audits.metrics.details.items[0]
+    return {
+      accessibility: report.categories.accessibility.score,
+      cls: metrics.observedCumulativeLayoutShift,
+      lcp: metrics.observedLargestContentfulPaint,
+      simulatedLcp: report.audits['largest-contentful-paint'].numericValue,
+      lcpElement: report.audits['lcp-breakdown-insight']?.details?.items?.find(
+        (item) => item.type === 'node',
+      )?.snippet,
+    }
+  })
+  const lcpMedianSample = samples.toSorted((a, b) => a.lcp - b.lcp)[
+    Math.floor(samples.length / 2)
+  ]
+  const median = {
+    accessibility: medianOf(samples.map((sample) => sample.accessibility)),
+    cls: medianOf(samples.map((sample) => sample.cls)),
+    lcp: lcpMedianSample.lcp,
+    simulatedLcp: medianOf(samples.map((sample) => sample.simulatedLcp)),
+    lcpElement: lcpMedianSample.lcpElement,
+  }
 
   console.log(JSON.stringify({median, samples}, null, 2))
 
