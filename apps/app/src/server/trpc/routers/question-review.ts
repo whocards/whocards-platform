@@ -36,7 +36,13 @@ export const VARIANTS = {
 
 export type VariantSlug = keyof typeof VARIANTS
 
-const shippedTextFor = (questionId: string): string =>
+/** The shipped-JSON baseline for a question id — exported for facilitate.ts,
+ *  which resolves display text the same way `variants` below does (approved
+ *  review text, falling back to this for the legacy ai-at-work import that
+ *  predates per-question review rows). Only ever non-empty for ai-at-work's
+ *  37 imported ids; any other deck's questions always have a review row (see
+ *  decks-logic.ts's buildNewQuestion), so this fallback is a no-op for them. */
+export const shippedTextFor = (questionId: string): string =>
   (shippedDeck as Record<string, {en: string}>)[questionId]?.en ?? ''
 
 /** True for the 37 questions imported from PR #144's variant pick — these have
