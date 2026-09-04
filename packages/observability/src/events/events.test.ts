@@ -2,6 +2,9 @@ import {describe, expect, it, vi, afterEach} from 'vitest'
 import {configureObservability} from '../index'
 import {eventsFor, createViewTracker, EVENTS, GAMES, track} from './index'
 import type {NavState, NavAction} from '@whocards/decks/engine'
+import type {EventProps} from '../index'
+
+type EmitFn = (name: string, props?: EventProps) => void
 
 afterEach(() => {
   // reset to dev (safe fallback)
@@ -54,7 +57,7 @@ describe('eventsFor — next action', () => {
     const events = eventsFor({type: 'next'}, prev, next, ctx)
     const navEvent = events[0]
     expect(navEvent?.name).toBe(EVENTS.QUESTION_NEXT)
-    expect((navEvent?.props as {to_question_id: string} | undefined)?.to_question_id).toBe('q3')
+    expect(navEvent?.props?.to_question_id).toBe('q3')
     expect(events[1]?.name).toBe(EVENTS.DECK_CYCLED)
   })
 
@@ -106,7 +109,7 @@ describe('createViewTracker — dwell tracking', () => {
   it('emits question_viewed with correct dwell_ms', () => {
     let t = 0
     const now = () => t
-    const emit = vi.fn()
+    const emit = vi.fn<EmitFn>()
     const tracker = createViewTracker(emit, now)
 
     tracker.startView({deck_id: 'friends', question_id: 'q1', language: 'en'})
@@ -114,7 +117,7 @@ describe('createViewTracker — dwell tracking', () => {
     tracker.endView('advanced')
 
     expect(emit).toHaveBeenCalledOnce()
-    const [name, props] = emit.mock.calls[0] as [string, Record<string, unknown>]
+    const [name, props] = emit.mock.calls[0] ?? []
     expect(name).toBe(EVENTS.QUESTION_VIEWED)
     expect(props?.dwell_ms).toBe(1500)
     expect(props?.reason).toBe('advanced')
@@ -126,19 +129,19 @@ describe('createViewTracker — dwell tracking', () => {
   it('clamps dwell_ms to >= 0 even with a bad clock', () => {
     let t = 100
     const now = () => t
-    const emit = vi.fn()
+    const emit = vi.fn<EmitFn>()
     const tracker = createViewTracker(emit, now)
 
     tracker.startView({deck_id: 'friends', question_id: 'q1', language: 'en'})
     t = 50 // clock went backwards
     tracker.endView('closed')
 
-    const [, props] = emit.mock.calls[0] as [string, Record<string, unknown>]
+    const [, props] = emit.mock.calls[0] ?? []
     expect(props?.dwell_ms).toBe(0)
   })
 
   it('is a no-op when endView called with no active view', () => {
-    const emit = vi.fn()
+    const emit = vi.fn<EmitFn>()
     const tracker = createViewTracker(emit)
 
     tracker.endView('backgrounded')
@@ -150,12 +153,12 @@ describe('createViewTracker — dwell tracking', () => {
     for (const reason of reasons) {
       let t = 0
       const now = () => t
-      const emit = vi.fn()
+      const emit = vi.fn<EmitFn>()
       const tracker = createViewTracker(emit, now)
       tracker.startView({deck_id: 'friends', question_id: 'q1', language: 'en'})
       t = 100
       tracker.endView(reason)
-      const [, props] = emit.mock.calls[0] as [string, Record<string, unknown>]
+      const [, props] = emit.mock.calls[0] ?? []
       expect(props?.reason).toBe(reason)
     }
   })
@@ -163,7 +166,7 @@ describe('createViewTracker — dwell tracking', () => {
   it('clears state after endView — subsequent endView is no-op', () => {
     let t = 0
     const now = () => t
-    const emit = vi.fn()
+    const emit = vi.fn<EmitFn>()
     const tracker = createViewTracker(emit, now)
 
     tracker.startView({deck_id: 'friends', question_id: 'q1', language: 'en'})
@@ -177,7 +180,7 @@ describe('createViewTracker — dwell tracking', () => {
   it('startView restarts tracking for a new question', () => {
     let t = 0
     const now = () => t
-    const emit = vi.fn()
+    const emit = vi.fn<EmitFn>()
     const tracker = createViewTracker(emit, now)
 
     tracker.startView({deck_id: 'friends', question_id: 'q1', language: 'en'})
@@ -190,7 +193,7 @@ describe('createViewTracker — dwell tracking', () => {
     tracker.endView('previous')
 
     expect(emit).toHaveBeenCalledTimes(2)
-    const secondProps = emit.mock.calls[1]?.[1] as Record<string, unknown>
+    const secondProps = emit.mock.calls[1]?.[1]
     expect(secondProps?.question_id).toBe('q2')
     expect(secondProps?.dwell_ms).toBe(500)
   })

@@ -3,14 +3,18 @@ import type {QuestionId} from '~types'
 // re-exports this file, so importing it back through `~utils` formed an
 // index → urls → index circular dependency (fallow dead-code).
 import {DEFAULT_LANGUAGE, LANG_KEYS} from '~utils/language'
+import questions from '~data/questions.json'
 
 export const getTrimmedPath = () => window.location.pathname.replace(/\/$/, '')
+
+const isQuestionId = (value: string): value is QuestionId => value in questions
 
 /**
  *
  */
-export const getCurrentQuestionId = (): QuestionId => {
-  return getTrimmedPath().split('/').pop() as QuestionId
+export const getCurrentQuestionId = (): QuestionId | undefined => {
+  const last = getTrimmedPath().split('/').pop()
+  return last && isQuestionId(last) ? last : undefined
 }
 
 /**

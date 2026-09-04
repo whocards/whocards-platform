@@ -113,11 +113,28 @@ const getProvider = (): ObservabilityProvider | undefined => {
 /**
  * Coerce an unknown caught value to an Error (or undefined when there is nothing
  * meaningful to report). Handles: undefined/null → undefined; Error → as-is;
- * anything else → new Error(String(value)).
+ * error-likes with a string message (cross-realm Errors, duck-typed errors —
+ * message/stack are non-enumerable on real Errors, so JSON.stringify would
+ * drop them) → new Error(message); other objects → new Error(JSON.stringify(value))
+ * so thrown plain objects keep their shape instead of collapsing to
+ * '[object Object]'; other primitives → new Error(String(value)).
  */
 export const toError = (value: unknown): Error | undefined => {
   if (value === undefined || value === null) return undefined
   if (value instanceof Error) return value
+  if (typeof value === 'object') {
+    if ('message' in value && typeof value.message === 'string') {
+      return new Error(value.message)
+    }
+    try {
+      // ?? covers stringify returning undefined (a toJSON() that returns
+      // undefined) — that path doesn't throw, so the catch alone misses it.
+      return new Error(JSON.stringify(value) ?? '[unserializable thrown value]')
+    } catch {
+      return new Error('[unserializable thrown value]')
+    }
+  }
+  // oxlint-disable-next-line typescript/no-base-to-string -- value is a non-object primitive here; the rule doesn't narrow `unknown` through the typeof guards above
   return new Error(String(value))
 }
 

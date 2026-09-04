@@ -37,7 +37,7 @@ describe('Android splash config (#100)', () => {
   it('uses a near-square Android splash asset so the logo stays inside the icon region', () => {
     const rel = splashEntry?.[1].android?.image
     expect(rel).toBeDefined()
-    const {width, height} = pngSize(join(__dirname, '../../', rel as string))
+    const {width, height} = pngSize(join(__dirname, '../../', rel!))
     // Near-square keeps the wordmark padded well within Android 12's inscribed splash
     // circle; a wide aspect (like the raw 1200x226 wordmark, ~5.3) is what clipped.
     const aspect = width / height

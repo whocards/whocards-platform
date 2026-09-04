@@ -15,6 +15,9 @@ export const prerender = false
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json'}})
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
 export const POST: APIRoute = async ({request, clientAddress}) => {
   const body = await request.json().catch(() => null)
   const parsed = appWaitlistSchema.safeParse(body)
@@ -28,11 +31,7 @@ export const POST: APIRoute = async ({request, clientAddress}) => {
   // can't reach Resend). Required, like /contact and /request-cards. The token
   // is read from the raw body (not a schema field — it's verified separately).
   const turnstileToken =
-    body &&
-    typeof body === 'object' &&
-    typeof (body as Record<string, unknown>).turnstileToken === 'string'
-      ? ((body as Record<string, unknown>).turnstileToken as string)
-      : ''
+    isRecord(body) && typeof body.turnstileToken === 'string' ? body.turnstileToken : ''
   const turnstile = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY, clientAddress)
   if (!turnstile.ok) {
     return json(

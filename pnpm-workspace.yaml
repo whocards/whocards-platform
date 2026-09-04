@@ -19,7 +19,9 @@ allowBuilds:
 # Packages reference these with `"dep": "catalog:"` instead of pinning.
 catalog:
   # language + build
-  typescript: ^5.9.3
+  # Pinned exact: TS 7 (native compiler) must stay in lockstep with
+  # oxlint-tsgolint's paired version (see root package.json).
+  typescript: 7.0.2
   vitest: ^4.0.15
   tsup: ^8.5.1
 

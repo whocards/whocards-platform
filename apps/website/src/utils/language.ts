@@ -7,14 +7,16 @@ export const LANG_KEYS = Object.keys(languages)
 
 export const LANGUAGES: {[K in Language]: string} = languages
 
+export const isLanguage = (key: string): key is Language => key in languages
+
 /**
  * Gets the language display name or throws an error if not found
  */
-export const getLangName = (key?: string | Language): string => {
-  if (!languages[key as Language]) {
+export const getLangName = (key?: string): string => {
+  if (!key || !isLanguage(key)) {
     throw Error('getLangName: invalid language')
   }
-  return languages[key as Language]
+  return languages[key]
 }
 
 /**
@@ -29,16 +31,16 @@ export const getBrowserLang = (): Language => {
   if (LANG_KEYS.includes(key.split('-')[0])) res = key.split('-')[0]
   if (LANG_KEYS.includes(key.split('_')[0])) res = key.split('_')[0]
 
-  return (res || DEFAULT_LANGUAGE) as Language
+  return isLanguage(res) ? res : DEFAULT_LANGUAGE
 }
 
 /**
  * get current language from url with fallback to default language
  */
 export const getCurrentLanguage = (url: string): Language => {
-  const lang = url.replace(/^\//, '').split('/')[0] as Language
+  const lang = url.replace(/^\//, '').split('/')[0]
 
-  return LANG_KEYS.includes(lang) ? lang : DEFAULT_LANGUAGE
+  return isLanguage(lang) ? lang : DEFAULT_LANGUAGE
 }
 
 // Our internal language keys double as URL segments (/jp/question/1) and are

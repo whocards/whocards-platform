@@ -4,7 +4,7 @@ import {useState} from 'react'
 
 import {trpc} from '~/lib/trpc'
 import {roleAtLeast} from '~/server/auth/permissions'
-import {groupByAct, nextStatusOptions} from '~/server/trpc/routers/decks-logic'
+import {groupByAct, isDeckStatus, nextStatusOptions} from '~/server/trpc/routers/decks-logic'
 import type {DeckStatus} from '~/server/trpc/routers/decks-logic'
 
 type QuestionData = Awaited<
@@ -102,7 +102,12 @@ function DeckDetail() {
           {deckMeta.data && canApprove ? (
             <select
               value={deckMeta.data.status}
-              onChange={(event) => updateStatus.mutate(event.target.value as DeckStatus)}
+              onChange={(event) => {
+                // The <option> values are always nextStatusOptions(...) below, so this
+                // is only false if the DOM value is tampered with — bail rather than cast.
+                const {value} = event.target
+                if (isDeckStatus(value)) updateStatus.mutate(value)
+              }}
               disabled={updateStatus.isPending}
               className="min-h-11 rounded-full bg-gray-light px-4 text-sm font-semibold text-white disabled:opacity-60"
             >
@@ -160,7 +165,7 @@ function DeckDetail() {
               defaultActLabel={groups.at(-1)?.actLabel ?? ''}
               onDone={() => {
                 setShowAddQuestion(false)
-                queryClient.invalidateQueries({queryKey: ['questionReview.variants', slug]})
+                void queryClient.invalidateQueries({queryKey: ['questionReview.variants', slug]})
               }}
             />
           ) : null}
@@ -326,8 +331,8 @@ function QuestionCard({
       }
     },
     onSettled: () => {
-      invalidateQuestions()
-      queryClient.invalidateQueries({queryKey: myVotesKey})
+      void invalidateQuestions()
+      void queryClient.invalidateQueries({queryKey: myVotesKey})
     },
   })
 
@@ -353,7 +358,7 @@ function QuestionCard({
       }),
     onSuccess: () => {
       setComment('')
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['questionReview.comments', deckSlug, question.questionId],
       })
     },
@@ -376,7 +381,7 @@ function QuestionCard({
       }),
     onSuccess: () => {
       setAgentDraft('')
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ['discussionAgent.messages', deckSlug, question.questionId],
       })
     },

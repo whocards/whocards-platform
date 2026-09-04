@@ -1,10 +1,12 @@
 import {useState} from 'react'
 import questions from '~data/questions.json'
 import {PRINT_LANGUAGES} from '~server/print/params'
-import {PHYSICAL_LAYOUTS} from '~server/print/presets'
+import {isLayoutId, PHYSICAL_LAYOUTS} from '~server/print/presets'
 import type {LayoutId} from '~server/print/presets'
 import type {Language, QuestionId} from '~types'
-import {LANG_KEYS, LANGUAGES} from '~utils'
+import {isLanguage, LANG_KEYS, LANGUAGES} from '~utils'
+
+const isQuestionId = (value: string): value is QuestionId => value in questions
 
 /**
  * Dev-only Image Playground (issue #177) — renders every programmatically
@@ -37,13 +39,23 @@ const CARD_SIZE_OPTIONS: {key: CardSizeKey; label: string}[] = [
   {key: 'post', label: 'Post · 1080×1350'},
 ]
 
-const QUESTION_IDS = Object.keys(questions).toSorted(
-  (a, b) => Number(a) - Number(b)
-) as QuestionId[]
+const QUESTION_IDS = Object.keys(questions)
+  .filter(isQuestionId)
+  .toSorted((a, b) => Number(a) - Number(b))
+
+const isCardSizeKey = (value: string): value is CardSizeKey =>
+  CARD_SIZE_OPTIONS.some((opt) => opt.key === value)
 
 type VerticalAlign = 'flex-start' | 'center'
+const isVerticalAlign = (value: string): value is VerticalAlign =>
+  value === 'flex-start' || value === 'center'
+
 type RtlJustify = 'flex-start' | 'flex-end'
+const isRtlJustify = (value: string): value is RtlJustify =>
+  value === 'flex-start' || value === 'flex-end'
+
 type Theme = 'light' | 'dark'
+const isTheme = (value: string): value is Theme => value === 'light' || value === 'dark'
 
 type CardVariant = {
   key: string
@@ -64,8 +76,8 @@ const nextVariantKey = (): string => `variant-${(variantCounter += 1)}`
 
 const defaultVariant = (overrides: Partial<CardVariant> = {}): CardVariant => ({
   key: nextVariantKey(),
-  id: '1' as QuestionId,
-  language: 'en' as Language,
+  id: '1',
+  language: 'en',
   size: 'og',
   padding: '',
   wordmarkScale: '',
@@ -199,7 +211,10 @@ function CardVariantCard({
           <select
             className={INPUT_CLASS}
             value={variant.id}
-            onChange={(e) => onChange({id: e.target.value as QuestionId})}
+            onChange={(e) => {
+              const {value} = e.target
+              if (isQuestionId(value)) onChange({id: value})
+            }}
           >
             {QUESTION_IDS.map((id) => (
               <option key={id} value={id}>
@@ -213,11 +228,14 @@ function CardVariantCard({
           <select
             className={INPUT_CLASS}
             value={variant.language}
-            onChange={(e) => onChange({language: e.target.value as Language})}
+            onChange={(e) => {
+              const {value} = e.target
+              if (isLanguage(value)) onChange({language: value})
+            }}
           >
-            {LANG_KEYS.map((lang) => (
+            {LANG_KEYS.filter(isLanguage).map((lang) => (
               <option key={lang} value={lang}>
-                {LANGUAGES[lang as Language]}
+                {LANGUAGES[lang]}
               </option>
             ))}
           </select>
@@ -227,7 +245,10 @@ function CardVariantCard({
           <select
             className={INPUT_CLASS}
             value={variant.size}
-            onChange={(e) => onChange({size: e.target.value as CardSizeKey})}
+            onChange={(e) => {
+              const {value} = e.target
+              if (isCardSizeKey(value)) onChange({size: value})
+            }}
           >
             {CARD_SIZE_OPTIONS.map((opt) => (
               <option key={opt.key} value={opt.key}>
@@ -241,7 +262,10 @@ function CardVariantCard({
           <select
             className={INPUT_CLASS}
             value={variant.theme}
-            onChange={(e) => onChange({theme: e.target.value as Theme})}
+            onChange={(e) => {
+              const {value} = e.target
+              if (isTheme(value)) onChange({theme: value})
+            }}
           >
             <option value='dark'>Dark (shipped)</option>
             <option value='light'>Light (exploratory)</option>
@@ -291,7 +315,10 @@ function CardVariantCard({
           <select
             className={INPUT_CLASS}
             value={variant.verticalAlign}
-            onChange={(e) => onChange({verticalAlign: e.target.value as VerticalAlign | ''})}
+            onChange={(e) => {
+              const {value} = e.target
+              if (value === '' || isVerticalAlign(value)) onChange({verticalAlign: value})
+            }}
           >
             <option value=''>default</option>
             <option value='flex-start'>flex-start</option>
@@ -303,7 +330,10 @@ function CardVariantCard({
           <select
             className={INPUT_CLASS}
             value={variant.rtlJustify}
-            onChange={(e) => onChange({rtlJustify: e.target.value as RtlJustify | ''})}
+            onChange={(e) => {
+              const {value} = e.target
+              if (value === '' || isRtlJustify(value)) onChange({rtlJustify: value})
+            }}
           >
             <option value=''>default</option>
             <option value='flex-start'>flex-start</option>
@@ -343,7 +373,7 @@ function CardVariantCard({
 }
 
 function PrintPlayground() {
-  const presetIds = Object.keys(PHYSICAL_LAYOUTS) as LayoutId[]
+  const presetIds = Object.keys(PHYSICAL_LAYOUTS).filter(isLayoutId)
   const [preset, setPreset] = useState<LayoutId>(presetIds[0])
   const [lang, setLang] = useState<Language>('en')
 
@@ -365,7 +395,10 @@ function PrintPlayground() {
           <select
             className={INPUT_CLASS}
             value={preset}
-            onChange={(e) => setPreset(e.target.value as LayoutId)}
+            onChange={(e) => {
+              const {value} = e.target
+              if (isLayoutId(value)) setPreset(value)
+            }}
           >
             {presetIds.map((id) => (
               <option key={id} value={id}>
@@ -379,11 +412,14 @@ function PrintPlayground() {
           <select
             className={INPUT_CLASS}
             value={lang}
-            onChange={(e) => setLang(e.target.value as Language)}
+            onChange={(e) => {
+              const {value} = e.target
+              if (isLanguage(value)) setLang(value)
+            }}
           >
             {PRINT_LANGUAGES.map((code) => (
               <option key={code} value={code}>
-                {LANGUAGES[code as Language] ?? code}
+                {isLanguage(code) ? LANGUAGES[code] : code}
               </option>
             ))}
           </select>
@@ -401,6 +437,7 @@ function PrintPlayground() {
       )}
 
       {supported && (
+        // oxlint-disable-next-line react/iframe-missing-sandbox -- dev-only playground previewing our own same-origin print route; sandboxing would break its scripts
         <iframe
           key={printUrl}
           title='Print preset preview'

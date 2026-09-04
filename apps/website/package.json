@@ -7,12 +7,13 @@
     "with-env": "dotenv -e ../../.env${ENV:+.${ENV}} --",
     "dev": "pnpm with-env astro dev",
     "start": "pnpm with-env astro dev",
-    "build": "pnpm with-env astro build",
+    "build": "pnpm with-env astro build && node scripts/seo-postbuild.mjs",
     "preview": "pnpm with-env astro preview",
     "typecheck": "astro sync && astro check",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ssr": "playwright test -c playwright.ssr.config.ts",
+    "test:performance:lcp": "pnpm build && node scripts/mobile-lighthouse.mjs",
     "pretty": "prettier --write . --plugin=prettier-plugin-astro",
     "analyze": "pnpx unlighthouse --site https://whocards.cc",
     "db:generate": "pnpm with-env drizzle-kit generate",
@@ -84,11 +85,12 @@
     "@types/node": "catalog:",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.24.2",
+    "lighthouse": "13.0.1",
     "pg": "^8.11.3",
     "prettier": "^3.8.4",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.8.0",
-    "typescript": "catalog:",
+    "typescript": "~5.9.3",
     "vitest": "catalog:"
   }
 }

@@ -16,6 +16,7 @@ import {GET} from '../../pages/api/dev/image-playground/card.png'
 // precedent): `pnpm --filter website build` must produce no
 // /dev/image-playground routes.
 const context = (query: string): APIContext =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- GET only reads `url.searchParams`; a full APIContext mock isn't worth building for these assertions.
   ({url: new URL(`https://whocards.cc/api/dev/image-playground/card.png${query}`)}) as APIContext
 
 describe('GET /api/dev/image-playground/card.png', () => {

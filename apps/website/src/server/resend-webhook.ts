@@ -119,6 +119,9 @@ export function segmentIdToConsentType(
 // Tolerant event payload extractor helpers
 // ---------------------------------------------------------------------------
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
 /**
  * Extract an email address from data.email or data.to.
  * Contact events carry data.email (string); email hygiene events carry data.to
@@ -193,18 +196,15 @@ export async function dispatchResendEvent<T extends PgQueryResultHKT>(
 ): Promise<DispatchSummary> {
   const log = logger ?? console
 
-  // Defensively cast event to a loosely-typed record.
-  if (typeof event !== 'object' || event === null) {
+  // Defensively narrow event to a loosely-typed record.
+  if (!isRecord(event)) {
     log.warn('resend-webhook: received non-object event payload')
     return {type: 'unknown', action: 'ignored', affectedRows: 0}
   }
 
-  const ev = event as Record<string, unknown>
+  const ev = event
   const type = typeof ev['type'] === 'string' ? ev['type'] : 'unknown'
-  const rawData =
-    typeof ev['data'] === 'object' && ev['data'] !== null
-      ? (ev['data'] as Record<string, unknown>)
-      : {}
+  const rawData = isRecord(ev['data']) ? ev['data'] : {}
 
   // -------------------------------------------------------------------------
   // contact.updated — the primary unsubscribe signal from Resend

@@ -93,7 +93,7 @@ export const ShareSheet = ({
 
   useEffect(() => {
     const dialog = ref.current
-    if (!dialog) return
+    if (!dialog) return undefined
 
     // Fires on Escape and on `dialog.close()` alike — keeps the parent's `open`
     // state in sync regardless of how the dialog closed.
@@ -129,7 +129,7 @@ export const ShareSheet = ({
         // AbortError = the player closed the OS sheet without picking a target —
         // not a failure, and not a completed share (CONTEXT.md: share is never a
         // game event, but it IS only a growth event when it actually happens).
-        if ((error as Error)?.name !== 'AbortError') {
+        if (!(error instanceof Error) || error.name !== 'AbortError') {
           logWarn('share-sheet: navigator.share failed', error)
         }
       }
@@ -173,7 +173,7 @@ export const ShareSheet = ({
       setImageState((state) => ({...state, [format]: 'idle'}))
       emitShareCompleted(format)
     } catch (error) {
-      if ((error as Error)?.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         // player closed the OS sheet without picking a target — not a failure
         setImageState((state) => ({...state, [format]: 'idle'}))
         return
@@ -191,7 +191,9 @@ export const ShareSheet = ({
       <div key={format} className='flex flex-col'>
         <button
           type='button'
-          onClick={() => handleImageRow(format)}
+          onClick={() => {
+            void handleImageRow(format)
+          }}
           disabled={state === 'busy'}
           aria-busy={state === 'busy'}
           className='who-modal btn-ghost flex w-full items-center px-4 py-3 text-left disabled:opacity-60'
@@ -228,7 +230,9 @@ export const ShareSheet = ({
         <div className='flex flex-col pb-4'>
           <button
             type='button'
-            onClick={handleShareLink}
+            onClick={() => {
+              void handleShareLink()
+            }}
             className='who-modal btn-ghost flex w-full items-center px-4 py-3 text-left'
           >
             {linkCopied ? 'Link copied!' : 'Share link'}

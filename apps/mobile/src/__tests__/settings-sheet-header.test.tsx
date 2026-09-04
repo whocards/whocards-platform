@@ -15,7 +15,6 @@
  */
 import React from 'react'
 import {Platform, StyleSheet} from 'react-native'
-import type {ViewStyle} from 'react-native'
 import {fireEvent, render, screen} from '@testing-library/react-native'
 
 // The header no longer reads safe-area insets at all; keep the mock so the
@@ -33,7 +32,7 @@ import {SettingsSheetHeader} from '../components/settings-sheet-header'
 const headerPaddingTop = (): number => {
   let node: ReturnType<typeof screen.getByText> | null = screen.getByText('Choose your language')
   while (node) {
-    const flat = StyleSheet.flatten(node.props?.style as ViewStyle | undefined)
+    const flat = StyleSheet.flatten(node.props?.style)
     if (flat && typeof flat.paddingTop === 'number') return flat.paddingTop
     node = node.parent
   }

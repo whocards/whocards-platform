@@ -1,3 +1,4 @@
+import {z} from 'zod'
 import type {ZodIssue} from 'zod'
 
 // Cloudflare Turnstile server-side verification. The client widget only produces a
@@ -30,7 +31,8 @@ export async function verifyTurnstile(
       body,
       signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
     })
-    const data = (await res.json()) as {success: boolean}
+    const turnstileResponseSchema = z.object({success: z.boolean()})
+    const data = turnstileResponseSchema.parse(await res.json())
     return data.success ? {ok: true} : {ok: false, reason: 'failed'}
   } catch {
     // Network error or timeout — treat as a failed (retryable) check, not a crash.
@@ -40,7 +42,7 @@ export async function verifyTurnstile(
 
 /** Shape a Turnstile failure into the form's `errors` record (keyed like a ZodIssue). */
 export const turnstileError = (message: string): Record<string, ZodIssue> => ({
-  'cf-turnstile-response': {code: 'custom', message, path: ['cf-turnstile-response']} as ZodIssue,
+  'cf-turnstile-response': {code: 'custom', message, path: ['cf-turnstile-response']},
 })
 
 /** Standard user-facing copy for the two Turnstile failure modes. */

@@ -10,6 +10,7 @@ import {GET} from '../../pages/api/print.pdf'
 // `GET` only reads `url.searchParams`, so a minimal fake context is enough —
 // no need to spin up a full Astro request pipeline for these assertions.
 const context = (query: string): APIContext =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- GET only reads `url.searchParams`; a full APIContext mock isn't worth building for these assertions.
   ({url: new URL(`https://whocards.cc/api/print.pdf${query}`)}) as APIContext
 
 describe('GET /api/print.pdf', () => {

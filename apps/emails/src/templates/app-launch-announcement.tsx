@@ -93,7 +93,7 @@ export function AppLaunchAnnouncementEmail({
 export function appLaunchAnnouncementText({
   appStoreUrl,
   playStoreUrl,
-  greeting = 'Hi there,',
+  greeting,
 }: Required<AppLaunchAnnouncementProps>) {
   return `It's live — WhoCards is in your pocket.
 

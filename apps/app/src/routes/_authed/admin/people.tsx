@@ -3,7 +3,7 @@ import {createFileRoute, redirect} from '@tanstack/react-router'
 import {useState} from 'react'
 
 import {trpc} from '~/lib/trpc'
-import {ROLE_RANK, roleAtLeast} from '~/server/auth/permissions'
+import {isAppRole, ROLE_RANK, roleAtLeast} from '~/server/auth/permissions'
 import type {AppRole} from '~/server/auth/permissions'
 
 export const Route = createFileRoute('/_authed/admin/people')({
@@ -26,7 +26,7 @@ function People() {
     mutationFn: () => trpc.people.invite.mutate({email, role}),
     onSuccess: () => {
       setEmail('')
-      queryClient.invalidateQueries({queryKey: ['people.list']})
+      void queryClient.invalidateQueries({queryKey: ['people.list']})
     },
   })
 
@@ -56,7 +56,12 @@ function People() {
         />
         <select
           value={role}
-          onChange={(event) => setRole(event.target.value as AppRole)}
+          onChange={(event) => {
+            // <option> values are always ROLE_RANK below, so this only fails on a
+            // tampered DOM value — bail rather than cast.
+            const {value} = event.target
+            if (isAppRole(value)) setRole(value)
+          }}
           className="rounded-full bg-gray-light px-3 py-2 text-white"
         >
           {ROLE_RANK.map((r) => (
@@ -92,9 +97,10 @@ function People() {
             </div>
             <select
               value={person.role}
-              onChange={(event) =>
-                updateRole.mutate({userId: person.userId, role: event.target.value as AppRole})
-              }
+              onChange={(event) => {
+                const {value} = event.target
+                if (isAppRole(value)) updateRole.mutate({userId: person.userId, role: value})
+              }}
               className="rounded-full bg-darker px-3 py-1.5 text-sm text-white"
             >
               {ROLE_RANK.map((r) => (

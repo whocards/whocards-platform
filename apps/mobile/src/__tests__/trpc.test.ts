@@ -40,7 +40,6 @@ const PROD_URL = 'https://whocards.cc'
 const ORIGINAL_ENV = process.env.EXPO_PUBLIC_API_URL
 
 /** Toggle the React Native `__DEV__` global. Wrapped to avoid no-underscore-dangle. */
-// oxlint-disable-next-line no-underscore-dangle
 const setDev = (value: boolean) => void ((globalThis as Record<string, unknown>)['__DEV__'] = value)
 
 afterEach(() => {
@@ -60,8 +59,7 @@ type TrpcModule = {getBaseUrl: () => string}
 const freshGetBaseUrl = (): (() => string) => {
   let fn!: () => string
   jest.isolateModules(() => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    fn = (require('../lib/trpc') as TrpcModule).getBaseUrl
+    fn = jest.requireActual<TrpcModule>('../lib/trpc').getBaseUrl
   })
   return fn
 }

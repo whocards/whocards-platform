@@ -198,12 +198,15 @@ export type Layout = {
   cardRects: Rect[]
 }
 
+export const isLayoutId = (value: string): value is LayoutId => value in PHYSICAL_LAYOUTS
+
 /** Resolve a preset id or a SKU alias to a physical layout, or `undefined`. */
 export const resolveLayout = (presetOrAlias: string): PhysicalLayout | undefined => {
-  // `Object.hasOwn`, not `in`/bare indexing: these are plain objects, so inherited
-  // keys like "constructor" would otherwise resolve to Object.prototype members.
-  if (Object.hasOwn(PHYSICAL_LAYOUTS, presetOrAlias))
-    return PHYSICAL_LAYOUTS[presetOrAlias as LayoutId]
+  // `Object.hasOwn`, not bare indexing: these are plain objects, so inherited keys
+  // like "constructor" would otherwise resolve to Object.prototype members.
+  // isLayoutId narrows presetOrAlias for the indexed access below without a cast.
+  if (Object.hasOwn(PHYSICAL_LAYOUTS, presetOrAlias) && isLayoutId(presetOrAlias))
+    return PHYSICAL_LAYOUTS[presetOrAlias]
   const aliased = Object.hasOwn(SKU_ALIASES, presetOrAlias) ? SKU_ALIASES[presetOrAlias] : undefined
   return aliased ? PHYSICAL_LAYOUTS[aliased] : undefined
 }

@@ -6,7 +6,7 @@ import type {ComponentType, PropsWithChildren} from 'react'
 import {idsStore} from '~stores/Game.store'
 import {$langStore, setLang} from '~stores/Language.store'
 import type {Language} from '~types'
-import {LANG_KEYS, LANGUAGES, cn, getCurrentLanguage, isPrintPage} from '~utils'
+import {LANG_KEYS, LANGUAGES, cn, getCurrentLanguage, isLanguage, isPrintPage} from '~utils'
 import {getCurrentQuestionUrl} from '~utils/urls'
 import {getDisabledLanguageCodes} from '~components/print/print-ui'
 import {PRINT_LANGUAGES} from '~server/print/params'
@@ -14,6 +14,7 @@ import {PRINT_LANGUAGES} from '~server/print/params'
 // @types/react 18 doesn't include bigint in ReactNode, but iconify-icon's
 // ForwardRefExoticComponent return type does. Double-cast via unknown is type-only,
 // no runtime effect.
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- @types/react 18's ReactNode doesn't include bigint but iconify-icon's ForwardRefExoticComponent return type does; this cast is type-only, no runtime effect.
 const Icon = _Icon as unknown as ComponentType<IconifyIconProps>
 
 // TODO get current language perhaps from url, query param, or persistant store
@@ -34,7 +35,7 @@ export const LanguageSwitcher = () => {
     // capture the node so the cleanup removes the listener from the same element
     // (not a possibly-changed ref.current), with a stable handler and a one-shot mount
     const dialog = ref.current
-    if (!dialog) return
+    if (!dialog) return undefined
 
     const handleBackdropClick = (event: MouseEvent) => {
       if (dialog === event.target) window.langsModal.close()
@@ -69,28 +70,32 @@ export const LanguageSwitcher = () => {
           className='grid grid-cols-1 overflow-y-auto pb-4 md:grid-flow-col md:grid-cols-3 md:grid-rows-5 md:pb-2'
           style={{maxHeight: 'calc(100vh - 4rem)'}}
         >
-          {Object.entries(LANGUAGES).map(([key, name]) =>
-            disabledCodes.has(key) ? (
-              <div
-                key={key}
-                className='flex h-16 flex-col justify-center px-4 opacity-50'
-                aria-disabled='true'
-              >
-                {name}
-                <span className='text-sm'>coming soon&hellip;</span>
-              </div>
-            ) : (
-              <QuestionLink
-                key={key}
-                lang={key as Language}
-                selected={key === store.lang}
-                useButton={shouldUseStore}
-              >
-                {name}
-                {key === store.lang && <Icon icon='zondicons:checkmark' className='ml-2 h-4 w-4' />}
-              </QuestionLink>
-            )
-          )}
+          {Object.entries(LANGUAGES)
+            .filter((entry): entry is [Language, string] => isLanguage(entry[0]))
+            .map(([key, name]) =>
+              disabledCodes.has(key) ? (
+                <div
+                  key={key}
+                  className='flex h-16 flex-col justify-center px-4 opacity-50'
+                  aria-disabled='true'
+                >
+                  {name}
+                  <span className='text-sm'>coming soon&hellip;</span>
+                </div>
+              ) : (
+                <QuestionLink
+                  key={key}
+                  lang={key}
+                  selected={key === store.lang}
+                  useButton={shouldUseStore}
+                >
+                  {name}
+                  {key === store.lang && (
+                    <Icon icon='zondicons:checkmark' className='ml-2 h-4 w-4' />
+                  )}
+                </QuestionLink>
+              )
+            )}
         </section>
       </form>
     </dialog>
@@ -101,7 +106,7 @@ type QuestionLinkProps = {
   lang: Language
   selected: boolean
   useButton: boolean
-} & PropsWithChildren<unknown>
+} & PropsWithChildren
 
 const QuestionButton = (props: QuestionLinkProps) => {
   return (

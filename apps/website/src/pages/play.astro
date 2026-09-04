@@ -22,17 +22,42 @@ const langParam = Astro.url.searchParams.get('lang')
 const lang = langParam && LANG_KEYS.includes(langParam) ? langParam : deck.languages[0]
 const qParam = Astro.url.searchParams.get('q')
 const questionId = qParam && qParam in deck.questions ? qParam : undefined
+
+const title = 'Play a Free Online Conversation Card Game'
+const description =
+  'Play WhoCards free online. Draw deep questions and honest icebreakers for friends, family, and teams — no account or setup needed.'
 ---
 
-<Layout lang={lang} oldBg={deck.oldBg} noFooter id={questionId}>
-  <Play
-    client:only='react'
-    questions={deck.questions as QuestionSet}
-    languages={deck.languages}
-    deckSlug={deck.slug}
-    tracking={deck.tracking}
-    languageStorageKey={deck.languageStorageKey}
-    questionClassName={deck.questionClassName}
-    isPoolBacked={supportsShareImages(deck.source)}
-  />
+<Layout
+  title={title}
+  description={description}
+  lang={lang}
+  oldBg={deck.oldBg}
+  noFooter
+  id={questionId}
+>
+  <section class='flex min-h-[calc(100vh-4rem)] w-full items-center justify-center'>
+    <Play
+      client:only='react'
+      questions={deck.questions as QuestionSet}
+      languages={deck.languages}
+      deckSlug={deck.slug}
+      tracking={deck.tracking}
+      languageStorageKey={deck.languageStorageKey}
+      questionClassName={deck.questionClassName}
+      isPoolBacked={supportsShareImages(deck.source)}
+    />
+  </section>
+  <details class='w-full px-4 pb-24 pt-6 text-right text-xs text-gray-lighter'>
+    <summary class='cursor-pointer select-none hover:text-white'>More conversation decks</summary>
+    <p class='pt-2'>
+      Talking about AI at work?
+      <a
+        href='/ai-at-work'
+        class='font-semibold text-primary-dark underline underline-offset-4 transition-colors hover:text-primary-light'
+      >
+        Try these AI team check-in questions
+      </a>
+    </p>
+  </details>
 </Layout>

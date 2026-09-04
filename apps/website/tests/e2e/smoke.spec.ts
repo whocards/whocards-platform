@@ -16,6 +16,30 @@ test('landing page renders', async ({page}) => {
 
   // Document title comes from the shared Head.astro layout.
   await expect(page).toHaveTitle(/WhoCards/)
+
+  await expect(page.getByRole('link', {name: 'AI team check-in questions'})).toHaveAttribute(
+    'href',
+    '/ai-at-work'
+  )
+})
+
+test('AI Check-In has intent-aligned metadata and links back to the conversation game', async ({
+  page,
+}) => {
+  await page.goto('/ai-at-work')
+
+  await expect(page).toHaveTitle(
+    'WhoCards | AI Team Check-In Questions for Honest Conversations'
+  )
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    'content',
+    /Talk to your team about AI with a free set of AI team check-in questions/
+  )
+  await expect(page.getByRole('heading', {level: 1})).toHaveCount(1)
+  await expect(page.getByRole('link', {name: 'free WhoCards conversation game'})).toHaveAttribute(
+    'href',
+    '/'
+  )
 })
 
 const staticRoutes = [
@@ -43,4 +67,19 @@ for (const route of staticRoutes) {
 test('unknown route serves the 404 page', async ({request}) => {
   const response = await request.get('/this-route-does-not-exist')
   expect(response.status()).toBe(404)
+})
+
+test('production HTML aligns robots metadata with temporary route policy', async ({page}) => {
+  for (const route of [
+    '/android-testers',
+    '/android-testers-birthday-present',
+    '/events/hajnalig/play',
+    '/events/hajnalig/2025/play',
+  ]) {
+    await page.goto(route)
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow')
+  }
+
+  await page.goto('/mission')
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
 })

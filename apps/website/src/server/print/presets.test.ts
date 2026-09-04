@@ -1,7 +1,14 @@
 import {describe, expect, it} from 'vitest'
 
-import {inch, layoutFor, mm, PHYSICAL_LAYOUTS, resolveLayout, SKU_ALIASES} from './presets'
-import type {LayoutId} from './presets'
+import {
+  inch,
+  isLayoutId,
+  layoutFor,
+  mm,
+  PHYSICAL_LAYOUTS,
+  resolveLayout,
+  SKU_ALIASES,
+} from './presets'
 
 describe('resolveLayout', () => {
   it('resolves a physical layout id', () => {
@@ -99,7 +106,7 @@ describe('layoutFor', () => {
   })
 
   it('keeps every card inside the page bounds', () => {
-    for (const id of Object.keys(PHYSICAL_LAYOUTS) as LayoutId[]) {
+    for (const id of Object.keys(PHYSICAL_LAYOUTS).filter(isLayoutId)) {
       const out = layoutFor(id)!
       for (const r of out.cardRects) {
         expect(r.x).toBeGreaterThanOrEqual(0)

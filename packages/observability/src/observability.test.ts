@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
-import type {ObservabilityProvider, LogEntry, EventProps} from './index'
+import type {ObservabilityProvider, LogEntry, EventProps, EventName} from './index'
 import {
   configureObservability,
   logError,
@@ -63,74 +63,72 @@ describe('dev mode → console', () => {
 
 describe('prod mode + provider → provider receives calls (not console)', () => {
   it('logError routes to captureError and does NOT call console', () => {
+    const captureError = vi.fn<(entry: LogEntry) => void>()
     const provider: ObservabilityProvider = {
-      captureError: vi.fn(),
-      captureEvent: vi.fn(),
-      identify: vi.fn(),
+      captureError,
+      captureEvent: vi.fn<(name: EventName, props?: EventProps) => void>(),
+      identify: vi.fn<(id: string, props?: EventProps) => void>(),
     }
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     configureObservability({dev: false, provider})
 
     logError('prod error')
 
-    expect(provider.captureError).toHaveBeenCalledOnce()
+    expect(captureError).toHaveBeenCalledOnce()
     expect(consoleSpy).not.toHaveBeenCalled()
 
-    const entry = (provider.captureError as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as LogEntry
+    const entry = captureError.mock.calls[0]?.[0]
     expect(entry?.level).toBe('error')
     expect(entry?.message).toBe('prod error')
   })
 
   it('logWarn routes to captureError with warn level', () => {
+    const captureError = vi.fn<(entry: LogEntry) => void>()
     const provider: ObservabilityProvider = {
-      captureError: vi.fn(),
-      captureEvent: vi.fn(),
-      identify: vi.fn(),
+      captureError,
+      captureEvent: vi.fn<(name: EventName, props?: EventProps) => void>(),
+      identify: vi.fn<(id: string, props?: EventProps) => void>(),
     }
     configureObservability({dev: false, provider})
 
     logWarn('prod warning', new Error('boom'), {attempt: 1})
 
-    const entry = (provider.captureError as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as LogEntry
+    const entry = captureError.mock.calls[0]?.[0]
     expect(entry?.level).toBe('warn')
     expect(entry?.error).toBeInstanceOf(Error)
     expect(entry?.context).toEqual({attempt: 1})
   })
 
   it('trackEvent routes to captureEvent', () => {
+    const captureEvent = vi.fn<(name: EventName, props?: EventProps) => void>()
     const provider: ObservabilityProvider = {
-      captureError: vi.fn(),
-      captureEvent: vi.fn(),
-      identify: vi.fn(),
+      captureError: vi.fn<(entry: LogEntry) => void>(),
+      captureEvent,
+      identify: vi.fn<(id: string, props?: EventProps) => void>(),
     }
     configureObservability({dev: false, provider})
 
     trackEvent('game_started', {deck_id: 'friends', game: 'wh', language: 'en'})
 
-    expect(provider.captureEvent).toHaveBeenCalledOnce()
-    const [name, props] = (provider.captureEvent as ReturnType<typeof vi.fn>).mock.calls[0] as [
-      string,
-      EventProps,
-    ]
+    expect(captureEvent).toHaveBeenCalledOnce()
+    const [name, props] = captureEvent.mock.calls[0] ?? []
     expect(name).toBe('game_started')
     expect(props).toEqual({deck_id: 'friends', game: 'wh', language: 'en'})
   })
 
   it('identify routes to provider.identify', () => {
+    const identifyMock = vi.fn<(id: string, props?: EventProps) => void>()
     const provider: ObservabilityProvider = {
-      captureError: vi.fn(),
-      captureEvent: vi.fn(),
-      identify: vi.fn(),
+      captureError: vi.fn<(entry: LogEntry) => void>(),
+      captureEvent: vi.fn<(name: EventName, props?: EventProps) => void>(),
+      identify: identifyMock,
     }
     configureObservability({dev: false, provider})
 
     identify('device-abc', {plan: 'free'})
 
-    expect(provider.identify).toHaveBeenCalledOnce()
-    const [id, props] = (provider.identify as ReturnType<typeof vi.fn>).mock.calls[0] as [
-      string,
-      EventProps,
-    ]
+    expect(identifyMock).toHaveBeenCalledOnce()
+    const [id, props] = identifyMock.mock.calls[0] ?? []
     expect(id).toBe('device-abc')
     expect(props).toEqual({plan: 'free'})
   })
@@ -168,8 +166,8 @@ describe('never throws even when provider throws', () => {
       captureError: () => {
         throw new Error('provider exploded')
       },
-      captureEvent: vi.fn(),
-      identify: vi.fn(),
+      captureEvent: vi.fn<(name: EventName, props?: EventProps) => void>(),
+      identify: vi.fn<(id: string, props?: EventProps) => void>(),
     }
     configureObservability({dev: false, provider})
 
@@ -178,11 +176,11 @@ describe('never throws even when provider throws', () => {
 
   it('swallows captureEvent throws', () => {
     const provider: ObservabilityProvider = {
-      captureError: vi.fn(),
+      captureError: vi.fn<(entry: LogEntry) => void>(),
       captureEvent: () => {
         throw new Error('event exploded')
       },
-      identify: vi.fn(),
+      identify: vi.fn<(id: string, props?: EventProps) => void>(),
     }
     configureObservability({dev: false, provider})
 
@@ -229,5 +227,27 @@ describe('toError — non-Error value normalisation', () => {
     const result = toError(404)
     expect(result).toBeInstanceOf(Error)
     expect(result?.message).toBe('404')
+  })
+
+  it('uses the message of an error-like object (cross-realm / duck-typed errors)', () => {
+    const result = toError({message: 'connection refused', name: 'FetchError'})
+    expect(result).toBeInstanceOf(Error)
+    expect(result?.message).toBe('connection refused')
+  })
+
+  it('serialises a plain object instead of collapsing to [object Object]', () => {
+    const result = toError({status: 500, code: 'ECONNRESET'})
+    expect(result?.message).toBe('{"status":500,"code":"ECONNRESET"}')
+  })
+
+  it('falls back when stringify returns undefined (toJSON returning undefined)', () => {
+    const result = toError({toJSON: () => undefined})
+    expect(result?.message).toBe('[unserializable thrown value]')
+  })
+
+  it('falls back when stringify throws (cyclic object)', () => {
+    const cyclic: {self?: unknown} = {}
+    cyclic.self = cyclic
+    expect(toError(cyclic)?.message).toBe('[unserializable thrown value]')
   })
 })

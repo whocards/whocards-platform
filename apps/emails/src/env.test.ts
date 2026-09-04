@@ -12,7 +12,9 @@ const validEnv = {
 
 describe('readTestEmailEnv', () => {
   it('requires an explicit test-send confirmation', () => {
-    expect(() => readTestEmailEnv({...validEnv, EMAIL_TEST_SEND_CONFIRMED: 'false'})).toThrow()
+    expect(() => readTestEmailEnv({...validEnv, EMAIL_TEST_SEND_CONFIRMED: 'false'})).toThrow(
+      /EMAIL_TEST_SEND_CONFIRMED/
+    )
   })
 
   it('accepts one valid test recipient', () => {
@@ -22,6 +24,6 @@ describe('readTestEmailEnv', () => {
   it('rejects a recipient list', () => {
     expect(() =>
       readTestEmailEnv({...validEnv, EMAIL_TEST_RECIPIENT: 'one@example.com,two@example.com'})
-    ).toThrow()
+    ).toThrow(/Invalid email address/)
   })
 })

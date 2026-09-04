@@ -1,5 +1,4 @@
 import {Play, supportsShareImages} from '~components/Play'
-import type {QuestionSet} from '~components/Play'
 import {hajnalig2025Deck, hajnalig2026Deck, resolveDeck} from '~data/decks'
 
 // The hajnalig event runs yearly; each edition is its own deck (different
@@ -16,7 +15,7 @@ export const SimplePlay = ({year = 2026}: {year?: EditionYear}) => {
   const deck = editions[year]
   return (
     <Play
-      questions={deck.questions as QuestionSet}
+      questions={deck.questions}
       languages={deck.languages}
       deckSlug={deck.slug}
       languageStorageKey={deck.languageStorageKey}

@@ -43,7 +43,7 @@ export const env = createEnv({
   clientPrefix: 'PUBLIC_',
   client: {
     PUBLIC_POSTHOG_KEY: z.string().optional(),
-    PUBLIC_POSTHOG_HOST: z.string().url().optional().default('https://eu.i.posthog.com'),
+    PUBLIC_POSTHOG_HOST: z.string().url().optional().default('https://who.whocards.cc'),
     PUBLIC_POSTHOG_UI_HOST: z.string().url().optional().default('https://eu.posthog.com'),
     // iOS and Android launch on separate timelines: iOS is approved and public,
     // Android trails by Google's mandatory 12-tester / 14-day Closed Test. Each

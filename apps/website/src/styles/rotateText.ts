@@ -1,4 +1,4 @@
-import gsap from 'gsap'
+import {gsap} from 'gsap'
 // @ts-ignore
 import * as SplitText from 'split-text-js'
 

@@ -12,18 +12,20 @@ const urls: Record<SocialKey, string> = {
   email: 'mailto:?subject={TITLE}&body={URL}',
 }
 
-export const socialShare = (social: Social | string | undefined, title: string, url: string) => {
+const isSocialKey = (value: string): value is SocialKey => value in urls
+
+export const socialShare = (social: string | undefined, title: string, url: string) => {
   // handle invalid social
-  if (!social || (!urls[social as SocialKey] && social !== 'copy')) {
+  if (!social || (!isSocialKey(social) && social !== 'copy')) {
     logWarn('social-share: unsupported target', undefined, {social})
     return
   }
 
   if (social === 'copy') {
-    navigator.clipboard.writeText(url)
+    void navigator.clipboard.writeText(url)
   } else {
     // create share url
-    const shareUrl = urls[social as SocialKey]
+    const shareUrl = urls[social]
       .replace('{URL}', encodeURIComponent(url))
       .replace('{TITLE}', encodeURIComponent(title))
 

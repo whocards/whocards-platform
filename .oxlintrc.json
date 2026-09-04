@@ -1,12 +1,25 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "import", "unicorn", "oxc", "node"],
+  "plugins": ["typescript", "import", "unicorn", "oxc", "node", "react", "jsx-a11y", "vitest"],
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
   },
+  "options": {
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error",
+    "typeAware": true
+  },
   "rules": {
     "no-console": "error",
+    "react/react-in-jsx-scope": "off",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/no-unsafe-type-assertion": "error",
+    "typescript/consistent-return": "error",
+    "vitest/require-mock-type-parameters": "error",
+    "vitest/require-to-throw-message": "error",
     "node/no-process-env": "error",
     "no-unused-vars": [
       "error",
@@ -47,6 +60,16 @@
       "files": ["**/env.ts", "**/env.node.ts", "**/env.test.ts"],
       "rules": {
         "node/no-process-env": "off"
+      }
+    },
+    {
+      // React-DOM-shaped rules that misfire on React Native / Expo idioms:
+      // Gesture.Tap()/Gesture.Pan() builders (capitalized-calls) and
+      // expo-status-bar's string `style` prop (style-prop-object).
+      "files": ["apps/mobile/**"],
+      "rules": {
+        "react/capitalized-calls": "off",
+        "react/style-prop-object": "off"
       }
     },
     {

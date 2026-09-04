@@ -16,7 +16,6 @@ import type {AnswerEvent} from '../lib/answer-queue'
 const EVENT: AnswerEvent = {deviceId: 'd1', deckSlug: 'library', questionId: 'q1', language: 'en'}
 
 /** Toggle the React Native `__DEV__` global. Wrapped to avoid no-underscore-dangle. */
-// oxlint-disable-next-line no-underscore-dangle
 const setDev = (value: boolean) => void ((globalThis as Record<string, unknown>)['__DEV__'] = value)
 
 const ORIGINAL_OPT_IN = process.env.EXPO_PUBLIC_RECORD_ANSWERS
@@ -28,7 +27,7 @@ const ORIGINAL_OPT_IN = process.env.EXPO_PUBLIC_RECORD_ANSWERS
 const freshSend = (): typeof Send => {
   let fn!: typeof Send
   jest.isolateModules(() => {
-    fn = (require('../lib/answer-transport') as {send: typeof Send}).send
+    fn = jest.requireActual<{send: typeof Send}>('../lib/answer-transport').send
   })
   return fn
 }

@@ -10,6 +10,7 @@ import type {Font as FontOptions} from 'satori'
 import {decompress} from 'wawoff2'
 
 import {createBaseDirResolver} from './runtime-base-dir'
+import {isLanguage} from '~utils/language'
 import type languages from '~data/languages.json'
 import questions from '~data/questions.json'
 
@@ -185,12 +186,12 @@ const loadTtf = (key: FontKey): Promise<Buffer> => {
 }
 
 const fontFamilyFor = (language: string): string => {
-  const key = LANGUAGE_FONT[language as LanguageCode] ?? 'golos'
+  const key = (isLanguage(language) ? LANGUAGE_FONT[language] : undefined) ?? 'golos'
   return FONT_FILES[key].family
 }
 
 const fontsFor = async (language: string): Promise<FontOptions[]> => {
-  const scriptKey = LANGUAGE_FONT[language as LanguageCode]
+  const scriptKey = isLanguage(language) ? LANGUAGE_FONT[language] : undefined
   // Golos is the base (covers Latin question text), aptly renders the wordmark,
   // and the script-specific font is layered in for non-Latin question text.
   const keys: FontKey[] = scriptKey ? ['golos', 'aptly', scriptKey] : ['golos', 'aptly']
@@ -798,6 +799,7 @@ const renderSvg = async (
 
   if (size.key === 'og') {
     const svg = await satori(
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- buildTree returns a plain JSX-less object tree, which satori accepts at runtime but whose shape doesn't structurally match satori's ReactNode param.
       buildTree(text, language, mazeUri, size, undefined, playgroundOptions) as never,
       satoriOptions
     )
@@ -808,6 +810,7 @@ const renderSvg = async (
   const clearanceLimit = size.height - size.padding - wordmarkClearanceFor(size)
   const {fontSize, result: svg} = await resolveAutofitFontSize(startFontSize, async (candidate) => {
     const candidateSvg = await satori(
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- same satori/ReactNode boundary as above.
       buildTree(text, language, mazeUri, size, candidate, playgroundOptions) as never,
       satoriOptions
     )

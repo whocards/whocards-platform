@@ -3,11 +3,20 @@
 # relative paths from the repo root — `publish` points at the wrong dist, `pnpm build`
 # runs the root `turbo build`, and the local plugin path 404s. See issue #20.
 [build.environment]
-  NODE_VERSION = "22"
+  NODE_VERSION = "24"
 
 [build]
   command = "pnpm build"
   publish = "dist"
+
+# Preserve external links to the retired English wide-format PDF by sending
+# visitors directly to the current print flow. With no query parameters in the
+# destination, Netlify forwards the request's original query string.
+[[redirects]]
+  from = "/cards/en-wide.pdf"
+  to = "/print"
+  status = 301
+  force = true
 
 # Persist the content-addressed OG card render cache across deploys so the build
 # only renders new/changed cards (see netlify/plugins/og-cache + src/server/card-image.ts).

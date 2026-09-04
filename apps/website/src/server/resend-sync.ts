@@ -15,6 +15,7 @@
 
 import {and, eq, isNotNull, isNull, or} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
+import {isConsentType} from './consent'
 import type {ConsentType} from './consent'
 import * as schema from './db/schema'
 
@@ -40,8 +41,7 @@ export const makeSegmentIdResolver =
 
 /** Selecting shape for get/update — mirrors the SDK's SelectingField. */
 export type ResendSelectingField =
-  | {id: string; email?: undefined | null}
-  | {email: string; id?: undefined | null}
+  {id: string; email?: undefined | null} | {email: string; id?: undefined | null}
 
 export type ResendContactsPort = {
   /** Create a contact (with optional segment membership). Returns {data: {id}, error}. */
@@ -137,7 +137,9 @@ export async function syncConsentToResend(
   const {resendContacts, segmentIdFor, logger} = deps
   const log = logger ?? console
 
-  const segmentId = segmentIdFor(consent.consentType as ConsentType)
+  const segmentId = isConsentType(consent.consentType)
+    ? segmentIdFor(consent.consentType)
+    : undefined
   if (!segmentId) {
     log.info('resend-sync: no segment configured for %s — skipping', consent.consentType)
     return {status: 'skipped', reason: 'no_segment_configured'}
@@ -287,7 +289,7 @@ export async function syncEmailConsents<T extends PgQueryResultHKT>(
   const summaries: EmailSyncSummary[] = []
 
   for (const row of rows) {
-    const result = await syncConsentToResend(row as ConsentRowForSync, deps)
+    const result = await syncConsentToResend(row, deps)
     await applyProviderSyncResult(db, row.id, result)
     summaries.push({consentId: row.id, consentType: row.consentType, result})
   }
@@ -389,7 +391,7 @@ export async function reconcile<T extends PgQueryResultHKT>(
   if (apply) {
     // --- apply mode: sync + write ---
     for (const row of toSync) {
-      const result = await syncConsentToResend(row as ConsentRowForSync, deps)
+      const result = await syncConsentToResend(row, deps)
       await applyProviderSyncResult(db, row.id, result)
       if (result.status === 'synced') synced++
       else if (result.status === 'skipped') skipped++
@@ -409,7 +411,7 @@ export async function reconcile<T extends PgQueryResultHKT>(
   } else {
     // --- dry-run mode: count only, zero Resend/DB writes ---
     for (const row of toSync) {
-      const segId = deps.segmentIdFor(row.consentType as ConsentType)
+      const segId = isConsentType(row.consentType) ? deps.segmentIdFor(row.consentType) : undefined
       if (segId) wouldSync++
       else skipped++
     }
