@@ -3,7 +3,8 @@ import {TRPCError} from '@trpc/server'
 import {createTwoFilesPatch} from 'diff'
 import {z} from 'zod'
 
-import {ensureAiAtWorkDeck} from '../../decks/bootstrap'
+import {ensureAiAtWorkDeck, ensureLibraryDeck} from '../../decks/bootstrap'
+import {LIBRARY_DECK} from '../../decks/bootstrap-logic'
 import {db} from '../../db'
 import {appUser, deckQuestion, questionComment, questionReview, questionVote} from '../../db/schema'
 import {createTRPCRouter, roleProcedure} from '../trpc'
@@ -80,6 +81,7 @@ export const questionReviewRouter = createTRPCRouter({
     .input(z.object({deckSlug: z.string().min(1)}))
     .query(async ({input}) => {
       if (input.deckSlug === DECK_SLUG) await ensureAiAtWorkDeck()
+      else if (input.deckSlug === LIBRARY_DECK.slug) await ensureLibraryDeck()
 
       const [roster, reviews, votes] = await Promise.all([
         db
