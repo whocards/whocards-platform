@@ -23,6 +23,7 @@ blob-report/
 
 # env
 .env
+onboarding-evidence.json
 .env.*
 !.env.sample
 !.env.example
