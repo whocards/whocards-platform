@@ -28,9 +28,7 @@ test('AI Check-In has intent-aligned metadata and links back to the conversation
 }) => {
   await page.goto('/ai-at-work')
 
-  await expect(page).toHaveTitle(
-    'WhoCards | AI Team Check-In Questions for Honest Conversations'
-  )
+  await expect(page).toHaveTitle('WhoCards | AI Team Check-In Questions for Honest Conversations')
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
     /Talk to your team about AI with a free set of AI team check-in questions/
@@ -42,11 +40,32 @@ test('AI Check-In has intent-aligned metadata and links back to the conversation
   )
 })
 
+test('Third Relationship page renders, is in the nav, and applies by email', async ({page}) => {
+  await page.goto('/third-relationship')
+
+  await expect(page).toHaveTitle(
+    'WhoCards | The Third Relationship: A Free Team Experience for AI at Work'
+  )
+  await expect(page.getByRole('heading', {level: 1})).toContainText('relationship with AI')
+  await expect(page.getByRole('link', {name: 'Apply for a slot'}).first()).toHaveAttribute(
+    'href',
+    /^mailto:tamas@innermasterylab\.co\?subject=/
+  )
+  // The three opening Cards deep-link into the AI Check-In deck.
+  await expect(page.locator('a[href^="/play/ai-at-work?q=ai-"]')).toHaveCount(3)
+  // Nav entry (desktop menu; the drawer duplicates it, hence .first()).
+  await expect(page.getByRole('link', {name: 'Third Relationship'}).first()).toHaveAttribute(
+    'href',
+    '/third-relationship'
+  )
+})
+
 const staticRoutes = [
   '/',
   '/en',
   '/mission',
   '/ai-at-work',
+  '/third-relationship',
   '/print',
   '/images',
   '/events/hajnalig',
