@@ -1,0 +1,155 @@
+name: CI
+
+# Gates every workspace (mobile, website, app, emails, packages), not just mobile.
+# No paths-ignore: "Quality gate" is a required check on main, and a skipped
+# workflow leaves a required check pending forever. The gate is ~1 min, so
+# docs-only PRs just run it.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  # The release pipeline calls this gate and must always run the full checks.
+  workflow_call: {}
+
+# A new push to the same ref supersedes any in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Quality gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node from .nvmrc
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Content-addressed turbo remote cache backed by the GitHub Actions cache.
+      # Replaces the sha-keyed actions/cache step, whose restore-keys fallback
+      # picked the newest cache regardless of which package it matched.
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@v2
+
+      - name: Format check
+        run: pnpm format
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck + unit tests
+        run: pnpm exec turbo run typecheck test
+
+      # Maestro mobile e2e is intentionally NOT run here: it needs a built binary on
+      # a booted simulator/emulator. It runs locally as a hard gate in `pnpm release`
+      # (scripts/release/pre-release-check.mjs). Moving it to CI is tracked in the
+      # CI & codebase health epic (#230).
+
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    outputs:
+      website: ${{ steps.filter.outputs.website }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            website:
+              - 'apps/website/**'
+              - 'packages/api/**'
+              - 'packages/decks/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.github/workflows/ci.yml'
+
+  # Playwright: static site (tests/e2e) against the built dist, and the SSR
+  # routes (/play, /api/trpc) against `astro dev` (tests/e2e-ssr). Skipped on
+  # PRs that do not touch the website or its packages; a skipped job counts as
+  # passing for the required check. Always runs on push to main and release.
+  website-e2e:
+    name: Website e2e
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.website == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node from .nvmrc
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Turbo remote cache
+        uses: rharkor/caching-for-turbo@v2
+
+      # The website env schema (apps/website/src/env.ts) fails the build without
+      # these. Placeholders are enough: nothing in the e2e suites sends email or
+      # touches the database, and the Turnstile keys are Cloudflare's public
+      # always-pass test keys.
+      - name: Write placeholder .env
+        run: |
+          cat > .env <<'ENV'
+          DB_URL=postgres://ci:ci@localhost:5432/ci
+          CONTACTS_SHEET_URL=https://example.invalid/sheet
+          RESEND_API_KEY=re_ci_placeholder
+          RESEND_FROM_EMAIL=WhoCards <hello@whocards.cc>
+          RESEND_SEGMENT_NEWSLETTER_ID=ci-newsletter
+          RESEND_SEGMENT_APP_WAITLIST_ID=ci-waitlist
+          RESEND_WEBHOOK_SECRET=whsec_ci_placeholder
+          TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+          PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+          ENV
+
+      - name: Get Playwright version
+        id: pw
+        run: echo "version=$(pnpm --filter website exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter website exec playwright install --with-deps chromium
+
+      - name: Install Playwright OS deps
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter website exec playwright install-deps chromium
+
+      - name: Static e2e (tests/e2e)
+        run: pnpm --filter website test:e2e
+
+      - name: SSR e2e (tests/e2e-ssr)
+        run: pnpm --filter website test:e2e:ssr
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/website/playwright-report
+          retention-days: 7

@@ -92,7 +92,7 @@ native runtime that matches what ships in production.
 - [x] **`eas.json`** — `cli.appVersionSource: "remote"`; profiles `development` / `preview` / `production`; `autoIncrement` on `production`; per-profile `env` (`EXPO_PUBLIC_API_URL`); channels `preview` / `production`
 - [x] **OTA** — `expo-updates` added; `runtimeVersion: { "policy": "fingerprint" }` set in `app.json`
 - [x] **CI** (GitHub Actions, `.github/workflows/`)
-  - [x] PR/main workflow: the quality gate (`mobile-gate.yml`)
+  - [x] PR/main workflow: the quality gate (`ci.yml`)
   - [x] Tag (`v*`) workflow: gate → `eas build` → `eas submit` (beta) → `eas update` (`mobile-release.yml`) — **inert until `EAS_RELEASE_ENABLED=true`** (iOS + Android together)
   - [x] Secrets: `EXPO_TOKEN` is the only CI secret; both the iOS ASC API key and Android Play key live on EAS (`eas credentials`), pulled by `eas submit`
 - [ ] **`docs/mobile/README` / this runbook** linked from the repo README

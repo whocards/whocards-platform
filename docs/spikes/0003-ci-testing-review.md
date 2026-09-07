@@ -1,6 +1,6 @@
 # CI + testing review — speed, remote mobile e2e, Greptile
 
-**Status:** review + research complete. Written 2026-09-06. Done 2026-09-07: Greptile reactivated + `greptile.json`, Dependabot added, force-push to main blocked.
+**Status:** review + research complete. Written 2026-09-06. Done 2026-09-07 (PR #271): Greptile reactivated + `greptile.json`, Dependabot, force-push blocked + linear history on main, Playwright in CI, audit moved to weekly, `paths-ignore` dropped, turbo remote cache, `mobile-gate.yml` renamed to `ci.yml`. Tickets: #273 remote mobile e2e, #274 Greptile measurement.
 **Feeds:** epic #230 (CI & codebase health). Pricing figures were checked against vendor pages on 2026-09-06 and will drift.
 
 ## TL;DR
