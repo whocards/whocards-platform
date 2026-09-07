@@ -33,7 +33,7 @@ on:
 jobs:
   gate:
     name: Quality gate
-    uses: ./.github/workflows/mobile-gate.yml
+    uses: ./.github/workflows/ci.yml
 
   build:
     name: EAS Build (iOS + Android)

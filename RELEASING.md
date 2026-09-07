@@ -21,7 +21,7 @@ version, tags, and pushes — with confirmation prompts along the way.
 ## Before each release
 
 1. **Boot a simulator and an emulator.** The release command runs the Maestro e2e suite
-   (`e2e:ios` + `e2e:android`) as a hard gate — CI does not run e2e (see `mobile-gate.yml`).
+   (`e2e:ios` + `e2e:android`) as a hard gate — CI does not run e2e (see `ci.yml`).
    The gate self-provisions: if the booted device doesn't already have a current build
    installed, it builds a self-contained Release sim/emulator app and installs it before
    running the suite — no manual build/install step needed. Skip just that step with

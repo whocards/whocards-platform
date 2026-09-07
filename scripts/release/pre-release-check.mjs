@@ -2,7 +2,7 @@
 // Maestro e2e gate. Run by release-it's before:init hook (both platforms), by the
 // mobile:rebuild:* scripts (one platform), and standalone via `pnpm release:check`.
 //
-// CI (mobile-gate.yml) already covers lint + typecheck + unit tests on every push to
+// CI (ci.yml) already covers lint + typecheck + unit tests on every push to
 // main, so by the time you ship, those are green. What CI does NOT run is the Maestro
 // e2e suite (no simulator/emulator in CI). So we run e2e locally against booted devices
 // as the last gate before a build/tag goes out.

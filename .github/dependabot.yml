@@ -1,0 +1,68 @@
+# Grouped, weekly dependency updates. The 2-day cooldown mirrors pnpm-workspace
+# minimumReleaseAge (2880 min) for version updates only; Dependabot security updates
+# ignore cooldown and may propose a version pnpm would refuse to resolve fresh.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Budapest
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 2
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      # One PR per week for all non-breaking bumps.
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+      # Majors grouped by family so a breaking bump lands with its siblings.
+      expo:
+        patterns:
+          - expo
+          - expo-*
+          - '@expo/*'
+          - react-native
+          - react-native-*
+        update-types:
+          - major
+      astro:
+        patterns:
+          - astro
+          - '@astrojs/*'
+        update-types:
+          - major
+      test-tooling:
+        patterns:
+          - vitest
+          - '@vitest/*'
+          - '@playwright/*'
+          - playwright
+          - jest
+          - jest-*
+          - '@testing-library/*'
+        update-types:
+          - major
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Budapest
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore(ci)
+    groups:
+      actions:
+        patterns:
+          - '*'
