@@ -1,0 +1,8 @@
+{
+  "triggerOnDrafts": false,
+  "triggerOnUpdates": false,
+  "disabledLabels": ["skip-greptile", "dependencies", "documentation"],
+  "excludeAuthors": ["dependabot[bot]"],
+  "ignorePatterns": ["**/*.md", "docs/**", "pnpm-lock.yaml", "**/*.snap", "**/CHANGELOG.md"],
+  "strictness": 2
+}
