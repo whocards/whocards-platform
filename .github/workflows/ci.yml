@@ -40,7 +40,7 @@ jobs:
       # Replaces the sha-keyed actions/cache step, whose restore-keys fallback
       # picked the newest cache regardless of which package it matched.
       - name: Turbo remote cache
-        uses: rharkor/caching-for-turbo@v2
+        uses: rharkor/caching-for-turbo@v2.5.1
 
       - name: Format check
         run: pnpm format
@@ -101,7 +101,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Turbo remote cache
-        uses: rharkor/caching-for-turbo@v2
+        uses: rharkor/caching-for-turbo@v2.5.1
 
       # The website env schema (apps/website/src/env.ts) fails the build without
       # these. Placeholders are enough: nothing in the e2e suites sends email or
