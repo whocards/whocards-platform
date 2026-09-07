@@ -3,6 +3,6 @@
   "triggerOnUpdates": false,
   "disabledLabels": ["skip-greptile", "dependencies", "documentation"],
   "excludeAuthors": ["dependabot[bot]"],
-  "ignorePatterns": ["**/*.md", "docs/**", "pnpm-lock.yaml", "**/*.snap", "**/CHANGELOG.md"],
+  "ignorePatterns": "**/*.md\ndocs/**\npnpm-lock.yaml\n**/*.snap\n**/CHANGELOG.md",
   "strictness": 2
 }

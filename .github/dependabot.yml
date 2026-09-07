@@ -1,5 +1,6 @@
-# Grouped, weekly dependency updates. Mirrors pnpm-workspace minimumReleaseAge (2 days)
-# via cooldown so Dependabot does not propose versions pnpm would refuse to install.
+# Grouped, weekly dependency updates. The 2-day cooldown mirrors pnpm-workspace
+# minimumReleaseAge (2880 min) for version updates only; Dependabot security updates
+# ignore cooldown and may propose a version pnpm would refuse to resolve fresh.
 version: 2
 updates:
   - package-ecosystem: npm

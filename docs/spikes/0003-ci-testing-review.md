@@ -22,7 +22,7 @@ The PR gate is already fast: about 1 minute of real work, 3.5 minutes median wal
 | `mobile-release.yml`   | `v*` tag                               | gate → EAS build → submit → OTA                                          | Guarded by `EAS_RELEASE_ENABLED` repo variable.                                                 |
 | Netlify deploy preview | PR                                     | website build                                                            | Required check on main.                                                                         |
 
-Ruleset on main: block deletion, required checks `Quality gate` and `netlify/whocards-calmly/deploy-preview`, strict (branch must be up to date). No required reviews, no force-push block, no linear history.
+Ruleset on main: block deletion, required checks `Quality gate` and `netlify/whocards-calmly/deploy-preview`, strict (branch must be up to date). No required reviews, no force-push block, no linear history (force-push block + linear history added 2026-09-07).
 
 ### Timings, last 25 successful gate runs
 
@@ -73,7 +73,7 @@ The substantive comments were mostly P2 hygiene, but the P1s on the release scri
 3. **Audit job is noise.** It runs 160s on every PR, reports the same 24 transitive highs, and nobody reads it. Move it to a weekly `schedule` trigger and open an issue when the count changes. Add Dependabot with grouped updates so the backlog actually burns down (#235).
 4. **Gate name and scope are misleading.** `mobile-gate.yml` gates the whole repo. Rename to `ci.yml` when next touched; agents reading the workflow name will otherwise assume website has no gate.
 5. **`paths-ignore` on a required check is a latent trap.** A docs-only PR skips the workflow, and GitHub leaves the required `Quality gate` check as "expected" forever. It has not bitten yet because every PR so far touched code, or was merged by an admin. Fix: drop `paths-ignore` and instead short-circuit inside the job with `dorny/paths-filter`, or add a no-op job that reports the same check name.
-6. **Ruleset is thin.** No force-push block on main. Add `non_fast_forward` and `required_linear_history` rules; both are free and stop an agent from rewriting main.
+6. **Ruleset is thin.** _(Done 2026-09-07.)_ No force-push block on main. Add `non_fast_forward` and `required_linear_history` rules; both are free and stop an agent from rewriting main.
 7. **Standalone pnpm 11 cannot run on Intel Macs.** `@pnpm/macos-x64` was never published past 11.0.4, so the self-managing `@pnpm/exe` shim fails with `ERR_PNPM_PNPM_ENGINE_IDENTITY_UNVERIFIABLE` for the pinned 11.4.0. Fixed on jarvis by installing the pure-JS `pnpm@11.4.0` via npm; CI on ubuntu is unaffected. If stark-tower is Intel too, it needs the same fix.
 
 ## Recommendations
@@ -119,9 +119,9 @@ Ranked plan:
 {
   "triggerOnDrafts": false,
   "triggerOnUpdates": false,
-  "disabledLabels": ["skip-greptile", "chore", "documentation"],
+  "disabledLabels": ["skip-greptile", "dependencies", "documentation"],
   "excludeAuthors": ["dependabot[bot]"],
-  "ignorePatterns": ["**/*.md", "docs/**", "pnpm-lock.yaml", "**/*.snap", "**/CHANGELOG.md"],
+  "ignorePatterns": "**/*.md\ndocs/**\npnpm-lock.yaml\n**/*.snap\n**/CHANGELOG.md",
   "strictness": 2
 }
 ```
@@ -144,7 +144,7 @@ The 25 historical Greptile comments from June are a free baseline: re-run `/code
 4. Add the Android emulator e2e job, path-filtered to mobile + decks.
 5. Vercel remote cache + `--affected`.
 6. iOS macOS-runner job on `workflow_dispatch`, then teach `pre-release-check.mjs` to trust it.
-7. Ruleset: block force-push and require linear history.
+7. Ruleset: block force-push and require linear history. _(Done 2026-09-07.)_
 
 ## Sources
 
