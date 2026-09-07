@@ -34,7 +34,10 @@ test('has intent-aligned metadata and a crawlable link to the AI check-in', asyn
     'Try these AI team check-in questions'
   )
   await expect(page.getByText('More conversation decks')).toBeVisible()
-  await expect(page.locator('details')).not.toHaveAttribute('open', '')
+  // Scope to the deck disclosure; the Events nav dropdown also renders <details>.
+  await expect(
+    page.locator('details').filter({hasText: 'More conversation decks'})
+  ).not.toHaveAttribute('open', '')
 })
 
 test('keeps the optional deck link away from the question on a narrow landscape viewport', async ({
