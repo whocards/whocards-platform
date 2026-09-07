@@ -1,14 +1,22 @@
 ---
 import {Icon} from 'astro-icon/components'
+import {Image} from 'astro:assets'
+import bgLeftImage from '~assets/images/bg-left-large.svg'
+import bgRightImage from '~assets/images/bg-right-large.svg'
 import PreorderSection from '~components/Purchase/PreorderSection.astro'
+import PreorderSectionImage from '~components/Purchase/PreorderSectionImage.astro'
 import Button from '~components/ui/Button.astro'
+import ImagePlaceholder from '~components/ui/ImagePlaceholder.astro'
+import QuestionCard from '~components/ui/QuestionCard.astro'
 import Layout from '~layouts/Layout.astro'
 
 // "The Third Relationship" — a free, facilitated prototype for teams, run
 // jointly by Inner Mastery Lab (Tamas) and WhoCards. Cards from the AI
 // Check-In deck open the room; a facilitated conversation goes where it's
-// hardest. Copy came from Tamas; layout follows docs/DESIGN.md and the
-// /ai-at-work page (same eyebrow → title → copy → one primary action rhythm).
+// hardest. Copy came from Tamas; layout mirrors the homepage: alternating
+// image/text sections (PreorderSectionImage), full-width grids, and the
+// same closing CTA block with fanned cards. Photos are ImagePlaceholders
+// until we have real ones — swap each for <RoundedImage src alt>.
 
 const deckHref = '/play/ai-at-work'
 
@@ -76,15 +84,32 @@ const audiences = [
 const people = [
   {
     name: 'Tamas Meszaros',
+    initials: 'TM',
     role: 'Founder, Inner Mastery Lab',
     bio: 'I built the first legal-documentation automation system inside Morgan Stanley before "AI coaching" was a category anyone had named. I\'ve spent the fifteen years since learning that the infrastructure that actually determines whether a team holds together isn\'t the technical kind. I coach senior leaders and founders on exactly this gap — and this prototype is where that work meets the newest relationship any of us have had to build.',
   },
   {
     name: 'Avi',
+    initials: 'A',
     role: 'Founder, WhoCards',
     bio: 'WhoCards exists because nobody owns the space where a team talks honestly — the fear, the identity questions, the trust gaps that block real change. I built the AI Check-In deck to give a room the ritual it needs to get past "what do you do?" and toward what\'s actually going on. This prototype is that ritual, aimed at the relationship your team hasn\'t named yet.',
   },
 ]
+
+const steps = [
+  {
+    icon: 'card',
+    accent: 'primary-light',
+    title: 'Open',
+    body: 'We draw from real questions, one at a time, answered out loud — not an icebreaker, the capacity-building part itself.',
+  },
+  {
+    icon: 'chat',
+    accent: 'primary-dark',
+    title: 'Go there',
+    body: "Tamas facilitates the conversation the cards opened the door to — where AI is amplifying each person, where it's covering for a blind spot, where the team's real disagreements have been going underground. The same craft as a hard conversation between two people, because that's what it is.",
+  },
+] as const
 ---
 
 <Layout
@@ -92,44 +117,60 @@ const people = [
   description='A free, facilitated experience for teams navigating their relationship with AI — WhoCards to open the room, then the harder conversation. A handful of teams this round.'
   class='scrollbar-hide'
 >
-  <!-- 1. HERO -->
-  <section
-    class='relative flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col items-center justify-center gap-6 px-8 text-center lg:gap-8'
+  <!-- 1. HERO — same bones as the homepage hero: title, lede, two buttons, scroll arrow -->
+  <div
+    class='relative flex h-[calc(100vh-4rem)] w-full max-w-5xl flex-col justify-center gap-4 px-8 md:pb-16 lg:items-center lg:gap-5'
   >
     <h3
-      class='text-sm font-semibold uppercase leading-snug tracking-wide text-primary-dark lg:text-base'
+      class='text-center text-sm font-semibold uppercase leading-snug tracking-wide text-primary-dark lg:text-base'
     >
       Inner Mastery Lab × WhoCards · free prototype
     </h3>
-    <h1 class='font-title text-4xl font-bold leading-tight text-white lg:text-7xl lg:leading-tight'>
-      Your team already has a relationship with AI. Nobody's <span class='text-gradient'>aware</span
+    <h1
+      class='text-center font-title text-4xl font-bold leading-10 text-white xs:text-3xl lg:text-7xl lg:leading-20'
+    >
+      Your team already has a relationship with AI.<br />Nobody's <span class='text-gradient'
+        >aware</span
       > of it.
     </h1>
-    <p class='max-w-2xl text-sm font-semibold leading-7 lg:text-lg'>
+    <p
+      class='pb-2 text-center text-sm font-semibold leading-7 xs:leading-normal lg:px-10 lg:text-lg'
+    >
       A facilitated experience — cards first, then the harder conversation — for teams navigating
       the newest relationship in the room, before it quietly reshapes all the others.
     </p>
-    <div class='w-full max-w-xs pt-2'>
+    <div
+      class='mx-auto grid w-full grid-flow-row gap-8 py-5 md:max-w-xl md:grid-flow-col md:grid-cols-2 lg:pt-8'
+    >
       <Button tag='a' href={applyHref} size='lg' full hideIcon>Apply for a slot</Button>
+      <Button tag='a' href='/ai-at-work' full hideIcon variant='secondary'
+        >Try the AI Check-In</Button
+      >
     </div>
-    <p class='text-xs text-gray-dark'>Free. One 2–3 hour session. A handful of teams this round.</p>
+    <p class='text-center text-xs text-gray-dark'>
+      Free. One 2–3 hour session. A handful of teams this round.
+    </p>
     <div class='absolute bottom-5 left-0 right-0 grid place-items-center'>
       <a
-        href='#the-relationship-nobody-is-counting'
+        href="#what's-actually-happening"
         class='scale-150 border-0 border-x-8 border-t-8 border-solid border-x-transparent border-t-primary-light transition-transform hover:scale-[2]'
         aria-label='Scroll to learn more'
       >
       </a>
     </div>
-  </section>
+  </div>
 
-  <!-- 2. DIAGRAM -->
-  <section id='the-relationship-nobody-is-counting' class='w-full px-5 pt-16 lg:max-w-7xl xl:px-0'>
+  <!-- 2. WHAT'S HAPPENING — diagram left, copy right (homepage "why?" layout) -->
+  <PreorderSectionImage subtitle="what's actually happening">
+    <Fragment slot='title'>
+      Everyone's building a <span class='text-primary-dark'>different relationship</span> with the same
+      machine.
+    </Fragment>
     <div
-      class='mx-auto flex max-w-3xl flex-col items-center gap-6 rounded-3xl border border-gray-dark bg-background px-6 py-10 lg:px-12 lg:py-14'
+      class='flex h-full w-full flex-col items-center justify-center gap-8 rounded-[1.25rem] border border-gray-dark bg-background px-6 py-10 lg:px-10 lg:py-14'
     >
       <svg
-        class='w-full max-w-[400px]'
+        class='w-full max-w-lg'
         viewBox='0 0 400 170'
         xmlns='http://www.w3.org/2000/svg'
         role='img'
@@ -206,40 +247,36 @@ const people = [
         holding how those interconnect. That's factorial growth, managed by nobody.
       </p>
     </div>
-  </section>
-
-  <!-- 3. WHAT'S HAPPENING -->
-  <PreorderSection subtitle="what's actually happening">
-    <Fragment slot='title'>
-      Everyone's building a <span class='text-primary-dark'>different relationship</span> with the same
-      machine.
-    </Fragment>
-    <div class='flex max-w-3xl flex-col gap-5'>
+    <Fragment slot='image-description'>
       <p class='text-base leading-7 text-white lg:text-lg'>
         Which sides of you get amplified. Who you are in that exchange. What you ask it, what you
         never ask it, what you quietly leave out. Every person on your team is answering these
         differently, alone, and nobody's comparing notes.
       </p>
-      <p class='text-sm leading-snug text-gray-dark lg:text-base'>
+      <p class='pb-2 text-sm leading-snug text-gray-dark lg:max-w-3xl lg:text-lg lg:tracking-tight'>
         We keep treating this as an adoption problem — rollout, training, prompting technique. It
         isn't. It's a <strong class='font-semibold text-white'>relational</strong> one. And it's already
         shaping how your team makes decisions, gives feedback, and shows up for each other — whether or
         not anyone's named it out loud.
       </p>
-    </div>
-  </PreorderSection>
+    </Fragment>
+  </PreorderSectionImage>
 
-  <!-- 4. WHY IT MATTERS -->
-  <PreorderSection subtitle='why it matters'>
+  <!-- 3. WHY IT MATTERS — copy left, photo right (homepage "our story" layout) -->
+  <PreorderSectionImage subtitle='why it matters' reverse>
     <Fragment slot='title'>
       Friction isn't the problem. The <span class='text-primary-light'>absence of it</span> is.
     </Fragment>
-    <div class='flex max-w-3xl flex-col gap-5'>
+    <ImagePlaceholder
+      label='A team mid-conversation around one table — nobody looking at a screen'
+      class='lg:aspect-auto lg:h-full'
+    />
+    <Fragment slot='image-description'>
       <p class='text-base leading-7 text-white lg:text-lg'>
         Teams don't fail because people disagree. They fail because disagreement has nowhere safe to
         go — so it goes underground, into bubbles, into silence.
       </p>
-      <p class='text-sm leading-snug text-gray-dark lg:text-base'>
+      <p class='text-sm leading-snug text-gray-dark lg:max-w-3xl lg:text-lg lg:tracking-tight'>
         Add an AI relationship nobody's talking about, and you get a new version of an old failure:
         someone's output looks strange, and instead of curiosity — <em
           >how are you using this thing?</em
@@ -250,210 +287,245 @@ const people = [
       >
         The gap isn't skill. It's that the relationship behind the work was never made visible.
       </blockquote>
-      <p class='text-sm leading-snug text-gray-dark lg:text-base'>
+      <p class='pb-2 text-sm leading-snug text-gray-dark lg:max-w-3xl lg:text-lg lg:tracking-tight'>
         The goal isn't for everyone to use AI the same way. It's to bring what's actually different
         to the same table.
       </p>
-    </div>
-  </PreorderSection>
+    </Fragment>
+  </PreorderSectionImage>
 
-  <!-- 5. THE EXPERIENCE -->
+  <!-- 4. THE EXPERIENCE — two-step timeline (homepage "how to play" rings), cards, now/next, specs + photo -->
   <PreorderSection subtitle='the experience' class='w-full'>
     <Fragment slot='title'>
       Cards to open the room. Conversation to <span class='text-primary-dark'
         >go where it's hardest</span
       >.
     </Fragment>
-    <div class='flex flex-col gap-8 lg:gap-10'>
-      <p class='max-w-3xl text-sm leading-snug text-gray-dark lg:text-base'>
+    <div class='flex flex-col gap-10 lg:gap-14'>
+      <p class='max-w-3xl text-sm leading-snug text-gray-dark lg:text-lg lg:tracking-tight'>
         This isn't a training or a tool demo. It's a capacity experience — the somatic groundwork
         that makes it possible for a room to say the true thing, followed by the conversation that
         groundwork was for.
       </p>
 
-      <!-- Phase 1 — open with real Cards from the AI Check-In deck -->
-      <div class='flex flex-col gap-4'>
-        <h3 class='flex items-center gap-3 text-base font-semibold text-primary-light lg:text-lg'>
-          <span
-            class='grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary-light font-sans text-sm font-bold text-dark'
-            aria-hidden='true'>1</span
-          >
-          Open — WhoCards'
-          <a
-            href='/ai-at-work'
-            class='underline underline-offset-4 transition-colors hover:text-primary-light'
-            >AI Check-In deck</a
-          >
-        </h3>
-        <p class='max-w-3xl text-sm leading-snug text-gray-dark lg:text-base'>
-          We draw from real questions, one at a time, answered out loud — not an icebreaker, the
-          capacity-building part itself.
-        </p>
-        <ul class='flex w-full flex-row gap-4 overflow-x-auto pt-2 scrollbar-hide snap-x lg:gap-6'>
-          {
-            openingCards.map((card) => (
-              <li class='snap-start'>
-                <a
-                  href={`${deckHref}?q=${card.id}`}
-                  class='block h-[225px] w-[165px] min-w-[165px] rounded-t-xl bg-gradient-to-br from-gray-light to-dark to-70% pl-[0.5px] pt-[0.5px] transition-transform hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light lg:h-[22.5rem] lg:w-[16.5rem] lg:min-w-[16.5rem]'
-                  aria-label={`Open this Question in the AI Check-In deck: ${card.text}`}
-                >
-                  <span class='relative block h-full w-full overflow-hidden rounded-t-xl bg-dark'>
-                    <Icon name='pattern-card' class='absolute -top-4 right-0 bottom-0' />
-                    <span lang='en' class='block p-6 text-sm font-bold text-white lg:text-xl'>
-                      {card.text}
-                    </span>
-                    <span
-                      class='absolute right-5 bottom-5 font-title text-3xl font-bold text-primary-dark lg:right-6 lg:bottom-10 lg:text-5xl'
-                      aria-hidden='true'
-                    >
-                      ?
-                    </span>
-                  </span>
-                </a>
-              </li>
-            ))
-          }
-        </ul>
-      </div>
-
-      <!-- Phase 2 — the facilitated conversation -->
-      <div class='flex max-w-3xl flex-col gap-4'>
-        <h3 class='flex items-center gap-3 text-base font-semibold text-primary-dark lg:text-lg'>
-          <span
-            class='grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary-dark font-sans text-sm font-bold text-white'
-            aria-hidden='true'>2</span
-          >
-          Go there — the facilitated conversation
-        </h3>
-        <p class='text-sm leading-snug text-gray-dark lg:text-base'>
-          Tamas facilitates the conversation the cards opened the door to — where AI is amplifying
-          each person, where it's covering for a blind spot, where the team's real disagreements
-          have been going underground. The same craft as a hard conversation between two people,
-          because that's what it is.
-        </p>
-      </div>
-
-      <!-- Now / next -->
-      <div class='grid gap-4 lg:grid-cols-2 lg:gap-6'>
-        <div class='rounded-3xl border border-gray-dark bg-background p-6 lg:p-8'>
-          <h4 class='mb-4 text-sm font-semibold uppercase tracking-wide text-gray-dark'>
-            Where teams are now
-          </h4>
-          <ul class='divide-y divide-gray-light'>
-            {now.map((item) => <li class='py-3 text-sm text-gray-dark lg:text-base'>{item}</li>)}
-          </ul>
-        </div>
-        <div class='rounded-3xl border border-primary-dark/60 bg-background p-6 lg:p-8'>
-          <h4 class='mb-4 text-sm font-semibold uppercase tracking-wide text-primary-dark'>
-            What one conversation surfaces
-          </h4>
-          <ul class='divide-y divide-gray-light'>
-            {next.map((item) => <li class='py-3 text-sm text-white lg:text-base'>{item}</li>)}
-          </ul>
-        </div>
-      </div>
-
-      <!-- Specs -->
-      <dl
-        class='max-w-3xl divide-y divide-gray-light rounded-3xl border border-gray-dark bg-background px-6 lg:px-8'
-      >
+      <div class='flex flex-col'>
         {
-          specs.map((row) => (
-            <div class='grid gap-1 py-4 sm:grid-cols-[8rem_1fr] sm:gap-6'>
-              <dt class='text-xs font-semibold uppercase tracking-wide text-gray-dark sm:pt-1'>
-                {row.k}
-              </dt>
-              <dd class='text-sm text-white lg:text-base'>
-                {row.v}
-                {row.dim && <span class='text-gray-dark'>{row.dim}</span>}
-              </dd>
+          steps.map((step, index) => (
+            <div class='flex gap-4 lg:gap-6'>
+              <div class='flex flex-col items-center'>
+                <div
+                  class='relative z-10 flex h-10 w-10 items-center justify-center lg:h-14 lg:w-14'
+                  class:list={[index === 0 ? 'text-primary-light' : 'text-primary-dark']}
+                >
+                  <Icon
+                    name='usage-ring'
+                    class='absolute inset-0 h-full w-full'
+                    class:list={[index === 0 ? 'stroke-primary-light' : 'stroke-primary-dark']}
+                    aria-hidden='true'
+                  />
+                  <Icon name={step.icon} class='relative z-10 h-[23px] w-[23px] lg:h-8 lg:w-8' />
+                </div>
+                {index < steps.length - 1 && (
+                  <div class='relative z-0 -mt-[1px] w-0.5 flex-1 bg-dark' aria-hidden='true' />
+                )}
+              </div>
+              <div class='flex min-w-0 flex-1 flex-col gap-3 pb-12 lg:pb-16'>
+                <h3 class='text-lg font-semibold leading-7 lg:text-2xl lg:leading-normal'>
+                  {step.title} —{' '}
+                  {index === 0 ? (
+                    <>
+                      WhoCards'{' '}
+                      <a
+                        href='/ai-at-work'
+                        class='underline underline-offset-4 transition-colors hover:text-primary-light'
+                      >
+                        AI Check-In deck
+                      </a>
+                    </>
+                  ) : (
+                    'the facilitated conversation'
+                  )}
+                </h3>
+                <p class='max-w-3xl text-sm leading-snug text-gray-dark lg:text-lg lg:tracking-tight'>
+                  {step.body}
+                </p>
+                {index === 0 && (
+                  <ul class='-mx-5 flex w-[calc(100%+2.5rem)] flex-row gap-4 overflow-x-auto px-5 pt-4 scrollbar-hide snap-x lg:mx-0 lg:w-full lg:gap-6 lg:px-0'>
+                    {openingCards.map((card) => (
+                      <li class='snap-start'>
+                        <QuestionCard
+                          text={card.text}
+                          href={`${deckHref}?q=${card.id}`}
+                          ariaLabel={`Open this Question in the AI Check-In deck: ${card.text}`}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {index === 1 && (
+                  <div class='grid gap-4 pt-4 lg:grid-cols-2 lg:gap-6'>
+                    <div class='rounded-3xl border border-gray-dark bg-background p-6 lg:p-8'>
+                      <h4 class='mb-4 text-sm font-semibold uppercase tracking-wide text-gray-dark'>
+                        Where teams are now
+                      </h4>
+                      <ul class='divide-y divide-gray-light'>
+                        {now.map((item) => (
+                          <li class='py-3 text-sm text-gray-dark lg:text-base'>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div class='rounded-3xl border border-primary-dark/60 bg-background p-6 lg:p-8'>
+                      <h4 class='mb-4 text-sm font-semibold uppercase tracking-wide text-primary-dark'>
+                        What one conversation surfaces
+                      </h4>
+                      <ul class='divide-y divide-gray-light'>
+                        {next.map((item) => (
+                          <li class='py-3 text-sm text-white lg:text-base'>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           ))
         }
-      </dl>
+      </div>
+
+      <!-- Specs next to a photo of the room -->
+      <div class='grid gap-4 lg:grid-cols-2 lg:gap-6'>
+        <dl
+          class='divide-y divide-gray-light rounded-3xl border border-gray-dark bg-background px-6 lg:px-8'
+        >
+          {
+            specs.map((row) => (
+              <div class='grid gap-1 py-4 sm:grid-cols-[8rem_1fr] sm:gap-6 lg:py-5'>
+                <dt class='text-xs font-semibold uppercase tracking-wide text-gray-dark sm:pt-1'>
+                  {row.k}
+                </dt>
+                <dd class='text-sm text-white lg:text-base'>
+                  {row.v}
+                  {row.dim && <span class='text-gray-dark'>{row.dim}</span>}
+                </dd>
+              </div>
+            ))
+          }
+        </dl>
+        <ImagePlaceholder
+          label='The room — cards on the table, a session in progress'
+          class='lg:aspect-auto lg:h-full lg:min-h-[20rem]'
+        />
+      </div>
     </div>
   </PreorderSection>
 
-  <!-- 6. WHO THIS IS FOR -->
-  <PreorderSection subtitle='who this is for'>
+  <!-- 5. WHO THIS IS FOR — three-up grid, like the homepage "what is whocards?" row -->
+  <PreorderSection subtitle='who this is for' class='w-full'>
     <Fragment slot='title'>
       Teams led by someone who <span class='text-primary-light'>already feels the gap</span>.
     </Fragment>
-    <div class='flex max-w-3xl flex-col gap-6'>
-      <ol class='flex flex-col gap-3'>
-        {
-          audiences.map((text, i) => (
-            <li class='flex gap-4 rounded-2xl border border-gray-dark bg-background px-5 py-4 lg:px-6 lg:py-5'>
-              <span class='shrink-0 pt-0.5 font-title text-lg font-bold text-primary-dark'>
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <p class='text-sm leading-snug text-gray-dark lg:text-base'>{text}</p>
-            </li>
-          ))
-        }
-      </ol>
-    </div>
+    <ol class='grid gap-4 lg:grid-cols-3 lg:gap-6'>
+      {
+        audiences.map((text, i) => (
+          <li class='flex flex-col gap-3 rounded-3xl border border-gray-dark bg-background p-6 lg:p-8'>
+            <span class='font-title text-3xl font-bold text-primary-dark lg:text-4xl'>
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <p class='text-sm leading-snug text-gray-dark lg:text-base'>{text}</p>
+          </li>
+        ))
+      }
+    </ol>
   </PreorderSection>
 
-  <!-- 7. WHO'S ASKING -->
-  <PreorderSection subtitle="who's asking" title='Two founders, one prototype.'>
+  <!-- 6. WHO'S ASKING — two founder cards with photo placeholders -->
+  <PreorderSection subtitle="who's asking" title='Two founders, one prototype.' class='w-full'>
     <div class='grid gap-4 lg:grid-cols-2 lg:gap-6'>
       {
         people.map((person) => (
-          <div class='flex gap-5 rounded-3xl border border-gray-dark bg-background p-6 lg:p-8'>
-            <span
-              class='mt-1 h-11 w-11 shrink-0 rounded-xl bg-gradient-primary'
-              aria-hidden='true'
-            />
-            <div class='flex flex-col gap-1'>
-              <h3 class='font-title text-xl font-bold text-white'>{person.name}</h3>
-              <p class='mb-3 text-sm text-gray-dark'>{person.role}</p>
-              <p class='text-sm leading-snug text-gray-dark lg:text-base'>{person.bio}</p>
+          <div class='flex flex-col gap-5 rounded-3xl border border-gray-dark bg-background p-6 lg:p-8'>
+            <div class='flex items-center gap-4'>
+              <ImagePlaceholder
+                label={`Portrait of ${person.name}`}
+                shape='circle'
+                initials={person.initials}
+                class='h-14 w-14 lg:h-16 lg:w-16'
+              />
+              <div class='flex flex-col gap-0.5'>
+                <h3 class='font-title text-xl font-bold text-white lg:text-2xl'>{person.name}</h3>
+                <p class='text-sm text-gray-dark'>{person.role}</p>
+              </div>
             </div>
+            <p class='text-sm leading-snug text-gray-dark lg:text-base'>{person.bio}</p>
           </div>
         ))
       }
     </div>
   </PreorderSection>
 
-  <!-- 8. APPLY -->
-  <div class='w-full px-5 pb-12 pt-8 lg:max-w-7xl xl:px-0'>
+  <!-- 7. APPLY — the homepage's closing block: pattern backdrop, gradient title, fanned cards -->
+  <div class='w-full px-5 pb-12 pt-8 lg:min-h-[80vh] lg:max-w-7xl xl:px-0'>
     <div
-      class='relative flex flex-col items-center overflow-hidden rounded-3xl border border-gray-dark bg-background px-5 py-16 text-center lg:gap-5'
+      class='relative flex items-center overflow-hidden rounded-3xl border border-gray-dark bg-background pt-16'
     >
       <Icon name='pattern-mobile' class='absolute left-0 right-0 top-0 lg:hidden' />
-      <h3
-        class='text-sm font-semibold uppercase leading-snug tracking-wide text-primary-dark lg:text-base'
-      >
-        Apply
-      </h3>
-      <h2
-        class='text-gradient px-5 pt-3 text-center font-title text-4xl font-extrabold leading-10 lg:text-[54px] lg:leading-normal'
-      >
-        Bring your team to the table.
-      </h2>
-      <p
-        class='max-w-xl px-5 pb-8 pt-5 text-center text-sm leading-snug lg:max-w-3xl lg:text-lg lg:leading-normal'
-      >
-        Tell us a little about your team and what you're noticing about how AI is showing up in it.
-        We'll get back to you within a few days.
-      </p>
-      <span class='px-5'>
-        <Button tag='a' href={applyHref} size='lg' hideIcon>Apply for a slot</Button>
-      </span>
-      <p class='max-w-md px-5 pt-6 text-xs leading-snug text-gray-dark lg:text-sm'>
-        <strong class='font-semibold text-white'>What to include:</strong> your team, your role, roughly
-        how many people, and one honest sentence about what you're noticing about AI on your team right
-        now.
-      </p>
-      <p class='px-5 pt-4 text-xs text-gray-dark lg:text-sm'>
-        Not ready for a facilitated session? <a
-          href='/ai-at-work'
-          class='font-semibold text-primary-dark underline underline-offset-4 transition-colors hover:text-primary-light'
-          >Run the free 20-minute AI Check-In</a
-        > with your team first.
-      </p>
+      <Image
+        src={bgRightImage}
+        class='absolute right-0 top-0 -mr-[10%] hidden h-[110%] lg:block'
+        alt='background'
+      />
+      <Image
+        src={bgLeftImage}
+        class='absolute left-0 top-0 -ml-[10%] hidden h-[110%] lg:block'
+        alt='background'
+      />
+      <div class='flex h-full flex-1 flex-col lg:items-center lg:gap-5'>
+        <h3
+          class='px-5 text-center text-sm font-semibold uppercase leading-snug tracking-wide text-primary-dark lg:text-base'
+        >
+          Apply
+        </h3>
+        <h2
+          class='text-gradient px-5 pt-3 text-center font-title text-4xl font-extrabold leading-10 lg:text-[54px] lg:leading-normal'
+        >
+          Bring your team to the table.
+        </h2>
+        <p
+          class='max-w-xl self-center px-5 pb-8 pt-5 text-center text-sm leading-snug lg:max-w-3xl lg:text-lg lg:leading-normal'
+        >
+          Tell us a little about your team and what you're noticing about how AI is showing up in
+          it. We'll get back to you within a few days.
+        </p>
+        <span class='self-center px-5'>
+          <Button tag='a' href={applyHref} size='lg' hideIcon>Apply for a slot</Button>
+        </span>
+        <p
+          class='max-w-md self-center px-5 pt-6 text-center text-xs leading-snug text-gray-dark lg:text-sm'
+        >
+          <strong class='font-semibold text-white'>What to include:</strong> your team, your role, roughly
+          how many people, and one honest sentence about what you're noticing about AI on your team right
+          now.
+        </p>
+        <div
+          class='mx-auto mt-auto flex h-60 w-full items-end justify-center overflow-hidden pt-6 lg:h-96'
+          aria-hidden='true'
+        >
+          <div class='relative w-[165px] lg:w-[16.5rem]'>
+            <QuestionCard
+              text={openingCards[1].text}
+              class='absolute -bottom-8 left-0 right-0 z-10 mx-auto shadow-xl shadow-darker'
+            />
+            <QuestionCard
+              text={openingCards[0].text}
+              class='absolute -bottom-16 -left-36 -rotate-12 lg:-bottom-24 lg:-left-60'
+            />
+            <QuestionCard
+              text={openingCards[2].text}
+              class='absolute -bottom-16 -right-36 rotate-12 lg:-bottom-24 lg:-right-60'
+            />
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </Layout>

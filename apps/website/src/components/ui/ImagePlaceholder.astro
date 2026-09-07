@@ -1,0 +1,65 @@
+---
+import {Icon} from 'astro-icon/components'
+
+// Stand-in for a photo that hasn't been shot/picked yet. Same radius and
+// sizing behaviour as RoundedImage so swapping in the real image is a
+// one-line change: replace <ImagePlaceholder> with <RoundedImage src alt>.
+// `initials` renders a compact avatar (use with shape='circle').
+export type Props = {
+  label: string
+  aspect?: 'landscape' | 'portrait' | 'square'
+  shape?: 'rounded' | 'circle'
+  initials?: string
+  class?: string
+}
+
+const {label, aspect = 'landscape', shape = 'rounded', initials, class: classes} = Astro.props
+
+const aspectClass = {
+  landscape: 'aspect-[4/3]',
+  portrait: 'aspect-[3/4]',
+  square: 'aspect-square',
+}[aspect]
+---
+
+<figure
+  data-image-placeholder
+  role='img'
+  aria-label={`Image placeholder: ${label}`}
+  class='relative flex items-center justify-center overflow-hidden border border-dashed border-gray-light bg-dark text-center'
+  class:list={[
+    shape === 'circle' ? 'rounded-full' : 'rounded-[1.25rem]',
+    initials ? 'shrink-0' : aspectClass,
+    classes,
+  ]}
+>
+  {
+    initials ? (
+      <span class='font-title text-lg font-bold text-primary-dark' aria-hidden='true'>
+        {initials}
+      </span>
+    ) : (
+      <>
+        <Icon name='pattern-card' class='absolute -top-4 right-0 opacity-70' aria-hidden='true' />
+        <span class='relative z-10 flex max-w-xs flex-col items-center gap-2 px-6'>
+          <svg
+            viewBox='0 0 24 24'
+            class='h-8 w-8 stroke-gray-dark'
+            fill='none'
+            stroke-width='1.5'
+            stroke-linecap='round'
+            stroke-linejoin='round'
+            aria-hidden='true'
+          >
+            <path d='M4 8h3l2-3h6l2 3h3v11H4z' />
+            <circle cx='12' cy='13' r='3.5' />
+          </svg>
+          <span class='text-[11px] font-semibold uppercase tracking-wide text-gray-dark'>
+            Image placeholder
+          </span>
+          <span class='text-sm leading-snug text-gray-lighter lg:text-base'>{label}</span>
+        </span>
+      </>
+    )
+  }
+</figure>
