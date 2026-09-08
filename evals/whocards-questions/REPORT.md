@@ -43,7 +43,7 @@ Count passed in 19/20 responses; requested format passed in 20/20. I judged 3/20
 
 **The deck and calibration can attract imitation.** Both offsite runs generated essentially the same advice question, close to pool #46. One also echoed the teamwork and surprising-fact cards (#39 and #63). One parenting-learning question follows the calibration phrase about learning to trust a child closely. Both partner-dinner runs converged on home; that is thematic overlap with pool #23, rather than automatically an exact or semantic duplicate.
 
-**Surface variety is insufficient.** Both offsite sets begin five cards with “What is a”. More seriously, the year-reflection sets repeatedly ask for changes or revelations even while varying their openings. The specific “Is there” repetition did not recur, but the underlying tendency toward templates remains.
+**Surface variety is insufficient.** Both offsite sets lean on one opening: three cards in one and four in the other begin “What is a”, six and seven begin “What is”. More seriously, the year-reflection sets repeatedly ask for changes or revelations even while varying their openings. The specific “Is there” repetition did not recur, but the underlying tendency toward templates remains.
 
 **There are useful candidates.** These unedited outputs show the direction worth preserving:
 

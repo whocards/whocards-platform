@@ -2,11 +2,11 @@
 
 Recorded runs, newest first:
 
-- [Maintainer taste test · 2026-09-08](REPORT-2026-09-08-maintainer.md) — 21/25 reviewed items rated 4 or 5; five unrated. Human taste calibration and single-question follow-up.
-- [Claude Haiku 4.5 · 2026-09-08](REPORT-2026-09-08-haiku.md) — same skill bytes, same scenarios, different model. Better cards, worse counting: plural asks for a group setting returned one card.
+- [Maintainer taste test · 2026-09-08](REPORT-2026-09-08-maintainer.md) — 21/25 reviewed items rated 4 or 5; five unrated. Human taste calibration, plus a four-request [single-question check](results/2026-09-08-single-question-check.json) against the v0.1 instructions.
+- [Claude Haiku 4.5 · 2026-09-08](REPORT-2026-09-08-haiku.md) — same skill bytes and scenarios as the baseline, different model, but also a different vendor, harness and reasoning setting. Better cards, worse counting: all four count failures were plural asks for a group setting.
 - [gpt-5.6-luna baseline · 2026-09-08](REPORT.md) — the first recorded run.
 
-Each report links its preserved raw results.
+Each report links its preserved raw results and states its own limits. Each archive freezes the skill bytes it actually ran against. The three ten-scenario runs all predate the current `SKILL.md`: the delivery and writing-prompt rules changed after the maintainer test, so their numbers describe earlier instructions. Only the four-request single-question check ran against the v0.1 bytes, and four responses establish delivery, not reliability.
 
 Test the skill's first response separately from any later editorial revision. The earlier successful Luna batch had several review rounds; it is evidence for that workflow, not an unaided first-pass success rate.
 
@@ -51,11 +51,12 @@ For an authenticated Claude Code CLI, a fresh non-interactive session can run an
 # Disabling skills, settings and MCP keeps the bundled skill in the job file the
 # only WhoCards guidance in the session.
 run_dir=/absolute/path/to/whocards/experiments/whocards-questions/run-01
+mkdir -p "$run_dir/raw-json"   # prepare-run.mjs creates snapshot/, jobs/ and responses/ only
 claude -p --model MODEL_ID --restricted --disable-slash-commands --strict-mcp-config \
   --output-format json < "$run_dir/jobs/A-1.txt" > "$run_dir/raw-json/A-1.json"
 ```
 
-Read the response from the JSON `result` field. Do not capture plain stdout with shell redirection:
+Read the response from the JSON `result` field and save it to `responses/JOB_ID.txt`. Do not capture plain stdout with shell redirection:
 the CLI rewrites the file from the start with its final message, which can leave the tail of a
 longer draft after the real answer. That corrupted a whole batch once; see the discarded attempt in
 the [Haiku 4.5 report](REPORT-2026-09-08-haiku.md). Generation on a Claude subscription consumes

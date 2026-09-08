@@ -12,7 +12,8 @@ contract, not the writing.
 
 ## What was tested
 
-Twenty fresh sessions, two independent samples for each of the ten scenarios in `prompts.json`.
+Twenty fresh sessions, two independent samples for each of the ten scenarios then in
+`prompts.json` (A–J; K–M were added after this run, and the archive freezes the ten it used).
 Each session received the frozen skill, its two references and the bundled English pool inline, and
 nothing else: skills, user and project settings, and MCP servers were all disabled, and every job
 ran from an empty directory outside the checkout. No conversation history, no reviewer feedback, no
@@ -55,14 +56,16 @@ a live group setting failed both samples:
 Every scenario that names its number passed both samples, including G, where "a question for the
 table" correctly stayed at one.
 
-The four failing responses say why. Each one delivers a recommendation rather than a set: "Top
-recommendation", "Best choice", "Strongest opener", "here's my recommendation". That is the skill's
+The four failing responses say why. Each one delivers a pick rather than a set: "Top
+recommendation" (B-1), "here's my recommendation" (B-2), "Strongest opener" (E-1), "here's a strong
+baseline" (E-2). That is the skill's
 own shortlisting instruction — _"Shortlist several, then give the best one"_ — leaking out of the
 drafting step and into the delivery. When the audience is a room of people, this model reads the
 request as _help me pick a question_ instead of _give me a set_, and the conditional plural default
 never gets applied.
 
-Two of the four also opened by asking the user what tone or how many questions they wanted, which
+Two of the four also asked the user what tone or how many questions they wanted — E-2 before
+delivering anything, B-2 after its card — which
 the skill permits only when the missing context would change whether the questions suit the people
 at the table. A request naming colleagues, an offsite and an icebreaker is not that case.
 

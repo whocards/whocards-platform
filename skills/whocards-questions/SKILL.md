@@ -1,6 +1,6 @@
 ---
 name: whocards-questions
-description: Write or revise WhoCards questions and reflective writing prompts for a frame that combines topic, time, situation, intention, audience, and format. Use when the user wants an insightful or thought-provoking question for a conversation, a check-in, a journal, or a writing prompt.
+description: Writes or revises WhoCards questions and reflective writing prompts for a frame that combines topic, time, situation, intention, audience, and format. Use when the user wants an insightful or thought-provoking question or conversation starter for a conversation, a check-in, a deck or set, an icebreaker, a journal, or a writing prompt.
 license: MIT
 metadata:
   version: '0.1'
@@ -15,7 +15,7 @@ Invite honest self-expression, active listening, and connection. A good question
 
 Read [references/mission.md](references/mission.md) for what the questions serve, then [references/editorial-calibration.md](references/editorial-calibration.md) for worked examples and the maintainer's editorial taste.
 
-Check candidates against the existing deck in [assets/pool-en.json](assets/pool-en.json), the English pool that ships with this skill. If the working directory contains `packages/decks/src/pool/questions.json`, read that instead; it is authoritative and may be newer. For a named deck, another language, or a list the user supplies, use that content too.
+Check candidates against the existing deck in [assets/pool-en.json](assets/pool-en.json), the English pool that ships with this skill. If the working directory contains `packages/decks/src/pool/questions.json`, that file is authoritative and may be newer; extract just the language you are working in rather than reading the whole multilingual file. For English: `node -e "const p=require('./packages/decks/src/pool/questions.json'); for (const [id, q] of Object.entries(p)) console.log(id, JSON.stringify(q.en))"`. For a named deck, another language, or a list the user supplies, use that content too.
 
 ## Understand the frame
 

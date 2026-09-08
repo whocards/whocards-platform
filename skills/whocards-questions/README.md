@@ -30,7 +30,7 @@ Ask naturally, or explicitly invoke `whocards-questions` in an agent that suppor
 
 A **frame** is the combination of topic, time, situation, intention, audience, format, and setting. Supply whichever dimensions matter. New frames need no new files or registration. The examples illustrate dimensions; they do not limit the skill to those subjects.
 
-The default is one question, or ten for a set without a stated count. An explicit count and requested format take precedence.
+The default is one question, or ten for a plural ask or a deck, pack, or list with no stated count. A table is a setting, not a count: "questions for a team lunch" is still a plural ask, but "a question for the table" is one. An explicit count and requested format take precedence.
 
 ## What's included
 

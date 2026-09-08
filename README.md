@@ -33,7 +33,7 @@ automatically inside this checkout. To use one outside the repo (any agent suppo
 npx skills add whocards/whocards-platform --skill whocards-questions
 ```
 
-- **[whocards-questions](skills/whocards-questions/README.md)** — write or revise questions and writing prompts in the WhoCards voice. See its README for installation from this checkout and its [evaluation report](evals/whocards-questions/REPORT.md) for tested behavior.
+- **[whocards-questions](skills/whocards-questions/README.md)** — write or revise questions and writing prompts in the WhoCards voice. See its README for installation from this checkout and its [evals](evals/whocards-questions/README.md) for the scenarios, the review rubric, and the recorded runs.
 
 ## Toolchain
 

@@ -13,6 +13,24 @@ const runtimeFiles = [
   'assets/pool-en.json',
 ]
 
+// Job files are named from scenario IDs, so an ID must be a safe, unique filename
+// component. Check before anything is written: a partial run has no manifest and no
+// expectations, which makes the evidence it did write unusable.
+export function assertUsableScenarioIds(prompts) {
+  if (!Array.isArray(prompts) || prompts.length === 0) {
+    throw new Error('prompts.json must be a non-empty array of scenarios.')
+  }
+  const seen = new Set()
+  for (const scenario of prompts) {
+    const id = scenario?.id
+    if (typeof id !== 'string' || !/^[A-Za-z0-9_-]+$/.test(id)) {
+      throw new Error(`Scenario id must match [A-Za-z0-9_-]+; received ${JSON.stringify(id)}.`)
+    }
+    if (seen.has(id)) throw new Error(`Duplicate scenario id ${id}.`)
+    seen.add(id)
+  }
+}
+
 // Freeze exactly what the generator sees; keep reviewer expectations separate.
 export async function prepareRun(output, model, repeats = 1) {
   if (!model?.trim()) throw new Error('Supply the model identifier used for generation.')
@@ -21,6 +39,7 @@ export async function prepareRun(output, model, repeats = 1) {
   }
   const root = resolve(output)
   const prompts = JSON.parse(await readFile(join(evalRoot, 'prompts.json'), 'utf8'))
+  assertUsableScenarioIds(prompts)
   const files = await Promise.all(
     runtimeFiles.map(async (path) => ({
       path,

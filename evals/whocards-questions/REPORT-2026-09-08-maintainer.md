@@ -20,11 +20,11 @@ Luna: 13/15 reviewed; Sol: 8/10 reviewed. These are different frames and counts,
 - "What helps you feel comfortable speaking up" received 3/5 because it suggested discomfort. Avoid adding an unprovided deficit or struggle; do not impose a blanket ban on assumptions.
 - The theme-song question received 3/5: "what would it be?" is clearer than "what would you nominate?" The afternoon hypothetical received 4/5, with a preference for a direct "if" question over the "Imagine" setup.
 
-Avi also confirmed that the skill must supply the processing approach for a difficult-day request. The extra "without trying to solve it" qualifier has been removed from the active regression prompt. Historical requests and outputs remain unchanged. The dance and jungle cards have been removed as positive calibration examples; the actual deck and its complete duplicate-checking snapshot remain unchanged.
+Avi also confirmed that the skill must supply the processing approach for a difficult-day request. The extra "without trying to solve it" qualifier has been removed from the active regression prompt; the archived request and its outputs keep the original wording, and the five difficult-day items here were rated 5 without notes, so this change comes from the conversation rather than from a rating. The dance and jungle cards have been removed as positive calibration examples on separate evidence — neither appears in any frame rated here; the Haiku run reproduced the dance card verbatim. The actual deck and its complete duplicate-checking snapshot remain unchanged.
 
 ## Single-question follow-up
 
-Four fresh Luna agents (low reasoning) each received one bare request after the feedback edits, with no conversation history, candidate menu, or additional reviewer pass. The exact requests, snapshots, and raw responses are retained under ignored `experiments/whocards-questions/single-check-04/`.
+Four fresh Luna agents (low reasoning) each received one bare request after the feedback edits, with no conversation history, candidate menu, or additional reviewer pass. The requests, the frozen skill snapshot, and the raw responses are archived in [results/2026-09-08-single-question-check.json](results/2026-09-08-single-question-check.json). That snapshot is byte-identical to the shipped v0.1 skill except the `metadata.version` line added afterwards, so it is the only archived run here that exercises the current instructions.
 
 All four returned one card with a question and no process commentary. The difficult-day answer was "What part of today is still asking for your attention?" without an extra instruction from the user about avoiding solutions. The writing request produced a question rather than an instruction-only exercise.
 

@@ -4,7 +4,7 @@ import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {test} from 'node:test'
-import {prepareRun} from './prepare-run.mjs'
+import {assertUsableScenarioIds, prepareRun} from './prepare-run.mjs'
 
 await test('freezes repeatable inputs, withholds answers, and refuses to replace a run', async (t) => {
   const parent = await mkdtemp(join(tmpdir(), 'whocards-eval-test-'))
@@ -29,4 +29,14 @@ await test('freezes repeatable inputs, withholds answers, and refuses to replace
   assert.equal(await readFile(response, 'utf8'), 'original evidence')
   await assert.rejects(prepareRun(join(parent, 'invalid'), 'test-model', 0))
   await assert.rejects(prepareRun(join(parent, 'missing-model'), ''))
+})
+
+await test('rejects scenario ids that cannot safely name a job file', () => {
+  assertUsableScenarioIds([{id: 'A'}, {id: 'B-2'}, {id: 'c_3'}])
+  assert.throws(() => assertUsableScenarioIds([]), /non-empty array/)
+  assert.throws(() => assertUsableScenarioIds([{id: '../escaped'}]), /must match/)
+  assert.throws(() => assertUsableScenarioIds([{id: 'a/b'}]), /must match/)
+  assert.throws(() => assertUsableScenarioIds([{id: ''}]), /must match/)
+  assert.throws(() => assertUsableScenarioIds([{prompt: 'no id'}]), /must match/)
+  assert.throws(() => assertUsableScenarioIds([{id: 'A'}, {id: 'A'}]), /Duplicate scenario id A/)
 })
