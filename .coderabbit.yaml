@@ -1,0 +1,8 @@
+# CodeRabbit config — https://docs.coderabbit.ai/reference/configuration
+# PRs labelled `skip-pr-bots` opt out of automatic review (same label skips Greptile, see greptile.json).
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+    labels: ['!skip-pr-bots', '!dependencies', '!documentation']
+    ignore_usernames: ['dependabot[bot]']

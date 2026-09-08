@@ -119,7 +119,7 @@ Ranked plan:
 {
   "triggerOnDrafts": false,
   "triggerOnUpdates": false,
-  "disabledLabels": ["skip-greptile", "dependencies", "documentation"],
+  "disabledLabels": ["skip-pr-bots", "dependencies", "documentation"],
   "excludeAuthors": ["dependabot[bot]"],
   "ignorePatterns": "**/*.md\ndocs/**\npnpm-lock.yaml\n**/*.snap\n**/CHANGELOG.md",
   "strictness": 2
