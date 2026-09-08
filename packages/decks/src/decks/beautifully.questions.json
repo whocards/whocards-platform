@@ -1,0 +1,551 @@
+{
+  "1": {
+    "en": "What is the most interesting thing you have learnt recently?",
+    "de": "Was ist das Interessanteste, was du in letzter Zeit gelernt hast?",
+    "es": "¿Qué es lo más interesante que has aprendido recientemente?",
+    "fr": "Quelle est la chose la plus intéressante que vous ayez apprise récemment?",
+    "hu": "Mi a legérdekesebb dolog amit mostanában tanultál?",
+    "pt-br": "Qual a coisa mais interessante que você aprendeu recentemente?",
+    "pt": "Qual foi a coisa mais interessante que aprendeste recentemente?"
+  },
+  "2": {
+    "en": "What is something that has made you feel small?",
+    "de": "Wann hast du dich zuletzt klein gefühlt? Warum?",
+    "es": "¿Hay algo que te ha hecho sentir pequeñ@? ¿qué?",
+    "fr": "Qu'est-ce qui vous a déjà fait vous sentir minuscule ?",
+    "hu": "Mi az, amitől kicsinek érzed magad?",
+    "pt-br": "O que já te fez se sentir inferior?",
+    "pt": "O que é que já te fez sentir pequeno?"
+  },
+  "3": {
+    "en": "Remember yourself at 8 years old. What were your favorite things? What made you feel excited?",
+    "de": "Erinnere dich an dich selbst im Alter von 8 Jahren. Was hast du am liebsten getan, am liebsten gemocht?  Was liess dein Herz höher schlagen?",
+    "es": "Acuérdate de ti mism@ a los 8 años. ¿Cuáles eran tus cosas favoritas? ¿Qué te hacia sentir excitad@?",
+    "fr": "Quand vous aviez 8 ans, qu'est-ce qui vous passionnait le plus ?",
+    "hu": "Emlékezz vissza a 8 éves önmagadra. Mik voltak a kedvenc dolgaid? Mi hozott lázba?",
+    "pt-br": "Se você se imaginar com 8 anos de idade, do que você mais gostava? O que te deixava animado?",
+    "pt": "Se pensares em ti com 8 anos de idade, o que gostavas mais? O que é que te deixava entusiasmado?"
+  },
+  "4": {
+    "en": "What is something you want to know about someone, but you’re afraid to ask.",
+    "de": "Was ist etwas, das du über jemanden wissen möchtest, aber Angst hast zu  fragen?",
+    "es": "¿Qué es lo que quieres saber de alguien, pero tienes miedo de preguntar?",
+    "fr": "Quelle chose voudriez-vous connaître d'une personne, sans jamais oser lui demander ?",
+    "hu": "Mi az, amit tudni szeretnél valakiről, de félsz megkérdezni?",
+    "pt-br": "O que você gostaria de saber sobre alguém mas tem receio de perguntar?",
+    "pt": "O que gostarias de saber sobre alguém mas tens receio de perguntar?"
+  },
+  "5": {
+    "en": "What do you fear the most at the moment?",
+    "de": "Was macht dir im Moment am meisten Angst?",
+    "es": "¿Cuáles son tus mayores miedos en este momento?",
+    "fr": "Qu’est ce qui vous fait le plus peur en ce moment ?",
+    "hu": "Jelenleg mitől félsz a legjobban?",
+    "pt-br": "Do que é que você mais tem medo neste momento?",
+    "pt": "O que é que mais temes neste momento?"
+  },
+  "6": {
+    "en": "What turns you on?",
+    "de": "Was macht dich an?",
+    "es": "¿Qué te entusiasma hacer?",
+    "fr": "Qu'est-ce qui vous excite ?",
+    "hu": "Mi indít be?",
+    "pt-br": "O que te anima?",
+    "pt": "O que te excita?"
+  },
+  "7": {
+    "en": "Who is a person you secretly admire, and why?",
+    "de": "Wen bewunderst du heimlich und warum?",
+    "es": "¿Quién es la persona a la que admiras en secreto y por qué?",
+    "fr": "Quelle personne admirez-vous secrètement, et pourquoi ?",
+    "hu": "Van olyan személy, akit titokban csodálsz? Miért?",
+    "pt-br": "Qual pessoa você admira secretamente e por quê?",
+    "pt": "Quem é a pessoa que secretamente admiras e porquê?"
+  },
+  "8": {
+    "en": "What do you love dearly?",
+    "de": "Was liebst du unglaublich gerne?",
+    "es": "¿Qué es lo que más amas?",
+    "fr": "Qu’est-ce que vous aimez profondément ?",
+    "hu": "Mi az, ami igazán kedves a szívednek?",
+    "pt-br": "O quê você ama mais?",
+    "pt": "O que mais amas?"
+  },
+  "9": {
+    "en": "What challenges do you face right now?",
+    "de": "Vor welchen Herausforderungen stehst du gerade?",
+    "es": "¿Cuáles son tus mayores desafíos en este momento?",
+    "fr": "Quels sont les défis auxquels vous faites face en ce moment ?",
+    "hu": "Mik a kihívásaid jelenleg?",
+    "pt-br": "Quais  desafios você está enfrentando neste momento?",
+    "pt": "Que desafios enfrentas neste momento da tua vida?"
+  },
+  "10": {
+    "en": "How do you deal with people you do not like?",
+    "de": "Wie gehst du mit Menschen um, die du nicht magst?",
+    "es": "¿Cómo tratas a la gente que no te gusta?",
+    "fr": "Comment gérez-vous les gens que vous n'aimez pas ?",
+    "hu": "Hogyan kezeled azokat az embereket, akiket nem igazán kedvelsz?",
+    "pt-br": "Como você lida com pessoas que não gosta?",
+    "pt": "Como lidas com pessoas que não gostas?"
+  },
+  "11": {
+    "en": "How do you like to be loved?",
+    "de": "Wie würdest du am liebsten geliebt werden?",
+    "es": "¿Cómo te gusta que los otros te amen?",
+    "fr": "Comment aimez-vous être aimé ?",
+    "hu": "Miként szeretsz szeretve lenni?",
+    "pt-br": "Como você gosta de ser amado?",
+    "pt": "Como gostas de ser amado?"
+  },
+  "12": {
+    "en": "What was your last moment of sheer joy?",
+    "de": "Wann hast du zuletzt pure Freude erlebt?",
+    "es": "¿Cuál fue tu último momento de pura alegría?",
+    "fr": "Quel est le moment du pur bonheur que vous avez eu récemment ?",
+    "hu": "Mi volt a legutóbbi önfeledtül örömteli pillanatod?",
+    "pt-br": "Qual foi a última vez que você teve um momento de pura alegria?",
+    "pt": "Qual foi a última vez que tiveste um momento de pura alegria?"
+  },
+  "13": {
+    "en": "Is there something that you haven’t forgiven yourself for?",
+    "de": "Gibt es etwas, das du dir selbst nicht vergeben hast?",
+    "es": "¿Hay algo que aún no te has perdonado a ti mism@?",
+    "fr": "Y-a-t’il quelque chose que vous ne vous êtes pas pardonné ?",
+    "hu": "Van valami, amiért még nem bocsátottál meg önmagadnak?",
+    "pt-br": "Existe algo pelo qual não consegue se perdoar?",
+    "pt": "Existe algo pelo qual não te perdoas?"
+  },
+  "14": {
+    "en": "What gives you hope in these times we live in?",
+    "de": "Was gibt dir Hoffnung in diesen Zeiten, in denen wir leben?",
+    "es": "¿Qué es lo que te da esperanza en los tiempos que vivimos?",
+    "fr": "Qu'est-ce qui vous donne de l'espoir, en cette période que nous vivons ?",
+    "hu": "Mi ad neked reményt ezekben az időkben, amiben élünk?",
+    "pt-br": "O que te dá esperança atualmente?",
+    "pt": "O que é que te dá esperança nos dias que correm?"
+  },
+  "15": {
+    "en": "Given the choice of anyone in the world, whom would you want as a dinner guest?",
+    "de": "Wenn du irgendeine Person auf der ganzen Welt auswählen könntest, mit wem würdest du zu Abend essen wollen?",
+    "es": "Si pudieras elegir a cualquier persona en el mundo, ¿a quién te gustaría invitar para cenar?",
+    "fr": "Quelle personne vivante voudriez-vous inviter à dîner ?",
+    "hu": "Ha bárkit választhatnál a világon, kit hívnál meg magadhoz vacsorára és miért?",
+    "pt-br": "Se você pudesse  escolher alguém no mundo, quem você gostaria que estivesse no seu jantar?",
+    "pt": "Tendo a possibilidade de escolher quem tu quisesses, quem gostarias de ter como convidado para jantar?"
+  },
+  "16": {
+    "en": "What would constitute a “perfect” day for you?",
+    "de": "Wie sähe für dich ein “perfekter Tag” aus?",
+    "es": "¿Como sería un día \"perfecto\" para ti?",
+    "fr": "A quoi ressemblerait une journée \"parfaite\" pour vous ?",
+    "hu": "Milyen lenne számodra a ‘tökéletes’ nap?",
+    "pt-br": "O que é que faz um dia “perfeito” para você?",
+    "pt": "O que é para ti um dia “perfeito”?"
+  },
+  "17": {
+    "en": "For what in your life do you feel most grateful for at the moment?",
+    "de": "Was erfüllt dich momentan in deinem Leben am allermeisten mit Dankbarkeit?",
+    "es": "¿Qué es lo que te hace sentir más agradecid@ en este momento en tu vida?",
+    "fr": "De quoi vous sentez-vous le plus reconnaissant dans votre vie en ce moment?",
+    "hu": "Mi az, amiért jelenleg a leghálásabb vagy az életedben?",
+    "pt-br": "Em relação a sua vida toda, do que você mais sente  gratidão neste momento?",
+    "pt": "Do que sentes mais gratidão neste momento?"
+  },
+  "18": {
+    "en": "What skills or qualities do you see in other people that make you jealous sometimes?",
+    "de": "Welche Fähigkeiten oder Qualitäten siehst du bei anderen Menschen, die dich manchmal eifersüchtig machen?",
+    "es": "¿Qué habilidades o cualidades vez en otras personas que te gustaría tener tambien?",
+    "fr": "Quel compétences ou qualités enviez vous à d'autres ?",
+    "hu": "Milyen kvalitásokat és képességeket látsz más emberekben amikre néha féltékeny vagy?",
+    "pt-br": "Quais competências ou qualidades dos outros te causam inveja?",
+    "pt": "Que competências ou qualidades por vezes te suscitam inveja nos outros?"
+  },
+  "19": {
+    "en": "Is there something that you’ve dreamed of doing for a long time? Why haven’t you done it?",
+    "de": "Gibt es etwas, von dem du schon lange träumst? Warum hast du es noch nicht verwirklicht?",
+    "es": "¿Tienes un sueño que no has realizado aún? ¿Por qué?",
+    "fr": "Y a-t-il quelque chose que vous rêvez de faire depuis longtemps ? Pourquoi ne l'avez vous pas encore fait ?",
+    "hu": "Van valami amiről már régóta álmodozol, hogy csinálnád? Miért nem csináltad még meg?",
+    "pt-br": "Tem algo que você sonha em fazer há algum tempo? Porque é que ainda não o fez?",
+    "pt": "Tens algo que sonhas fazer há algum tempo? Porque é que ainda não o concretizaste?"
+  },
+  "20": {
+    "en": "What role does “having friends” play in your life at the moment?",
+    "de": "Welche Rolle spielt im Moment “Freunde zu haben” in deinem Leben?",
+    "es": "¿Qué papel juegan las amistades en este momento de tu vida?",
+    "fr": "Quel rôle “avoir des amis\" joue dans votre vie en ce moment ?",
+    "hu": "Milyen szerepet tölt be az életedben jelenleg az az érzés, hogy “vannak barátaid”?",
+    "pt-br": "Qual é o papel de “ter amigos” neste momento da sua vida?",
+    "pt": "Qual a importáncia de “ter amigos” neste momento da tua vida?"
+  },
+  "21": {
+    "en": "If you knew that in one year you would die suddenly, would you change anything about the way you are living now? Why?",
+    "de": "Wenn du wüsstest, dass du in einem Jahr plötzlich sterben wirst, würdest du etwas an dem ändern,  wie du jetzt lebst? Warum?",
+    "es": "Si supieras que vas a  morir en un año repentinamente, ¿cambiarías algo de la forma en que estás viviendo ahora? ¿por qué?",
+    "fr": "Changeriez-vous quelque chose à votre mode de vie actuelle si vous saviez que vous alliez mourir dans un an ? Pourquoi ?",
+    "hu": "Ha tudnád hogy egy éven belül meghalsz, változtatnál bármit az életeden? Ha igen, mit?",
+    "pt-br": "Se soubesses que dentro de um ano você iria morrer subitamente, mudaria alguma coisa na forma como hoje você vive a sua vida? O quê?",
+    "pt": "Se soubesses que dentro de um ano irias morrer subitamente, mudarias alguma            coisa na forma como vives a tua vida no momento presente? O quê?"
+  },
+  "22": {
+    "en": "What was the last thing you cried about?",
+    "de": "Warum hast du zuletzt geweint?",
+    "es": "¿Por qué lloraste la última vez?",
+    "fr": "Quelle est la dernière chose qui vous a fait pleurer ?",
+    "hu": "Mi volt az utolsó dolog ami miatt sírtál?",
+    "pt-br": "Qual foi a última coisa que te fez chorar?",
+    "pt": "Qual foi a última coisa que te fez chorar?"
+  },
+  "23": {
+    "en": "Where do you feel at home (besides from your current address)?",
+    "de": "Wo fühlst du dich zu Hause (ausser an deinem  aktuellen Wohnort)?",
+    "es": "¿Dónde te sientes en casa, además de dónde vives actualmente?",
+    "fr": "Où vous sentez-vous chez vous (en dehors de votre adresse actuelle) ?",
+    "hu": "Hol érzed magad igazán otthon (leszámítva a jelenlegi lakcímedet)?",
+    "pt-br": "Onde você se sente em casa (sem ser onde mora atualmente)?",
+    "pt": "Onde te sentes em casa (sem ser onde moras actualmente)?"
+  },
+  "24": {
+    "en": "What is one thing about yourself you feel that you should be working on?",
+    "de": "Was ist deiner Meinung nach eine  Eigenschaft  von  dir, an der du  arbeiten solltest?",
+    "es": "¿Qué es lo que te qué te gustaría cambiar de ti?",
+    "fr": "Quel aspect de vous-même pensez vous devoir améliorer ?",
+    "hu": "Mi az az egy dolog önmagadban, amin úgy érzed hogy dolgoznod kéne?",
+    "pt-br": "Qual o aspecto pessoal que você sente que deveria estar trabalhando?",
+    "pt": "Que traço da tua  personalidade sentes que precisas de trabalhar?"
+  },
+  "25": {
+    "en": "Do you believe in religion, and why?",
+    "de": "Glaubst du an Religion? Und warum?",
+    "es": "¿Crees en la religión? ¿por qué?",
+    "fr": "Est-ce que vous croyez en la religion et pourquoi ?",
+    "hu": "Hiszel a vallásban? És miért?",
+    "pt-br": "Acredita em Religião? Por quê?",
+    "pt": "Acreditas 'na' Religião? Porquê?"
+  },
+  "26": {
+    "en": "What was a moment that made you feel embarrassed?",
+    "de": "Welcher Moment hat dich beschämt?",
+    "es": "¿Cuándo fue la última vez que sentiste vergüenza ? ¿por qué?",
+    "fr": "Décrivez un moment où vous vous êtes sentis gênés ?",
+    "hu": "Mi volt az a pillanat amikor nagyon zavarban érezted magad?",
+    "pt-br": "Que momento fez você se sentir constrangido?",
+    "pt": "Partilha um momento em que te sentiste envergonhado?"
+  },
+  "27": {
+    "en": "What do you sometimes pretend?",
+    "de": "Was gibst du manchmal vor zu tun oder zu sein?",
+    "es": "¿Qué pretendes ser a veces?",
+    "fr": "Comment est-ce que vous vous imaginez ?",
+    "hu": "Mi az, amit néha megjátszol?",
+    "pt-br": "O que você finge por vezes?",
+    "pt": "O que é que por vezes finges?"
+  },
+  "28": {
+    "en": "What is something that made you feel proud?",
+    "de": "Worauf bist du stolz?",
+    "es": "¿Qué te hace sentirte orgullos@ (de ti mismo)?",
+    "fr": "Qu’est-ce qui vous a rendu fier ?",
+    "hu": "Mi az, amitől büszkének érzed magad?",
+    "pt-br": "Diga algo que te deixou orgulhoso?",
+    "pt": "Do que sentes mais orgulho, olhando para a tua vida?"
+  },
+  "29": {
+    "en": "What is your superpower apart from your professional skills?",
+    "de": "Was ist deine Superpower, mal abgesehen von deinen beruflichen Fähigkeiten?",
+    "es": "¿Cuál es tu superpoder, aparte de tus habilidades profesionales?",
+    "fr": "Quel est votre super-pouvoir en dehors de vos compétences professionnelles ?",
+    "hu": "A szakmai tudásod mellett mi a szupererőd?",
+    "pt-br": "Qual é o seu superpoder para além das suas competências profissionais?",
+    "pt": "Qual é o teu superpoder para além das tuas competências profissionais?"
+  },
+  "30": {
+    "en": "What do you do to forget about life for a while?",
+    "de": "Was tust du, um deinem Alltag für eine Weile zu entfliehen?",
+    "es": "¿Qué haces para olvidarte de la vida por un tiempo?",
+    "fr": "Que faites-vous pour vous déconnecter ?",
+    "hu": "Mit szoktál csinálni annak érdekében, hogy egy kicsit megfeledkezz az életről?",
+    "pt-br": "O que você faz para esquecer da vida por alguns momentos?",
+    "pt": "O que é que costumas fazer para quebrar a rotina e esqueceres-te da vida quotidiana?"
+  },
+  "31": {
+    "en": "If anything was possible, which problem in the world would you want to solve, and why?",
+    "de": "Wenn alles möglich wäre, welches Problem in der Welt würdest du lösen und warum?",
+    "es": "Si todo fuera posible, ¿qué problema del mundo te gustaría resolver y por qué?",
+    "fr": "Quel problème dans le monde voudriez-vous résoudre si tout était possible, et pourquoi ?",
+    "hu": "Ha bármi lehetséges lenne, melyik problémát oldanád meg a földön, és miért?",
+    "pt-br": "Se tudo fosse possível, que problema do mundo você gostaria de resolver e por quê?",
+    "pt": "Se tudo fosse possível, que problema do mundo gostarias de resolver e porquê?"
+  },
+  "32": {
+    "en": "How do you feel about silent moments?",
+    "de": "Was hältst du von stillen Momenten?",
+    "es": "¿Qué te parecen los momentos de silencio?",
+    "fr": "Comment vous sentez-vous lorsqu’il y a un silence prolongé ?",
+    "hu": "Milyen érzéseid vannak a csendes pillanatokkal kapcsolatban?",
+    "pt-br": "Como você se sente em momentos de silêncio?",
+    "pt": "O que achas de momentos silenciosos?"
+  },
+  "33": {
+    "en": "What do your personal rituals in your daily life look like?",
+    "de": "Wie sehen deine persönlichen Rituale in deinem täglichen Leben aus?",
+    "es": "¿Qué rituales personales tienes en tu vida diaria?",
+    "fr": "A quoi ressemblent vos rituels personnels au quotidien ?",
+    "hu": "Milyen rendszeres személyes rituáléid vannak?",
+    "pt-br": "Como são os seus rituais pessoais diários?",
+    "pt": "Como são os teus rituais pessoais na tua vida quotidiana? (Descreve)"
+  },
+  "34": {
+    "en": "How do you want to be seen in society?",
+    "de": "Wie willst du in der Gesellschaft wahrgenommen werden?",
+    "es": "¿Qué te gustaría para la sociedad?",
+    "fr": "Comment voulez-vous être perçus en société ?",
+    "hu": "Miként szeretnéd hogy lásson a társadalom?",
+    "pt-br": "Como você quer ser visto na sociedade?",
+    "pt": "Como queres ser visto pela sociedade?"
+  },
+  "35": {
+    "en": "What does vulnerability mean to you?",
+    "de": "Was bedeutet Verletzlichkeit für dich?",
+    "es": "¿Qué significa para ti ser vulnerable?",
+    "fr": "Que signifie la vulnérabilité pour vous ?",
+    "hu": "Mit jelent számodra a sebezhetőség?",
+    "pt-br": "O que vulnerabilidade significa para você?",
+    "pt": "O que é que vulnerabilidade significa para ti?"
+  },
+  "36": {
+    "en": "How do you usually start your day, and is there something you would you like to change about it?",
+    "de": "Wie beginnst du deinen Tag normalerweise, und gibt es etwas, das du daran ändern möchtest?",
+    "es": "¿Cómo empiezas el día normalmente? ¿hay algo que te gustaría cambiar al respecto?",
+    "fr": "Comment commencez-vous votre journée habituellement ? Que voudriez changer ?",
+    "hu": "Hogyan indul általában a napod? Van valami, amin változtatnál benne?",
+    "pt-br": "Como você normalmente inicia o seu dia? Existe algo que você gostaria de mudar sobre isso?",
+    "pt": "Qual é a tua rotina matinal? Existe algo que gostarias de mudar sobre isso?"
+  },
+  "37": {
+    "en": "What is your relationship to money?",
+    "de": "Wie ist dein Verhältnis zu Geld?",
+    "es": "¿Cuál es tu relación con el dinero?",
+    "fr": "Quelle est votre rapport à l'argent ?",
+    "hu": "Milyen a kapcsolatod a pénzzel?",
+    "pt-br": "Qual é a sua relação com o dinheiro?",
+    "pt": "Qual é a tua relação com o dinheiro?"
+  },
+  "38": {
+    "en": "How is your wellbeing at the moment?",
+    "de": "Wie ist dein momentanes Wohlbefinden?",
+    "es": "¿Cómo te sientes en este momento?",
+    "fr": "Comment qualifieriez-vous votre bien-être en ce moment ?",
+    "hu": "Mindent összevetve, hogy érzed magad most?",
+    "pt-br": "Como está o seu bem-estar no momento?",
+    "pt": "Como está o teu bem-estar no momento?"
+  },
+  "39": {
+    "en": "What role does “being successful” play in your life?",
+    "de": "Wie wichtig ist es dir in deinem Leben erfolgreich zu sein?",
+    "es": "¿Qué papel juega el \"ser exitos@\" en tu vida?",
+    "fr": "Quel place “réussir” prend dans votre vie ?",
+    "hu": "Milyen szerepet játszik a “siker” az életedben?",
+    "pt-br": "Qual o papel do “ser bem sucedido” na sua vida?",
+    "pt": "Qual a importância de “ser bem sucedido” para ti?"
+  },
+  "40": {
+    "en": "Do you want to live an extraordinary life, and why?",
+    "de": "Möchtest du ein außergewöhnliches Leben führen und warum?",
+    "es": "¿Quieres vivir una vida extraordinaria? Por qué?",
+    "fr": "Voulez-vous vivre une vie extraordinaire, et pourquoi ?",
+    "hu": "Szeretnél rendkívül különleges életet élni? Ha igen, akkor miért?",
+    "pt-br": "Você quer viver uma vida extraordinária? Por quê?",
+    "pt": "Queres viver uma vida extraordinária? Porquê?"
+  },
+  "41": {
+    "en": "To whom are you (still) holding a grudge, and why?",
+    "de": "Gegenüber wem hegst du (noch) einen Groll und warum?",
+    "es": "¿A quién le tienes rencor (todavía) y por qué?",
+    "fr": "A qui en voulez-vous (encore) et pourquoi ?",
+    "hu": "Van olyan személy a környezetedben, aki iránt haragot érzel? Miért?",
+    "pt-br": "De quem você ainda guarda rancor e porquê?",
+    "pt": "Para com quem ainda guardas rancor e porquê?"
+  },
+  "42": {
+    "en": "When do you feel alone?",
+    "de": "Wann fühlst du dich allein?",
+    "es": "¿Cuándo te sientes sol@?",
+    "fr": "Quand vous sentez-vous seul ?",
+    "hu": "Mikor érzed magad egyedül?",
+    "pt-br": "Quando você se sente só?",
+    "pt": "Quando te sentes só?"
+  },
+  "43": {
+    "en": "Is there something you are addicted to?",
+    "de": "Gibt es etwas, wonach du süchtig bist?",
+    "es": "¿Hay algo a lo que seas adict@?",
+    "fr": "Est-ce que vous êtes dépendant-e de quelque chose ou d’une personne ?",
+    "hu": "Van bármi, amire rá vagy kattanva / aminek rabja vagy  / amitől nem tudsz szabadulni?",
+    "pt-br": "Existe algo em que você é viciado?",
+    "pt": "Tens algum vício?"
+  },
+  "44": {
+    "en": "What is your relationship with your work?",
+    "de": "Wie ist dein Verhältnis zu deiner Arbeit?",
+    "es": "¿Cuál es tu relación con el trabajo?",
+    "fr": "Quel est votre rapport au travail ?",
+    "hu": "Milyen a kapcsolatod a munkáddal?",
+    "pt-br": "Qual é a sua relação com seu trabalho?",
+    "pt": "Qual é a tua relação com o teu trabalho?"
+  },
+  "45": {
+    "en": "What are your greatest weaknesses?",
+    "de": "Was sind deine größten Schwächen?",
+    "es": "¿Cuáles son tus mayores debilidades?",
+    "fr": "Quelles sont vos plus grandes faiblesses ?",
+    "hu": "Mik a legnagyobb gyengeségeid?",
+    "pt-br": "Quais são a suas maiores fraquezas?",
+    "pt": "Quais são as tuas maiores fraquezas?"
+  },
+  "46": {
+    "en": "What’s the best advice you’ve been given?",
+    "de": "Was ist der beste Rat, der dir gegeben wurde?",
+    "es": "¿Cuál es el mejor consejo que te han dado?",
+    "fr": "Quel est le meilleur conseil qu'on vous a donné ?",
+    "hu": "Mi volt a legjobb tanács amit valaha kaptál?",
+    "pt-br": "Qual o melhor conselho que já te deram?",
+    "pt": "Qual o melhor conselho que já te deram?"
+  },
+  "47": {
+    "en": "What were the moments in your life when you felt the most afraid?",
+    "de": "In welchen Momenten deines Lebens hattest du am meisten Angst?",
+    "es": "¿Cuáles fueron los momentos en tu vida en que sentiste más miedo?",
+    "fr": "Quels ont été les moments de votre vie où vous avez eu le plus peur ?",
+    "hu": "Mitől féltél a legjobban az életedben?",
+    "pt-br": "Quais foram os momentos na sua vida em que você sentiu mais medo?",
+    "pt": "Quais os momentos na tua vida em que sentiste mais medo?"
+  },
+  "48": {
+    "en": "How do you feel about death?",
+    "de": "Was denkst du über den Tod?",
+    "es": "¿Cuál es tu relación con la muerte?",
+    "fr": "Avez-vous peur de la mort ?",
+    "hu": "Milyen érzéseid vannak a halállal kapcsolatban?",
+    "pt-br": "Como você se sente em relação a morte?",
+    "pt": "O que sentes sobre a morte?"
+  },
+  "49": {
+    "en": "What topic is difficult for you to talk about at the moment?",
+    "de": "Über welches Thema fällt es dir im Moment schwer zu sprechen?",
+    "es": "¿De qué tema te cuesta hablar en este momento?",
+    "fr": "Quel est le sujet dont vous avez du mal à parler en ce moment ?",
+    "hu": "Mely témákról nehéz beszélned jelenleg?",
+    "pt-br": "Qual assunto é difícil para você conversar neste momento?",
+    "pt": "Sobre que assunto/tema é mais difÍcil falares?"
+  },
+  "50": {
+    "en": "How much time do you take for reflection?",
+    "de": "Wie viel Zeit nimmst du dir zum Nachdenken?",
+    "es": "¿Cuánto tiempo te tomas para reflexionar?",
+    "fr": "Combien de temps vous réservez-vous pour réfléchir, prendre du recul ?",
+    "hu": "Mennyi időt szánsz gondolkodásra / reflexcióra?",
+    "pt-br": "Quanto tempo você dedica para reflexões?",
+    "pt": "Quanto tempo tiras para parar e reflectir?"
+  },
+  "51": {
+    "en": "What is your relationship with nature?",
+    "de": "Wie ist deine Beziehung zur Natur?",
+    "es": "¿Cuál es tu relación con la naturaleza?",
+    "fr": "Quelle est votre relation avec la nature ?",
+    "hu": "Milyen kapcsolatod van a természettel?",
+    "pt-br": "Qual a sua relação com a natureza?",
+    "pt": "Como é a tua relação com a natureza?"
+  },
+  "52": {
+    "en": "Since coming online, what is the longest period of time you've had offline?",
+    "de": "Seit dem du online bist, was war der längste Zeitraum, den du offline warst?",
+    "es": "¿Cuál es el período de tiempo más largo que has estado desconectad@ de tus redes sociales?",
+    "fr": "Depuis que vous avez eu accès à internet, quelle est la période la plus longue pendant laquelle vous avez été hors-ligne ?",
+    "hu": "Amióta online életet is élsz, mi volt a leghosszabb idő, amit offline töltöttél?",
+    "pt-br": "Desde que entrou na internet pela primeira vez, qual foi o período mais longo que já ficou offline?",
+    "pt": "Desde que ficaste online, qual foi o período mais longo que estiveste offline?"
+  },
+  "53": {
+    "en": "What life experience or person made you grow the most?",
+    "de": "Welche Lebenserfahrung oder Person hat dich am meisten wachsen lassen?",
+    "es": "¿Qué experiencia de vida o qué persona te hizo crecer más?",
+    "fr": "Quelle personne ou quelle expérience de vie vous a le plus fait grandir ?",
+    "hu": "Milyen élménynek, vagy kinek köszönhetően fejlődtél leginkább az életedben?",
+    "pt-br": "Qual experiência ou pessoa que mais te fez crescer?",
+    "pt": "Que experiência ou pessoa te fez crescer mais?"
+  },
+  "54": {
+    "en": "What is one of the most difficult things you've ever gone through?",
+    "de": "Was ist eines der schwierigsten Dinge, die du je durchgemacht hast?",
+    "es": "¿Cuál es una de las situaciones más difíciles por las que has pasado?",
+    "fr": "Quelle est l'une des choses les plus difficiles que vous ayez vécue ?",
+    "hu": "Mi volt a legnehezebb dolog, amit valaha átéltél?",
+    "pt-br": "Qual foi uma das situações mais difíceis pela qual você já passou?",
+    "pt": "Qual foi a situação mais complicada por que passaste?"
+  },
+  "55": {
+    "en": "What is something you love about yourself?",
+    "de": "Was ist etwas, das du an dir selbst liebst?",
+    "es": "¿Qué es lo que te gusta de ti?",
+    "fr": "Qu'est-ce que vous aimez chez vous ?",
+    "hu": "Mi az, amit szeretsz magadban?",
+    "pt-br": "Diga algo que você gosta em si mesmo?",
+    "pt": "Diz uma coisa que adoras em ti próprio"
+  },
+  "56": {
+    "en": "If you were a dog, what would be your tennis ball, and why?",
+    "de": "Wenn du ein Hund wärst, was wäre dein Tennisball und warum?",
+    "es": "Si fueras un perro, ¿cuál sería tu juguete y por qué?",
+    "fr": "Si vous étiez un chien, quelle serait votre balle de tennis, et pourquoi ?",
+    "hu": "Ha kutya lennél, mi lenne a tenisz labdád, és miért?",
+    "pt-br": "Se você fosse um cão, qual seria a sua “bola de tênis” e porquê?",
+    "pt": "Se fosses um cão, qual seria a tua “bola de tênis” e porquê?"
+  },
+  "57": {
+    "en": "What would you like to let go of?",
+    "de": "Was möchtest du loslassen?",
+    "es": "¿Qué te gustaría dejar ir?",
+    "fr": "De quoi aimeriez-vous vous délester ?",
+    "hu": "Mi az, amit el szeretnél engedni?",
+    "pt-br": "O que você gostaria de deixar para trás?",
+    "pt": "De que gostavas de te desprender?"
+  },
+  "58": {
+    "en": "What do you need to feel both secure and free in your life?",
+    "de": "Was brauchst du, um dich in deinem Leben gleichzeitig sicher und frei zu fühlen?",
+    "es": "¿Qué necesitas para sentirte segur@ y libre en tu vida?",
+    "fr": "De quoi avez-vous besoin pour vous sentir à la fois libre et en sécurité dans votre vie ?",
+    "hu": "Mire van szükséged ahhoz, hogy egyszerre biztonságban és szabadnak érezd magad az életben?",
+    "pt-br": "Do que é que você precisa para se sentir seguro e livre em sua vida?",
+    "pt": "De que é que precisas para te sentires seguro e livre na tua vida?"
+  },
+  "59": {
+    "en": "Whom in your friend or family circle would you like to know better? Why?",
+    "de": "Wem in deinem Freundes- oder Familienkreis möchtest du gerne besser kennenlernen? Warum?",
+    "es": "¿A quién de tu círculo familiar o de amigos te gustaría conocer mejor? ¿por qué?",
+    "fr": "Qui, dans votre cercle d'amis ou votre famille, aimeriez-vous mieux connaître ? Pourquoi ?",
+    "hu": "Kit szeretnél még jobban megismerni a családodból, vagy a barátaid közül, és miért?",
+    "pt-br": "Quem você gostaria de conhecer melhor do seu círculo de amigos e família?",
+    "pt": "Quem gostarias de conhecer melhor da tua família ou círculo de amigos? Porquê?"
+  },
+  "60": {
+    "en": "What is something that you regret?",
+    "de": "Was ist etwas, das du bereust?",
+    "es": "¿De qué te arrepientes?",
+    "fr": "Que regrettez-vous ?",
+    "hu": "Van olyan dolog az életedben, amit megbántál?",
+    "pt-br": "Do que você se arrepende?",
+    "pt": "Do que é que te arrependes?"
+  },
+  "61": {
+    "en": "When was the last time you did something for the first time?",
+    "de": "Wann hast du das letzte Mal etwas zum ersten Mal gemacht?",
+    "es": "¿Cuándo fue la última vez que hiciste algo por primera vez?",
+    "fr": "Quelle est la dernière fois que vous avez-vous fait quelque chose pour la première fois ?",
+    "hu": "Mikor volt utoljára, hogy valamit életedben először csináltál?",
+    "pt-br": "Qual foi a última vez que você fez algo pela primeira vez?",
+    "pt": "Quando foi a última vez que fizeste alguma coisa pela 1ª vez?"
+  }
+}
