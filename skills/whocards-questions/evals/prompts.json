@@ -1,0 +1,30 @@
+[
+  {
+    "id": "A",
+    "prompt": "I'm having dinner with my partner tonight. Give me a question.",
+    "expect": {"count": 1, "format": "question"}
+  },
+  {
+    "id": "B",
+    "prompt": "I need questions for a team lunch celebrating a colleague's retirement. Colleagues are 45 to 65, mostly engineers.",
+    "expect": {"count": 10, "format": "questions", "note": "pool #19 near-duplicate risk"}
+  },
+  {
+    "id": "C",
+    "prompt": "Write journal prompts to reflect on this past year.",
+    "expect": {"count": 10, "format": "writing prompts, solo"}
+  },
+  {
+    "id": "D",
+    "prompt": "One question for a parent about being a parent this past year.",
+    "expect": {"count": 1, "note": "must not copy the two 5/5 examples in editorial-calibration.md"}
+  },
+  {
+    "id": "E",
+    "prompt": "Questions for a team offsite icebreaker.",
+    "expect": {
+      "count": 10,
+      "note": "plural with no number: conditional default should yield the batch"
+    }
+  }
+]

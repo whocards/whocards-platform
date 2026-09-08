@@ -1,19 +1,16 @@
 # Editorial calibration
 
-Examples of the maintainer's editorial taste. The original Beautifully deck and the current deck live in the WhoCards repository (`packages/decks/src/decks/beautifully.questions.json` and `packages/decks/src/pool/questions.json`); the comparisons below are the selection that teaches taste, with exact English text and paragraph breaks flattened in tables. Interpretations of historical edits are inferences; the maintainer's direct feedback takes precedence.
+Examples of the maintainer's editorial taste. The original Beautifully deck and the current deck live in the WhoCards repository (`packages/decks/src/decks/beautifully.questions.json` and `packages/decks/src/pool/questions.json`); the comparisons below are a selection that teaches taste, with exact English text and paragraph breaks flattened in tables. Interpretations of historical edits are inferences; the maintainer's direct feedback takes precedence.
 
 ## What the revisions teach
 
-| ID  | Beautifully                                                              | Current                                                        | Editorial implication                                                                                      |
-| --- | ------------------------------------------------------------------------ | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 25  | Do you believe in religion, and why?                                     | What is your relationship with religion?                       | A lived relationship gives more room than defending a position.                                            |
-| 37  | What is your relationship to money?                                      | How did the way money was dealt with in your family shape you? | A formative experience gives a broad topic a way in. Family history need not be the route for every topic. |
-| 24  | What is one thing about yourself you feel that you should be working on? | What's a recurring conflict in your life?                      | Notice experience rather than begin with a verdict about what needs fixing.                                |
-| 7   | Who is a person you secretly admire, and why?                            | Who is a person you admire? Why?                               | Admiration reveals values without an extra secrecy hurdle.                                                 |
-| 17  | For what in your life do you feel most grateful for at the moment?       | What is something you are grateful for at the moment?          | Let someone choose an answer without ranking all possibilities.                                            |
-| 46  | What's the best advice you've been given?                                | What's the best advice you've been given? Who gave it to you?  | A useful follow-up opens a relationship behind the answer.                                                 |
-| 40  | Do you want to live an extraordinary life, and why?                      | What is one dream you have for your future?                    | An aspiration can matter without an exceptional-life standard.                                             |
-| 35  | What does vulnerability mean to you?                                     | What are your two favorite dance moves? Show them!             | A replacement can create connection through shared play rather than discussing a concept.                  |
+| ID  | Beautifully                                                              | Current                                                       | Editorial implication                                                                     |
+| --- | ------------------------------------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 25  | Do you believe in religion, and why?                                     | What is your relationship with religion?                      | A lived relationship gives more room than defending a position.                           |
+| 24  | What is one thing about yourself you feel that you should be working on? | What's a recurring conflict in your life?                     | Notice experience rather than begin with a verdict about what needs fixing.               |
+| 17  | For what in your life do you feel most grateful for at the moment?       | What is something you are grateful for at the moment?         | Let someone choose an answer without ranking all possibilities.                           |
+| 46  | What's the best advice you've been given?                                | What's the best advice you've been given? Who gave it to you? | A useful follow-up opens a relationship behind the answer.                                |
+| 35  | What does vulnerability mean to you?                                     | What are your two favorite dance moves? Show them!            | A replacement can create connection through shared play rather than discussing a concept. |
 
 The current deck also includes "How do you like to be loved?", "When do you feel alone?", and "How do you feel about death?" Direct, brief, emotionally demanding questions remain welcome. Its absurd jungle-and-trombone question is permission for imagination; its presence does not make absurdity a required ingredient.
 
