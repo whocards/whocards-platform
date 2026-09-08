@@ -18,7 +18,7 @@ These changes show a range of useful moves, not a rule that every question must 
 
 ## Maintainer feedback on generated questions · 2026-09-08
 
-Frame: being a parent, this past year. Two questions received 5/5 with no wording correction:
+Frame: being a parent (no time constraint). Two questions received 5/5 with no wording correction:
 
 > What part of being a parent takes more out of you than people seem to notice?
 

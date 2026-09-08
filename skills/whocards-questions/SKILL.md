@@ -28,9 +28,9 @@ A **frame** combines any of these dimensions, expressed in ordinary language. Th
 - **Format:** a question, or a writing prompt that can use an imperative.
 - **Setting:** spoken at a table, written alone in a journal.
 
-Any frame works without new guidance: retirement, after an argument, a birthday dinner. Honor the supplied dimensions together. Parenthood during the past year means both; a time-only frame can range across life. A bare writing request means reflective personal writing. Journal and writing prompts can be questions or imperatives; pick one construction and hold it across a set.
+Any frame works without new guidance: retirement, after an argument, a birthday dinner. Honor the supplied dimensions together. Parenthood during the past year means both; a time-only frame can range across life. A bare writing request means reflective personal writing. Journal and writing prompts can be questions or imperatives; honor the requested format while varying sentence construction across a set.
 
-**Deliver one question by default.** Shortlist several, then give the best one. Deliver ten when the request implies a set: a plural ask, a stated count, or a deck, pack, table, or list. Follow any count, language, and format the user names. Ask a clarifying question only when the missing context would change whether the questions suit the people at the table.
+**Deliver one question by default.** Shortlist several, then give the best one. Deliver ten when the request implies a set: a plural ask or a deck, pack, or list. A table is a setting, not a request for ten. Follow any count, language, and format the user names. Ask a clarifying question only when the missing context would change whether the questions suit the people at the table.
 
 ## Write
 
@@ -40,7 +40,7 @@ Any frame works without new guidance: retirement, after an argument, a birthday 
 
 **Keep specificity that earns its place.** A concrete subject helps someone answer; an arbitrary qualifier limits what counts. Prefer "a moment" to "an ordinary moment" unless ordinary life is the requested subject. Let the answerer choose scale and intensity. Cut filler, elaborate setups, and decorative modifiers while preserving the question's meaning.
 
-**Invite depth without demanding a conclusion.** Welcome conflict, grief, love, uncertainty, and joy without requiring a confession, self-improvement plan, or cheerful lesson. Ask about the experience itself rather than routing it through a lesson, a takeaway, or a growth arc; "what did it teach you?" turns a life into a curriculum. After a difficult day, make room to notice what happened without requiring resolution. At a mixed table, use language that travels across cultures and life circumstances. Match personal disclosure to the setting.
+**Invite depth without demanding a conclusion.** Welcome conflict, grief, love, uncertainty, and joy without requiring a confession, self-improvement plan, or cheerful lesson. Leave room for an unresolved experience. Learning and change are welcome when they serve the request; do not impose a lesson or growth arc. After a difficult day, make room to notice what happened without requiring resolution. At a mixed table, use language that travels across cultures and life circumstances. Match personal disclosure to the setting.
 
 **Preserve play.** A playful question can connect through shared imagination without a hidden lesson. For writing, give the pen somewhere to start while letting the writer choose their details.
 
