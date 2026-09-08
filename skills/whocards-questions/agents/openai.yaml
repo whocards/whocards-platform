@@ -1,0 +1,4 @@
+interface:
+  display_name: 'WhoCards Questions'
+  short_description: 'Write questions that invite honest human connection'
+  default_prompt: 'Use $whocards-questions to generate 10 fresh questions aligned with the WhoCards mission and current deck.'
