@@ -42,6 +42,11 @@ jobs:
       - name: Turbo remote cache
         uses: rharkor/caching-for-turbo@v2.5.1
 
+      - name: WhoCards skill checks
+        run: |
+          node evals/whocards-questions/scripts/build-pool-snapshot.mjs --check
+          node --test evals/whocards-questions/scripts/prepare-run.test.mjs
+
       - name: Format check
         run: pnpm format
 

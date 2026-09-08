@@ -1,0 +1,115 @@
+[
+  {
+    "id": "A",
+    "prompt": "I'm having dinner with my partner tonight. Give me a question.",
+    "expect": {
+      "count": 1,
+      "format": "question"
+    }
+  },
+  {
+    "id": "B",
+    "prompt": "I need questions for a team lunch celebrating a colleague's retirement. Colleagues are 45 to 65, mostly engineers.",
+    "expect": {
+      "count": 10,
+      "format": "questions",
+      "note": "pool #19 near-duplicate risk"
+    }
+  },
+  {
+    "id": "C",
+    "prompt": "Write journal prompts to reflect on this past year.",
+    "expect": {
+      "count": 10,
+      "format": "writing prompts that include a question, solo"
+    }
+  },
+  {
+    "id": "D",
+    "prompt": "One question for a parent about being a parent this past year.",
+    "expect": {
+      "count": 1,
+      "note": "must not copy the two 5/5 examples in editorial-calibration.md"
+    }
+  },
+  {
+    "id": "E",
+    "prompt": "Questions for a team offsite icebreaker.",
+    "expect": {
+      "count": 10,
+      "note": "plural with no number: conditional default should yield the batch"
+    }
+  },
+  {
+    "id": "F",
+    "prompt": "Give me three questions to help me process a difficult day.",
+    "expect": {
+      "count": 3,
+      "format": "questions",
+      "note": "Room for feelings without assuming a particular event or demanding recovery."
+    }
+  },
+  {
+    "id": "G",
+    "prompt": "A question for the table at a birthday dinner with friends.",
+    "expect": {
+      "count": 1,
+      "format": "question",
+      "note": "Table is a setting, not a count instruction."
+    }
+  },
+  {
+    "id": "H",
+    "prompt": "Give me two questions to write about what I am learning as a parent.",
+    "expect": {
+      "count": 2,
+      "format": "questions, solo",
+      "note": "Honor requested learning; no forced positive outcome. Questions, not imperative prompts."
+    }
+  },
+  {
+    "id": "I",
+    "prompt": "Five playful questions for siblings on a long train ride.",
+    "expect": {
+      "count": 5,
+      "format": "questions",
+      "note": "Transfer frame: shared imagination without forced depth or assuming shared childhood events."
+    }
+  },
+  {
+    "id": "J",
+    "prompt": "Write five reflective writing prompts about feeling at home in a new city.",
+    "expect": {
+      "count": 5,
+      "format": "writing prompts that include a question, solo",
+      "note": "Transfer frame: allow belonging or lack of it; give the pen somewhere concrete to start."
+    }
+  },
+  {
+    "id": "K",
+    "prompt": "Give me a question to help me process a difficult day.",
+    "expect": {
+      "count": 1,
+      "format": "question",
+      "note": "Unassisted single-question flow: processing approach comes from the skill, no extra user qualifier or menu."
+    }
+  },
+  {
+    "id": "L",
+    "prompt": "Give me a question about being a parent.",
+    "expect": {
+      "count": 1,
+      "format": "question",
+      "note": "One deliverable that stands alone; no copied calibration anchor."
+    }
+  },
+  {
+    "id": "M",
+    "prompt": "Give me a writing prompt.",
+    "expect": {
+      "count": 1,
+      "format": "writing prompt that includes a question",
+      "note": "Reflective personal writing by default, not an instruction-only exercise."
+    }
+  }
+]

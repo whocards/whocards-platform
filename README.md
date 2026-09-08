@@ -22,6 +22,19 @@ Internal packages are `@whocards/*`, consumed as source via `workspace:*` (no bu
 needed to consume — `exports` points at `src/index.ts`). Shared dependency versions live in
 the pnpm `catalog:` in [pnpm-workspace.yaml](./pnpm-workspace.yaml).
 
+## Skills
+
+Agent skills that encode WhoCards editorial judgement live in [skills/](./skills). They are
+symlinked into `.claude/skills/` and `.agents/skills/`, so Claude Code and Codex pick them up
+automatically inside this checkout. To use one outside the repo (any agent supported by the
+[skills CLI](https://github.com/vercel-labs/skills)):
+
+```bash
+npx skills add whocards/whocards-platform --skill whocards-questions
+```
+
+- **[whocards-questions](skills/whocards-questions/README.md)** — write or revise questions and writing prompts in the WhoCards voice. See its README for installation from this checkout and its [evals](evals/whocards-questions/README.md) for the scenarios, the review rubric, and the recorded runs.
+
 ## Toolchain
 
 - **pnpm** workspaces + version catalog

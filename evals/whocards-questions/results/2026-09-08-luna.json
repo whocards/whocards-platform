@@ -1,0 +1,834 @@
+{
+  "manifest": {
+    "createdAt": "2026-09-08T16:35:38.663Z",
+    "requestedModel": "gpt-5.6-luna",
+    "mode": "explicit skill, bundled resources, fresh conversation per job",
+    "repeats": 2,
+    "hashes": {
+      "SKILL.md": "75c40b3042cc99153110cd4cbb5af9639b5b3ed133765c710b192bf220f589c5",
+      "references/mission.md": "e324f5d2bc3fe7da7b92e2ec59906a909fe0829a8a8ff629dc204d8b9ee0ee0b",
+      "references/editorial-calibration.md": "2880c88af5913e1369c091e4dec5a501394784c4e1c01b690fcd415cc5b4b388",
+      "assets/pool-en.json": "6e2d8f4682df4c45211fb862bbef8d7cda9c93d48f66d121908bf074543344e6"
+    },
+    "jobs": [
+      {
+        "id": "A-1",
+        "scenario": "A",
+        "sample": 1,
+        "request": "I'm having dinner with my partner tonight. Give me a question."
+      },
+      {
+        "id": "A-2",
+        "scenario": "A",
+        "sample": 2,
+        "request": "I'm having dinner with my partner tonight. Give me a question."
+      },
+      {
+        "id": "B-1",
+        "scenario": "B",
+        "sample": 1,
+        "request": "I need questions for a team lunch celebrating a colleague's retirement. Colleagues are 45 to 65, mostly engineers."
+      },
+      {
+        "id": "B-2",
+        "scenario": "B",
+        "sample": 2,
+        "request": "I need questions for a team lunch celebrating a colleague's retirement. Colleagues are 45 to 65, mostly engineers."
+      },
+      {
+        "id": "C-1",
+        "scenario": "C",
+        "sample": 1,
+        "request": "Write journal prompts to reflect on this past year."
+      },
+      {
+        "id": "C-2",
+        "scenario": "C",
+        "sample": 2,
+        "request": "Write journal prompts to reflect on this past year."
+      },
+      {
+        "id": "D-1",
+        "scenario": "D",
+        "sample": 1,
+        "request": "One question for a parent about being a parent this past year."
+      },
+      {
+        "id": "D-2",
+        "scenario": "D",
+        "sample": 2,
+        "request": "One question for a parent about being a parent this past year."
+      },
+      {
+        "id": "E-1",
+        "scenario": "E",
+        "sample": 1,
+        "request": "Questions for a team offsite icebreaker."
+      },
+      {
+        "id": "E-2",
+        "scenario": "E",
+        "sample": 2,
+        "request": "Questions for a team offsite icebreaker."
+      },
+      {
+        "id": "F-1",
+        "scenario": "F",
+        "sample": 1,
+        "request": "Give me three questions to help me process a difficult day, without trying to solve it."
+      },
+      {
+        "id": "F-2",
+        "scenario": "F",
+        "sample": 2,
+        "request": "Give me three questions to help me process a difficult day, without trying to solve it."
+      },
+      {
+        "id": "G-1",
+        "scenario": "G",
+        "sample": 1,
+        "request": "A question for the table at a birthday dinner with friends."
+      },
+      {
+        "id": "G-2",
+        "scenario": "G",
+        "sample": 2,
+        "request": "A question for the table at a birthday dinner with friends."
+      },
+      {
+        "id": "H-1",
+        "scenario": "H",
+        "sample": 1,
+        "request": "Give me two questions to write about what I am learning as a parent."
+      },
+      {
+        "id": "H-2",
+        "scenario": "H",
+        "sample": 2,
+        "request": "Give me two questions to write about what I am learning as a parent."
+      },
+      {
+        "id": "I-1",
+        "scenario": "I",
+        "sample": 1,
+        "request": "Five playful questions for siblings on a long train ride."
+      },
+      {
+        "id": "I-2",
+        "scenario": "I",
+        "sample": 2,
+        "request": "Five playful questions for siblings on a long train ride."
+      },
+      {
+        "id": "J-1",
+        "scenario": "J",
+        "sample": 1,
+        "request": "Write five reflective writing prompts about feeling at home in a new city."
+      },
+      {
+        "id": "J-2",
+        "scenario": "J",
+        "sample": 2,
+        "request": "Write five reflective writing prompts about feeling at home in a new city."
+      }
+    ]
+  },
+  "execution": {
+    "actualModel": "gpt-5.6-luna",
+    "reasoningEffort": "low",
+    "method": "Codex collaboration.spawn_agent, fork_turns=none, one new agent per job",
+    "reviewer": "primary Codex assistant; subjective editorial judgments, not maintainer ratings",
+    "extraInstructions": "Read only the designated job file. Follow its skill and request. Save the complete unedited response with exclusive creation, then return it. No other file edits, reviewer feedback, or additional revision rounds.",
+    "errors": [],
+    "retries": 0,
+    "limitations": [
+      "Standard agent/system instructions remained present; this is not a bare API prompt.",
+      "Explicit skill injection; automatic discovery not tested.",
+      "No previous-skill control group; not a before/after improvement claim.",
+      "Two samples per scenario do not establish a stable quality rate."
+    ]
+  },
+  "snapshot": {
+    "SKILL.md": "---\nname: whocards-questions\ndescription: Write or revise WhoCards questions and reflective writing prompts for a frame that combines topic, time, situation, intention, audience, and format. Use when the user wants an insightful or thought-provoking question for a conversation, a check-in, a journal, or a writing prompt.\nlicense: MIT\nmetadata:\n  source: https://github.com/whocards/whocards-platform/tree/main/skills/whocards-questions\n---\n\n# WhoCards questions\n\nInvite honest self-expression, active listening, and connection. A good question helps people discover who someone is, or helps a person hear themselves in solo reflection. The voice is warm, curious, direct, and human. Play and difficult feelings both belong.\n\n## Ground the request\n\nRead [references/mission.md](references/mission.md) for what the questions serve, then [references/editorial-calibration.md](references/editorial-calibration.md) for worked examples and the maintainer's editorial taste.\n\nCheck candidates against the existing deck in [assets/pool-en.json](assets/pool-en.json), the English pool that ships with this skill. If the working directory contains `packages/decks/src/pool/questions.json`, read that instead; it is authoritative and may be newer. For a named deck, another language, or a list the user supplies, use that content too.\n\n## Understand the frame\n\nA **frame** combines any of these dimensions, expressed in ordinary language. The values below are illustrations, not a menu:\n\n- **Topic:** being a parent.\n- **Time:** this past year (the preceding twelve months unless otherwise specified).\n- **Situation:** after a difficult day.\n- **Intention:** process, reconnect, celebrate, explore.\n- **Audience:** alone, partners, friends, colleagues.\n- **Format:** a question, or a writing prompt that can use an imperative.\n- **Setting:** spoken at a table, written alone in a journal.\n\nAny frame works without new guidance: retirement, after an argument, a birthday dinner. Honor the supplied dimensions together. Parenthood during the past year means both; a time-only frame can range across life. A bare writing request means reflective personal writing. Journal and writing prompts can be questions or imperatives; honor the requested format while varying sentence construction across a set.\n\n**Deliver one question by default.** Shortlist several, then give the best one. Deliver ten when the request implies a set: a plural ask or a deck, pack, or list. A table is a setting, not a request for ten. Follow any count, language, and format the user names. Ask a clarifying question only when the missing context would change whether the questions suit the people at the table.\n\n## Write\n\n**Give the question a human subject.** Experiences, relationships, feelings, choices, desires, and imagination offer ways in. Favor someone's lived relationship with a topic over their general opinion or a definition. Keep one focus, with a short follow-up only when it opens something useful.\n\n**Let the person supply the experience.** Distinguish the context the user established from an event you invented. \"Who surprised you?\" requires someone to have done so; a question about expectations can stay direct without inventing that event. When a particular event is the subject, a conditional question can welcome it without assuming it happened. Feelings, perspectives, wishes, and hypothetical situations are already open and need no existence check.\n\n**Keep specificity that earns its place.** A concrete subject helps someone answer; an arbitrary qualifier limits what counts. Prefer \"a moment\" to \"an ordinary moment\" unless ordinary life is the requested subject. Let the answerer choose scale and intensity. Cut filler, elaborate setups, and decorative modifiers while preserving the question's meaning.\n\n**Invite depth without demanding a conclusion.** Welcome conflict, grief, love, uncertainty, and joy without requiring a confession, self-improvement plan, or cheerful lesson. Leave room for an unresolved experience. Learning and change are welcome when they serve the request; do not impose a lesson or growth arc. After a difficult day, make room to notice what happened without requiring resolution. At a mixed table, use language that travels across cultures and life circumstances. Match personal disclosure to the setting.\n\n**Preserve play.** A playful question can connect through shared imagination without a hidden lesson. For writing, give the pen somewhere to start while letting the writer choose their details.\n\n## Edit before delivering\n\nEvery question, whether it ships alone or in a set:\n\n- Does it serve the whole frame and reveal something human?\n- Can someone understand it on first hearing and answer honestly without inventing an event?\n- Which words restrict the answer or add reading work without adding meaning?\n- Does it echo the phrasing of an example in the references? Examples show taste; reusing their wording is copying.\n\nA set also needs a pass read together:\n\n- Do the questions offer different subjects, emotional paths, and sentence structures? If they sound like a repeated formula, rethink the questions themselves. Swapping opening words on the same construction is cosmetic variety, and a corrective device such as \"Is there…\" should not become the batch's default template.\n- Would several elicit essentially the same answer, here or in the existing deck? Replace duplicates unless adaptations were requested.\n\nRevise weak candidates before showing them. Preserve the useful subject when rewriting; identify a replacement as a replacement. The archived deck and current deck are evidence of taste, not an absolute bad/good classification.\n\nReturn clean questions in the requested format. Keep explanations outside question text. Draft in the conversation unless asked to save or integrate; for integration, inspect the target schema and translation conventions first. Translate naturally rather than copying English syntax.\n",
+    "references/mission.md": "# Mission\n\nWhat WhoCards questions serve. Quoted from the WhoCards mission page and `soul.md` so the skill works without a checkout.\n\n## The mission\n\n> In this age of disruption and complexity, when our differences are used to keep us separate, one of the most courageous things we can do is to show up for others with authenticity, vulnerability and openness.\n>\n> Whether or not we recognize it on a daily basis, we are all deeply interconnected. WhoCards' mission is to strengthen the authenticity of that interconnectedness, because we believe that a sense of honest homecoming to ourselves and each other has the power to spark a light strong enough to lead us out from anxiety and loneliness towards belonging and love.\n>\n> We believe that by speaking what's true for us and actively listening to others as they do the same, we can quiet the noise of the world and enter the warm hum of mutuality.\n>\n> Alchemy occurs: Two anxious \"I\"s morph quickly into a relaxed and delighted \"We.\"\n\n## What the product is\n\nWhoCards is a conversation game for people who are actually together. Curated questions move a real table, whether friends, a family, or a team, past \"What do you do?\" toward \"Who are you?\". The product succeeds when the phone stops mattering: someone reads a question aloud, and the conversation that follows is the experience. The same questions also serve one person in solo reflection or journaling.\n\n## The character\n\nA quiet invitation into a meaningful conversation: warm, curious, direct, human. Intimate rather than corporate. Playful rather than gamified. Bold without becoming loud. The question is always the focus.\n\n## What this means for a question\n\n- It deepens the conversation at the table rather than performing for a screen.\n- It respects the mixed table: bilingual, cross-generational, cross-cultural. Language should travel.\n- It stays honest: no manufactured urgency, no overclaiming, no trick.\n- It invites vulnerability without demanding it. Honest self-expression and active listening are the point, not a lesson or a verdict.\n",
+    "references/editorial-calibration.md": "# Editorial calibration\n\nExamples of the maintainer's editorial taste. The original Beautifully deck and the current deck live in the WhoCards repository (`packages/decks/src/decks/beautifully.questions.json` and `packages/decks/src/pool/questions.json`); the comparisons below are a selection that teaches taste, with exact English text and paragraph breaks flattened in tables. Interpretations of historical edits are inferences; the maintainer's direct feedback takes precedence.\n\n## What the revisions teach\n\n| ID  | Beautifully                                                              | Current                                                       | Editorial implication                                                                     |\n| --- | ------------------------------------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |\n| 25  | Do you believe in religion, and why?                                     | What is your relationship with religion?                      | A lived relationship gives more room than defending a position.                           |\n| 24  | What is one thing about yourself you feel that you should be working on? | What's a recurring conflict in your life?                     | Notice experience rather than begin with a verdict about what needs fixing.               |\n| 17  | For what in your life do you feel most grateful for at the moment?       | What is something you are grateful for at the moment?         | Let someone choose an answer without ranking all possibilities.                           |\n| 46  | What's the best advice you've been given?                                | What's the best advice you've been given? Who gave it to you? | A useful follow-up opens a relationship behind the answer.                                |\n| 35  | What does vulnerability mean to you?                                     | What are your two favorite dance moves? Show them!            | A replacement can create connection through shared play rather than discussing a concept. |\n\nThe current deck also includes \"How do you like to be loved?\", \"When do you feel alone?\", and \"How do you feel about death?\" Direct, brief, emotionally demanding questions remain welcome. Its absurd jungle-and-trombone question is permission for imagination; its presence does not make absurdity a required ingredient.\n\nThese changes show a range of useful moves, not a rule that every question must request a story, avoid a yes/no opening, or become lighthearted. A shared ID sometimes means the subject was replaced entirely. English comparisons do not establish naturalness in other translations.\n\n## Maintainer feedback on generated questions · 2026-09-08\n\nFrame: being a parent (no time constraint). Two questions received 5/5 with no wording correction:\n\n> What part of being a parent takes more out of you than people seem to notice?\n\n> What is a parenting rule you were sure about before you became a parent? How do you feel about it now?\n\nOther feedback establishes these preferences:\n\n- A shared parent-and-child experience was a good subject, but \"a small thing\" and the long setup added restriction and filler. \"Something\" leaves the scale open.\n- Realizing that you take yourself too seriously was a good direction. Requiring the child to have made the parent laugh added an unnecessary event.\n- For trust, the maintainer preferred something the parent is learning to trust the child with over a generic easy/hard comparison.\n- Questions about a surprising life change or a memorable conversation should allow that there may not be one. Asking \"Who did you get to see a different side of?\" wrongly presumed an event.\n- In \"What mattered a lot…\", remove \"a lot.\" In a question about a moment worth photographing, remove \"ordinary.\" Keep useful meaning while letting the answerer choose significance.\n\nThe next revision was rejected before review because four out of five questions began \"Is there…\". The lesson is to preserve openness through different kinds of invitations, not to insert the same hedge everywhere. These feedback examples are evidence for editorial judgment, not templates to copy across a batch.\n",
+    "assets/pool-en.json": "{\n  \"1\": \"What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)\",\n  \"2\": \"What is something that makes you feel small?\",\n  \"3\": \"Remembering yourself as a child: What were your favorite things?\\n\\nWhat made you feel excited?\",\n  \"4\": \"What was happening in the world at the time of your birth, and how do you think it shaped who you are today?\",\n  \"5\": \"What do you fear most at the moment?\",\n  \"6\": \"What turns you on?\",\n  \"7\": \"Who is a person you admire?\\n\\nWhy?\",\n  \"8\": \"What do you love dearly?\",\n  \"9\": \"What challenges are you facing right now?\",\n  \"10\": \"How do you deal with conflicts when you are at your worst?\",\n  \"11\": \"How do you like to be loved?\",\n  \"12\": \"What was your last moment of pure joy?\",\n  \"13\": \"Is there something you need to forgive someone for?\\n\\nOr forgive yourself for?\",\n  \"14\": \"In our current times, what gives you hope?\",\n  \"15\": \"Given the choice of anyone in the world, who would you want as a dinner guest?\\n\\nWhy?\",\n  \"16\": \"If someone covered your basic cost of living, what would you do with your life?\",\n  \"17\": \"What is something you are grateful for at the moment?\",\n  \"18\": \"What skills or qualities do you see in other people that you envy?\",\n  \"19\": \"Is there something that you’ve dreamed of doing for a long time?\\n\\nIf so, why haven’t you done it yet?\",\n  \"20\": \"Who are two people that shaped your life and how did they do so?\",\n  \"21\": \"If you knew that in one year you would die suddenly, what would you change about the way you are living now?\\n\\nWhy?\",\n  \"22\": \"What was the last thing you cried about?\",\n  \"23\": \"Where or with whom do you feel at \\\"home\\\" (besides from your current address)?\\n\\nWhy?\",\n  \"24\": \"What's a recurring conflict in your life?\",\n  \"25\": \"What is your relationship with religion?\",\n  \"26\": \"What was a moment that made you feel embarrassed?\",\n  \"27\": \"What do you sometimes pretend to be?\",\n  \"28\": \"What is something that made you feel proud?\",\n  \"29\": \"You are lost in a jungle with a trombone, a sheet of aluminum, a pack of chewing gum and a set of keys. How do you save the world?\",\n  \"30\": \"What do you do to forget about life for a while?\",\n  \"31\": \"If anything was possible, which problem in the world would you solve?\\n\\nWhy?\",\n  \"32\": \"What is some feedback you've gotten more than once?\\n\\nAnd what did you do about it?\",\n  \"33\": \"What do you do for your personal well-being in your daily life?\",\n  \"34\": \"What is a crazy dream that you remember?\",\n  \"35\": \"What are your two favorite dance moves?\\n\\nShow them!\",\n  \"36\": \"What did you work the hardest for in life?\\n\\nWhy?\",\n  \"37\": \"How did the way money was dealt with in your family shape you?\",\n  \"38\": \"How is your well-being at the moment?\",\n  \"39\": \"What is your best memory of great teamwork?\",\n  \"40\": \"What is one dream you have for your future?\",\n  \"41\": \"What's one of your earliest memories?\",\n  \"42\": \"When do you feel alone?\",\n  \"43\": \"Is there something you are addicted to?\\n\\nWhat feels right about it?\",\n  \"44\": \"What is your relationship with your work?\",\n  \"45\": \"What are your greatest weaknesses?\",\n  \"46\": \"What’s the best advice you’ve been given?\\n\\nWho gave it to you?\",\n  \"47\": \"What were some moments in your life when you felt the most afraid?\",\n  \"48\": \"How do you feel about death?\",\n  \"49\": \"What is a topic that is difficult for you to talk about at the moment?\",\n  \"50\": \"What is a trait you inherited from one of your parents/caregivers that you really like or dislike?\",\n  \"51\": \"How is nature part of your life?\",\n  \"52\": \"Are you in a healthy relationship with technology?\\n\\nWhy?\",\n  \"53\": \"What life experience or decision made the biggest impact on your life?\",\n  \"54\": \"What is one of the most difficult things you’ve ever gone through?\",\n  \"55\": \"What is something you love about yourself?\",\n  \"56\": \"How were you as a teenager?\",\n  \"57\": \"What would you like to let go of?\",\n  \"58\": \"What was your first love story?\",\n  \"59\": \"Who in your friend or family circle would you like to know better?\\n\\nWhy?\",\n  \"60\": \"What's your relationship with your body?\\n\\nHow has it changed over time?\",\n  \"61\": \"Do you ever feel socially awkward?\\n\\nWhen and with whom?\",\n  \"62\": \"Do you have a heartbreak story?\\n\\nWhat is it?\",\n  \"63\": \"People are often very surprised when they discover ___ about me. Why do you think so?\",\n  \"64\": \"When did you think \\\"oh no, not again\\\", last?\\n\\nWhy?\",\n  \"65\": \"What is the story you think others have about you?\",\n  \"66\": \"When were/are you happiest or most content in your life?\"\n}\n"
+  },
+  "expectations": [
+    {
+      "id": "A",
+      "prompt": "I'm having dinner with my partner tonight. Give me a question.",
+      "expect": {
+        "count": 1,
+        "format": "question"
+      }
+    },
+    {
+      "id": "B",
+      "prompt": "I need questions for a team lunch celebrating a colleague's retirement. Colleagues are 45 to 65, mostly engineers.",
+      "expect": {
+        "count": 10,
+        "format": "questions",
+        "note": "pool #19 near-duplicate risk"
+      }
+    },
+    {
+      "id": "C",
+      "prompt": "Write journal prompts to reflect on this past year.",
+      "expect": {
+        "count": 10,
+        "format": "writing prompts, solo"
+      }
+    },
+    {
+      "id": "D",
+      "prompt": "One question for a parent about being a parent this past year.",
+      "expect": {
+        "count": 1,
+        "note": "must not copy the two 5/5 examples in editorial-calibration.md"
+      }
+    },
+    {
+      "id": "E",
+      "prompt": "Questions for a team offsite icebreaker.",
+      "expect": {
+        "count": 10,
+        "note": "plural with no number: conditional default should yield the batch"
+      }
+    },
+    {
+      "id": "F",
+      "prompt": "Give me three questions to help me process a difficult day, without trying to solve it.",
+      "expect": {
+        "count": 3,
+        "format": "questions",
+        "note": "Room for feelings without assuming a particular event or demanding recovery."
+      }
+    },
+    {
+      "id": "G",
+      "prompt": "A question for the table at a birthday dinner with friends.",
+      "expect": {
+        "count": 1,
+        "format": "question",
+        "note": "Table is a setting, not a count instruction."
+      }
+    },
+    {
+      "id": "H",
+      "prompt": "Give me two questions to write about what I am learning as a parent.",
+      "expect": {
+        "count": 2,
+        "format": "questions, solo",
+        "note": "Honor requested learning; no forced positive outcome. Questions, not imperative prompts."
+      }
+    },
+    {
+      "id": "I",
+      "prompt": "Five playful questions for siblings on a long train ride.",
+      "expect": {
+        "count": 5,
+        "format": "questions",
+        "note": "Transfer frame: shared imagination without forced depth or assuming shared childhood events."
+      }
+    },
+    {
+      "id": "J",
+      "prompt": "Write five reflective writing prompts about feeling at home in a new city.",
+      "expect": {
+        "count": 5,
+        "format": "writing prompts, solo",
+        "note": "Transfer frame: allow belonging or lack of it; give the pen somewhere concrete to start."
+      }
+    }
+  ],
+  "results": [
+    {
+      "job": "A-1",
+      "rawResponse": "What part of our life together feels most like home to you?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 4,
+        "humanMeaning": 4,
+        "editorialAppeal": 4
+      },
+      "readyWithoutEditing": true,
+      "issues": [],
+      "reviewerNotes": "Warm and direct. Home overlaps pool #23 thematically, but asking about a part of shared life is distinct from asking where/with whom home is. Worth monitoring across samples."
+    },
+    {
+      "job": "A-2",
+      "rawResponse": "What has felt most like home between us lately?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 4,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [],
+      "reviewerNotes": "The phrase \"felt most like home between us\" is less natural on first hearing. Both independent partner samples converge on the same home metaphor."
+    },
+    {
+      "job": "B-1",
+      "rawResponse": "What is something you’ve appreciated about our retiring colleague, and what will you remember about working with them?\n",
+      "observedCount": 1,
+      "expectedCount": 10,
+      "countPass": false,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 2,
+        "answerability": 4,
+        "humanMeaning": 4,
+        "editorialAppeal": 4
+      },
+      "readyWithoutEditing": false,
+      "issues": [],
+      "reviewerNotes": "An inviting tribute question, but only one card for a plural request that requires ten under this skill."
+    },
+    {
+      "job": "B-2",
+      "rawResponse": "1. What part of your work here will you miss more than people might expect?\n\n2. What is a lesson from your career that has stayed useful outside of work?\n\n3. Which project, problem, or challenge are you proudest to have been part of?\n\n4. Who at work taught you something you still carry with you?\n\n5. What has changed most in the way you think about work since you started your career?\n\n6. What is a moment with colleagues that still makes you smile?\n\n7. What advice would you give to someone just beginning a career in engineering?\n\n8. What are you looking forward to having more time for?\n\n9. Is there something you hope people here remember about working with you?\n\n10. If you could send one question back to yourself on your first day at work, what would you ask?\n",
+      "observedCount": 10,
+      "expectedCount": 10,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 3,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 1,
+          "kind": "assumed experience",
+          "evidence": "Assumes the retiree will miss work, and that others underestimate it."
+        },
+        {
+          "card": 2,
+          "kind": "assumed experience",
+          "evidence": "Requires a career lesson with usefulness outside work."
+        },
+        {
+          "card": 4,
+          "kind": "assumed experience",
+          "evidence": "Requires a colleague to have taught a lasting lesson."
+        },
+        {
+          "card": 6,
+          "kind": "assumed experience",
+          "evidence": "Requires a remembered moment that still makes the answerer smile."
+        }
+      ],
+      "reviewerNotes": "Most questions address the retiring person, although the request names a team lunch. Questions 7 and 10 offer usable hypothetical openings. Do not infer that every engineer is retiring."
+    },
+    {
+      "job": "C-1",
+      "rawResponse": "- What changed in the way you see yourself over the past year?\n\n- Look back at the past year and follow one thread: what kept returning to your thoughts, choices, or conversations?\n\n- What asked more of you than you expected this year?\n\n- Write about a moment from the past year when you felt most like yourself.\n\n- Which relationship shaped your year, and what did it reveal to you?\n\n- What did you make room for this year? What had to move aside?\n\n- What loss, disappointment, or ending are you still carrying from the past year?\n\n- What brought you unexpected joy during the past year?\n\n- What did you learn to trust— in yourself, in someone else, or in life?\n\n- If you could sit beside yourself at the beginning of this year, what would you want that version of you to know?",
+      "observedCount": 10,
+      "expectedCount": 10,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 2,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 3,
+          "kind": "assumed experience",
+          "evidence": "Requires unexpectedly high demands."
+        },
+        {
+          "card": 5,
+          "kind": "assumed experience",
+          "evidence": "Requires a relationship that shaped the year and revealed something."
+        },
+        {
+          "card": 6,
+          "kind": "assumed experience",
+          "evidence": "Requires both making room and displacing something."
+        },
+        {
+          "card": 7,
+          "kind": "assumed experience",
+          "evidence": "Requires a loss, disappointment, or ending still being carried."
+        },
+        {
+          "card": 8,
+          "kind": "assumed experience",
+          "evidence": "Requires unexpected joy."
+        }
+      ],
+      "reviewerNotes": "Good mix of questions and imperatives; the request permits both. The recurring demand for notable changes, revelations, and surprises limits honest answers."
+    },
+    {
+      "job": "C-2",
+      "rawResponse": "What part of this past year stays with you most strongly?\n\nLook back at a moment when you felt most like yourself. Where were you, and what made that possible?\n\nWhat did you learn about what you need?\n\nWhich relationship changed for you over the past year, and how?\n\nWrite about something that brought you unexpected joy.\n\nWhat became easier to carry, even if it did not get resolved?\n\nWhere did you spend your energy, and what do you wish had received more of it?\n\nWhat did you begin to see differently?\n\nRecall a choice you made this year. What do you understand about it now that you could not see then?\n\nWhat are you ready to leave behind, and what would you like to carry forward?\n",
+      "observedCount": 10,
+      "expectedCount": 10,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 2,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 4,
+          "kind": "assumed experience",
+          "evidence": "Requires a relationship to have changed."
+        },
+        {
+          "card": 5,
+          "kind": "assumed experience",
+          "evidence": "Requires unexpected joy."
+        },
+        {
+          "card": 6,
+          "kind": "forced improvement",
+          "evidence": "Requires a burden to have become easier to carry."
+        },
+        {
+          "card": 10,
+          "kind": "forced resolution",
+          "evidence": "Requires readiness to leave something behind."
+        }
+      ],
+      "reviewerNotes": "Mixed constructions are appropriate for journal prompts. Questions 1 and 7 are promising; the set still imposes a change narrative."
+    },
+    {
+      "job": "D-1",
+      "rawResponse": "What has being a parent asked of you this past year that you didn't expect?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 1,
+          "kind": "assumed experience",
+          "evidence": "The unexpected-demand qualifier rules out a year that was demanding in expected ways."
+        }
+      ],
+      "reviewerNotes": "Fits parenting and the past year, but \"that you did not expect\" is unearned. Similar demands subject to the approved example, without its particular unseen-effort angle."
+    },
+    {
+      "job": "D-2",
+      "rawResponse": "Looking back on this past year, what has being a parent asked of you?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 5,
+        "answerability": 4,
+        "humanMeaning": 4,
+        "editorialAppeal": 4
+      },
+      "readyWithoutEditing": true,
+      "issues": [],
+      "reviewerNotes": "Both topic and time are present. Directly asks about parenting demands without requiring surprise or a lesson. Shares a broad subject with calibration but does not copy its wording or hidden-effort angle."
+    },
+    {
+      "job": "E-1",
+      "rawResponse": "1. What is something outside work that has been giving you energy lately?\n\n2. What is a place you would happily return to, and what keeps calling you back?\n\n3. What is a small skill you are glad you know?\n\n4. What kind of environment helps you do your best thinking?\n\n5. What is a piece of advice that has stayed with you?\n\n6. What is something people might be surprised to learn about you?\n\n7. When have you felt part of a great team?\n\n8. What is one thing you are curious about right now?\n\n9. What helps you feel welcome when you are new somewhere?\n\n10. If this team could spend a day learning anything together, what would you choose?\n\n",
+      "observedCount": 10,
+      "expectedCount": 10,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 3,
+          "kind": "unearned qualifier",
+          "evidence": "A \"small skill\" unnecessarily limits what counts."
+        },
+        {
+          "card": 5,
+          "kind": "semantic deck duplicate",
+          "evidence": "Advice that has stayed with you is close to pool #46."
+        },
+        {
+          "card": 6,
+          "kind": "semantic deck duplicate",
+          "evidence": "Surprising facts about yourself closely resemble pool #63."
+        },
+        {
+          "card": 7,
+          "kind": "semantic deck duplicate",
+          "evidence": "Feeling part of a great team closely resembles pool #39."
+        }
+      ],
+      "reviewerNotes": "Three cards begin \"What is a\" and six begin \"What is\". The subjects have some variety, but the batch also falls back on stock deck material. Question 10 is a useful playful opening."
+    },
+    {
+      "job": "E-2",
+      "rawResponse": "1. What is something small that reliably makes a workday better for you?\n\n2. What is a place you have visited that you would happily return to?\n\n3. What is a skill outside your job that you enjoy having?\n\n4. What kind of problem do you especially enjoy solving with other people?\n\n5. What is a piece of advice that has stayed with you?\n\n6. If you could instantly become good at one playful or practical activity, what would you choose?\n\n7. What is something you have changed your mind about in the past few years?\n\n8. What helps you feel at ease when you are new to a group?\n\n9. What is a meal, snack, or drink that brings people together for you?\n\n10. What is one thing you hope to take away from spending time together at this offsite?\n",
+      "observedCount": 10,
+      "expectedCount": 10,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 1,
+          "kind": "unearned qualifier",
+          "evidence": "\"Something small\" repeats a known maintainer objection."
+        },
+        {
+          "card": 5,
+          "kind": "semantic deck duplicate",
+          "evidence": "Same advice question as E-1; close to pool #46."
+        },
+        {
+          "card": 7,
+          "kind": "assumed experience",
+          "evidence": "Requires a changed opinion in the past few years."
+        }
+      ],
+      "reviewerNotes": "Four cards begin \"What is a\" and seven begin \"What is\". Questions 4, 6, and 8 are usable. A requested offsite can reasonably include hopes for it; question 10 is not automatically a forced-growth failure."
+    },
+    {
+      "job": "F-1",
+      "rawResponse": "What part of today is still asking for your attention?\n\nWhich feeling has been hardest to make room for today?\n\nWhat are you carrying from today that you haven't yet had words for?\n",
+      "observedCount": 3,
+      "expectedCount": 3,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 2,
+          "kind": "assumed experience",
+          "evidence": "Requires a feeling that was difficult to make room for and ranks it."
+        },
+        {
+          "card": 3,
+          "kind": "assumed experience",
+          "evidence": "Requires not yet having words for something being carried."
+        }
+      ],
+      "reviewerNotes": "Question 1 is promising. The last two both route the answer through difficulty expressing or accepting a feeling."
+    },
+    {
+      "job": "F-2",
+      "rawResponse": "What part of today is still with you?\n\nWhat did you need today that you didn't receive?\n\nIf you let this day remain unfinished, what would you want to acknowledge about it?\n",
+      "observedCount": 3,
+      "expectedCount": 3,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 4
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 2,
+          "kind": "assumed experience",
+          "evidence": "A difficult day does not establish that a need went unmet."
+        }
+      ],
+      "reviewerNotes": "Questions 1 and 3 make room for experience without a fix. Question 2 needs a small edit: ask what was needed without requiring it went unreceived."
+    },
+    {
+      "job": "G-1",
+      "rawResponse": "What are you making more room for in your life this year?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 1,
+          "kind": "assumed change",
+          "evidence": "Assumes the person is making more room for something this year."
+        }
+      ],
+      "reviewerNotes": "Correctly returns one card for a table setting. A wish about making room would leave more room than asserting a current change."
+    },
+    {
+      "job": "G-2",
+      "rawResponse": "What part of your life feels most worth celebrating right now?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 5,
+        "answerability": 4,
+        "humanMeaning": 4,
+        "editorialAppeal": 4
+      },
+      "readyWithoutEditing": true,
+      "issues": [],
+      "reviewerNotes": "A celebration frame supports asking what feels worth celebrating. Direct and appropriate for friends; the superlative is a mild taste concern rather than a blocking error."
+    },
+    {
+      "job": "H-1",
+      "rawResponse": "What has being a parent taught you about yourself that you didn't expect?\n\nWhat are you learning about the kind of parent you want to be, and what is shaping that understanding?\n",
+      "observedCount": 2,
+      "expectedCount": 2,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 5,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 1,
+          "kind": "unearned qualifier",
+          "evidence": "Learning is requested, but unexpected learning is not."
+        }
+      ],
+      "reviewerNotes": "Two actual questions, appropriate for writing. Question 2 honors the learning intention without requiring a cheerful lesson."
+    },
+    {
+      "job": "H-2",
+      "rawResponse": "What are you learning to trust your child with, and what makes that difficult?\n\nWhat has being a parent taught you about the person you want to be?\n",
+      "observedCount": 2,
+      "expectedCount": 2,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 1,
+          "kind": "copied calibration phrasing",
+          "evidence": "\"Learning to trust your child with\" follows the maintainer-feedback example closely."
+        },
+        {
+          "card": 1,
+          "kind": "assumed difficulty",
+          "evidence": "Learning to trust is not necessarily difficult."
+        }
+      ],
+      "reviewerNotes": "Learning itself is appropriate here. The failure is copying a nearby calibration subject/phrase and adding an unestablished difficulty."
+    },
+    {
+      "job": "I-1",
+      "rawResponse": "1. If our family were a band, what would each of us play—and what would we call ourselves?\n\n2. Which childhood rule did we quietly bend or break most often?\n\n3. If we swapped lives for a day, whose day would you choose, and what would you be curious to discover?\n\n4. What tiny thing does one of your siblings do that still makes you laugh?\n\n5. The train has taken us to a place none of us recognizes. Who becomes the guide, who gets us into trouble, and what do we do first?\n",
+      "observedCount": 5,
+      "expectedCount": 5,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 2,
+          "kind": "assumed shared event",
+          "evidence": "Requires siblings to have grown up together and repeatedly bent a rule."
+        },
+        {
+          "card": 4,
+          "kind": "unearned qualifier",
+          "evidence": "\"Tiny\" repeats the restrictive-modifier pattern."
+        },
+        {
+          "card": 4,
+          "kind": "assumed experience",
+          "evidence": "Requires a sibling habit that still makes the answerer laugh."
+        }
+      ],
+      "reviewerNotes": "Playful overall. Questions 1 and 3 are usable. Question 5 piles multiple decisions into one card."
+    },
+    {
+      "job": "I-2",
+      "rawResponse": "1. If our family had to enter a two-person team in a completely ridiculous competition, what would we compete in—and what would our strategy be?\n\n2. Which moment from growing up would make the funniest scene in a movie about us?\n\n3. If we swapped lives for one week, what would you try first—and what would you immediately ask me to explain?\n\n4. Design the perfect snack, soundtrack, and view for this train ride. What does each of us choose, and whose version wins?\n\n5. If we could send one harmless, slightly embarrassing question to our future selves, what would we ask?\n",
+      "observedCount": 5,
+      "expectedCount": 5,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 4,
+        "answerability": 3,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 1,
+          "kind": "arbitrary restriction",
+          "evidence": "A two-person team needlessly restricts an unspecified number of siblings."
+        },
+        {
+          "card": 2,
+          "kind": "assumed shared past",
+          "evidence": "Requires a funny shared growing-up moment."
+        },
+        {
+          "card": 4,
+          "kind": "clutter",
+          "evidence": "Snack, soundtrack, view, individual choices, and a winner overload one card."
+        },
+        {
+          "card": 5,
+          "kind": "unearned qualifier",
+          "evidence": "Slight embarrassment is an arbitrary constraint."
+        }
+      ],
+      "reviewerNotes": "Uses play successfully, but repeats band/team and life-swap ideas across independent runs. Mixed imperative setup plus questions in card 4 is not by itself a format failure."
+    },
+    {
+      "job": "J-1",
+      "rawResponse": "1. What was the first place in this new city where you felt you could exhale? Describe what made it feel that way.\n\n2. Which small ritual, route, or familiar face is helping this city become home for you?\n\n3. Write about something you brought with you that makes you feel connected to home, and how its meaning is changing here.\n\n4. Where in the city can you be most fully yourself? What does that place make possible?\n\n5. Imagine looking back on your first year in this city. What do you hope you will remember about the way home began to take shape?\n",
+      "observedCount": 5,
+      "expectedCount": 5,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 3,
+        "answerability": 2,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 1,
+          "kind": "assumed belonging",
+          "evidence": "Requires already having found a place to exhale."
+        },
+        {
+          "card": 2,
+          "kind": "assumed belonging",
+          "evidence": "Requires a helpful ritual, route, or familiar face."
+        },
+        {
+          "card": 2,
+          "kind": "unearned qualifier",
+          "evidence": "\"Small\" unnecessarily limits the subject."
+        },
+        {
+          "card": 3,
+          "kind": "assumed experience",
+          "evidence": "Requires bringing something whose meaning is changing."
+        },
+        {
+          "card": 4,
+          "kind": "assumed belonging",
+          "evidence": "Requires a place where the writer can be fully themselves."
+        }
+      ],
+      "reviewerNotes": "The frame asks about feeling at home, not proof that belonging has happened. The hopeful hypothetical in question 5 is more open."
+    },
+    {
+      "job": "J-2",
+      "rawResponse": "1. Write about a place in your new city where you can let your shoulders drop. What happens there?\n2. Which parts of your old home do you carry with you, and which parts of this city are beginning to make a home in you?\n3. Describe a small routine that is helping the new city become familiar.\n4. Who, what, or where helps you feel less like a visitor here?\n5. Imagine your new city welcoming you at the door. What would it say, and what would you want to say back?\n",
+      "observedCount": 5,
+      "expectedCount": 5,
+      "countPass": true,
+      "formatPass": true,
+      "scores": {
+        "frameFit": 3,
+        "answerability": 2,
+        "humanMeaning": 4,
+        "editorialAppeal": 3
+      },
+      "readyWithoutEditing": false,
+      "issues": [
+        {
+          "card": 1,
+          "kind": "assumed belonging",
+          "evidence": "Requires a place where the writer can relax."
+        },
+        {
+          "card": 2,
+          "kind": "assumed belonging",
+          "evidence": "Requires the city to be becoming home; the metaphor adds reading work."
+        },
+        {
+          "card": 3,
+          "kind": "assumed experience",
+          "evidence": "Requires an established helpful routine."
+        },
+        {
+          "card": 3,
+          "kind": "unearned qualifier",
+          "evidence": "\"Small routine\" repeats a rejected modifier."
+        },
+        {
+          "card": 4,
+          "kind": "assumed belonging",
+          "evidence": "Requires something that already makes the writer feel less like a visitor."
+        }
+      ],
+      "reviewerNotes": "Question 5 gives an imaginative writing start without requiring actual belonging. The other prompts converge on an arrival-success story."
+    }
+  ],
+  "summary": {
+    "jobs": 20,
+    "cards": 87,
+    "countPass": 19,
+    "formatPass": 20,
+    "readyWithoutEditing": 3
+  }
+}
