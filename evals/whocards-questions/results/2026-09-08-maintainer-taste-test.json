@@ -1,0 +1,289 @@
+{
+  "ratings": {
+    "review": "WhoCards final taste test",
+    "version": 4,
+    "generation": {
+      "models": {
+        "core-taste-test": "gpt-5.6-luna",
+        "additional-model-sample": "gpt-5.6-sol"
+      },
+      "reasoningEffort": "low",
+      "generationTurnsPerFrame": 1,
+      "editorialRewrites": 0,
+      "skillHashes": {
+        "SKILL.md": "e84d7de0e6994e733cd146cb9d7852be9b349805ff67ac9798c6134d8644b4c5",
+        "references/mission.md": "e324f5d2bc3fe7da7b92e2ec59906a909fe0829a8a8ff629dc204d8b9ee0ee0b",
+        "references/editorial-calibration.md": "2880c88af5913e1369c091e4dec5a501394784c4e1c01b690fcd415cc5b4b388",
+        "assets/pool-en.json": "6e2d8f4682df4c45211fb862bbef8d7cda9c93d48f66d121908bf074543344e6"
+      },
+      "sourceCommit": "b468df9b2eadbb33d3ea1dbd0e29f513a11b1f7e",
+      "skillChanges": "Two agreed delivery fixes: resolve count before private shortlisting; return requested cards without process commentary.",
+      "acceptanceSuggestion": {
+        "coreQuestions": 20,
+        "minimumRatingsOf4Or5": 16,
+        "additionalModelRatedSeparately": true
+      }
+    },
+    "exportedAt": "2026-09-08T21:12:06.977Z",
+    "scale": {
+      "1": "Misses",
+      "2": "Needs work",
+      "3": "Light edit",
+      "4": "Would use",
+      "5": "Keep"
+    },
+    "frames": [
+      {
+        "id": "parent-year",
+        "title": "A year of being a parent",
+        "origin": "Taste test",
+        "dimension": "Topic + time",
+        "frame": "Parenthood · the preceding twelve months · reflection",
+        "request": "Give me five questions about being a parent during this past year.",
+        "count": 5,
+        "model": "gpt-5.6-luna",
+        "questions": [
+          {
+            "id": "parent-year-1",
+            "text": "What part of being a parent took more out of you than people seemed to notice this past year?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "parent-year-2",
+            "text": "What did your child teach you about who you are during the past year?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "parent-year-3",
+            "text": "Which parenting rule or expectation did you rethink over the past year?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "parent-year-4",
+            "text": "What have you learned to trust your child with this past year?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "parent-year-5",
+            "text": "When did you feel most connected to your child during the past year?",
+            "rating": 5,
+            "note": ""
+          }
+        ],
+        "sampleRole": "core-taste-test"
+      },
+      {
+        "id": "difficult-day",
+        "title": "After a difficult day",
+        "origin": "Taste test",
+        "dimension": "Situation + intention",
+        "frame": "Today · alone · process a difficult day without trying to solve it",
+        "request": "Give me five questions to help me process a difficult day, without trying to solve it.",
+        "count": 5,
+        "model": "gpt-5.6-luna",
+        "questions": [
+          {
+            "id": "difficult-day-1",
+            "text": "What part of today is asking to be remembered?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "difficult-day-2",
+            "text": "What feeling from today is closest to the surface right now?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "difficult-day-3",
+            "text": "What did you carry through today that no one else could see?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "difficult-day-4",
+            "text": "What do you wish someone had understood about your day?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "difficult-day-5",
+            "text": "If today could speak, what would you want to hear from it?",
+            "rating": 5,
+            "note": ""
+          }
+        ],
+        "sampleRole": "core-taste-test"
+      },
+      {
+        "id": "friends-play",
+        "title": "A playful evening with friends",
+        "origin": "Taste test",
+        "dimension": "Audience + intention",
+        "frame": "Friends · dinner together · playful conversation",
+        "request": "Give me five playful questions for a dinner with friends.",
+        "count": 5,
+        "model": "gpt-5.6-luna",
+        "questions": [
+          {
+            "id": "friends-play-1",
+            "text": "If your week had a soundtrack, what song would be playing right now?",
+            "rating": null,
+            "note": ""
+          },
+          {
+            "id": "friends-play-2",
+            "text": "What harmless opinion would you defend as if it were a matter of national importance?",
+            "rating": null,
+            "note": ""
+          },
+          {
+            "id": "friends-play-3",
+            "text": "You can instantly become excellent at one wonderfully impractical skill. What do you choose?",
+            "rating": null,
+            "note": ""
+          },
+          {
+            "id": "friends-play-4",
+            "text": "What is the strangest food combination you genuinely enjoy?",
+            "rating": null,
+            "note": ""
+          },
+          {
+            "id": "friends-play-5",
+            "text": "If we all swapped lives for one day, whose day would you be most curious to try?",
+            "rating": null,
+            "note": ""
+          }
+        ],
+        "sampleRole": "core-taste-test"
+      },
+      {
+        "id": "new-city",
+        "title": "Writing about a new city",
+        "origin": "Taste test",
+        "dimension": "Topic + format",
+        "frame": "A new city · alone · reflective writing",
+        "request": "Write five reflective writing prompts about feeling at home in a new city.",
+        "count": 5,
+        "model": "gpt-5.6-luna",
+        "questions": [
+          {
+            "id": "new-city-1",
+            "text": "Describe a place in your new city where you can let your shoulders drop. What happens there, and what makes it feel like yours?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "new-city-2",
+            "text": "Write about a moment when the new city felt unexpectedly familiar. What did you notice, and what did that familiarity stir in you?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "new-city-3",
+            "text": "What parts of your old idea of home have you carried with you, and what new forms of home are beginning to take shape here?",
+            "rating": 2,
+            "note": "too broad, really 2 full questions"
+          },
+          {
+            "id": "new-city-4",
+            "text": "Follow one ordinary route through your new city. Along the way, notice the people, sounds, smells, and small rituals that help you feel connected—or remind you that you are still finding your place.",
+            "rating": 1,
+            "note": "not a question"
+          },
+          {
+            "id": "new-city-5",
+            "text": "If you could give your future self a key to one part of this city, where would it open, and what would you hope to find there?",
+            "rating": 5,
+            "note": ""
+          }
+        ],
+        "sampleRole": "core-taste-test"
+      },
+      {
+        "id": "team-offsite",
+        "title": "A team offsite",
+        "origin": "Taste test",
+        "dimension": "Audience + situation",
+        "frame": "Colleagues · an offsite · icebreaker questions",
+        "request": "Give me ten questions for a team offsite icebreaker.",
+        "count": 10,
+        "model": "gpt-5.6-sol",
+        "questions": [
+          {
+            "id": "team-offsite-1",
+            "text": "What is something you know how to do that your teammates might not expect?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "team-offsite-2",
+            "text": "Which part of your work brings out the best in you?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "team-offsite-3",
+            "text": "What helps you feel comfortable speaking up in a group?",
+            "rating": 3,
+            "note": "assumes you don't feel comfortable"
+          },
+          {
+            "id": "team-offsite-4",
+            "text": "If this team had a theme song, what would you nominate?",
+            "rating": 3,
+            "note": "weird word choice. \"If you had to pick a theme song for this team, what would it be?\" much clearer"
+          },
+          {
+            "id": "team-offsite-5",
+            "text": "Who taught you something that still shapes how you work?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "team-offsite-6",
+            "text": "What kind of challenge do you enjoy figuring out with other people?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "team-offsite-7",
+            "text": "When has a teammate made your day easier?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "team-offsite-8",
+            "text": "What is one thing you would happily give a five-minute masterclass on?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "team-offsite-9",
+            "text": "How do you like people to celebrate a win with you?",
+            "rating": 5,
+            "note": ""
+          },
+          {
+            "id": "team-offsite-10",
+            "text": "Imagine we have an unexpected free afternoon together. How should we spend it?",
+            "rating": 4,
+            "note": "No need to imagine, \"if we had an afternoon together, how would you like to spend it?\""
+          }
+        ],
+        "sampleRole": "additional-model-sample"
+      }
+    ]
+  },
+  "skillSnapshot": {
+    "SKILL.md": "---\nname: whocards-questions\ndescription: Write or revise WhoCards questions and reflective writing prompts for a frame that combines topic, time, situation, intention, audience, and format. Use when the user wants an insightful or thought-provoking question for a conversation, a check-in, a journal, or a writing prompt.\nlicense: MIT\nmetadata:\n  source: https://github.com/whocards/whocards-platform/tree/main/skills/whocards-questions\n---\n\n# WhoCards questions\n\nInvite honest self-expression, active listening, and connection. A good question helps people discover who someone is, or helps a person hear themselves in solo reflection. The voice is warm, curious, direct, and human. Play and difficult feelings both belong.\n\n## Ground the request\n\nRead [references/mission.md](references/mission.md) for what the questions serve, then [references/editorial-calibration.md](references/editorial-calibration.md) for worked examples and the maintainer's editorial taste.\n\nCheck candidates against the existing deck in [assets/pool-en.json](assets/pool-en.json), the English pool that ships with this skill. If the working directory contains `packages/decks/src/pool/questions.json`, read that instead; it is authoritative and may be newer. For a named deck, another language, or a list the user supplies, use that content too.\n\n## Understand the frame\n\nA **frame** combines any of these dimensions, expressed in ordinary language. The values below are illustrations, not a menu:\n\n- **Topic:** being a parent.\n- **Time:** this past year (the preceding twelve months unless otherwise specified).\n- **Situation:** after a difficult day.\n- **Intention:** process, reconnect, celebrate, explore.\n- **Audience:** alone, partners, friends, colleagues.\n- **Format:** a question, or a writing prompt that can use an imperative.\n- **Setting:** spoken at a table, written alone in a journal.\n\nAny frame works without new guidance: retirement, after an argument, a birthday dinner. Honor the supplied dimensions together. Parenthood during the past year means both; a time-only frame can range across life. A bare writing request means reflective personal writing. Journal and writing prompts can be questions or imperatives; honor the requested format while varying sentence construction across a set.\n\n**Resolve the output count first.** Use any explicit count; otherwise deliver one for a singular request and ten for a plural request or a deck, pack, or list. A table is a setting, not a count instruction. Shortlist privately, then deliver the required number. Follow the language and format the user names. Ask a clarifying question only when the missing context would change whether the questions suit the people at the table.\n\n## Write\n\n**Give the question a human subject.** Experiences, relationships, feelings, choices, desires, and imagination offer ways in. Favor someone's lived relationship with a topic over their general opinion or a definition. Keep one focus, with a short follow-up only when it opens something useful.\n\n**Let the person supply the experience.** Distinguish the context the user established from an event you invented. \"Who surprised you?\" requires someone to have done so; a question about expectations can stay direct without inventing that event. When a particular event is the subject, a conditional question can welcome it without assuming it happened. Feelings, perspectives, wishes, and hypothetical situations are already open and need no existence check.\n\n**Keep specificity that earns its place.** A concrete subject helps someone answer; an arbitrary qualifier limits what counts. Prefer \"a moment\" to \"an ordinary moment\" unless ordinary life is the requested subject. Let the answerer choose scale and intensity. Cut filler, elaborate setups, and decorative modifiers while preserving the question's meaning.\n\n**Invite depth without demanding a conclusion.** Welcome conflict, grief, love, uncertainty, and joy without requiring a confession, self-improvement plan, or cheerful lesson. Leave room for an unresolved experience. Learning and change are welcome when they serve the request; do not impose a lesson or growth arc. After a difficult day, make room to notice what happened without requiring resolution. At a mixed table, use language that travels across cultures and life circumstances. Match personal disclosure to the setting.\n\n**Preserve play.** A playful question can connect through shared imagination without a hidden lesson. For writing, give the pen somewhere to start while letting the writer choose their details.\n\n## Edit before delivering\n\nEvery question, whether it ships alone or in a set:\n\n- Does it serve the whole frame and reveal something human?\n- Can someone understand it on first hearing and answer honestly without inventing an event?\n- Which words restrict the answer or add reading work without adding meaning?\n- Does it echo the phrasing of an example in the references? Examples show taste; reusing their wording is copying.\n\nA set also needs a pass read together:\n\n- Do the questions offer different subjects, emotional paths, and sentence structures? If they sound like a repeated formula, rethink the questions themselves. Swapping opening words on the same construction is cosmetic variety, and a corrective device such as \"Is there…\" should not become the batch's default template.\n- Would several elicit essentially the same answer, here or in the existing deck? Replace duplicates unless adaptations were requested.\n\nRevise weak candidates before showing them. Preserve the useful subject when rewriting; identify a replacement as a replacement. The archived deck and current deck are evidence of taste, not an absolute bad/good classification.\n\nReturn only the requested questions or prompts unless the user asks for explanation. Keep drafting notes, pool checks, and reference commentary out of the reply. Draft in the conversation unless asked to save or integrate; for integration, inspect the target schema and translation conventions first. Translate naturally rather than copying English syntax.\n",
+    "references/mission.md": "# Mission\n\nWhat WhoCards questions serve. Quoted from the WhoCards mission page and `soul.md` so the skill works without a checkout.\n\n## The mission\n\n> In this age of disruption and complexity, when our differences are used to keep us separate, one of the most courageous things we can do is to show up for others with authenticity, vulnerability and openness.\n>\n> Whether or not we recognize it on a daily basis, we are all deeply interconnected. WhoCards' mission is to strengthen the authenticity of that interconnectedness, because we believe that a sense of honest homecoming to ourselves and each other has the power to spark a light strong enough to lead us out from anxiety and loneliness towards belonging and love.\n>\n> We believe that by speaking what's true for us and actively listening to others as they do the same, we can quiet the noise of the world and enter the warm hum of mutuality.\n>\n> Alchemy occurs: Two anxious \"I\"s morph quickly into a relaxed and delighted \"We.\"\n\n## What the product is\n\nWhoCards is a conversation game for people who are actually together. Curated questions move a real table, whether friends, a family, or a team, past \"What do you do?\" toward \"Who are you?\". The product succeeds when the phone stops mattering: someone reads a question aloud, and the conversation that follows is the experience. The same questions also serve one person in solo reflection or journaling.\n\n## The character\n\nA quiet invitation into a meaningful conversation: warm, curious, direct, human. Intimate rather than corporate. Playful rather than gamified. Bold without becoming loud. The question is always the focus.\n\n## What this means for a question\n\n- It deepens the conversation at the table rather than performing for a screen.\n- It respects the mixed table: bilingual, cross-generational, cross-cultural. Language should travel.\n- It stays honest: no manufactured urgency, no overclaiming, no trick.\n- It invites vulnerability without demanding it. Honest self-expression and active listening are the point, not a lesson or a verdict.\n",
+    "references/editorial-calibration.md": "# Editorial calibration\n\nExamples of the maintainer's editorial taste. The original Beautifully deck and the current deck live in the WhoCards repository (`packages/decks/src/decks/beautifully.questions.json` and `packages/decks/src/pool/questions.json`); the comparisons below are a selection that teaches taste, with exact English text and paragraph breaks flattened in tables. Interpretations of historical edits are inferences; the maintainer's direct feedback takes precedence.\n\n## What the revisions teach\n\n| ID  | Beautifully                                                              | Current                                                       | Editorial implication                                                                     |\n| --- | ------------------------------------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |\n| 25  | Do you believe in religion, and why?                                     | What is your relationship with religion?                      | A lived relationship gives more room than defending a position.                           |\n| 24  | What is one thing about yourself you feel that you should be working on? | What's a recurring conflict in your life?                     | Notice experience rather than begin with a verdict about what needs fixing.               |\n| 17  | For what in your life do you feel most grateful for at the moment?       | What is something you are grateful for at the moment?         | Let someone choose an answer without ranking all possibilities.                           |\n| 46  | What's the best advice you've been given?                                | What's the best advice you've been given? Who gave it to you? | A useful follow-up opens a relationship behind the answer.                                |\n| 35  | What does vulnerability mean to you?                                     | What are your two favorite dance moves? Show them!            | A replacement can create connection through shared play rather than discussing a concept. |\n\nThe current deck also includes \"How do you like to be loved?\", \"When do you feel alone?\", and \"How do you feel about death?\" Direct, brief, emotionally demanding questions remain welcome. Its absurd jungle-and-trombone question is permission for imagination; its presence does not make absurdity a required ingredient.\n\nThese changes show a range of useful moves, not a rule that every question must request a story, avoid a yes/no opening, or become lighthearted. A shared ID sometimes means the subject was replaced entirely. English comparisons do not establish naturalness in other translations.\n\n## Maintainer feedback on generated questions · 2026-09-08\n\nFrame: being a parent (no time constraint). Two questions received 5/5 with no wording correction:\n\n> What part of being a parent takes more out of you than people seem to notice?\n\n> What is a parenting rule you were sure about before you became a parent? How do you feel about it now?\n\nOther feedback establishes these preferences:\n\n- A shared parent-and-child experience was a good subject, but \"a small thing\" and the long setup added restriction and filler. \"Something\" leaves the scale open.\n- Realizing that you take yourself too seriously was a good direction. Requiring the child to have made the parent laugh added an unnecessary event.\n- For trust, the maintainer preferred something the parent is learning to trust the child with over a generic easy/hard comparison.\n- Questions about a surprising life change or a memorable conversation should allow that there may not be one. Asking \"Who did you get to see a different side of?\" wrongly presumed an event.\n- In \"What mattered a lot…\", remove \"a lot.\" In a question about a moment worth photographing, remove \"ordinary.\" Keep useful meaning while letting the answerer choose significance.\n\nThe next revision was rejected before review because four out of five questions began \"Is there…\". The lesson is to preserve openness through different kinds of invitations, not to insert the same hedge everywhere. These feedback examples are evidence for editorial judgment, not templates to copy across a batch.\n",
+    "assets/pool-en.json": "{\n  \"1\": \"What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)\",\n  \"2\": \"What is something that makes you feel small?\",\n  \"3\": \"Remembering yourself as a child: What were your favorite things?\\n\\nWhat made you feel excited?\",\n  \"4\": \"What was happening in the world at the time of your birth, and how do you think it shaped who you are today?\",\n  \"5\": \"What do you fear most at the moment?\",\n  \"6\": \"What turns you on?\",\n  \"7\": \"Who is a person you admire?\\n\\nWhy?\",\n  \"8\": \"What do you love dearly?\",\n  \"9\": \"What challenges are you facing right now?\",\n  \"10\": \"How do you deal with conflicts when you are at your worst?\",\n  \"11\": \"How do you like to be loved?\",\n  \"12\": \"What was your last moment of pure joy?\",\n  \"13\": \"Is there something you need to forgive someone for?\\n\\nOr forgive yourself for?\",\n  \"14\": \"In our current times, what gives you hope?\",\n  \"15\": \"Given the choice of anyone in the world, who would you want as a dinner guest?\\n\\nWhy?\",\n  \"16\": \"If someone covered your basic cost of living, what would you do with your life?\",\n  \"17\": \"What is something you are grateful for at the moment?\",\n  \"18\": \"What skills or qualities do you see in other people that you envy?\",\n  \"19\": \"Is there something that you’ve dreamed of doing for a long time?\\n\\nIf so, why haven’t you done it yet?\",\n  \"20\": \"Who are two people that shaped your life and how did they do so?\",\n  \"21\": \"If you knew that in one year you would die suddenly, what would you change about the way you are living now?\\n\\nWhy?\",\n  \"22\": \"What was the last thing you cried about?\",\n  \"23\": \"Where or with whom do you feel at \\\"home\\\" (besides from your current address)?\\n\\nWhy?\",\n  \"24\": \"What's a recurring conflict in your life?\",\n  \"25\": \"What is your relationship with religion?\",\n  \"26\": \"What was a moment that made you feel embarrassed?\",\n  \"27\": \"What do you sometimes pretend to be?\",\n  \"28\": \"What is something that made you feel proud?\",\n  \"29\": \"You are lost in a jungle with a trombone, a sheet of aluminum, a pack of chewing gum and a set of keys. How do you save the world?\",\n  \"30\": \"What do you do to forget about life for a while?\",\n  \"31\": \"If anything was possible, which problem in the world would you solve?\\n\\nWhy?\",\n  \"32\": \"What is some feedback you've gotten more than once?\\n\\nAnd what did you do about it?\",\n  \"33\": \"What do you do for your personal well-being in your daily life?\",\n  \"34\": \"What is a crazy dream that you remember?\",\n  \"35\": \"What are your two favorite dance moves?\\n\\nShow them!\",\n  \"36\": \"What did you work the hardest for in life?\\n\\nWhy?\",\n  \"37\": \"How did the way money was dealt with in your family shape you?\",\n  \"38\": \"How is your well-being at the moment?\",\n  \"39\": \"What is your best memory of great teamwork?\",\n  \"40\": \"What is one dream you have for your future?\",\n  \"41\": \"What's one of your earliest memories?\",\n  \"42\": \"When do you feel alone?\",\n  \"43\": \"Is there something you are addicted to?\\n\\nWhat feels right about it?\",\n  \"44\": \"What is your relationship with your work?\",\n  \"45\": \"What are your greatest weaknesses?\",\n  \"46\": \"What’s the best advice you’ve been given?\\n\\nWho gave it to you?\",\n  \"47\": \"What were some moments in your life when you felt the most afraid?\",\n  \"48\": \"How do you feel about death?\",\n  \"49\": \"What is a topic that is difficult for you to talk about at the moment?\",\n  \"50\": \"What is a trait you inherited from one of your parents/caregivers that you really like or dislike?\",\n  \"51\": \"How is nature part of your life?\",\n  \"52\": \"Are you in a healthy relationship with technology?\\n\\nWhy?\",\n  \"53\": \"What life experience or decision made the biggest impact on your life?\",\n  \"54\": \"What is one of the most difficult things you’ve ever gone through?\",\n  \"55\": \"What is something you love about yourself?\",\n  \"56\": \"How were you as a teenager?\",\n  \"57\": \"What would you like to let go of?\",\n  \"58\": \"What was your first love story?\",\n  \"59\": \"Who in your friend or family circle would you like to know better?\\n\\nWhy?\",\n  \"60\": \"What's your relationship with your body?\\n\\nHow has it changed over time?\",\n  \"61\": \"Do you ever feel socially awkward?\\n\\nWhen and with whom?\",\n  \"62\": \"Do you have a heartbreak story?\\n\\nWhat is it?\",\n  \"63\": \"People are often very surprised when they discover ___ about me. Why do you think so?\",\n  \"64\": \"When did you think \\\"oh no, not again\\\", last?\\n\\nWhy?\",\n  \"65\": \"What is the story you think others have about you?\",\n  \"66\": \"When were/are you happiest or most content in your life?\"\n}\n"
+  }
+}

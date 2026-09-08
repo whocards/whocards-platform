@@ -21,7 +21,7 @@
     "prompt": "Write journal prompts to reflect on this past year.",
     "expect": {
       "count": 10,
-      "format": "writing prompts, solo"
+      "format": "writing prompts that include a question, solo"
     }
   },
   {
@@ -42,7 +42,7 @@
   },
   {
     "id": "F",
-    "prompt": "Give me three questions to help me process a difficult day, without trying to solve it.",
+    "prompt": "Give me three questions to help me process a difficult day.",
     "expect": {
       "count": 3,
       "format": "questions",
@@ -81,8 +81,35 @@
     "prompt": "Write five reflective writing prompts about feeling at home in a new city.",
     "expect": {
       "count": 5,
-      "format": "writing prompts, solo",
+      "format": "writing prompts that include a question, solo",
       "note": "Transfer frame: allow belonging or lack of it; give the pen somewhere concrete to start."
+    }
+  },
+  {
+    "id": "K",
+    "prompt": "Give me a question to help me process a difficult day.",
+    "expect": {
+      "count": 1,
+      "format": "question",
+      "note": "Unassisted single-question flow: processing approach comes from the skill, no extra user qualifier or menu."
+    }
+  },
+  {
+    "id": "L",
+    "prompt": "Give me a question about being a parent.",
+    "expect": {
+      "count": 1,
+      "format": "question",
+      "note": "One deliverable that stands alone; no copied calibration anchor."
+    }
+  },
+  {
+    "id": "M",
+    "prompt": "Give me a writing prompt.",
+    "expect": {
+      "count": 1,
+      "format": "writing prompt that includes a question",
+      "note": "Reflective personal writing by default, not an instruction-only exercise."
     }
   }
 ]

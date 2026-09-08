@@ -1,6 +1,12 @@
 # Evals
 
-See the [2026-09-08 baseline report](REPORT.md) and its preserved raw results for the first recorded run.
+Recorded runs, newest first:
+
+- [Maintainer taste test · 2026-09-08](REPORT-2026-09-08-maintainer.md) — 21/25 reviewed items rated 4 or 5; five unrated. Human taste calibration and single-question follow-up.
+- [Claude Haiku 4.5 · 2026-09-08](REPORT-2026-09-08-haiku.md) — same skill bytes, same scenarios, different model. Better cards, worse counting: plural asks for a group setting returned one card.
+- [gpt-5.6-luna baseline · 2026-09-08](REPORT.md) — the first recorded run.
+
+Each report links its preserved raw results.
 
 Test the skill's first response separately from any later editorial revision. The earlier successful Luna batch had several review rounds; it is evidence for that workflow, not an unaided first-pass success rate.
 
@@ -12,7 +18,7 @@ Use the ignored `experiments/whocards-questions/` directory for trial instructio
 
 ## Prepare and generate
 
-`prompts.json` contains the original five scenarios plus explicit-count, table-setting, requested-learning, and transfer-frame cases. From the repository root:
+`prompts.json` contains the original five scenarios plus explicit-count, table-setting, requested-learning, transfer-frame, and bare single-question cases. F now omits the extra no-solutions qualifier; K–M check single-question processing, parenting, and writing. The historical archives retain their original prompts and expectations. From the repository root:
 
 ```sh
 mkdir -p experiments/whocards-questions
@@ -36,7 +42,26 @@ codex exec --ephemeral --skip-git-repo-check --ignore-user-config \
   - < "$run_dir/jobs/A-1.txt"
 ```
 
-Check your CLI's help for supported flags. The preparation script has no model dependency and does not launch paid calls. Generation through another agent is equally valid if its settings and raw outputs are retained. Never reuse an output filename for a rerun.
+Check your CLI's help for supported flags.
+
+For an authenticated Claude Code CLI, a fresh non-interactive session can run an individual job:
+
+```sh
+# Run from an empty directory outside the WhoCards checkout.
+# Disabling skills, settings and MCP keeps the bundled skill in the job file the
+# only WhoCards guidance in the session.
+run_dir=/absolute/path/to/whocards/experiments/whocards-questions/run-01
+claude -p --model MODEL_ID --restricted --disable-slash-commands --strict-mcp-config \
+  --output-format json < "$run_dir/jobs/A-1.txt" > "$run_dir/raw-json/A-1.json"
+```
+
+Read the response from the JSON `result` field. Do not capture plain stdout with shell redirection:
+the CLI rewrites the file from the start with its final message, which can leave the tail of a
+longer draft after the real answer. That corrupted a whole batch once; see the discarded attempt in
+the [Haiku 4.5 report](REPORT-2026-09-08-haiku.md). Generation on a Claude subscription consumes
+subscription usage rather than metered API credits.
+
+The preparation script has no model dependency and does not launch paid calls. Generation through another agent is equally valid if its settings and raw outputs are retained. Never reuse an output filename for a rerun.
 
 ## Review
 
@@ -53,7 +78,7 @@ Score each dimension from 1 (fails) through 3 (usable with editing) to 5 (ready 
 
 Also flag invented events, forced lessons, unnecessary disclosure, filler, copied examples, and exact or semantic deck duplicates. Learning and change are valid when requested; the problem is imposing a lesson. In sets, inspect repeated subjects, emotional paths, sentence constructions, and answers. Repeated opening words are a clue, not an automatic failure.
 
-Scenario D checks attraction to the approved parenting examples. F–H test instruction boundaries. I–J are initial transfer frames absent from the skill's illustrations; rotate in genuinely unseen frames later, since repeatedly tuning against them makes them regression cases.
+Scenario D checks attraction to the approved parenting examples. F–H test instruction boundaries. K–M require a usable standalone answer, with no menu or editorial instructions supplied by the user. I–J are initial transfer frames absent from the skill's illustrations; rotate in genuinely unseen frames later, since repeatedly tuning against them makes them regression cases.
 
 Save raw responses before reviewing. Put any rewrites in separate files and label them reviewed outputs. Compare revisions on the same requests and generation settings; preserve both skill snapshots. Do not claim a before/after improvement without running both versions.
 
