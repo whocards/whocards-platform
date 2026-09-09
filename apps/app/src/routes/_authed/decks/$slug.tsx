@@ -99,6 +99,15 @@ function DeckDetail() {
         </div>
 
         <div className="flex shrink-0 flex-col items-stretch gap-2">
+          {deckMeta.data ? (
+            <Link
+              to="/facilitate"
+              search={{deck: slug}}
+              className="flex min-h-11 items-center justify-center rounded-full bg-yellow-400 px-4 text-sm font-bold text-darker"
+            >
+              Facilitate this deck
+            </Link>
+          ) : null}
           {deckMeta.data && canApprove ? (
             <select
               value={deckMeta.data.status}

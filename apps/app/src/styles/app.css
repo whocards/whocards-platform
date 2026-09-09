@@ -37,9 +37,22 @@
   --color-primary-light: #f9d75f;
   --color-primary-dark: #c058d2;
 
+  /* Facilitator Mode only (2026-07-05) — a warm "time's almost up" accent and
+   * a saturated card/panel tone for the deck/dose picker, matched to the
+   * validated prototype (see docs/adr/0006-entitlement-seam.md's sibling
+   * issue #221). Kept scoped to that feature's classes below rather than
+   * used as general-purpose tokens. */
+  --color-warm: #f0894e;
+  --color-panel: #1a1030;
+  --color-hairline: #2c2148;
+
   --font-sans:
     ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
     'Noto Color Emoji';
+  /* Also Facilitator Mode only — an editorial serif for the question text and
+   * headlines, the one deliberate "feel" break from the rest of the app's
+   * plain sans utility chrome. */
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
 }
 
 *,
@@ -128,6 +141,12 @@ a {
 }
 .min-w-11 {
   min-width: 2.75rem;
+}
+/* 52px — Facilitator Mode's larger primary-action height (Start/Next/Back),
+ * matched to the validated prototype's more confident, less fiddly tap
+ * targets for a screen used mid-session, often one-handed. */
+.min-h-13 {
+  min-height: 3.25rem;
 }
 .w-full {
   width: 100%;
@@ -224,6 +243,10 @@ a {
   padding-left: 1.5rem;
   padding-right: 1.5rem;
 }
+.px-10 {
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
+}
 .py-1 {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
@@ -306,6 +329,9 @@ a {
 .font-bold {
   font-weight: 700;
 }
+.font-serif {
+  font-family: var(--font-serif);
+}
 .uppercase {
   text-transform: uppercase;
 }
@@ -373,6 +399,9 @@ a {
 .border-gray-light\/40 {
   border-color: color-mix(in srgb, var(--color-gray-light) 40%, transparent);
 }
+.border-hairline {
+  border-color: var(--color-hairline);
+}
 .text-white {
   color: var(--color-white);
 }
@@ -396,6 +425,9 @@ a {
 .disabled\:opacity-60:disabled {
   opacity: 0.6;
 }
+.disabled\:opacity-30:disabled {
+  opacity: 0.3;
+}
 .placeholder\:text-gray-dark::placeholder {
   color: var(--color-gray-dark);
 }
@@ -414,4 +446,400 @@ a {
   height: 2px;
   border-radius: 9999px;
   background-color: currentColor;
+}
+
+/* ---------------------------------------------------------------------------
+ * Facilitator Mode (issue #221, 2026-07-05) — routes/_authed/facilitate.tsx.
+ * The deck/dose picker (FacilitateApp's 'pick' stage) renders in-flow, inside
+ * the normal authed page chrome, like every other page — plain utility
+ * classes, no bespoke wrapper needed. Once a session starts, the runner + end
+ * screen (`.facilitate-overlay`) take over the full viewport — an
+ * intentional, considered exception to "every page keeps the header": the
+ * calm, focused, one-question-at-a-time pacing this whole feature is built
+ * around is worth briefly stepping outside the app chrome for, the same way
+ * the validated prototype has no chrome at all. The exit control
+ * (`.facilitate-exit`) is this app's replacement for the "back button" a
+ * native/prototype shell would otherwise provide.
+ * --------------------------------------------------------------------------- */
+
+.facilitate-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-yellow-400);
+  border: 1px solid color-mix(in srgb, var(--color-yellow-400) 40%, transparent);
+  border-radius: 9999px;
+  padding: 0.3125rem 0.75rem;
+}
+.facilitate-badge.is-locked {
+  color: var(--color-gray-lighter);
+  border-color: var(--color-hairline);
+}
+
+.facilitate-title {
+  font-family: var(--font-serif);
+  font-size: clamp(1.75rem, 7.5vw, 2.625rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0.75rem 0 0.5rem;
+}
+.facilitate-sub {
+  color: var(--color-gray-lighter);
+  max-width: 30ch;
+  margin: 0 auto 1.25rem;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+.facilitate-label {
+  /* Verified against the validated prototype (2026-07-05): its `.label` used
+   * `align-self: flex-start`, but that pins the whole flex item to the
+   * container's edge — not just its text — detaching the label from the
+   * centered 360px column of deck/dose options beneath it (confirmed in both
+   * the prototype and here via a real render, not just reading the source).
+   * `text-align: left` on an equal-width, equally-centered box gets the
+   * intended look (label text flush with the options below it) without that
+   * escape. */
+  text-align: left;
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-gray-dark);
+  margin: 0.375rem 0 0.5rem;
+  width: 100%;
+  max-width: 22.5rem;
+}
+
+/* deck picker */
+.facilitate-decks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5625rem;
+  width: 100%;
+  max-width: 22.5rem;
+}
+.facilitate-deck {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+  width: 100%;
+  background: var(--color-panel);
+  border: 1px solid var(--color-hairline);
+  border-radius: 0.9375rem;
+  padding: 0.8125rem 1rem;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+.facilitate-deck[aria-selected='true'] {
+  border-color: var(--color-yellow-400);
+  background: color-mix(in srgb, var(--color-panel) 80%, var(--color-yellow-400) 20%);
+}
+.facilitate-deck-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+.facilitate-deck-count {
+  font-size: 0.75rem;
+  color: var(--color-gray-dark);
+  margin-top: 0.125rem;
+}
+.facilitate-deck-tick {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-hairline);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.6875rem;
+  color: var(--color-background);
+  visibility: hidden;
+}
+.facilitate-deck[aria-selected='true'] .facilitate-deck-tick {
+  background: var(--color-yellow-400);
+  border-color: var(--color-yellow-400);
+  visibility: visible;
+}
+
+/* dose picker */
+.facilitate-doses {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 22.5rem;
+}
+.facilitate-dose {
+  flex: 1;
+  background: var(--color-panel);
+  border: 1px solid var(--color-hairline);
+  border-radius: 0.875rem;
+  padding: 0.8125rem 0.5rem 0.75rem;
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+.facilitate-dose[aria-selected='true'] {
+  border-color: var(--color-primary-dark);
+  background: color-mix(in srgb, var(--color-panel) 78%, var(--color-primary-dark) 22%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-dark) 12%, transparent);
+}
+.facilitate-dose-label {
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+.facilitate-dose-detail {
+  font-size: 0.6875rem;
+  color: var(--color-gray-dark);
+  margin-top: 0.25rem;
+  line-height: 1.3;
+}
+.facilitate-dose[aria-selected='true'] .facilitate-dose-detail {
+  color: var(--color-gray-lighter);
+}
+.facilitate-dose-desc {
+  font-size: 0.78rem;
+  color: var(--color-primary-dark);
+  margin: 0.75rem 0 1.375rem;
+  min-height: 1.2em;
+  max-width: 22.5rem;
+}
+
+/* ---------- the full-viewport runner + end overlay ---------- */
+.facilitate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--color-background);
+  color: var(--color-white);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.facilitate-warmth {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    120% 90% at 50% 108%,
+    color-mix(in srgb, var(--color-warm) 22%, transparent),
+    transparent 60%
+  );
+  transition: opacity 1.2s ease;
+}
+.facilitate-timerbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: color-mix(in srgb, var(--color-white) 6%, transparent);
+  z-index: 5;
+}
+.facilitate-timerbar > i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--color-yellow-400);
+  transform-origin: left;
+  font-style: normal;
+}
+
+/* Shared inner column for both overlay screens (the running view and the end
+ * summary) — the rtop/dots/qwrap/timerpill/controls classes below are only
+ * ever rendered by SessionRunner, while a session is actually running. */
+.facilitate-stage {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+.facilitate-rtop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1.25rem 1.25rem 0.5rem;
+  padding-top: calc(1.25rem + env(safe-area-inset-top));
+  font-size: 0.75rem;
+  color: var(--color-gray-dark);
+}
+.facilitate-exit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-gray-light) 30%, transparent);
+  color: var(--color-gray-lighter);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.facilitate-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 50%;
+}
+.facilitate-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-hairline);
+}
+.facilitate-dot.is-done {
+  background: var(--color-gray-dark);
+}
+.facilitate-dot.is-now {
+  background: var(--color-yellow-400);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-yellow-400) 15%, transparent);
+}
+.facilitate-count {
+  flex-shrink: 0;
+  min-width: 3ch;
+  text-align: right;
+}
+
+.facilitate-qwrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0.75rem 1.75rem;
+  min-height: 0;
+}
+.facilitate-act {
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-primary-dark);
+  margin-bottom: 1.25rem;
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
+}
+.facilitate-question {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  line-height: 1.28;
+  letter-spacing: -0.01em;
+  font-size: clamp(1.4375rem, 6.2vw, 2.375rem);
+  max-width: 16ch;
+  text-wrap: balance;
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
+}
+.facilitate-qwrap.is-swapping .facilitate-question,
+.facilitate-qwrap.is-swapping .facilitate-act {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.facilitate-timerpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5625rem;
+  margin-top: 1.75rem;
+  background: transparent;
+  border: 1px solid var(--color-hairline);
+  color: var(--color-gray-dark);
+  border-radius: 9999px;
+  padding: 0.5rem 0.9375rem;
+  font-size: 0.78rem;
+}
+.facilitate-ring {
+  width: 15px;
+  height: 15px;
+}
+.facilitate-ring circle {
+  fill: none;
+  stroke-width: 2.4;
+}
+.facilitate-ring .bg {
+  stroke: var(--color-hairline);
+}
+.facilitate-ring .fg {
+  stroke: var(--color-yellow-400);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+.facilitate-timerpill.is-low {
+  color: var(--color-warm);
+  border-color: color-mix(in srgb, var(--color-warm) 50%, transparent);
+}
+.facilitate-timerpill.is-low .facilitate-ring .fg {
+  stroke: var(--color-warm);
+}
+.facilitate-timerpill.is-wrap {
+  color: var(--color-warm);
+  border-color: var(--color-warm);
+  animation: facilitate-softpulse 2.2s ease-in-out 2;
+}
+@keyframes facilitate-softpulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-warm) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--color-warm) 10%, transparent);
+  }
+}
+
+.facilitate-hint {
+  position: absolute;
+  bottom: calc(5.625rem + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-warm);
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+}
+.facilitate-hint.is-visible {
+  opacity: 1;
+}
+
+.facilitate-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+}
+
+.facilitate-end-mark {
+  font-size: 2.875rem;
+  margin-bottom: 0.375rem;
+  color: var(--color-yellow-400);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .facilitate-timerpill.is-wrap {
+    animation: none;
+  }
+  .facilitate-warmth,
+  .facilitate-question,
+  .facilitate-act,
+  .facilitate-deck,
+  .facilitate-dose {
+    transition: none;
+  }
 }
