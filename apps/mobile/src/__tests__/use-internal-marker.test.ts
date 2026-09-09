@@ -27,9 +27,13 @@ import {useInternalMarker} from '../hooks/use-internal-marker'
 import {getStoredInternal, setStoredInternal} from '../lib/internal-store'
 
 describe('useInternalMarker', () => {
+  // held as a variable rather than asserted via `Alert.alert`: referencing the
+  // method unbound trips typescript/unbound-method
+  let alertSpy: jest.SpyInstance
+
   beforeEach(() => {
     jest.clearAllMocks()
-    jest.spyOn(Alert, 'alert').mockImplementation(() => undefined)
+    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined)
   })
 
   it('starts off, and stays off, when nothing has ever been persisted', async () => {
@@ -59,8 +63,8 @@ describe('useInternalMarker', () => {
     expect(result.current.internal).toBe(true)
     expect(await getStoredInternal()).toBe(true)
     expect(mockSetInternalMarker).toHaveBeenCalledWith(true)
-    expect(Alert.alert).toHaveBeenCalledTimes(1)
-    expect(Alert.alert).toHaveBeenCalledWith(expect.stringContaining('ON'), expect.any(String))
+    expect(alertSpy).toHaveBeenCalledTimes(1)
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('ON'), expect.any(String))
   })
 
   it('toggle() again turns the marker back off and unregisters with PostHog', async () => {
@@ -74,6 +78,6 @@ describe('useInternalMarker', () => {
     expect(result.current.internal).toBe(false)
     expect(await getStoredInternal()).toBe(false)
     expect(mockSetInternalMarker).toHaveBeenCalledWith(false)
-    expect(Alert.alert).toHaveBeenCalledWith(expect.stringContaining('OFF'), expect.any(String))
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('OFF'), expect.any(String))
   })
 })
