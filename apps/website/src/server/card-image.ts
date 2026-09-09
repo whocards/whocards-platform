@@ -275,7 +275,11 @@ const bidi = bidiFactory()
 
 // Rough max characters per visual line at a given font size, used to wrap RTL
 // text before reordering (Satori in this version does no bidi reordering, so we
-// reorder ourselves and feed it pre-broken visual-order lines). 0.52 is tuned
+// reorder ourselves and feed it pre-broken visual-order lines — which is why
+// satori is held at ^0.26.0: 0.33 reorders internally, so it re-reverses our
+// already-visual lines and Hebrew renders backwards. Moving off the pin means
+// deleting toVisualRtl/maxCharsPerLine and letting Satori wrap RTL itself).
+// 0.52 is tuned
 // specifically for Hebrew's average glyph width for this *actual* wrap step —
 // deliberately a hair narrower than avgCharWidthFactor's 0.55 (the coarser
 // constant the autofit below uses to just *estimate* a line count across every
