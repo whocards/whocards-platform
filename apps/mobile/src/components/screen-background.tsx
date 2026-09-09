@@ -1,11 +1,11 @@
 import {Image} from 'expo-image'
-import {useColorScheme} from 'nativewind'
 import type {ReactNode} from 'react'
 import {StyleSheet, View} from 'react-native'
 import type {SharedValue} from 'react-native-reanimated'
 import Animated, {useAnimatedStyle} from 'react-native-reanimated'
 import {colors} from '@whocards/tokens'
 
+import {useIsDark} from '@/lib/color-scheme'
 // Rasterized from the website's public/background.svg (the bg-hero texture).
 // Dark is the original (dark-only) asset; light is a recolored variant for the
 // Theme Display setting (issue #163) — see docs/design/163-light-mode/proposal.md.
@@ -40,8 +40,7 @@ type ScreenBackgroundProps = {
  * of forcing this whole canvas dark (see `app/play/[deck].tsx`).
  */
 export const ScreenBackground = ({children, textureOpacity, table}: ScreenBackgroundProps) => {
-  const {colorScheme} = useColorScheme()
-  const isDark = colorScheme !== 'light'
+  const isDark = useIsDark()
   const midTable = table && isDark
 
   const textureStyle = useAnimatedStyle(() => ({

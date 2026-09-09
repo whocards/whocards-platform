@@ -1,7 +1,6 @@
 import * as Linking from 'expo-linking'
 import {useLocalSearchParams, useRouter} from 'expo-router'
 import {StatusBar} from 'expo-status-bar'
-import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
 import {AppState, Text, useWindowDimensions, View} from 'react-native'
@@ -31,6 +30,7 @@ import {usePlayerChrome} from '@/hooks/use-player-chrome'
 import {useReviewPrompt} from '@/hooks/use-review-prompt'
 import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
+import {useIsDark} from '@/lib/color-scheme'
 import {incrementCardCount, incrementSessionCount} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
 import {getStoredGame} from '@/lib/game-store'
@@ -184,8 +184,7 @@ const DeckPlayer = ({
   // Themed (issue #173): the canvas/chrome around the Question follows the Theme
   // Display setting like every other screen, and so does the Question's own text
   // (QuestionText's `themedText`, below) — there's no unthemed surface left here.
-  const {colorScheme} = useColorScheme()
-  const isDark = colorScheme !== 'light'
+  const isDark = useIsDark()
 
   // the shared headless engine — identical behaviour to the web <Play> (ADR-0003)
   const reducer = useMemo(() => navReducer(questionIds), [questionIds])

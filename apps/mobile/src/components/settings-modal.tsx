@@ -1,5 +1,4 @@
 import {Ionicons} from '@expo/vector-icons'
-import {useColorScheme} from 'nativewind'
 import {StatusBar} from 'expo-status-bar'
 import {useEffect, useState} from 'react'
 import {
@@ -29,6 +28,7 @@ import {LanguageSettingsPage} from '@/components/language-settings-page'
 import {SecondLanguageSettingsPage} from '@/components/second-language-settings-page'
 import {SettingsSheetHeader} from '@/components/settings-sheet-header'
 import {ThemeSettingsPage} from '@/components/theme-settings-page'
+import {useIsDark} from '@/lib/color-scheme'
 import {getStoredGame, setStoredGame} from '@/lib/game-store'
 import {selection} from '@/lib/haptics'
 import {GAME_CATALOG} from '@/lib/games'
@@ -218,8 +218,7 @@ export const SettingsModal = ({
   onSelectTheme,
 }: SettingsModalProps) => {
   const insets = useSafeAreaInsets()
-  const {colorScheme} = useColorScheme()
-  const isDark = colorScheme !== 'light'
+  const isDark = useIsDark()
   const chevronColor = isDark ? colors.gray.dark : colors.mutedOnLight
   const reduceMotion = useReducedMotion()
 

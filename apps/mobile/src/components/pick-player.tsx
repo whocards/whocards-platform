@@ -3,7 +3,6 @@ import {Image} from 'expo-image'
 import {ScreenBackground} from '@/components/screen-background'
 import {useRouter} from 'expo-router'
 import {StatusBar} from 'expo-status-bar'
-import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
 import {AppState, Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
@@ -31,6 +30,7 @@ import {usePlayerChrome} from '@/hooks/use-player-chrome'
 import {useReviewPrompt} from '@/hooks/use-review-prompt'
 import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
+import {useIsDark} from '@/lib/color-scheme'
 import {incrementCardCount, incrementSessionCount} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
@@ -113,8 +113,7 @@ export const PickPlayer = ({
   // Display setting like every other screen now; the deck/card faces below
   // (CardBack, the revealed face) are untouched — they stay dark in both themes
   // (amendment 2, docs/design/163-light-mode/proposal.md).
-  const {colorScheme} = useColorScheme()
-  const isDark = colorScheme !== 'light'
+  const isDark = useIsDark()
 
   const reducer = useMemo(() => pickReducer(questionIds), [questionIds])
   const [{nav, phase, dealt}, dispatch] = useReducer(reducer, questionIds, getInitialPick)

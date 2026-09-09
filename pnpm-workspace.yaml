@@ -41,6 +41,18 @@ catalog:
   '@types/react-dom': ^19.2.7
   '@types/node': ^24.10.2
 
+# react-native-css 3 (NativeWind v5) resolves lightningcss through
+# @expo/metro-config rather than through its own peer dependency, and
+# lightningcss >= 1.32 regressed the napi visitor bridge: with a JS `visitor`
+# installed, any unresolved `var()` makes `transform()` throw
+# `failed to deserialize; expected an object-like struct named Specifier`.
+# Tailwind v4's preflight and `@property` rules both emit such vars, so every
+# Metro build (and the jest globalSetup that mirrors it) would fail. 1.30.1 is
+# the version NativeWind's v5 migration guide pins. Scoped to @expo/metro-config
+# so @tailwindcss/node keeps its own exact 1.32.0 for the website build.
+overrides:
+  '@expo/metro-config>lightningcss': 1.30.1
+
 # Supply-chain guard: quarantine newly published versions for 2 days (2880 min)
 # before they're installable.
 minimumReleaseAge: 2880

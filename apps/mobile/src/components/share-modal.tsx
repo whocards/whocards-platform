@@ -1,6 +1,5 @@
 import {Ionicons} from '@expo/vector-icons'
 import {StatusBar} from 'expo-status-bar'
-import {useColorScheme} from 'nativewind'
 import {logWarn} from '@whocards/observability'
 import type {ShareFormat} from '@whocards/observability/events'
 import {useCallback, useEffect, useMemo, useState} from 'react'
@@ -18,6 +17,7 @@ import {Gesture, GestureDetector, GestureHandlerRootView} from 'react-native-ges
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {colors} from '@whocards/tokens'
 
+import {useIsDark} from '@/lib/color-scheme'
 import {downloadAndShareImage} from '@/lib/share-image'
 
 // A downward drag past this many px, or a fling faster than this velocity
@@ -145,8 +145,7 @@ export const ShareModal = ({
   const [error, setError] = useState<string | null>(null)
   // Themed (issue #163, amendment 1): a dark surface in dark mode, the
   // pre-existing light sheet surface in light mode.
-  const {colorScheme} = useColorScheme()
-  const isDark = colorScheme !== 'light'
+  const isDark = useIsDark()
   const iconColor = isDark ? colors.white : colors.darker
   const spinnerColor = isDark ? colors.gray.dark : colors.mutedOnLight
 

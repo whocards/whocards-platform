@@ -1,10 +1,10 @@
 import {Ionicons} from '@expo/vector-icons'
-import {useColorScheme} from 'nativewind'
 import {Text, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {colors} from '@whocards/tokens'
 
 import {PressableScale} from '@/components/pressable-scale'
+import {useIsDark} from '@/lib/color-scheme'
 import {impact} from '@/lib/haptics'
 
 type IconName = keyof typeof Ionicons.glyphMap
@@ -73,8 +73,7 @@ export const PlayerBar = ({
   onExit,
 }: PlayerBarProps) => {
   const insets = useSafeAreaInsets()
-  const {colorScheme} = useColorScheme()
-  const isDark = colorScheme !== 'light'
+  const isDark = useIsDark()
   const iconColor = isDark ? colors.white : colors.darker
 
   return (
