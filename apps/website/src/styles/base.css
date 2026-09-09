@@ -1,4 +1,9 @@
 @import 'tailwindcss';
+/*
+ * The design tokens, shared with the app: a Tailwind v4 `@theme` block rendered
+ * from packages/tokens/src/*.ts. Website-only theme values stay below.
+ */
+@import '@whocards/tokens/theme.css';
 @plugin "daisyui" {
   themes: false;
   logs: false;
@@ -6,49 +11,8 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  /* Spacing */
-  --spacing-4\.5: 1.125rem;
-  --spacing-7\.5: 1.875rem;
-
-  /* Border radius */
-  --radius-2\.5xl: 1.25rem;
-
-  /* Colors */
-  --color-yellow-100: #7e7552;
-  --color-yellow-300: #ffe37e;
-  --color-yellow-400: #f9d75f;
-  --color-yellow-500: #f6c944;
-
-  --color-gray: #65636e;
-  --color-gray-lighter: #dcdee9;
-  --color-gray-light: #474a69;
-  --color-gray-dark: #9698af;
-
-  --color-dark: #262432;
-  --color-darker: #111516;
-  --color-darkest: #08001a;
-  --color-background: #0d051f;
-  --color-white: #f5f5f5;
-  --color-red: #ee1e23;
-
-  --color-primary-light: #f9d75f;
-  --color-primary-dark: #c058d2;
-
-  /* Background images */
+  /* Background images — the hero art is website-only */
   --background-image-hero: url(/background.svg);
-  --background-image-gradient-primary: linear-gradient(to bottom left, #c058d2 25%, #f9d75f 92%);
-
-  /* Font families */
-  --font-sans: golos-text, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-title: aptly, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-    'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-chinese: noto-sans-chinese, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-hebrew: noto-sans-hebrew, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-japanese: noto-sans-japanese, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
   /* Grid template rows */
   --grid-template-rows-question: 1fr min-content;
