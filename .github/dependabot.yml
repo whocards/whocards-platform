@@ -17,6 +17,15 @@ updates:
       - dependencies
     commit-message:
       prefix: chore(deps)
+    ignore:
+      # satori 0.33 added its own bidi reordering, which double-reverses the
+      # visual-order RTL lines apps/website/src/server/card-image.ts already
+      # produces with bidi-js — Hebrew share cards render backwards. Unpinning
+      # is real work, not a bump: see #286. Patches within 0.26.x still flow.
+      - dependency-name: satori
+        update-types:
+          - version-update:semver-minor
+          - version-update:semver-major
     groups:
       # One PR per week for all non-breaking bumps.
       minor-and-patch:
