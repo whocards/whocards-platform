@@ -507,8 +507,8 @@ importers:
         specifier: ^0.9.4
         version: 0.9.5
       object-to-formdata:
-        specifier: ^4.5.1
-        version: 4.5.1
+        specifier: ^5.0.0
+        version: 5.0.0
       pdf-lib:
         specifier: ^1.17.1
         version: 1.17.1
@@ -9924,8 +9924,8 @@ packages:
     resolution: {integrity: sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==}
     engines: {node: '>= 0.4'}
 
-  object-to-formdata@4.5.1:
-    resolution: {integrity: sha512-QiM9D0NiU5jV6J6tjE1g7b4Z2tcUnKs1OPUi4iMb2zH+7jwlcUrASghgkFk9GtzqNNq8rTQJtT8AzjBAvLoNMw==}
+  object-to-formdata@5.0.0:
+    resolution: {integrity: sha512-reALyBo3+Nq71Py5uto2tjdxoAun83YqNBqElAWMNiOwfQxAnpMQiFPpZEvRL3kjShxsiBhNY/ikLUbc42TZ1Q==}
 
   object.assign@4.1.7:
     resolution: {integrity: sha512-nK28WOo+QIjBkDduTINE4JkF/UJJKyf2EJxvJKfblDpyg0Q+pkOHNTL0Qwy6NP6FhE/EnzV73BxxqcJaXY9anw==}
@@ -23061,7 +23061,7 @@ snapshots:
 
   object-keys@1.1.1: {}
 
-  object-to-formdata@4.5.1: {}
+  object-to-formdata@5.0.0: {}
 
   object.assign@4.1.7:
     dependencies:
