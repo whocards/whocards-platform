@@ -274,11 +274,31 @@ const isRtl = (language: string): boolean => RTL_LANGUAGES.has(language)
 const bidi = bidiFactory()
 
 // Rough max characters per visual line at a given font size, used to wrap RTL
-// text before reordering (Satori in this version does no bidi reordering, so we
-// reorder ourselves and feed it pre-broken visual-order lines — which is why
-// satori is held at ^0.26.0: 0.33 reorders internally, so it re-reverses our
-// already-visual lines and Hebrew renders backwards. Moving off the pin means
-// deleting toVisualRtl/maxCharsPerLine and letting Satori wrap RTL itself).
+// text before reordering. Satori does no bidi reordering AT ALL — at any
+// version, including current — so we do it ourselves with bidi-js and feed it
+// pre-broken visual-order lines. Everything below about RTL exists for that
+// reason, and satori is pinned (^0.26.0, and ignored in .github/dependabot.yml)
+// to keep the arrangement stable.
+//
+// Verified against satori 0.33.4's source, not guessed: src/text/index.ts's
+// flow() places words at monotonically increasing x in logical order and
+// carries its own `@TODO: Support RTL languages` right there, and shapeText
+// (src/harfbuzz.ts) is never passed a direction, so HarfBuzz auto-detects it
+// per fragment. Each *word* is therefore reversed correctly while the *sequence
+// of words* is never reordered: one unbroken Hebrew word renders right by
+// coincidence, and anything with a space in it does not. `direction: 'rtl'` on
+// the container changes nothing (byte-identical output). Upstream knows —
+// vercel/satori#74 has been open since 2022 with no plan, and the ICU4X RFC
+// (#743) parks bidi as "long-term/optional" needing Yoga-level work.
+//
+// So: do not "simplify" this away by upgrading satori and trusting it to wrap
+// RTL. That was spiked and it regresses — Hebrew parens end up stranded
+// mid-phrase, e.g. `(על עצמך או בכללי)` renders as `בכללי)או עצמך (על`. If
+// upstream ever lands real bidi, the migration is: delete toVisualRtl and
+// maxCharsPerLine, drop the `rtl` branches on `text` and `whiteSpace` in
+// buildTree, drop bidi-js, re-pin the OG hashes in card-image.test.ts, and get
+// a human to look at the Hebrew line breaks before trusting the new pins.
+//
 // 0.52 is tuned
 // specifically for Hebrew's average glyph width for this *actual* wrap step —
 // deliberately a hair narrower than avgCharWidthFactor's 0.55 (the coarser
