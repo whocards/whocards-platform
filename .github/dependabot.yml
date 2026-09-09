@@ -34,9 +34,14 @@ updates:
       # checksums in card-image.test.ts hash freshly-rendered SVG, never the
       # cache.
       #
-      # All four are dormant, so this costs nothing: resvg-js has had no stable
-      # release since 2.6.2 (only 2.7.0 alphas), wawoff2 none since 2022, and
-      # bidi-js sat at 1.0.3 from 2023 until 1.1.0 landed 2026-09-06. Every
+      # All four are near-dormant, so this costs little: resvg-js has had no
+      # stable release since 2.6.2 (only 2.7.0 alphas) and wawoff2 none since
+      # 2022. bidi-js sat at 1.0.3 from 2023 until 1.1.0, which landed here in
+      # this PR and was verified a no-op before the pin went on: its Unicode
+      # data files are byte-identical, reordering.js is untouched, and an A/B
+      # of getBidiCharTypeName across all 1,112,064 code points plus
+      # getEmbeddingLevels/getReorderSegments on Hebrew and bracket strings
+      # showed zero differences. The pin freezes it there from now on. Every
       # update type is ignored, patches included — a rasterizer or bidi patch
       # changes bytes just as readily as a minor does.
       #
