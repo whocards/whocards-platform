@@ -18,7 +18,7 @@
 import React from 'react'
 import {Ionicons} from '@expo/vector-icons'
 import {act, fireEvent, render, screen} from '@testing-library/react-native'
-import {colorScheme} from 'nativewind'
+import {setColorScheme} from '@/lib/color-scheme'
 import {colors} from '@whocards/tokens'
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -26,10 +26,10 @@ jest.mock('react-native-safe-area-context', () => ({
 }))
 
 afterEach(() => {
-  // NativeWind's colorScheme is a global observable — reset it so a test that
+  // The resolved colour scheme is a global observable — reset it so a test that
   // sets it doesn't bleed into whichever test runs next (mirrors
   // settings-modal.test.tsx).
-  act(() => colorScheme.set('system'))
+  act(() => setColorScheme('system'))
 })
 
 // PressableScale drives its press animation through react-native-reanimated /
@@ -104,7 +104,7 @@ describe('PlayerBar — Exit button (issue #186)', () => {
 
 describe('PlayerBar — themed icon color (issue #173)', () => {
   it('uses white icons when the resolved scheme is dark', () => {
-    act(() => colorScheme.set('dark'))
+    act(() => setColorScheme('dark'))
     renderBar()
     const icons = screen.UNSAFE_getAllByType(Ionicons)
     expect(icons.length).toBeGreaterThan(0)
@@ -114,7 +114,7 @@ describe('PlayerBar — themed icon color (issue #173)', () => {
   })
 
   it('uses darker icons when the resolved scheme is light', () => {
-    act(() => colorScheme.set('light'))
+    act(() => setColorScheme('light'))
     renderBar()
     const icons = screen.UNSAFE_getAllByType(Ionicons)
     expect(icons.length).toBeGreaterThan(0)

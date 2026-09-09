@@ -7,6 +7,9 @@
 import React from 'react'
 import {Text} from 'react-native'
 import {fireEvent, render, screen} from '@testing-library/react-native'
+import {colors, fonts} from '@whocards/tokens'
+
+import {resolvedStyle} from '@/test-utils/resolved-style'
 
 // PressableScale drives its press animation through react-native-reanimated /
 // react-native-worklets, whose native module isn't available under plain
@@ -48,6 +51,18 @@ describe('SecondaryButton', () => {
     )
     expect(screen.getByLabelText('Open settings')).toBeTruthy()
     expect(screen.queryByLabelText('Settings')).toBeNull()
+  })
+
+  it('styles its label from the design tokens — white, on the sans face, bold', () => {
+    // Reading the resolved style rather than the `className` string: NativeWind
+    // v5 compiles the class away before it reaches the element, so a className
+    // assertion would still pass with the whole style pipeline broken.
+    render(<SecondaryButton label="Settings" onPress={() => {}} />)
+    expect(resolvedStyle(screen.getByText('Settings'))).toMatchObject({
+      color: colors.white,
+      fontFamily: fonts.sans.family,
+      fontWeight: 700,
+    })
   })
 
   it('renders an optional leading icon', () => {

@@ -16,7 +16,7 @@ module.exports = {
       '|@expo(-.*)?/?' +
       '|@unimodules/?' +
       '|nativewind' +
-      '|react-native-css-interop' +
+      '|react-native-css' +
       '|react-native-gesture-handler' +
       '|react-native-safe-area-context' +
       '|react-native-screens' +
@@ -27,6 +27,7 @@ module.exports = {
     '/node_modules/react-native-reanimated/plugin/',
     '/node_modules/@react-native/babel-preset/',
   ],
+  globalSetup: '<rootDir>/jest.global-setup.js',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {
     // Resolve the @/* path alias declared in tsconfig.json.

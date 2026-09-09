@@ -9,7 +9,11 @@
  * only one now), so there's nothing to test about those here.
  */
 import React from 'react'
-import {fireEvent, render, screen} from '@testing-library/react-native'
+import {act, fireEvent, render, screen} from '@testing-library/react-native'
+import {colors} from '@whocards/tokens'
+
+import {setColorScheme} from '@/lib/color-scheme'
+import {resolvedStyle} from '@/test-utils/resolved-style'
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
@@ -47,5 +51,32 @@ describe('ThemeSettingsPage — options (issue #189, third pass)', () => {
     await screen.findByText('Theme')
     fireEvent.press(screen.getByLabelText('back'))
     expect(onBack).toHaveBeenCalled()
+  })
+})
+
+// The selected pill is the only signal that a segmented control has a
+// selection, and it comes entirely from a conditional `className`. Asserting the
+// *resolved* background (rather than the class string, which NativeWind v5
+// compiles away before render) checks both the conditional and the theme behind it.
+const background = (label: string) => resolvedStyle(screen.getByLabelText(label)).backgroundColor
+
+describe('ThemeSettingsPage — selected segment styling', () => {
+  afterEach(() => act(() => setColorScheme('system')))
+
+  it('fills the selected segment with white on light, leaving the others bare', async () => {
+    act(() => setColorScheme('light'))
+    renderPage('dark')
+    await screen.findByLabelText('Theme: Dark')
+    expect(background('Theme: Dark')).toBe(colors.white)
+    expect(background('Theme: System')).toBeUndefined()
+    expect(background('Theme: Light')).toBeUndefined()
+  })
+
+  it('fills the selected segment with the dark token on dark', async () => {
+    act(() => setColorScheme('dark'))
+    renderPage('light')
+    await screen.findByLabelText('Theme: Light')
+    expect(background('Theme: Light')).toBe(colors.dark)
+    expect(background('Theme: System')).toBeUndefined()
   })
 })

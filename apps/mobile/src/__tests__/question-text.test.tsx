@@ -9,8 +9,11 @@
  * `fitSecondaryFontSize`'s headroom growth (issue #189).
  */
 import React from 'react'
-import {render, screen} from '@testing-library/react-native'
+import {act, render, screen} from '@testing-library/react-native'
+import {colors} from '@whocards/tokens'
 
+import {setColorScheme} from '@/lib/color-scheme'
+import {resolvedStyle, withOpacity} from '@/test-utils/resolved-style'
 import {QuestionText, fitFontSize, fitSecondaryFontSize} from '../components/question-text'
 
 describe('fitFontSize — minFont override', () => {
@@ -113,10 +116,20 @@ describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
   })
 })
 
+// These read the *resolved* colour rather than the `className` string: under
+// NativeWind v5 the class is compiled away before it reaches the element, so
+// asserting on the prop would pass even with the style pipeline dead. Going
+// through the token values checks the whole chain — class → theme → token.
+const textColor = (text: string) => resolvedStyle(screen.getByText(text)).color
+
 describe('QuestionText — themedText (issue #173, final)', () => {
   const box = {width: 300, height: 400}
   const question = 'What matters to you right now?'
   const secondaryText = '¿Qué te importa ahora mismo?'
+
+  // The resolved colour scheme is a global observable — reset it so a test that
+  // sets it doesn't bleed into whichever test runs next.
+  afterEach(() => act(() => setColorScheme('system')))
 
   it('defaults to hardcoded white — card surfaces (Pick a Card) omit themedText', () => {
     render(
@@ -127,11 +140,26 @@ describe('QuestionText — themedText (issue #173, final)', () => {
         secondaries={[{language: 'es', text: secondaryText}]}
       />
     )
-    expect(screen.getByText(question).props.className).toBe('text-white')
-    expect(screen.getByText(secondaryText).props.className).toBe('text-white/70')
+    expect(textColor(question)).toBe(colors.white)
+    expect(textColor(secondaryText)).toBe(withOpacity(colors.white, 70))
+  })
+
+  it('stays white on a card surface even in light mode — the card is always dark', () => {
+    act(() => setColorScheme('light'))
+    render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[{language: 'es', text: secondaryText}]}
+      />
+    )
+    expect(textColor(question)).toBe(colors.white)
+    expect(textColor(secondaryText)).toBe(withOpacity(colors.white, 70))
   })
 
   it('follows the theme when themedText is set — classic play on the themed canvas', () => {
+    act(() => setColorScheme('light'))
     render(
       <QuestionText
         text={question}
@@ -141,16 +169,30 @@ describe('QuestionText — themedText (issue #173, final)', () => {
         themedText
       />
     )
-    expect(screen.getByText(question).props.className).toBe('text-darker dark:text-white')
-    expect(screen.getByText(secondaryText).props.className).toBe(
-      'text-darker/70 dark:text-white/70'
+    expect(textColor(question)).toBe(colors.darker)
+    expect(textColor(secondaryText)).toBe(withOpacity(colors.darker, 70))
+  })
+
+  it('flips to white when themedText meets the dark scheme', () => {
+    act(() => setColorScheme('dark'))
+    render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[{language: 'es', text: secondaryText}]}
+        themedText
+      />
     )
+    expect(textColor(question)).toBe(colors.white)
+    expect(textColor(secondaryText)).toBe(withOpacity(colors.white, 70))
   })
 
   it('threads themedText through both mirrored (Tabletop) halves', () => {
+    act(() => setColorScheme('light'))
     render(<QuestionText text={question} language="en" box={box} mirrored themedText />)
     for (const node of screen.getAllByText(question, {includeHiddenElements: true})) {
-      expect(node.props.className).toBe('text-darker dark:text-white')
+      expect(resolvedStyle(node).color).toBe(colors.darker)
     }
   })
 })
@@ -170,7 +212,7 @@ describe('QuestionText — secondary language sizing (issue #189)', () => {
         secondaries={[{language: 'es', text: secondaryText}]}
       />
     )
-    const shortPrimarySecondarySize = short.getByText(secondaryText).props.style.fontSize
+    const shortPrimarySecondarySize = Number(resolvedStyle(short.getByText(secondaryText)).fontSize)
 
     const long = render(
       <QuestionText
@@ -180,7 +222,7 @@ describe('QuestionText — secondary language sizing (issue #189)', () => {
         secondaries={[{language: 'es', text: secondaryText}]}
       />
     )
-    const longPrimarySecondarySize = long.getByText(secondaryText).props.style.fontSize
+    const longPrimarySecondarySize = Number(resolvedStyle(long.getByText(secondaryText)).fontSize)
 
     // A short question leaves the primary's fit with headroom (issue #189) —
     // the secondary grows to use some of it. A long question pins the primary
