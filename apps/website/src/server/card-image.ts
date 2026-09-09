@@ -673,6 +673,15 @@ const buildTree = (
 // maze/background, or anything else that alters pixels) so the persisted build
 // cache is invalidated. Content changes (question text / new languages) already
 // bust the cache on their own via the per-card hash below.
+//
+// This is also the ONLY thing that invalidates the cache when the *renderer*
+// changes, because the key below is (text, language, RENDERER_VERSION) and does
+// not include satori / @resvg/resvg-js / bidi-js / wawoff2 versions. A renderer
+// bump without a bump here leaves every already-cached card on the old render
+// while new ones use the new — mixed output, silently, and it survives deploys
+// because Netlify restores .cache/og (netlify/plugins/og-cache). That's why all
+// four are ignored in .github/dependabot.yml rather than left to bump on their
+// own; upgrading one on purpose means bumping this line in the same commit.
 const RENDERER_VERSION = '1'
 
 // Persisted, content-addressed render cache. A card is a pure function of its

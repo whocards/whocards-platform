@@ -18,14 +18,35 @@ updates:
     commit-message:
       prefix: chore(deps)
     ignore:
-      # satori 0.33 added its own bidi reordering, which double-reverses the
-      # visual-order RTL lines apps/website/src/server/card-image.ts already
-      # produces with bidi-js — Hebrew share cards render backwards. Unpinning
-      # is real work, not a bump: see #286. Patches within 0.26.x still flow.
+      # The share-card render pipeline (apps/website/src/server/card-image.ts)
+      # is pinned wholesale, and deliberately so.
+      #
+      # Two reasons. First, satori has no RTL/bidi support at any version, so we
+      # do the reordering ourselves with bidi-js and hand satori pre-broken
+      # visual-order lines; upgrading it regresses Hebrew (see the long comment
+      # above maxCharsPerLine). Second, and why this covers the whole pipeline
+      # rather than just satori: rendered PNGs are cached content-addressed in
+      # .cache/og, and Netlify restores that cache across deploys. The key is
+      # (text, language, RENDERER_VERSION) — it does NOT include these package
+      # versions. So a bump that shifts even one pixel leaves every already-
+      # cached card on the old render forever while new/edited cards use the new
+      # one, silently, in production. Nothing in CI catches that: the pinned OG
+      # checksums in card-image.test.ts hash freshly-rendered SVG, never the
+      # cache.
+      #
+      # All four are dormant, so this costs nothing: resvg-js has had no stable
+      # release since 2.6.2 (only 2.7.0 alphas), wawoff2 none since 2022, and
+      # bidi-js sat at 1.0.3 from 2023 until 1.1.0 landed 2026-09-06. Every
+      # update type is ignored, patches included — a rasterizer or bidi patch
+      # changes bytes just as readily as a minor does.
+      #
+      # To upgrade any of these on purpose: bump it, bump RENDERER_VERSION in
+      # card-image.ts so the persisted cache is thrown away, then re-pin the OG
+      # checksums after looking at the rendered cards.
       - dependency-name: satori
-        update-types:
-          - version-update:semver-minor
-          - version-update:semver-major
+      - dependency-name: '@resvg/resvg-js'
+      - dependency-name: bidi-js
+      - dependency-name: wawoff2
     groups:
       # One PR per week for all non-breaking bumps.
       minor-and-patch:
