@@ -37,6 +37,16 @@
 import React from 'react'
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native'
 
+// Jest's default is 5s PER TEST, which this file alone outgrew on CI's 4-vCPU
+// runners: its first `render()` also pays NativeWind's one-off style-registry
+// init, and jest runs its workers alongside the website's vitest run in the
+// same `turbo run test`. The whole file took 12.4s there before the jest 30 /
+// @testing-library/react-native 14 bump and 19.6s after it — enough for that
+// first test to cross 5s and fail CI, while the file runs in 1.8s locally.
+// Nothing hangs; it's wall-clock contention. Scoped to this file so a
+// genuinely stuck test elsewhere still fails fast on the 5s default.
+jest.setTimeout(20_000)
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
 }))

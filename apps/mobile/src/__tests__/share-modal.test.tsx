@@ -55,8 +55,19 @@ jest.mock('react-native-safe-area-context', () => ({
 // so spy on the props it's rendered with instead.
 jest.mock('expo-status-bar', () => ({StatusBar: jest.fn(() => null)}))
 
-/** The `style` of the most recently rendered `<StatusBar>`. */
-const lastStatusBarStyle = () => jest.mocked(StatusBar).mock.calls.at(-1)?.[0].style
+/**
+ * The `style` the `<StatusBar>` under test was rendered with.
+ *
+ * The mock is module-level, so its calls accumulate across every test in this
+ * file — the describe below clears them per test, and this throws rather than
+ * return `undefined`, so a `ShareModal` that stopped rendering a `<StatusBar>`
+ * fails here instead of silently reading some earlier test's call.
+ */
+const lastStatusBarStyle = () => {
+  const {calls} = jest.mocked(StatusBar).mock
+  if (calls.length === 0) throw new Error('<StatusBar> was never rendered')
+  return calls.at(-1)?.[0].style
+}
 
 const mockDownloadAndShareImage = jest.fn()
 jest.mock('@/lib/share-image', () => ({
@@ -255,6 +266,13 @@ describe('ShareModal', () => {
 // flip as every other themed sheet (see settings-modal.test.tsx's own
 // StatusBar-override coverage).
 describe('ShareModal — StatusBar override (issue #173)', () => {
+  // Ten earlier tests in this file also render `<ShareModal>`, and nothing in
+  // jest.config.js/jest.setup.ts clears mocks between tests, so without this
+  // `lastStatusBarStyle()` would be reading a pile of accumulated calls.
+  beforeEach(() => {
+    jest.mocked(StatusBar).mockClear()
+  })
+
   it('shows light (white) status-bar icons when the resolved scheme is dark', async () => {
     await act(() => colorScheme.set('dark'))
     await render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
