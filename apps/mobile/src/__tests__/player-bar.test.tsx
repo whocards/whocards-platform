@@ -16,7 +16,7 @@
  * `accessibilityLabel="exit deck"` for Maestro/VoiceOver continuity.
  */
 import React from 'react'
-import {Ionicons} from '@expo/vector-icons'
+import {StyleSheet} from 'react-native'
 import {act, fireEvent, render, screen} from '@testing-library/react-native'
 import {colorScheme} from 'nativewind'
 import {colors} from '@whocards/tokens'
@@ -25,11 +25,11 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
 }))
 
-afterEach(() => {
+afterEach(async () => {
   // NativeWind's colorScheme is a global observable — reset it so a test that
   // sets it doesn't bleed into whichever test runs next (mirrors
   // settings-modal.test.tsx).
-  act(() => colorScheme.set('system'))
+  await act(() => colorScheme.set('system'))
 })
 
 // PressableScale drives its press animation through react-native-reanimated /
@@ -58,24 +58,40 @@ const noop = () => {}
 const renderBar = (props: Partial<React.ComponentProps<typeof PlayerBar>> = {}) =>
   render(<PlayerBar onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} {...props} />)
 
+/**
+ * The color of every rendered `Ionicons` glyph.
+ *
+ * @testing-library/react-native 14 removed the composite `UNSAFE_getAllByType`
+ * query — the tree it models is host elements only
+ * (https://github.com/callstack/react-native-testing-library/releases/tag/v14.0.0).
+ * `Ionicons` renders a host `<Text>` whose flattened style carries both the
+ * glyph font and the `color` prop this test is about, so match on that instead.
+ */
+const iconColors = () =>
+  (
+    screen.root?.queryAll(
+      (node) => StyleSheet.flatten(node.props.style)?.fontFamily === 'ionicons'
+    ) ?? []
+  ).map((node) => StyleSheet.flatten(node.props.style).color)
+
 describe('PlayerBar — no Language/Display button (issue #176)', () => {
-  it('never renders a Language or Display action — that setting moved to the home Settings menu', () => {
-    renderBar()
+  it('never renders a Language or Display action — that setting moved to the home Settings menu', async () => {
+    await renderBar()
     expect(screen.queryByText('Language')).toBeNull()
     expect(screen.queryByText('Display')).toBeNull()
     expect(screen.queryByLabelText('change language')).toBeNull()
     expect(screen.queryByLabelText('display settings')).toBeNull()
   })
 
-  it('renders Back, Share, and Next', () => {
-    renderBar()
+  it('renders Back, Share, and Next', async () => {
+    await renderBar()
     expect(screen.getByLabelText('previous question')).toBeTruthy()
     expect(screen.getByLabelText('share question')).toBeTruthy()
     expect(screen.getByLabelText('next question')).toBeTruthy()
   })
 
-  it('hides Share when showShare is false, keeping Back and Next', () => {
-    renderBar({showShare: false})
+  it('hides Share when showShare is false, keeping Back and Next', async () => {
+    await renderBar({showShare: false})
     expect(screen.queryByLabelText('share question')).toBeNull()
     expect(screen.getByLabelText('previous question')).toBeTruthy()
     expect(screen.getByLabelText('next question')).toBeTruthy()
@@ -83,43 +99,43 @@ describe('PlayerBar — no Language/Display button (issue #176)', () => {
 })
 
 describe('PlayerBar — Exit button (issue #186)', () => {
-  it('renders an Exit action, mid-bar right after Back, with the legacy "exit deck" label', () => {
-    renderBar()
+  it('renders an Exit action, mid-bar right after Back, with the legacy "exit deck" label', async () => {
+    await renderBar()
     expect(screen.getByText('Exit')).toBeTruthy()
     expect(screen.getByLabelText('exit deck')).toBeTruthy()
   })
 
-  it('calls onExit when pressed', () => {
+  it('calls onExit when pressed', async () => {
     const onExit = jest.fn()
-    renderBar({onExit})
-    fireEvent.press(screen.getByLabelText('exit deck'))
+    await renderBar({onExit})
+    await fireEvent.press(screen.getByLabelText('exit deck'))
     expect(onExit).toHaveBeenCalledTimes(1)
   })
 
-  it('is present regardless of showShare — Exit is the only exit once the top chip is gone', () => {
-    renderBar({showShare: false})
+  it('is present regardless of showShare — Exit is the only exit once the top chip is gone', async () => {
+    await renderBar({showShare: false})
     expect(screen.getByLabelText('exit deck')).toBeTruthy()
   })
 })
 
 describe('PlayerBar — themed icon color (issue #173)', () => {
-  it('uses white icons when the resolved scheme is dark', () => {
-    act(() => colorScheme.set('dark'))
-    renderBar()
-    const icons = screen.UNSAFE_getAllByType(Ionicons)
+  it('uses white icons when the resolved scheme is dark', async () => {
+    await act(() => colorScheme.set('dark'))
+    await renderBar()
+    const icons = iconColors()
     expect(icons.length).toBeGreaterThan(0)
-    for (const icon of icons) {
-      expect(icon.props.color).toBe(colors.white)
+    for (const color of icons) {
+      expect(color).toBe(colors.white)
     }
   })
 
-  it('uses darker icons when the resolved scheme is light', () => {
-    act(() => colorScheme.set('light'))
-    renderBar()
-    const icons = screen.UNSAFE_getAllByType(Ionicons)
+  it('uses darker icons when the resolved scheme is light', async () => {
+    await act(() => colorScheme.set('light'))
+    await renderBar()
+    const icons = iconColors()
     expect(icons.length).toBeGreaterThan(0)
-    for (const icon of icons) {
-      expect(icon.props.color).toBe(colors.darker)
+    for (const color of icons) {
+      expect(color).toBe(colors.darker)
     }
   })
 })

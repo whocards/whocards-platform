@@ -30,28 +30,28 @@ jest.mock('@/components/pressable-scale', () => {
 import {SecondaryButton} from '../components/secondary-button'
 
 describe('SecondaryButton', () => {
-  it('renders its label and fires onPress', () => {
+  it('renders its label and fires onPress', async () => {
     const onPress = jest.fn()
-    render(<SecondaryButton label="Settings" onPress={onPress} />)
-    fireEvent.press(screen.getByText('Settings'))
+    await render(<SecondaryButton label="Settings" onPress={onPress} />)
+    await fireEvent.press(screen.getByText('Settings'))
     expect(onPress).toHaveBeenCalledTimes(1)
   })
 
-  it('defaults its accessibilityLabel to the visible label', () => {
-    render(<SecondaryButton label="Settings" onPress={() => {}} />)
+  it('defaults its accessibilityLabel to the visible label', async () => {
+    await render(<SecondaryButton label="Settings" onPress={() => {}} />)
     expect(screen.getByLabelText('Settings')).toBeTruthy()
   })
 
-  it('accepts an explicit accessibilityLabel override', () => {
-    render(
+  it('accepts an explicit accessibilityLabel override', async () => {
+    await render(
       <SecondaryButton label="Settings" accessibilityLabel="Open settings" onPress={() => {}} />
     )
     expect(screen.getByLabelText('Open settings')).toBeTruthy()
     expect(screen.queryByLabelText('Settings')).toBeNull()
   })
 
-  it('renders an optional leading icon', () => {
-    render(
+  it('renders an optional leading icon', async () => {
+    await render(
       <SecondaryButton label="Settings" icon={<Text testID="icon">icon</Text>} onPress={() => {}} />
     )
     expect(screen.getByTestId('icon')).toBeTruthy()
