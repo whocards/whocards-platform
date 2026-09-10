@@ -6,13 +6,15 @@
  * install-count reports are CSV files Google drops daily into a
  * Play-managed Cloud Storage bucket, not a REST "give me a number" endpoint.
  *
- * Setup (documented again in apps/website/.env.example):
- * 1. Play Console → Setup → API access → link (or create) a Google Cloud
- *    project, then create a Service Account with a JSON key.
- * 2. Play Console → Setup → API access → grant that service account "Viewer"
- *    access under Account permissions (needed to read the reports bucket).
- * 3. Play Console → Setup → API access → "Download reports" shows the Cloud
- *    Storage bucket name (`pubsite_prod_rev_<digits>`) the account can read.
+ * Setup (full walkthrough in docs/STATS-ENV.md):
+ * 1. Google Cloud Console → IAM & Admin → Service Accounts → create one (no
+ *    Cloud roles needed) and add a JSON key.
+ * 2. Play Console → Users and permissions → invite the service account's
+ *    email with the "View app information and download bulk reports"
+ *    account permission (needed to read the reports bucket; can take up to
+ *    24h to propagate).
+ * 3. Play Console → Download reports → Statistics → "Copy Cloud Storage URI"
+ *    shows the bucket name (`pubsite_prod_rev_<digits>`) the account can read.
  * 4. `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` = the full downloaded JSON key file
  *    contents (stringified JSON — Netlify env vars support long values).
  *    `GOOGLE_PLAY_REPORTS_BUCKET` = the bucket name from step 3.

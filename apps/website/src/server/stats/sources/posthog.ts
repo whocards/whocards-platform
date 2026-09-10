@@ -5,8 +5,8 @@
  * the stats page comes from Postgres, per the researcher findings ("Postgres
  * `answer` table as the headline source, not PostHog").
  *
- * Setup (documented again in apps/website/.env.example):
- * 1. PostHog → Settings → Project → Project API keys → note the Project ID.
+ * Setup (full walkthrough in docs/STATS-ENV.md):
+ * 1. PostHog → Settings → Project → General → note the Project ID.
  * 2. PostHog → Settings → Personal → Personal API Keys → create one scoped to
  *    "Query read" only for this project (least privilege — it can read
  *    aggregate event data, nothing else).

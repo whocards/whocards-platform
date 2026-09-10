@@ -4,16 +4,16 @@
  * reads `process.env` itself, so it stays host-agnostic and unit-testable
  * (the host, apps/website, reads its typed env and passes credentials in).
  *
- * Setup (documented again in apps/website/.env.example):
+ * Setup (full walkthrough in docs/STATS-ENV.md):
  * 1. App Store Connect → Users and Access → Integrations → App Store Connect API
- *    → create a key with the "Sales and Reports" (or "Admin") role. Note the
+ *    → Team Keys → create a key with the "Sales" (or "Admin") role. Note the
  *    Key ID and Issuer ID, and download the .p8 private key (shown once).
  * 2. `APP_STORE_CONNECT_KEY_ID` = the Key ID.
  *    `APP_STORE_CONNECT_ISSUER_ID` = the Issuer ID (same for all keys on the team).
  *    `APP_STORE_CONNECT_PRIVATE_KEY` = the full .p8 file contents (PEM, incl.
  *    the BEGIN/END lines — Netlify env vars support multi-line values).
- *    `APP_STORE_CONNECT_VENDOR_NUMBER` = Users and Access → (your name) →
- *    the numeric Vendor Number shown at the top, needed for Sales Reports.
+ *    `APP_STORE_CONNECT_VENDOR_NUMBER` = Payments and Financial Reports → the
+ *    numeric Vendor Number shown at the top left, needed for Sales Reports.
  *
  * Docs: https://developer.apple.com/documentation/appstoreconnectapi
  */
