@@ -4,7 +4,7 @@ import {StatusBar} from 'expo-status-bar'
 import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Platform, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -277,7 +277,11 @@ const DeckPlayer = ({
   useEffect(() => {
     track({
       name: EVENTS.DECK_OPENED,
-      props: {deck_id: deckSlug, source: startId ? 'deep_link' : 'browse'},
+      props: {
+        deck_id: deckSlug,
+        source: startId ? 'deep_link' : 'browse',
+        platform: Platform.OS,
+      },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckSlug])
@@ -288,7 +292,13 @@ const DeckPlayer = ({
     gameStartedRef.current = true
     track({
       name: EVENTS.GAME_STARTED,
-      props: {deck_id: deckSlug, game: GAMES.WH, language, secondary_languages: secondary},
+      props: {
+        deck_id: deckSlug,
+        game: GAMES.WH,
+        language,
+        secondary_languages: secondary,
+        platform: Platform.OS,
+      },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageReady])
@@ -376,7 +386,13 @@ const DeckPlayer = ({
     if (!questionId) return
     track({
       name: EVENTS.QUESTION_SHOWN,
-      props: {deck_id: deckSlug, question_id: questionId, language, source: 'nav'},
+      props: {
+        deck_id: deckSlug,
+        question_id: questionId,
+        language,
+        source: 'nav',
+        platform: Platform.OS,
+      },
     })
     viewTracker.startView({deck_id: deckSlug, question_id: questionId, language})
     // eslint-disable-next-line react-hooks/exhaustive-deps

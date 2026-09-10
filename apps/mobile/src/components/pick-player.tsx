@@ -6,7 +6,15 @@ import {StatusBar} from 'expo-status-bar'
 import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
+import {
+  AppState,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -151,7 +159,10 @@ export const PickPlayer = ({
   const prevNavRef = useRef<{ids: string[]; idx: number} | null>(null)
 
   useEffect(() => {
-    track({name: EVENTS.DECK_OPENED, props: {deck_id: deckSlug, source: 'browse'}})
+    track({
+      name: EVENTS.DECK_OPENED,
+      props: {deck_id: deckSlug, source: 'browse', platform: Platform.OS},
+    })
   }, [deckSlug])
 
   const gameStartedRef = useRef(false)
@@ -160,7 +171,13 @@ export const PickPlayer = ({
     gameStartedRef.current = true
     track({
       name: EVENTS.GAME_STARTED,
-      props: {deck_id: deckSlug, game: GAMES.PICK, language, secondary_languages: secondary},
+      props: {
+        deck_id: deckSlug,
+        game: GAMES.PICK,
+        language,
+        secondary_languages: secondary,
+        platform: Platform.OS,
+      },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageReady])
@@ -187,7 +204,13 @@ export const PickPlayer = ({
     if (!onCard || !questionId) return
     track({
       name: EVENTS.QUESTION_SHOWN,
-      props: {deck_id: deckSlug, question_id: questionId, language, source: 'pick'},
+      props: {
+        deck_id: deckSlug,
+        question_id: questionId,
+        language,
+        source: 'pick',
+        platform: Platform.OS,
+      },
     })
     viewTracker.startView({deck_id: deckSlug, question_id: questionId, language})
     // eslint-disable-next-line react-hooks/exhaustive-deps

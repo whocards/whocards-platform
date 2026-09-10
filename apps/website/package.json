@@ -23,6 +23,7 @@
     "reconcile:resend": "pnpm with-env tsx scripts/reconcile-resend.ts"
   },
   "dependencies": {
+    "@whocards/analytics": "workspace:*",
     "@whocards/api": "workspace:*",
     "@whocards/app-store": "workspace:*",
     "@whocards/decks": "workspace:*",

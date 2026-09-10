@@ -15,6 +15,13 @@
       "when": 1782381684676,
       "tag": "0001_email_consent",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789027599966,
+      "tag": "0002_answer_platform",
+      "breakpoints": true
     }
   ]
 }

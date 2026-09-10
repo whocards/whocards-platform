@@ -447,6 +447,12 @@ export const answer = pgTable(
     questionId: text('question_id').notNull(),
     language: text('language'),
     type: text('type').notNull().default('answered'),
+    // Nullable, additive (public stats page, issue: analytics page). Rows written
+    // before this column existed — and any client that hasn't updated yet — stay
+    // NULL; the stats aggregation surfaces those as "Unattributed" rather than
+    // guessing. New writes carry 'web' | 'ios' | 'android' from the host transport
+    // (answer-transport.ts on each client), never guessed server-side.
+    platform: text('platform'),
   },
   (table) => {
     return {
@@ -455,6 +461,7 @@ export const answer = pgTable(
         table.questionId
       ),
       answerDeviceIdIdx: index('answer_device_id_idx').on(table.deviceId),
+      answerPlatformIdx: index('answer_platform_idx').on(table.platform),
     }
   }
 )

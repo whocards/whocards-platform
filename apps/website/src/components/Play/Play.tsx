@@ -196,11 +196,16 @@ export const Play = ({
           : (new URLSearchParams(window.location.search).get('q') ?? undefined)
       track({
         name: EVENTS.DECK_OPENED,
-        props: {deck_id: deckSlug, source: startId ? 'deep_link' : 'browse'},
+        props: {deck_id: deckSlug, source: startId ? 'deep_link' : 'browse', platform: 'web'},
       })
       track({
         name: EVENTS.GAME_STARTED,
-        props: {deck_id: deckSlug, game: GAMES.WH, language: language ?? defaultLanguage ?? ''},
+        props: {
+          deck_id: deckSlug,
+          game: GAMES.WH,
+          language: language ?? defaultLanguage ?? '',
+          platform: 'web',
+        },
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -249,6 +254,7 @@ export const Play = ({
         question_id: questionId,
         language: language ?? '',
         source: 'nav',
+        platform: 'web',
       },
     })
 

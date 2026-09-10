@@ -2,12 +2,18 @@ import {z} from 'zod'
 
 import {createTRPCRouter, publicProcedure} from '../trpc'
 
+/** Client platforms an Answer can originate from — see the stats page's per-platform split. */
+export const ANSWER_PLATFORMS = ['web', 'ios', 'android'] as const
+
 export const answersRouter = createTRPCRouter({
   /**
    * Record one Answer (CONTEXT.md → Answer record): the Device answered a
    * Question. Validates the event, then hands it to the host's `recordAnswer`
    * port (the Drizzle adapter in apps/website). `type` defaults to `'answered'`,
-   * today's only kind (a future dwell-timer / Skip may add others).
+   * today's only kind (a future dwell-timer / Skip may add others). `platform`
+   * is optional (analytics page): each client's transport sets it once, so
+   * older builds that omit it keep working — those rows land as "Unattributed"
+   * in the stats breakdown.
    */
   record: publicProcedure
     .input(
@@ -17,6 +23,7 @@ export const answersRouter = createTRPCRouter({
         questionId: z.string().min(1),
         language: z.string().min(1),
         type: z.string().min(1).default('answered'),
+        platform: z.enum(ANSWER_PLATFORMS).optional(),
       })
     )
     .mutation(async ({ctx, input}) => {

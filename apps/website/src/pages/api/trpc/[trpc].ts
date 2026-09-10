@@ -22,6 +22,7 @@ const handler: APIRoute = ({request}) =>
           questionId: input.questionId,
           language: input.language,
           type: input.type,
+          platform: input.platform ?? null,
         })
       },
     }),

@@ -1,0 +1,26 @@
+{
+  "name": "@whocards/analytics",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./rollups": "./src/rollups.ts",
+    "./sources/app-store-connect": "./src/sources/app-store-connect.ts",
+    "./sources/google-play": "./src/sources/google-play.ts",
+    "./sources/posthog": "./src/sources/posthog.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "@whocards/typescript-config": "workspace:*",
+    "@types/jsonwebtoken": "^9.0.10",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

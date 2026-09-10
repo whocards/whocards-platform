@@ -11,6 +11,8 @@ export type AnswerEvent = {
   deckSlug: string
   questionId: string
   language: string
+  /** 'ios' | 'android' — set once by answer-transport.ts via Platform.OS. */
+  platform?: 'ios' | 'android'
 }
 
 /** Sends one event to the Answer record; rejects so the queue can retry. */
