@@ -1,17 +1,19 @@
 ---
 export const prerender = false
 
-import type {MetricResult} from '@whocards/analytics'
+import type {MetricResult} from '../server/stats/types'
 import Layout from '~layouts/Layout.astro'
 import {getStatsSnapshot} from '../server/stats'
 
 // Public, unauthenticated page — cache aggressively so we never re-run the
 // aggregate queries (or the third-party installs/country fetches) per
-// visitor. Same shape as the [trpc].ts endpoint's header: short browser
-// cache, longer CDN cache, generous stale-while-revalidate.
+// visitor: 5 min browser cache, 1 hr CDN cache, 24 hr stale-while-revalidate.
+// `Cache-Control`'s `s-maxage` isn't reliably honored by Netlify's edge, so
+// CDN duration is set explicitly via `Netlify-CDN-Cache-Control` as well.
+Astro.response.headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=86400')
 Astro.response.headers.set(
-  'Cache-Control',
-  'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400'
+  'Netlify-CDN-Cache-Control',
+  'public, max-age=3600, stale-while-revalidate=86400'
 )
 
 const snapshot = await getStatsSnapshot()
@@ -33,12 +35,18 @@ const notConnectedMessage = (result: MetricResult<unknown>): string => {
 const weeklyTrend = isLive(snapshot.weeklyTrend) ? snapshot.weeklyTrend.value : []
 const maxWeekly = Math.max(1, ...weeklyTrend.map((point) => point.count))
 
+// Live events are folded into the hero total (questionsAnswered) rather than
+// kept siloed — see StatsSnapshot's doc comment — so they get their own slice
+// here too, and the grid's slices sum to the hero number.
 const platformRows = isLive(snapshot.platformBreakdown)
   ? [
       {label: 'Website', count: snapshot.platformBreakdown.value.web},
       {label: 'iOS', count: snapshot.platformBreakdown.value.ios},
       {label: 'Android', count: snapshot.platformBreakdown.value.android},
       {label: 'Unattributed', count: snapshot.platformBreakdown.value.unattributed},
+      ...(isLive(snapshot.liveEvents)
+        ? [{label: 'Live events', count: snapshot.liveEvents.value.total}]
+        : []),
     ].filter((row) => row.count > 0)
   : []
 
@@ -53,12 +61,10 @@ const dataSinceLabel = isLive(snapshot.dataSince)
 
 <Layout
   title='Stats'
-  description='How many questions people have asked each other with WhoCards — the numbers behind the cards, updated regularly.'
+  description='How many questions people have answered with WhoCards — the numbers behind the cards, updated regularly.'
 >
   <section class='mx-auto w-full max-w-7xl px-5 pb-16 pt-20 sm:px-8 lg:px-12 lg:pt-28 2xl:px-0'>
-    <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-dark'>
-      WhoCards stats
-    </p>
+    <p class='text-sm font-semibold tracking-wide text-primary-dark'>WhoCards stats</p>
     <h1 class='mt-4 font-title text-4xl font-bold leading-tight text-white sm:text-5xl'>
       The numbers behind the cards
     </h1>
@@ -67,25 +73,25 @@ const dataSinceLabel = isLive(snapshot.dataSince)
       no per-person tracking, just totals.
     </p>
 
-    <!-- Hero: questions asked -->
+    <!-- Hero: questions answered -->
     <div
-      class='mt-12 rounded-[2rem] border border-white/10 bg-dark px-6 py-10 sm:px-10 lg:px-14 lg:py-14'
+      class='mt-12 rounded-3xl border border-white/10 bg-dark px-6 py-10 sm:px-10 lg:px-14 lg:py-14'
     >
       {
-        isLive(snapshot.questionsAsked) ? (
+        isLive(snapshot.questionsAnswered) ? (
           <>
             <p class='text-gradient font-title text-6xl font-extrabold leading-none sm:text-7xl lg:text-8xl'>
-              {fmt(snapshot.questionsAsked.value.total)}
+              {fmt(snapshot.questionsAnswered.value.total)}
             </p>
-            <p class='mt-4 text-lg text-gray-lighter'>questions asked</p>
-            {snapshot.questionsAsked.value.thisWeek > 0 && (
+            <p class='mt-4 text-lg text-gray-lighter'>questions answered</p>
+            {snapshot.questionsAnswered.value.thisWeek > 0 && (
               <p class='mt-2 text-sm text-primary-light'>
-                +{fmt(snapshot.questionsAsked.value.thisWeek)} this week
+                +{fmt(snapshot.questionsAnswered.value.thisWeek)} this week
               </p>
             )}
           </>
         ) : (
-          <p class='text-lg text-gray-lighter'>{notConnectedMessage(snapshot.questionsAsked)}</p>
+          <p class='text-lg text-gray-lighter'>{notConnectedMessage(snapshot.questionsAnswered)}</p>
         )
       }
     </div>
@@ -101,15 +107,6 @@ const dataSinceLabel = isLive(snapshot.dataSince)
             </div>
           ))}
         </div>
-      )
-    }
-
-    <!-- Live events (in-person, e.g. conference decks) — separate slice, not part of the platform split -->
-    {
-      isLive(snapshot.liveEvents) && snapshot.liveEvents.value.total > 0 && (
-        <p class='mt-4 text-sm text-gray-dark'>
-          Plus {fmt(snapshot.liveEvents.value.total)} answered live at in-person events.
-        </p>
       )
     }
 
@@ -138,13 +135,13 @@ const dataSinceLabel = isLive(snapshot.dataSince)
     <div class='mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
       <div class='rounded-2xl border border-white/10 bg-dark px-6 py-6'>
         <p class='font-title text-3xl font-bold text-white'>
-          {isLive(snapshot.activeDevices) ? fmt(snapshot.activeDevices.value.total) : '—'}
+          {isLive(snapshot.activeDevices) ? fmt(snapshot.activeDevices.value.last30Days) : '—'}
         </p>
-        <p class='mt-1 text-sm text-gray-lighter'>Devices that have played</p>
+        <p class='mt-1 text-sm text-gray-lighter'>Active devices (last 30 days)</p>
         {
           isLive(snapshot.activeDevices) && (
             <p class='mt-1 text-xs text-gray-dark'>
-              {fmt(snapshot.activeDevices.value.last30Days)} in the last 30 days
+              {fmt(snapshot.activeDevices.value.total)} all-time
             </p>
           )
         }
@@ -159,7 +156,7 @@ const dataSinceLabel = isLive(snapshot.dataSince)
         <p class='font-title text-3xl font-bold text-white'>
           {
             isLive(snapshot.languages)
-              ? `${fmt(snapshot.languages.value.spoken)} / ${fmt(snapshot.languages.value.ofTotal)}`
+              ? `${fmt(snapshot.languages.value.spoken)} of ${fmt(snapshot.languages.value.ofTotal)}`
               : '—'
           }
         </p>
@@ -178,29 +175,39 @@ const dataSinceLabel = isLive(snapshot.dataSince)
       </div>
     </div>
 
-    <!-- App installs -->
+    <!-- App installs — each store is its own MetricResult, so one being down
+         (or not yet connected) never hides a live number from the other. -->
     <div class='mt-12'>
       <h2 class='font-title text-2xl font-bold text-white'>App installs</h2>
-      {
-        isLive(snapshot.installs) ? (
-          <div class='mt-6 grid gap-4 sm:grid-cols-2'>
-            <div class='rounded-2xl border border-white/10 bg-dark px-6 py-6'>
-              <p class='font-title text-3xl font-bold text-white'>
-                {fmt(snapshot.installs.value.ios)}
+      <p class='mt-1 text-xs text-gray-dark'>
+        Store reporting lags behind real time by about 1–2 days.
+      </p>
+      <div class='mt-6 grid gap-4 sm:grid-cols-2'>
+        <div class='rounded-2xl border border-white/10 bg-dark px-6 py-6'>
+          <p class='font-title text-3xl font-bold text-white'>
+            {isLive(snapshot.installsIos) ? fmt(snapshot.installsIos.value.count) : '—'}
+          </p>
+          <p class='mt-1 text-sm text-gray-lighter'>iOS installs (last 30 days)</p>
+          {
+            !isLive(snapshot.installsIos) && (
+              <p class='mt-1 text-xs text-gray-dark'>{notConnectedMessage(snapshot.installsIos)}</p>
+            )
+          }
+        </div>
+        <div class='rounded-2xl border border-white/10 bg-dark px-6 py-6'>
+          <p class='font-title text-3xl font-bold text-white'>
+            {isLive(snapshot.installsAndroid) ? fmt(snapshot.installsAndroid.value.count) : '—'}
+          </p>
+          <p class='mt-1 text-sm text-gray-lighter'>Android installs (last 30 days)</p>
+          {
+            !isLive(snapshot.installsAndroid) && (
+              <p class='mt-1 text-xs text-gray-dark'>
+                {notConnectedMessage(snapshot.installsAndroid)}
               </p>
-              <p class='mt-1 text-sm text-gray-lighter'>iOS (last 30 days)</p>
-            </div>
-            <div class='rounded-2xl border border-white/10 bg-dark px-6 py-6'>
-              <p class='font-title text-3xl font-bold text-white'>
-                {fmt(snapshot.installs.value.android)}
-              </p>
-              <p class='mt-1 text-sm text-gray-lighter'>Android (this month)</p>
-            </div>
-          </div>
-        ) : (
-          <p class='mt-4 text-gray-lighter'>{notConnectedMessage(snapshot.installs)}</p>
-        )
-      }
+            )
+          }
+        </div>
+      </div>
     </div>
 
     <!-- Footer methodology note -->
