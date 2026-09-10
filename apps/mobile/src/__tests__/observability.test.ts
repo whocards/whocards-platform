@@ -75,9 +75,7 @@ describe('observability — auto-flag non-real hardware', () => {
 
   it('does NOT register is_internal on a real device', () => {
     freshObservability(true)
-    // `register` is still called once for the unrelated `platform` super
-    // property (see observability.ts) — assert is_internal specifically,
-    // not that register was never invoked at all.
+    // register is still called for `platform`.
     expect(mockRegister).not.toHaveBeenCalledWith({is_internal: true})
   })
 

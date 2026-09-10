@@ -1,28 +1,4 @@
-/**
- * Google Play installs, for the stats page's install-count metric. Env-gated
- * and dependency-injected, same shape as ./app-store-connect — no SDK
- * dependency (no `googleapis`), just `jsonwebtoken` for the service-account
- * bearer token and `fetch` for the Cloud Storage JSON API. Google Play's
- * install-count reports are CSV files Google drops daily into a
- * Play-managed Cloud Storage bucket, not a REST "give me a number" endpoint.
- *
- * Setup (full walkthrough in docs/STATS-ENV.md):
- * 1. Google Cloud Console → IAM & Admin → Service Accounts → create one (no
- *    Cloud roles needed) and add a JSON key.
- * 2. Play Console → Users and permissions → invite the service account's
- *    email with the "View app information and download bulk reports"
- *    account permission (needed to read the reports bucket; can take up to
- *    24h to propagate).
- * 3. Play Console → Download reports → Statistics → "Copy Cloud Storage URI"
- *    shows the bucket name (`pubsite_prod_rev_<digits>`) the account can read.
- * 4. `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` = the full downloaded JSON key file
- *    contents (stringified JSON — Netlify env vars support long values).
- *    `GOOGLE_PLAY_REPORTS_BUCKET` = the bucket name from step 3.
- *
- * Docs: https://developer.android.com/distribute/console/api-access,
- * https://support.google.com/googleplay/android-developer/answer/6135870
- * (statistics report format).
- */
+/** Android installs from the monthly CSVs in the Play Console reports bucket. Setup: docs/STATS-ENV.md. */
 import jwt from 'jsonwebtoken'
 
 import type {MetricResult} from '../types'
@@ -35,9 +11,7 @@ export type GooglePlayServiceAccount = {
 }
 
 export type GooglePlayCredentials = {
-  /** Parsed service-account JSON (client_email + private_key). */
   serviceAccount: GooglePlayServiceAccount
-  /** The `pubsite_prod_rev_*` Cloud Storage bucket Play Console shows under "Download reports". */
   bucket: string
 }
 
@@ -46,7 +20,6 @@ const STORAGE_SCOPE = 'https://www.googleapis.com/auth/devstorage.read_only'
 const TOKEN_TTL_SECONDS = 60 * 60
 const FETCH_TIMEOUT_MS = 10_000
 
-/** Builds the RS256 JWT-bearer assertion Google's OAuth2 token endpoint expects. */
 export const buildGooglePlayAssertion = (account: GooglePlayServiceAccount): string => {
   const now = Math.floor(Date.now() / 1000)
   return jwt.sign(
@@ -62,7 +35,6 @@ export const buildGooglePlayAssertion = (account: GooglePlayServiceAccount): str
   )
 }
 
-/** Exchanges the signed assertion for a short-lived OAuth2 access token. */
 const fetchAccessToken = async (account: GooglePlayServiceAccount): Promise<string> => {
   const assertion = buildGooglePlayAssertion(account)
   const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -85,20 +57,12 @@ const fetchAccessToken = async (account: GooglePlayServiceAccount): Promise<stri
   return accessToken
 }
 
-/** `YYYYMM` for `date`, UTC — Google's month key in the report's object path. */
 const monthKey = (date: Date): string =>
   `${date.getUTCFullYear()}${String(date.getUTCMonth() + 1).padStart(2, '0')}`
 
-/** The first of the UTC calendar month immediately before `date`'s month. */
 const previousMonth = (date: Date): Date =>
   new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1))
 
-/**
- * Fetches and parses one month's "installs overview" CSV. A 404 means Google
- * hasn't published a report for that month yet (e.g. the app is brand new, or
- * the current month just started) — treated as no rows, not an error. Any
- * other non-OK status throws, which the caller turns into `unavailable`.
- */
 const fetchMonthlyInstallRows = async (
   creds: GooglePlayCredentials,
   accessToken: string,
@@ -111,7 +75,7 @@ const fetchMonthlyInstallRows = async (
     headers: {Authorization: `Bearer ${accessToken}`},
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
-  if (response.status === 404) return []
+  if (response.status === 404) return [] // No report for that month yet.
   if (!response.ok) throw new Error(`Cloud Storage returned ${response.status}`)
   // Google's overview CSVs are UTF-16LE with a BOM.
   const buffer = await response.arrayBuffer()
@@ -119,29 +83,12 @@ const fetchMonthlyInstallRows = async (
   return parseInstallsOverviewRows(csv)
 }
 
-/**
- * Total Android installs over the trailing 30 days, read from Google's
- * "installs" statistics CSVs at `stats/installs/installs_<package>_<YYYYMM>_overview.csv`
- * (Google's fixed path convention — one file per calendar month, one row per
- * day within it). A trailing 30-day window can span a month boundary, so both
- * the current month's and the immediately preceding month's reports are
- * fetched and their rows filtered down to the same window
- * `./report-window.ts` gives the App Store source, keeping both stores'
- * "last 30 days" label honest and directly comparable. Returns
- * `needs-credentials` when unset, `unavailable` (never throws) on a
- * fetch/parse failure. `now` is injectable so tests can exercise a window
- * that crosses a month boundary without depending on real wall-clock time.
- */
+/** The 30-day window can span two monthly CSVs, so this reads both and filters to the window. */
 export const fetchGooglePlayInstalls = async (
   creds: GooglePlayCredentials | undefined,
   packageId: string,
   now: Date = new Date()
 ): Promise<MetricResult<number>> => {
-  // Field-by-field completeness is the caller's job (apps/website's
-  // `googlePlayCredentials()` builds this object only when both env vars are
-  // set and the JSON parses to the expected shape) — checking again here
-  // would duplicate that check, so this module only distinguishes "no
-  // credentials at all" from "have them."
   if (!creds) {
     return needsCredentials(
       SOURCE,
@@ -167,14 +114,6 @@ export const fetchGooglePlayInstalls = async (
 
 export type InstallRow = {date: string; count: number}
 
-/**
- * Parses Google's "installs overview" CSV into one row per day. Exported
- * (pure, no fetch) so parsing is unit-testable against a fixture. Column
- * names per Google's documented format: "Date" (`YYYY-MM-DD`) and "Daily User
- * Installs" (net new installs for that day). Throws if either column is
- * missing rather than silently summing to 0 — a malformed/unexpected report
- * must show as `unavailable`, never a false live number.
- */
 export const parseInstallsOverviewRows = (csv: string): InstallRow[] => {
   const lines = csv.trim().split('\n')
   const [headerLine, ...rows] = lines

@@ -9,9 +9,7 @@ export const answersRouter = createTRPCRouter({
    * Question. Validates the event, then hands it to the host's `recordAnswer`
    * port (the Drizzle adapter in apps/website). `type` defaults to `'answered'`,
    * today's only kind (a future dwell-timer / Skip may add others). `platform`
-   * is optional (stats page): each client's transport sets it once, so
-   * older builds that omit it keep working — those rows land as "Unattributed"
-   * in the stats breakdown.
+   * is optional so older clients keep working.
    */
   record: publicProcedure
     .input(

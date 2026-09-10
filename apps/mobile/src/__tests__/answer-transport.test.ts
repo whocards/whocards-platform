@@ -14,10 +14,7 @@ import type {send as Send} from '../lib/answer-transport'
 import type {AnswerEvent} from '../lib/answer-queue'
 
 const EVENT: AnswerEvent = {deviceId: 'd1', deckSlug: 'library', questionId: 'q1', language: 'en'}
-// answer-transport stamps platform onto every event before sending it (see
-// src/lib/answer-transport.ts) — asserting the literal here (rather than
-// re-deriving it from Platform.OS) keeps this a real assertion instead of a
-// tautology; the jest RN preset defaults Platform.OS to 'ios'.
+// The jest RN preset defaults Platform.OS to 'ios'.
 const SENT_EVENT = {...EVENT, platform: 'ios'}
 
 /** Toggle the React Native `__DEV__` global. Wrapped to avoid no-underscore-dangle. */

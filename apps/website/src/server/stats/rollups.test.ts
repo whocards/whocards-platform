@@ -40,9 +40,6 @@ describe('weeklyTrend', () => {
   })
 
   it('buckets timestamps into the Monday-starting week they fall in', () => {
-    // Mon 2026-01-05 .. Sun 2026-01-11 is one ISO week. `now` pinned to the
-    // same week so this test doesn't also exercise the zero-fill-to-current-
-    // week behavior (covered separately below).
     const points = weeklyTrend(
       [
         {createdAt: new Date('2026-01-05T00:00:00Z')}, // Monday
@@ -83,9 +80,6 @@ describe('weeklyTrend', () => {
   })
 
   it('defaults `now` to the real current time when not passed, so it never shrinks below the data itself', () => {
-    // No explicit `now` — falls back to `new Date()`. Only asserts the first
-    // point still has the right shape; the real "zero-fills to today" behavior
-    // is covered above with an injected `now`.
     const points = weeklyTrend([{createdAt: new Date('2026-01-05T00:00:00Z')}])
     expect(points[0]).toEqual({weekStart: '2026-01-05', count: 1})
   })

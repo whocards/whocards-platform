@@ -3,8 +3,6 @@ import zlib from 'node:zlib'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {fetchAppStoreInstalls, parseSalesReportInstalls} from './app-store-connect'
 
-// A real (but disposable, test-only) ES256 key pair so `jsonwebtoken` can
-// actually sign the request token without hitting the network.
 const {privateKey: TEST_PRIVATE_KEY} = generateKeyPairSync('ec', {
   namedCurve: 'prime256v1',
   privateKeyEncoding: {type: 'sec1', format: 'pem'},
@@ -49,7 +47,6 @@ describe('fetchAppStoreInstalls — 30-day aggregation', () => {
   it('treats a 404 (no report generated yet for that day) as 0, not a failure', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = input instanceof Request ? input.url : String(input)
-      // Only the most recent day (first in the window) "has" a report.
       const hasReport = url.includes(reportWindowFirstDate())
       return hasReport
         ? new Response(gzipTsv(tsvWithInstalls(7)), {status: 200})
@@ -75,7 +72,6 @@ describe('fetchAppStoreInstalls — 30-day aggregation', () => {
   })
 })
 
-/** Mirrors `reportWindowDates()[0]` (yesterday, UTC) without importing the internal helper. */
 function reportWindowFirstDate(): string {
   const d = new Date()
   d.setUTCDate(d.getUTCDate() - 1)

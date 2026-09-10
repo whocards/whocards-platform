@@ -13,9 +13,6 @@ import {
   getQuestionsAnswered,
 } from './query'
 
-// Exercises the real aggregate SQL against an in-process Postgres (pglite) —
-// mirrors ../db/upsert.test.ts's style. One shared PGlite instance for the
-// whole run, truncated between tests (see ../db/test-helpers).
 let db: TestDb
 
 beforeEach(async () => {
@@ -45,13 +42,8 @@ describe('getQuestionsAnswered', () => {
   })
 
   it('uses the Monday-00:00-UTC week cutoff, not a rolling 7-day window', async () => {
-    // now = Wednesday 2026-01-14T12:00Z → that week's Monday is 2026-01-12T00:00Z.
-    const now = new Date('2026-01-14T12:00:00.000Z')
-    // Six days before `now` (2026-01-08T12:00Z, a Thursday) is inside a naive
-    // rolling-7-day window (now - 7d = 2026-01-07T12:00Z) but before that
-    // week's Monday cutoff — must NOT count as "this week".
-    await insertAnswer({createdAt: '2026-01-08T12:00:00.000Z'})
-    // Exactly at the Monday cutoff — must count.
+    const now = new Date('2026-01-14T12:00:00.000Z') // Wed; week starts Mon 2026-01-12
+    await insertAnswer({createdAt: '2026-01-08T12:00:00.000Z'}) // within 7 days, but last week
     await insertAnswer({createdAt: '2026-01-12T00:00:00.000Z'})
     const result = await getQuestionsAnswered(db, now)
     expect(result.total).toBe(2)

@@ -16,7 +16,5 @@ import {trpc} from './trpc'
 export const sendAnswer: Send = async (event: AnswerEvent): Promise<void> => {
   const optIn = import.meta.env.PUBLIC_RECORD_ANSWERS === 'true'
   if (!shouldRecordAnswers({dev: import.meta.env.DEV, optIn})) return
-  // platform is set here, once, regardless of which Game served the event —
-  // every website Answer flows through this one seam (stats page).
   await trpc.answers.record.mutate({...event, platform: 'web'})
 }

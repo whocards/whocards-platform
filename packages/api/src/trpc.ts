@@ -16,11 +16,6 @@ export type Context = {
     questionId: string
     language: string
     type: string
-    /**
-     * Which client sent this Answer. Optional so older, not-yet-updated
-     * clients keep working; absent/unset means the stats page buckets the
-     * row as "Unattributed" rather than guessing.
-     */
     platform?: AnswerPlatform
   }) => Promise<void>
 }

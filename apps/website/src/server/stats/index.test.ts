@@ -5,15 +5,7 @@ import type {GooglePlayCredentials} from './sources/google-play'
 import type {PostHogCredentials} from './sources/posthog'
 import type {AnswerTimestampRow, MetricResult, NamedCount, PlatformCountRow} from './types'
 
-// This suite exercises the orchestration in ./index.ts in isolation from
-// Postgres and the network: every dependency (query.ts, the three source
-// clients, and ~env/~server/db) is mocked, so what's under test is purely
-// "does buildStatsSnapshot wire the pieces together correctly" — the pieces
-// themselves (SQL aggregates, rollups, fetch clients) already have their own
-// unit tests in ./query.test.ts, ./rollups.test.ts, and ./sources/*.test.ts.
-//
-// Each test does a fresh `vi.resetModules()` + dynamic `import('./index')`
-// so the module-level snapshot cache doesn't leak between cases.
+// freshIndex() re-imports ./index so its module-level cache doesn't leak between tests.
 
 const envMock: Record<string, string | undefined> = {
   APP_STORE_CONNECT_KEY_ID: undefined,
@@ -113,8 +105,6 @@ describe('getStatsSnapshot — live events folded into the hero total and weekly
   })
 
   it('merges Live-event timestamps into the weekly trend so an event spike can show', async () => {
-    // Both land "now" (same week) so the result is a single point regardless
-    // of which real week the suite happens to run in.
     const now = new Date()
     query.getAnswerTimestamps.mockResolvedValue([{createdAt: now}])
     query.getLiveEventTimestamps.mockResolvedValue([{createdAt: now}])
@@ -211,7 +201,6 @@ describe('getStatsSnapshot — one failing DB query degrades only its own field(
     const {getStatsSnapshot} = await freshIndex()
     const snapshot = await getStatsSnapshot()
     expect(snapshot.questionsAnswered.status).toBe('unavailable')
-    // liveEvents itself also reflects the failure.
     expect(snapshot.liveEvents.status).toBe('unavailable')
   })
 
@@ -238,8 +227,6 @@ describe('getStatsSnapshot — concurrent cache-miss callers share one in-flight
       .mockResolvedValue({status: 'needs-credentials', source: 'app-store-connect'})
     const {getStatsSnapshot} = await freshIndex()
     await expect(getStatsSnapshot()).rejects.toThrow('boom')
-    // The failed build must not linger as "the" in-flight promise — this
-    // second call has to kick off a fresh build, not hang or re-reject.
     const snapshot = await getStatsSnapshot()
     expect(snapshot.installsIos.status).toBe('needs-credentials')
   })

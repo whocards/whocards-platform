@@ -50,9 +50,6 @@ if (posthog && !Device.isDevice) {
   void posthog.register({is_internal: true})
 }
 
-// `platform` as a super property (not a per-event prop — see the doc comment
-// on DeckOpenedProps et al. in @whocards/observability/events) so every event
-// this session sends carries it without every call site repeating it.
 if (posthog) {
   void posthog.register({platform: Platform.OS})
 }

@@ -447,16 +447,7 @@ export const answer = pgTable(
     questionId: text('question_id').notNull(),
     language: text('language'),
     type: text('type').notNull().default('answered'),
-    // Nullable, additive (public stats page). Rows written before this column
-    // existed — and any client that hasn't updated yet — stay NULL; the stats
-    // aggregation surfaces those as "Unattributed" rather than guessing. New
-    // writes carry 'web' | 'ios' | 'android' from the host transport
-    // (answer-transport.ts on each client), never guessed server-side.
-    //
-    // No index: the stats page's per-platform counts are a full-table
-    // GROUP BY (see getPlatformCounts in server/stats/query.ts), which an
-    // index on this low-cardinality (3-4 value) column wouldn't speed up —
-    // it would only add write overhead.
+    // NULL = Unattributed (rows from before this column, or old clients).
     platform: text('platform'),
   },
   (table) => {

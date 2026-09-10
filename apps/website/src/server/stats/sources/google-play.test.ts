@@ -2,8 +2,6 @@ import {generateKeyPairSync} from 'node:crypto'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {fetchGooglePlayInstalls, parseInstallsOverviewRows} from './google-play'
 
-// A real (but disposable, test-only) RSA key pair so `jsonwebtoken` can
-// actually sign the OAuth2 assertion without hitting the network.
 const {privateKey: TEST_PRIVATE_KEY} = generateKeyPairSync('rsa', {
   modulusLength: 2048,
   privateKeyEncoding: {type: 'pkcs1', format: 'pem'},
@@ -15,12 +13,10 @@ const CREDS = {
   bucket: 'pubsite_prod_rev_123',
 }
 
-/** Google's overview CSVs are UTF-16LE — encode fixtures the same way `fetch` will return them. */
 const utf16le = (csv: string) => Buffer.from(csv, 'utf16le')
 
 const mockTokenExchange = () => new Response(JSON.stringify({access_token: 'token'}), {status: 200})
 
-/** `fetch`'s first arg is `RequestInfo | URL`, not necessarily a plain string — extract the URL string safely. */
 const callUrl = (input: unknown): string => (input instanceof Request ? input.url : String(input))
 
 describe('fetchGooglePlayInstalls — missing credentials', () => {
@@ -57,7 +53,6 @@ describe('fetchGooglePlayInstalls — request timeouts', () => {
     )
 
     expect(result.status).toBe('live')
-    // Token exchange + current month's report + previous month's report.
     expect(fetchSpy).toHaveBeenCalledTimes(3)
     for (const call of fetchSpy.mock.calls) {
       const [, init] = call

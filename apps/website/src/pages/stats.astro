@@ -5,11 +5,7 @@ import type {MetricResult} from '../server/stats/types'
 import Layout from '~layouts/Layout.astro'
 import {getStatsSnapshot} from '../server/stats'
 
-// Public, unauthenticated page — cache aggressively so we never re-run the
-// aggregate queries (or the third-party installs/country fetches) per
-// visitor: 5 min browser cache, 1 hr CDN cache, 24 hr stale-while-revalidate.
-// `Cache-Control`'s `s-maxage` isn't reliably honored by Netlify's edge, so
-// CDN duration is set explicitly via `Netlify-CDN-Cache-Control` as well.
+// Netlify's edge ignores s-maxage, so the CDN TTL goes in Netlify-CDN-Cache-Control.
 Astro.response.headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=86400')
 Astro.response.headers.set(
   'Netlify-CDN-Cache-Control',
@@ -24,8 +20,6 @@ const isLive = <T,>(
   result: MetricResult<T>
 ): result is Extract<MetricResult<T>, {status: 'live'}> => result.status === 'live'
 
-// "Not connected yet" copy varies by why a source is missing — honest, not
-// alarming, since a visitor with no context shouldn't read this as an outage.
 const notConnectedMessage = (result: MetricResult<unknown>): string => {
   if (result.status === 'needs-credentials') return 'Not connected yet.'
   if (result.status === 'needs-instrumentation') return 'Coming soon.'
@@ -35,9 +29,7 @@ const notConnectedMessage = (result: MetricResult<unknown>): string => {
 const weeklyTrend = isLive(snapshot.weeklyTrend) ? snapshot.weeklyTrend.value : []
 const maxWeekly = Math.max(1, ...weeklyTrend.map((point) => point.count))
 
-// Live events are folded into the hero total (questionsAnswered) rather than
-// kept siloed — see StatsSnapshot's doc comment — so they get their own slice
-// here too, and the grid's slices sum to the hero number.
+// Live events are in the hero total, so they get a slice here too.
 const platformRows = isLive(snapshot.platformBreakdown)
   ? [
       {label: 'Website', count: snapshot.platformBreakdown.value.web},
@@ -175,8 +167,7 @@ const dataSinceLabel = isLive(snapshot.dataSince)
       </div>
     </div>
 
-    <!-- App installs — each store is its own MetricResult, so one being down
-         (or not yet connected) never hides a live number from the other. -->
+    <!-- App installs -->
     <div class='mt-12'>
       <h2 class='font-title text-2xl font-bold text-white'>App installs</h2>
       <p class='mt-1 text-xs text-gray-dark'>

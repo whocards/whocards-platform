@@ -37,12 +37,6 @@ export const GAMES = {WH: 'wh', PICK: 'pick'} as const
 /** The three rows offered by the Share sheet (epic #152) — one shape for web and mobile. */
 export type ShareFormat = 'link' | 'story' | 'post'
 
-// Note: the stats page's per-platform breakdown does NOT read a `platform`
-// prop off these PostHog events — it reads the DB `answer.platform` column
-// (written by each client's answer-transport.ts). `platform` is instead a
-// PostHog super-property, registered once per session (see each app's
-// lib/observability.ts `posthog.register({platform: ...})` call) rather than
-// repeated on every event payload here.
 export type DeckOpenedProps = {deck_id: string; source: string}
 export type GameStartedProps = {
   deck_id: string
