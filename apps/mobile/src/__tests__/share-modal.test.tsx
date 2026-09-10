@@ -48,6 +48,27 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
 }))
 
+// `<StatusBar>` is a side-effect component: it renders `null`, so it never
+// appears in the host-element tree. @testing-library/react-native 14 removed
+// the composite `UNSAFE_getByType` query that used to reach it
+// (https://github.com/callstack/react-native-testing-library/releases/tag/v14.0.0),
+// so spy on the props it's rendered with instead.
+jest.mock('expo-status-bar', () => ({StatusBar: jest.fn(() => null)}))
+
+/**
+ * The `style` the `<StatusBar>` under test was rendered with.
+ *
+ * The mock is module-level, so its calls accumulate across every test in this
+ * file — the describe below clears them per test, and this throws rather than
+ * return `undefined`, so a `ShareModal` that stopped rendering a `<StatusBar>`
+ * fails here instead of silently reading some earlier test's call.
+ */
+const lastStatusBarStyle = () => {
+  const {calls} = jest.mocked(StatusBar).mock
+  if (calls.length === 0) throw new Error('<StatusBar> was never rendered')
+  return calls.at(-1)?.[0].style
+}
+
 const mockDownloadAndShareImage = jest.fn()
 jest.mock('@/lib/share-image', () => ({
   downloadAndShareImage: (...args: unknown[]) => mockDownloadAndShareImage(...args),
@@ -76,15 +97,15 @@ describe('ShareModal', () => {
     shareSpy.mockRestore()
   })
 
-  it('renders all three rows when the caller supplies both image URLs (a Pool-backed deck)', () => {
-    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
+  it('renders all three rows when the caller supplies both image URLs (a Pool-backed deck)', async () => {
+    await render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
     expect(screen.getByText('Share link')).toBeTruthy()
     expect(screen.getByText('Story image')).toBeTruthy()
     expect(screen.getByText('Post image')).toBeTruthy()
   })
 
-  it('renders only the link row when the image URLs are omitted (an inline-source deck)', () => {
-    render(
+  it('renders only the link row when the image URLs are omitted (an inline-source deck)', async () => {
+    await render(
       <ShareModal
         visible
         questionText={PROPS.questionText}
@@ -98,8 +119,8 @@ describe('ShareModal', () => {
     expect(screen.queryByText('Post image')).toBeNull()
   })
 
-  it('renders only the link row when just one image URL is omitted', () => {
-    render(
+  it('renders only the link row when just one image URL is omitted', async () => {
+    await render(
       <ShareModal
         visible
         questionText={PROPS.questionText}
@@ -117,10 +138,10 @@ describe('ShareModal', () => {
   it('shares the unchanged link payload, reports completion, and leaves the sheet open', async () => {
     const onShare = jest.fn()
     const onClose = jest.fn()
-    render(<ShareModal visible {...PROPS} onShare={onShare} onClose={onClose} />)
+    await render(<ShareModal visible {...PROPS} onShare={onShare} onClose={onClose} />)
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Share link'))
+      await fireEvent.press(screen.getByText('Share link'))
     })
 
     expect(shareSpy).toHaveBeenCalledWith({
@@ -145,10 +166,10 @@ describe('ShareModal', () => {
     shareSpy.mockResolvedValue({action: Share.dismissedAction})
     const onShare = jest.fn()
     const onClose = jest.fn()
-    render(<ShareModal visible {...PROPS} onShare={onShare} onClose={onClose} />)
+    await render(<ShareModal visible {...PROPS} onShare={onShare} onClose={onClose} />)
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Share link'))
+      await fireEvent.press(screen.getByText('Share link'))
     })
 
     expect(onShare).not.toHaveBeenCalled()
@@ -159,10 +180,10 @@ describe('ShareModal', () => {
     mockDownloadAndShareImage.mockResolvedValue(undefined)
     const onShare = jest.fn()
     const onClose = jest.fn()
-    render(<ShareModal visible {...PROPS} onShare={onShare} onClose={onClose} />)
+    await render(<ShareModal visible {...PROPS} onShare={onShare} onClose={onClose} />)
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Story image'))
+      await fireEvent.press(screen.getByText('Story image'))
     })
 
     expect(mockDownloadAndShareImage).toHaveBeenCalledWith(PROPS.storyImageUrl)
@@ -173,7 +194,7 @@ describe('ShareModal', () => {
     // different row works right away (issue #192 acceptance criteria)
     mockDownloadAndShareImage.mockResolvedValue(undefined)
     await act(async () => {
-      fireEvent.press(screen.getByText('Post image'))
+      await fireEvent.press(screen.getByText('Post image'))
     })
     expect(mockDownloadAndShareImage).toHaveBeenCalledWith(PROPS.postImageUrl)
     expect(onShare).toHaveBeenCalledWith('post')
@@ -184,10 +205,10 @@ describe('ShareModal', () => {
     mockDownloadAndShareImage.mockRejectedValue(new Error('network request failed'))
     const onShare = jest.fn()
     const onClose = jest.fn()
-    render(<ShareModal visible {...PROPS} onShare={onShare} onClose={onClose} />)
+    await render(<ShareModal visible {...PROPS} onShare={onShare} onClose={onClose} />)
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Post image'))
+      await fireEvent.press(screen.getByText('Post image'))
     })
 
     expect(onShare).not.toHaveBeenCalled()
@@ -196,37 +217,37 @@ describe('ShareModal', () => {
 
     // the link row must still work offline after an image failure
     await act(async () => {
-      fireEvent.press(screen.getByText('Share link'))
+      await fireEvent.press(screen.getByText('Share link'))
     })
     expect(shareSpy).toHaveBeenCalled()
     expect(onShare).toHaveBeenCalledWith('link')
   })
 
-  it('dismisses when the dimmed backdrop is tapped', () => {
+  it('dismisses when the dimmed backdrop is tapped', async () => {
     const onClose = jest.fn()
-    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={onClose} />)
+    await render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={onClose} />)
 
-    fireEvent.press(screen.getByLabelText('dismiss'))
+    await fireEvent.press(screen.getByLabelText('dismiss'))
 
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('does not dismiss when the sheet content itself is tapped', () => {
+  it('does not dismiss when the sheet content itself is tapped', async () => {
     const onClose = jest.fn()
-    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={onClose} />)
+    await render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={onClose} />)
 
     // The title sits on the sheet's own whitespace, not on a row or the close
     // button — it must not fall through to the backdrop's dismiss handler.
-    fireEvent.press(screen.getByText('Share'))
+    await fireEvent.press(screen.getByText('Share'))
 
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('dismisses via the explicit close button', () => {
+  it('dismisses via the explicit close button', async () => {
     const onClose = jest.fn()
-    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={onClose} />)
+    await render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={onClose} />)
 
-    fireEvent.press(screen.getByLabelText('close'))
+    await fireEvent.press(screen.getByLabelText('close'))
 
     expect(onClose).toHaveBeenCalled()
   })
@@ -238,15 +259,22 @@ describe('ShareModal', () => {
 // flip as every other themed sheet (see settings-modal.test.tsx's own
 // StatusBar-override coverage).
 describe('ShareModal — StatusBar override (issue #173)', () => {
-  it('shows light (white) status-bar icons when the resolved scheme is dark', () => {
-    act(() => setColorScheme('dark'))
-    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
-    expect(screen.UNSAFE_getByType(StatusBar).props.style).toBe('light')
+  // Ten earlier tests in this file also render `<ShareModal>`, and nothing in
+  // jest.config.js/jest.setup.ts clears mocks between tests, so without this
+  // `lastStatusBarStyle()` would be reading a pile of accumulated calls.
+  beforeEach(() => {
+    jest.mocked(StatusBar).mockClear()
   })
 
-  it('shows dark status-bar icons when the resolved scheme is light', () => {
-    act(() => setColorScheme('light'))
-    render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
-    expect(screen.UNSAFE_getByType(StatusBar).props.style).toBe('dark')
+  it('shows light (white) status-bar icons when the resolved scheme is dark', async () => {
+    await act(() => setColorScheme('dark'))
+    await render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
+    expect(lastStatusBarStyle()).toBe('light')
+  })
+
+  it('shows dark status-bar icons when the resolved scheme is light', async () => {
+    await act(() => setColorScheme('light'))
+    await render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
+    expect(lastStatusBarStyle()).toBe('dark')
   })
 })

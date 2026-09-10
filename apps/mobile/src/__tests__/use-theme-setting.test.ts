@@ -33,7 +33,7 @@ import {getStoredTheme, setStoredTheme} from '../lib/theme-store'
 
 describe('useThemeSetting', () => {
   it('starts, and stays, on "system" when nothing has ever been persisted', async () => {
-    const {result} = renderHook(() => useThemeSetting())
+    const {result} = await renderHook(() => useThemeSetting())
     expect(result.current.theme).toBe('system')
     // let the boot effect's getStoredTheme() promise settle before asserting it held
     await waitFor(() => expect(getStoredTheme()).resolves.toBe('system'))
@@ -42,25 +42,35 @@ describe('useThemeSetting', () => {
 
   it('starts on "system" before a persisted "dark" override resolves, then restores it', async () => {
     await setStoredTheme('dark')
-    const {result} = renderHook(() => useThemeSetting())
-    expect(result.current.theme).toBe('system')
+    // @testing-library/react-native 14's `renderHook` is async and flushes
+    // pending microtasks before it resolves, so `result.current` can no longer
+    // observe the pre-hydration render — the boot effect's getStoredTheme()
+    // has already landed by then. Record what each render saw instead.
+    // https://github.com/callstack/react-native-testing-library/releases/tag/v14.0.0
+    const seen: string[] = []
+    const {result} = await renderHook(() => {
+      const state = useThemeSetting()
+      seen.push(state.theme)
+      return state
+    })
+    expect(seen[0]).toBe('system')
     await waitFor(() => expect(result.current.theme).toBe('dark'))
     expect(result.current.resolvedScheme).toBe('dark')
   })
 
   it('restores a persisted "light" override on mount', async () => {
     await setStoredTheme('light')
-    const {result} = renderHook(() => useThemeSetting())
+    const {result} = await renderHook(() => useThemeSetting())
     await waitFor(() => expect(result.current.theme).toBe('light'))
     expect(result.current.resolvedScheme).toBe('light')
   })
 
   it('select() applies a manual "light" override immediately, resolvedScheme included', async () => {
     await setStoredTheme('dark') // start from the opposite override
-    const {result} = renderHook(() => useThemeSetting())
+    const {result} = await renderHook(() => useThemeSetting())
     await waitFor(() => expect(result.current.theme).toBe('dark'))
 
-    act(() => result.current.select('light'))
+    await act(() => result.current.select('light'))
 
     expect(result.current.theme).toBe('light')
     expect(result.current.resolvedScheme).toBe('light')
@@ -68,30 +78,30 @@ describe('useThemeSetting', () => {
 
   it('select() applies a manual "dark" override immediately, resolvedScheme included', async () => {
     await setStoredTheme('light')
-    const {result} = renderHook(() => useThemeSetting())
+    const {result} = await renderHook(() => useThemeSetting())
     await waitFor(() => expect(result.current.theme).toBe('light'))
 
-    act(() => result.current.select('dark'))
+    await act(() => result.current.select('dark'))
 
     expect(result.current.theme).toBe('dark')
     expect(result.current.resolvedScheme).toBe('dark')
   })
 
   it('select() persists the choice so a later boot restores it', async () => {
-    const {result} = renderHook(() => useThemeSetting())
+    const {result} = await renderHook(() => useThemeSetting())
     await waitFor(() => expect(result.current.theme).not.toBeUndefined())
 
-    act(() => result.current.select('dark'))
+    await act(() => result.current.select('dark'))
 
     expect(await getStoredTheme()).toBe('dark')
   })
 
   it('selecting "system" again clears a manual override back to system-follow', async () => {
     await setStoredTheme('light')
-    const {result} = renderHook(() => useThemeSetting())
+    const {result} = await renderHook(() => useThemeSetting())
     await waitFor(() => expect(result.current.theme).toBe('light'))
 
-    act(() => result.current.select('system'))
+    await act(() => result.current.select('system'))
 
     expect(result.current.theme).toBe('system')
     expect(await getStoredTheme()).toBe('system')

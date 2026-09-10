@@ -33,31 +33,31 @@ jest.mock('@/components/pressable-scale', () => {
 import {SecondaryButton} from '../components/secondary-button'
 
 describe('SecondaryButton', () => {
-  it('renders its label and fires onPress', () => {
+  it('renders its label and fires onPress', async () => {
     const onPress = jest.fn()
-    render(<SecondaryButton label="Settings" onPress={onPress} />)
-    fireEvent.press(screen.getByText('Settings'))
+    await render(<SecondaryButton label="Settings" onPress={onPress} />)
+    await fireEvent.press(screen.getByText('Settings'))
     expect(onPress).toHaveBeenCalledTimes(1)
   })
 
-  it('defaults its accessibilityLabel to the visible label', () => {
-    render(<SecondaryButton label="Settings" onPress={() => {}} />)
+  it('defaults its accessibilityLabel to the visible label', async () => {
+    await render(<SecondaryButton label="Settings" onPress={() => {}} />)
     expect(screen.getByLabelText('Settings')).toBeTruthy()
   })
 
-  it('accepts an explicit accessibilityLabel override', () => {
-    render(
+  it('accepts an explicit accessibilityLabel override', async () => {
+    await render(
       <SecondaryButton label="Settings" accessibilityLabel="Open settings" onPress={() => {}} />
     )
     expect(screen.getByLabelText('Open settings')).toBeTruthy()
     expect(screen.queryByLabelText('Settings')).toBeNull()
   })
 
-  it('styles its label from the design tokens — white, on the sans face, bold', () => {
+  it('styles its label from the design tokens — white, on the sans face, bold', async () => {
     // Reading the resolved style rather than the `className` string: NativeWind
     // v5 compiles the class away before it reaches the element, so a className
     // assertion would still pass with the whole style pipeline broken.
-    render(<SecondaryButton label="Settings" onPress={() => {}} />)
+    await render(<SecondaryButton label="Settings" onPress={() => {}} />)
     expect(resolvedStyle(screen.getByText('Settings'))).toMatchObject({
       color: colors.white,
       fontFamily: fonts.sans.family,
@@ -65,8 +65,8 @@ describe('SecondaryButton', () => {
     })
   })
 
-  it('renders an optional leading icon', () => {
-    render(
+  it('renders an optional leading icon', async () => {
+    await render(
       <SecondaryButton label="Settings" icon={<Text testID="icon">icon</Text>} onPress={() => {}} />
     )
     expect(screen.getByTestId('icon')).toBeTruthy()

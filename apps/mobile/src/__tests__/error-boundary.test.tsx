@@ -37,8 +37,8 @@ const ThrowingChild = () => {
 const StableChild = () => <React.Fragment />
 
 describe('ErrorBoundary', () => {
-  it('renders children when there is no error', () => {
-    const {queryByText} = render(
+  it('renders children when there is no error', async () => {
+    const {queryByText} = await render(
       <ErrorBoundary>
         <StableChild />
       </ErrorBoundary>
@@ -46,8 +46,8 @@ describe('ErrorBoundary', () => {
     expect(queryByText('Something went wrong')).toBeNull()
   })
 
-  it('shows the fallback when a child throws', () => {
-    const {getByText} = render(
+  it('shows the fallback when a child throws', async () => {
+    const {getByText} = await render(
       <ErrorBoundary>
         <ThrowingChild />
       </ErrorBoundary>
@@ -56,8 +56,8 @@ describe('ErrorBoundary', () => {
     expect(getByText('Try again')).toBeTruthy()
   })
 
-  it('calls logError with the thrown error', () => {
-    render(
+  it('calls logError with the thrown error', async () => {
+    await render(
       <ErrorBoundary>
         <ThrowingChild />
       </ErrorBoundary>
@@ -69,7 +69,7 @@ describe('ErrorBoundary', () => {
     )
   })
 
-  it('resets to rendering children when "Try again" is pressed', () => {
+  it('resets to rendering children when "Try again" is pressed', async () => {
     // Use a stateful wrapper so we can swap the child after reset.
     let shouldThrow = true
     const ConditionalChild = () => {
@@ -77,7 +77,7 @@ describe('ErrorBoundary', () => {
       return <StableChild />
     }
 
-    const {getByText, queryByText, rerender} = render(
+    const {getByText, queryByText, rerender} = await render(
       <ErrorBoundary>
         <ConditionalChild />
       </ErrorBoundary>
@@ -88,10 +88,10 @@ describe('ErrorBoundary', () => {
 
     // Stop throwing, then press reset.
     shouldThrow = false
-    fireEvent.press(getByText('Try again'))
+    await fireEvent.press(getByText('Try again'))
 
     // Re-render after reset — the fallback is gone.
-    rerender(
+    await rerender(
       <ErrorBoundary>
         <ConditionalChild />
       </ErrorBoundary>

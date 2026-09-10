@@ -24,8 +24,8 @@ import {colors, fonts, radius, spacing} from '@whocards/tokens'
 import {resolvedStyle, rem, withOpacity} from '@/test-utils/resolved-style'
 import {setColorScheme} from '@/lib/color-scheme'
 
-const styleFor = (className: string) => {
-  render(<View testID="subject" className={className} />)
+const styleFor = async (className: string) => {
+  await render(<View testID="subject" className={className} />)
   return resolvedStyle(screen.getByTestId('subject'))
 }
 
@@ -56,8 +56,8 @@ const COLOR_CASES: [className: string, expected: string][] = [
 ]
 
 describe('Tailwind theme — colours', () => {
-  it.each(COLOR_CASES)('%s resolves to the token value', (className, expected) => {
-    expect(styleFor(className).backgroundColor).toBe(expected)
+  it.each(COLOR_CASES)('%s resolves to the token value', async (className, expected) => {
+    expect((await styleFor(className)).backgroundColor).toBe(expected)
   })
 
   it('covers every colour token — a new token must be added above', () => {
@@ -80,8 +80,8 @@ const SPACING_CASES: [className: string, expected: number][] = [
 ]
 
 describe('Tailwind theme — spacing and radius', () => {
-  it.each(SPACING_CASES)('%s resolves to the token value in px', (className, expected) => {
-    expect(styleFor(className).padding).toBe(expected)
+  it.each(SPACING_CASES)('%s resolves to the token value in px', async (className, expected) => {
+    expect((await styleFor(className)).padding).toBe(expected)
   })
 
   it('covers every custom spacing step', () => {
@@ -90,8 +90,8 @@ describe('Tailwind theme — spacing and radius', () => {
     )
   })
 
-  it('rounded-2.5xl resolves to the token value in px', () => {
-    expect(styleFor('rounded-2.5xl').borderRadius).toBe(rem(radius['2.5xl']))
+  it('rounded-2.5xl resolves to the token value in px', async () => {
+    expect((await styleFor('rounded-2.5xl')).borderRadius).toBe(rem(radius['2.5xl']))
   })
 
   it('covers every custom radius step', () => {
@@ -113,8 +113,8 @@ const FONT_CASES: [className: string, expected: string][] = [
 ]
 
 describe('Tailwind theme — fonts', () => {
-  it.each(FONT_CASES)('%s resolves to the registered family', (className, expected) => {
-    render(<Text className={className}>{className}</Text>)
+  it.each(FONT_CASES)('%s resolves to the registered family', async (className, expected) => {
+    await render(<Text className={className}>{className}</Text>)
     expect(resolvedStyle(screen.getByText(className)).fontFamily).toBe(expected)
   })
 
@@ -124,12 +124,12 @@ describe('Tailwind theme — fonts', () => {
     )
   })
 
-  it('keeps golos-text as the default sans face, beating nativewind/theme’s System', () => {
+  it('keeps golos-text as the default sans face, beating nativewind/theme’s System', async () => {
     // nativewind/theme ships an unlayered `@media ios { :root { --font-sans: System } }`,
     // which outranks anything in a cascade layer — including our @theme block.
     // src/global.css re-declares --font-sans after that import to win it back;
     // this is the assertion that the ordering still holds.
-    expect(styleFor('font-sans').fontFamily).toBe(fonts.sans.family)
+    expect((await styleFor('font-sans')).fontFamily).toBe(fonts.sans.family)
   })
 })
 
@@ -153,15 +153,16 @@ describe('Tailwind theme — fonts', () => {
  * the nearest step, and what src/app/index.tsx's tagline now uses — 1.75px
  * tighter than v4's 28px, and the migration's one accepted visual change.
  */
-const renderClass = (className: string) => {
-  render(<Text testID="line" className={className} />)
+const renderClass = async (className: string) => {
+  await render(<Text testID="line" className={className} />)
   return screen.getByTestId('line')
 }
 
-const lineHeightOf = (className: string) => resolvedStyle(renderClass(className)).lineHeight
+const lineHeightOf = async (className: string) =>
+  resolvedStyle(await renderClass(className)).lineHeight
 
 describe('Tailwind theme — line height', () => {
-  it('gives each text size its own line height, in px', () => {
+  it('gives each text size its own line height, in px', async () => {
     // Each `text-*` carries a line height distinct from its font size, and the
     // two are asserted together so neither reading can be mistaken for the
     // other: text-sm is 0.875rem/1.25rem, text-xl is 1.25rem/1.75rem.
@@ -173,36 +174,38 @@ describe('Tailwind theme — line height', () => {
     // `text-sm`'s default is exactly what v4's `text-sm leading-5` pinned, and
     // so why theme-settings-page.tsx could drop that class outright rather than
     // restate it as a ratio.
-    expect(resolvedStyle(renderClass('text-sm'))).toMatchObject({
+    expect(resolvedStyle(await renderClass('text-sm'))).toMatchObject({
       fontSize: rem('0.875rem'),
       lineHeight: rem('1.25rem'),
     })
-    expect(resolvedStyle(renderClass('text-xl'))).toMatchObject({
+    expect(resolvedStyle(await renderClass('text-xl'))).toMatchObject({
       fontSize: rem('1.25rem'),
       lineHeight: rem('1.75rem'),
     })
   })
 
-  it('parses a leading-* step as 0.25em, not 0.25rem', () => {
+  it('parses a leading-* step as 0.25em, not 0.25rem', async () => {
     // Against text-xl's 1.25rem (17.5px) font size.
-    expect(lineHeightOf('text-xl leading-6')).toBe(1.5 * rem('1.25rem'))
-    expect(lineHeightOf('text-xl leading-8')).toBe(2 * rem('1.25rem'))
+    expect(await lineHeightOf('text-xl leading-6')).toBe(1.5 * rem('1.25rem'))
+    expect(await lineHeightOf('text-xl leading-8')).toBe(2 * rem('1.25rem'))
   })
 })
 
 describe('Tailwind theme — modifiers', () => {
-  it('applies the /NN opacity modifier to a token colour', () => {
-    expect(styleFor('bg-primary-dark/25').backgroundColor).toBe(
+  it('applies the /NN opacity modifier to a token colour', async () => {
+    expect((await styleFor('bg-primary-dark/25')).backgroundColor).toBe(
       withOpacity(colors.primary.dark, 25)
     )
-    expect(styleFor('bg-white/70').backgroundColor).toBe(withOpacity(colors.white, 70))
+    expect((await styleFor('bg-white/70')).backgroundColor).toBe(withOpacity(colors.white, 70))
   })
 
-  it('switches on `dark:` with the app’s colour-scheme setting', () => {
-    act(() => setColorScheme('light'))
-    expect(styleFor('bg-canvasLight dark:bg-darkest').backgroundColor).toBe(colors.canvasLight)
+  it('switches on `dark:` with the app’s colour-scheme setting', async () => {
+    await act(() => setColorScheme('light'))
+    expect((await styleFor('bg-canvasLight dark:bg-darkest')).backgroundColor).toBe(
+      colors.canvasLight
+    )
 
-    act(() => setColorScheme('dark'))
-    expect(styleFor('bg-canvasLight dark:bg-darkest').backgroundColor).toBe(colors.darkest)
+    await act(() => setColorScheme('dark'))
+    expect((await styleFor('bg-canvasLight dark:bg-darkest')).backgroundColor).toBe(colors.darkest)
   })
 })

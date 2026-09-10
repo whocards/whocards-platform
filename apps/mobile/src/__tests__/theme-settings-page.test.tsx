@@ -21,15 +21,15 @@ jest.mock('react-native-safe-area-context', () => ({
 
 import {ThemeSettingsPage} from '../components/theme-settings-page'
 
-const renderPage = (
+const renderPage = async (
   current: 'system' | 'light' | 'dark' = 'system',
   onSelect = jest.fn(),
   onBack = jest.fn()
-) => render(<ThemeSettingsPage current={current} onSelect={onSelect} onBack={onBack} />)
+) => await render(<ThemeSettingsPage current={current} onSelect={onSelect} onBack={onBack} />)
 
 describe('ThemeSettingsPage — options (issue #189, third pass)', () => {
   it('marks the current theme selected', async () => {
-    renderPage('dark')
+    await renderPage('dark')
     const selected = await screen.findByLabelText('Theme: Dark')
     expect(selected.props.accessibilityState).toEqual({selected: true})
     expect(screen.getByLabelText('Theme: System').props.accessibilityState).toEqual({
@@ -39,9 +39,9 @@ describe('ThemeSettingsPage — options (issue #189, third pass)', () => {
 
   it('reports the pressed option via onSelect', async () => {
     const onSelect = jest.fn()
-    renderPage('system', onSelect)
+    await renderPage('system', onSelect)
     const lightOption = await screen.findByLabelText('Theme: Light')
-    fireEvent.press(lightOption)
+    await fireEvent.press(lightOption)
     expect(onSelect).toHaveBeenCalledWith('light')
   })
 
@@ -52,16 +52,16 @@ describe('ThemeSettingsPage — options (issue #189, third pass)', () => {
     // dropped. text-sm's own line height was already exactly 1.25rem, so this
     // is the value the class was pinning all along; assert it, because nothing
     // about the rendered output says the class is gone on purpose.
-    renderPage()
+    await renderPage()
     const copy = await screen.findByText(/Matches your device by default/)
     expect(resolvedStyle(copy).lineHeight).toBe(rem('1.25rem'))
   })
 
   it('reports the back arrow press via onBack', async () => {
     const onBack = jest.fn()
-    renderPage('system', undefined, onBack)
+    await renderPage('system', undefined, onBack)
     await screen.findByText('Theme')
-    fireEvent.press(screen.getByLabelText('back'))
+    await fireEvent.press(screen.getByLabelText('back'))
     expect(onBack).toHaveBeenCalled()
   })
 })
@@ -74,8 +74,8 @@ const background = (label: string) => resolvedStyle(screen.getByLabelText(label)
 
 describe('ThemeSettingsPage — selected segment styling', () => {
   it('fills the selected segment with white on light, leaving the others bare', async () => {
-    act(() => setColorScheme('light'))
-    renderPage('dark')
+    await act(() => setColorScheme('light'))
+    await renderPage('dark')
     await screen.findByLabelText('Theme: Dark')
     expect(background('Theme: Dark')).toBe(colors.white)
     expect(background('Theme: System')).toBeUndefined()
@@ -83,8 +83,8 @@ describe('ThemeSettingsPage — selected segment styling', () => {
   })
 
   it('fills the selected segment with the dark token on dark', async () => {
-    act(() => setColorScheme('dark'))
-    renderPage('light')
+    await act(() => setColorScheme('dark'))
+    await renderPage('light')
     await screen.findByLabelText('Theme: Light')
     expect(background('Theme: Light')).toBe(colors.dark)
     expect(background('Theme: System')).toBeUndefined()

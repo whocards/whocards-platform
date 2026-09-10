@@ -37,4 +37,4 @@ beforeEach(() => {
  * resolves to the wrong colour) and it can strike any suite, not only the ones
  * that opted into a reset.
  */
-afterEach(() => act(() => setColorScheme('system')))
+afterEach(async () => await act(() => setColorScheme('system')))
