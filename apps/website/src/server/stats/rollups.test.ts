@@ -40,20 +40,28 @@ describe('weeklyTrend', () => {
   })
 
   it('buckets timestamps into the Monday-starting week they fall in', () => {
-    // Mon 2026-01-05 .. Sun 2026-01-11 is one ISO week.
-    const points = weeklyTrend([
-      {createdAt: new Date('2026-01-05T00:00:00Z')}, // Monday
-      {createdAt: new Date('2026-01-07T12:00:00Z')}, // Wednesday, same week
-      {createdAt: new Date('2026-01-11T23:59:59Z')}, // Sunday, same week
-    ])
+    // Mon 2026-01-05 .. Sun 2026-01-11 is one ISO week. `now` pinned to the
+    // same week so this test doesn't also exercise the zero-fill-to-current-
+    // week behavior (covered separately below).
+    const points = weeklyTrend(
+      [
+        {createdAt: new Date('2026-01-05T00:00:00Z')}, // Monday
+        {createdAt: new Date('2026-01-07T12:00:00Z')}, // Wednesday, same week
+        {createdAt: new Date('2026-01-11T23:59:59Z')}, // Sunday, same week
+      ],
+      new Date('2026-01-07T00:00:00Z')
+    )
     expect(points).toEqual([{weekStart: '2026-01-05', count: 3}])
   })
 
   it('fills zero-count gap weeks between the first and last data point', () => {
-    const points = weeklyTrend([
-      {createdAt: new Date('2026-01-05T00:00:00Z')}, // week of Jan 5
-      {createdAt: new Date('2026-01-19T00:00:00Z')}, // week of Jan 19 (two weeks later)
-    ])
+    const points = weeklyTrend(
+      [
+        {createdAt: new Date('2026-01-05T00:00:00Z')}, // week of Jan 5
+        {createdAt: new Date('2026-01-19T00:00:00Z')}, // week of Jan 19 (two weeks later)
+      ],
+      new Date('2026-01-19T00:00:00Z') // pin `now` to the last data point's week
+    )
     expect(points).toEqual([
       {weekStart: '2026-01-05', count: 1},
       {weekStart: '2026-01-12', count: 0},
@@ -61,15 +69,39 @@ describe('weeklyTrend', () => {
     ])
   })
 
-  it('does not smooth — a single spiky week stays a spike, not an average', () => {
-    const points = weeklyTrend([
-      {createdAt: new Date('2026-01-05T00:00:00Z')},
-      {createdAt: new Date('2026-01-06T00:00:00Z')},
-      {createdAt: new Date('2026-01-07T00:00:00Z')},
-      {createdAt: new Date('2026-01-08T00:00:00Z')},
-      {createdAt: new Date('2026-01-09T00:00:00Z')},
-      {createdAt: new Date('2026-01-12T00:00:00Z')}, // next week, one answer
+  it('zero-fills through the current week even if the most recent activity was weeks ago', () => {
+    const points = weeklyTrend(
+      [{createdAt: new Date('2026-01-05T00:00:00Z')}], // week of Jan 5
+      new Date('2026-01-26T00:00:00Z') // "now" is 3 weeks later
+    )
+    expect(points).toEqual([
+      {weekStart: '2026-01-05', count: 1},
+      {weekStart: '2026-01-12', count: 0},
+      {weekStart: '2026-01-19', count: 0},
+      {weekStart: '2026-01-26', count: 0},
     ])
+  })
+
+  it('defaults `now` to the real current time when not passed, so it never shrinks below the data itself', () => {
+    // No explicit `now` — falls back to `new Date()`. Only asserts the first
+    // point still has the right shape; the real "zero-fills to today" behavior
+    // is covered above with an injected `now`.
+    const points = weeklyTrend([{createdAt: new Date('2026-01-05T00:00:00Z')}])
+    expect(points[0]).toEqual({weekStart: '2026-01-05', count: 1})
+  })
+
+  it('does not smooth — a single spiky week stays a spike, not an average', () => {
+    const points = weeklyTrend(
+      [
+        {createdAt: new Date('2026-01-05T00:00:00Z')},
+        {createdAt: new Date('2026-01-06T00:00:00Z')},
+        {createdAt: new Date('2026-01-07T00:00:00Z')},
+        {createdAt: new Date('2026-01-08T00:00:00Z')},
+        {createdAt: new Date('2026-01-09T00:00:00Z')},
+        {createdAt: new Date('2026-01-12T00:00:00Z')}, // next week, one answer
+      ],
+      new Date('2026-01-12T00:00:00Z') // pin `now` to the last data point's week
+    )
     expect(points).toEqual([
       {weekStart: '2026-01-05', count: 5},
       {weekStart: '2026-01-12', count: 1},

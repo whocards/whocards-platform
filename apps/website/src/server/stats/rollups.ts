@@ -46,10 +46,12 @@ const weekStartOf = (date: Date): string => {
  * Buckets raw answer timestamps into weekly counts, unsmoothed (raw per-week
  * totals — the researcher findings explicitly called for no smoothing/rolling
  * average, so a real launch spike or a quiet week both stay visible). Weeks
- * with zero answers between the first and last row are filled in as 0 so the
- * chart doesn't silently skip a gap.
+ * with zero answers between the first row and the current week are filled in
+ * as 0 — including a trailing gap if activity has gone quiet recently — so
+ * the chart doesn't silently skip a gap or cut off before today (Greptile:
+ * "Show inactive recent weeks"). `now` is injectable for tests.
  */
-export const weeklyTrend = (rows: AnswerTimestampRow[]): WeeklyPoint[] => {
+export const weeklyTrend = (rows: AnswerTimestampRow[], now: Date = new Date()): WeeklyPoint[] => {
   if (rows.length === 0) return []
 
   const counts = new Map<string, number>()
@@ -63,10 +65,13 @@ export const weeklyTrend = (rows: AnswerTimestampRow[]): WeeklyPoint[] => {
   const last = weeks[weeks.length - 1]
   if (!first || !last) return []
 
+  const currentWeek = weekStartOf(now)
+  const end = last > currentWeek ? last : currentWeek
+
   const points: WeeklyPoint[] = []
   let cursor = new Date(`${first}T00:00:00.000Z`)
-  const end = new Date(`${last}T00:00:00.000Z`)
-  while (cursor <= end) {
+  const endDate = new Date(`${end}T00:00:00.000Z`)
+  while (cursor <= endDate) {
     const [key] = cursor.toISOString().split('T')
     const weekStart = key ?? cursor.toISOString()
     points.push({weekStart, count: counts.get(weekStart) ?? 0})

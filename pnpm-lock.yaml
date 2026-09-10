@@ -461,9 +461,6 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.7(@types/react@19.2.18)
-      '@whocards/analytics':
-        specifier: workspace:*
-        version: link:../../packages/analytics
       '@whocards/api':
         specifier: workspace:*
         version: link:../../packages/api
@@ -506,6 +503,9 @@ importers:
       gsap:
         specifier: ^3.12.2
         version: 3.15.0
+      jsonwebtoken:
+        specifier: ^9.0.3
+        version: 9.0.3
       nanostores:
         specifier: ^0.9.4
         version: 0.9.5
@@ -573,6 +573,9 @@ importers:
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0
+      '@types/jsonwebtoken':
+        specifier: ^9.0.10
+        version: 9.0.10
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.2
@@ -603,25 +606,6 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(jsdom@20.0.3)(vite@8.2.2(@types/node@24.13.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
-
-  packages/analytics:
-    dependencies:
-      jsonwebtoken:
-        specifier: ^9.0.3
-        version: 9.0.3
-    devDependencies:
-      '@types/jsonwebtoken':
-        specifier: ^9.0.10
-        version: 9.0.10
-      '@whocards/typescript-config':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(jsdom@20.0.3)(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
 
   packages/api:
     dependencies:

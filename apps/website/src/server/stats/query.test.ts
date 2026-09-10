@@ -7,9 +7,10 @@ import {
   getAnswerTimestamps,
   getDecksPlayed,
   getLanguageCounts,
-  getLiveEventsTotal,
+  getLiveEventTimestamps,
+  getLiveEvents,
   getPlatformCounts,
-  getQuestionsAsked,
+  getQuestionsAnswered,
 } from './query'
 
 // Exercises the real aggregate SQL against an in-process Postgres (pglite) —
@@ -30,15 +31,15 @@ const insertAnswer = (overrides: Partial<typeof schema.answer.$inferInsert> = {}
     ...overrides,
   })
 
-describe('getQuestionsAsked', () => {
+describe('getQuestionsAnswered', () => {
   it('counts total answers and returns 0 for an empty table', async () => {
-    expect(await getQuestionsAsked(db)).toEqual({total: 0, thisWeek: 0})
+    expect(await getQuestionsAnswered(db)).toEqual({total: 0, thisWeek: 0})
   })
 
   it('counts rows written this week vs. older rows', async () => {
     await insertAnswer({createdAt: new Date().toISOString()})
     await insertAnswer({createdAt: '2000-01-01T00:00:00.000Z'})
-    const result = await getQuestionsAsked(db)
+    const result = await getQuestionsAnswered(db)
     expect(result.total).toBe(2)
     expect(result.thisWeek).toBe(1)
   })
@@ -105,18 +106,50 @@ describe('getLanguageCounts', () => {
   })
 })
 
-describe('getLiveEventsTotal', () => {
+const insertConference = async () => {
+  await db.insert(schema.conference).values({name: 'Hajnalig', isActive: true})
+  const [conf] = await db.select().from(schema.conference)
+  if (!conf) throw new Error('conference insert failed')
+  return conf
+}
+
+const insertLiveEvent = (
+  conferenceId: number,
+  overrides: Partial<typeof schema.conferenceQuestionTracking.$inferInsert> = {}
+) =>
+  db.insert(schema.conferenceQuestionTracking).values({
+    conferenceId,
+    questionId: 1,
+    language: 'hu',
+    ...overrides,
+  })
+
+describe('getLiveEvents', () => {
   it('counts conference_question_tracking rows, separate from the answer table', async () => {
-    await db.insert(schema.conference).values({name: 'Hajnalig', isActive: true})
-    const [conf] = await db.select().from(schema.conference)
-    if (!conf) throw new Error('conference insert failed')
-    await db
-      .insert(schema.conferenceQuestionTracking)
-      .values({conferenceId: conf.id, questionId: 1, language: 'hu'})
-    await db
-      .insert(schema.conferenceQuestionTracking)
-      .values({conferenceId: conf.id, questionId: 2, language: 'hu'})
+    const conf = await insertConference()
+    await insertLiveEvent(conf.id, {questionId: 1})
+    await insertLiveEvent(conf.id, {questionId: 2})
     await insertAnswer() // an ordinary Answer must not be counted as a Live event
-    expect(await getLiveEventsTotal(db)).toEqual({total: 2})
+    const result = await getLiveEvents(db)
+    expect(result.total).toBe(2)
+  })
+
+  it('counts rows written this week vs. older rows', async () => {
+    const conf = await insertConference()
+    await insertLiveEvent(conf.id, {createdAt: new Date().toISOString()})
+    await insertLiveEvent(conf.id, {createdAt: '2000-01-01T00:00:00.000Z'})
+    const result = await getLiveEvents(db)
+    expect(result.total).toBe(2)
+    expect(result.thisWeek).toBe(1)
+  })
+})
+
+describe('getLiveEventTimestamps', () => {
+  it('only returns rows inside the trend window', async () => {
+    const conf = await insertConference()
+    await insertLiveEvent(conf.id, {createdAt: new Date().toISOString()})
+    await insertLiveEvent(conf.id, {createdAt: '2000-01-01T00:00:00.000Z'})
+    const rows = await getLiveEventTimestamps(db)
+    expect(rows).toHaveLength(1)
   })
 })

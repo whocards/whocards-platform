@@ -1,13 +1,14 @@
 /**
- * Shared shapes for the public stats page (analytics page). Kept framework/host
- * agnostic: nothing here imports Drizzle, Astro, or a fetch client directly, so
- * the rollups and orchestration are plain-TS testable without a DB or network.
+ * Shared shapes for the public stats page. Kept framework/host agnostic:
+ * nothing here imports Drizzle, Astro, or a fetch client directly, so the
+ * rollups and orchestration are plain-TS testable without a DB or network.
  *
  * Every external-source result is a tagged `MetricResult<T>` rather than a bare
  * value or a thrown error — a source that isn't configured (no credentials) or
  * isn't reachable degrades to a status the page can render honestly ("not
  * connected yet") instead of a fake number or a broken page.
  */
+import type {AnswerPlatform} from '@whocards/api/platform'
 
 /**
  * - `live` — real data, fetched (or computed from first-party data) successfully.
@@ -32,11 +33,6 @@ export const needsCredentials = (source: string, reason?: string): MetricResult<
   source,
   reason,
 })
-export const needsInstrumentation = (source: string, reason?: string): MetricResult<never> => ({
-  status: 'needs-instrumentation',
-  source,
-  reason,
-})
 export const unavailable = (source: string, reason?: string): MetricResult<never> => ({
   status: 'unavailable',
   source,
@@ -44,7 +40,7 @@ export const unavailable = (source: string, reason?: string): MetricResult<never
 })
 
 /** The platforms an Answer (or a catalog event) can be attributed to. */
-export type Platform = 'web' | 'ios' | 'android'
+export type Platform = AnswerPlatform
 
 /** One row of raw per-platform answer counts, as read from the DB. `null` = unattributed. */
 export type PlatformCountRow = {platform: Platform | null; count: number}
@@ -70,25 +66,30 @@ export type WeeklyPoint = {
 /** A named count subject to the privacy threshold (e.g. one language, one country). */
 export type NamedCount = {name: string; count: number}
 
-export type InstallCounts = {
-  ios: number
-  android: number
-}
-
-export type CountrySplit = NamedCount[]
-
-/** The full snapshot the stats page renders. Each field degrades independently. */
+/**
+ * The full snapshot the stats page renders. Each field degrades independently
+ * — including the two install sources, which are deliberately separate
+ * fields (not one combined `installs` result) so App Store being unavailable
+ * never hides a live Google Play number, and vice versa.
+ */
 export type StatsSnapshot = {
-  generatedAt: string
-  questionsAsked: MetricResult<{total: number; thisWeek: number}>
+  questionsAnswered: MetricResult<{total: number; thisWeek: number}>
   platformBreakdown: MetricResult<PlatformBreakdown>
   weeklyTrend: MetricResult<WeeklyPoint[]>
-  liveEvents: MetricResult<{total: number}>
+  /**
+   * Live events (in-person, e.g. Hajnalig conference decks) — the same Answer
+   * concept in its event-scoped form (CONTEXT.md → Answer record), tallied
+   * separately because these rows have no Device. Folded into the hero total
+   * and the weekly trend, and rendered as its own slice in the breakdown so
+   * the slices sum to the hero.
+   */
+  liveEvents: MetricResult<{total: number; thisWeek: number}>
   activeDevices: MetricResult<{total: number; last30Days: number}>
   decksPlayed: MetricResult<{total: number}>
   languages: MetricResult<{spoken: number; ofTotal: number}>
-  countries: MetricResult<CountrySplit>
-  installs: MetricResult<InstallCounts>
+  countries: MetricResult<NamedCount[]>
+  installsIos: MetricResult<{count: number}>
+  installsAndroid: MetricResult<{count: number}>
   /** ISO date of the earliest recorded Answer — shown in the footer methodology note. */
   dataSince: MetricResult<{date: string}>
 }

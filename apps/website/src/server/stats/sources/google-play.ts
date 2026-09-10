@@ -41,6 +41,7 @@ export type GooglePlayCredentials = {
 const SOURCE = 'google-play'
 const STORAGE_SCOPE = 'https://www.googleapis.com/auth/devstorage.read_only'
 const TOKEN_TTL_SECONDS = 60 * 60
+const FETCH_TIMEOUT_MS = 10_000
 
 /** Builds the RS256 JWT-bearer assertion Google's OAuth2 token endpoint expects. */
 export const buildGooglePlayAssertion = (account: GooglePlayServiceAccount): string => {
@@ -68,6 +69,7 @@ const fetchAccessToken = async (account: GooglePlayServiceAccount): Promise<stri
       grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
       assertion,
     }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
   if (!response.ok) throw new Error(`Google OAuth2 token exchange failed: ${response.status}`)
   const json: unknown = await response.json()
@@ -91,12 +93,12 @@ export const fetchGooglePlayInstalls = async (
   creds: GooglePlayCredentials | undefined,
   packageId: string
 ): Promise<MetricResult<number>> => {
-  if (
-    !creds ||
-    !creds.serviceAccount?.client_email ||
-    !creds.serviceAccount?.private_key ||
-    !creds.bucket
-  ) {
+  // Field-by-field completeness is the caller's job (apps/website's
+  // `googlePlayCredentials()` builds this object only when both env vars are
+  // set and the JSON parses to the expected shape) — checking again here
+  // would duplicate that check, so this module only distinguishes "no
+  // credentials at all" from "have them."
+  if (!creds) {
     return needsCredentials(
       SOURCE,
       'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON / GOOGLE_PLAY_REPORTS_BUCKET not set'
@@ -110,7 +112,10 @@ export const fetchGooglePlayInstalls = async (
     const objectPath = `stats/installs/installs_${packageId}_${yyyymm}_overview.csv`
     const url = `https://storage.googleapis.com/storage/v1/b/${creds.bucket}/o/${encodeURIComponent(objectPath)}?alt=media`
 
-    const response = await fetch(url, {headers: {Authorization: `Bearer ${accessToken}`}})
+    const response = await fetch(url, {
+      headers: {Authorization: `Bearer ${accessToken}`},
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    })
     if (!response.ok) {
       return unavailable(SOURCE, `Cloud Storage returned ${response.status}`)
     }

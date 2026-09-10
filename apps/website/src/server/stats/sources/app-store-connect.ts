@@ -33,6 +33,11 @@ export type AppStoreConnectCredentials = {
 const SOURCE = 'app-store-connect'
 const AUDIENCE = 'appstoreconnect-v1'
 const TOKEN_TTL_SECONDS = 20 * 60 // Apple caps this token at 20 minutes.
+const FETCH_TIMEOUT_MS = 10_000
+/** Apple only publishes one SALES/SUMMARY report per day — sum the trailing month for a stable count. */
+const REPORT_WINDOW_DAYS = 30
+/** Cap concurrent report fetches so a 30-day backfill doesn't open 30 sockets at once. */
+const CONCURRENCY = 5
 
 /** Builds the short-lived ES256 JWT App Store Connect requires on every request. */
 export const buildAppStoreConnectToken = (creds: AppStoreConnectCredentials): string =>
@@ -44,50 +49,80 @@ export const buildAppStoreConnectToken = (creds: AppStoreConnectCredentials): st
     expiresIn: TOKEN_TTL_SECONDS,
   })
 
+/** The last `REPORT_WINDOW_DAYS` calendar dates (UTC, `YYYY-MM-DD`), starting yesterday — today's report isn't final yet. */
+const reportWindowDates = (): string[] => {
+  const dates: string[] = []
+  for (let daysAgo = 1; daysAgo <= REPORT_WINDOW_DAYS; daysAgo++) {
+    const d = new Date()
+    d.setUTCDate(d.getUTCDate() - daysAgo)
+    const [iso] = d.toISOString().split('T')
+    if (iso) dates.push(iso)
+  }
+  return dates
+}
+
 /**
- * Total iOS installs (first-time app downloads), summed over the last 30 days
- * via the Sales and Trends Reports endpoint (report type SALES, sub-type
- * SUMMARY). Returns `needs-credentials` when any credential is missing, and
- * `unavailable` (never throws) on a network/auth/parse failure — the page
- * shows "not connected yet" rather than crash the SSR render.
+ * Fetches and sums one day's SALES/SUMMARY report. A 404 means Apple hasn't
+ * generated a report for that day yet (e.g. a very new app, or today's report
+ * still processing) — treated as 0 installs for that day, not an error. Any
+ * other non-OK status throws, which the caller turns into `unavailable`.
+ */
+const fetchDailyInstalls = async (
+  creds: AppStoreConnectCredentials,
+  token: string,
+  filterDate: string
+): Promise<number> => {
+  const params = new URLSearchParams({
+    'filter[frequency]': 'DAILY',
+    'filter[reportType]': 'SALES',
+    'filter[reportSubType]': 'SUMMARY',
+    'filter[vendorNumber]': creds.vendorNumber,
+    'filter[reportDate]': filterDate,
+  })
+  const response = await fetch(`https://api.appstoreconnect.apple.com/v1/salesReports?${params}`, {
+    headers: {Authorization: `Bearer ${token}`, Accept: 'application/a-gzip'},
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  })
+  if (response.status === 404) return 0
+  if (!response.ok) throw new Error(`Apple returned ${response.status}`)
+
+  // Response body is gzip-compressed TSV — one row per unit type; installs are
+  // rows where "Product Type Identifier" starts with "1" (a first-time download).
+  const buffer = await response.arrayBuffer()
+  const zlib = await import('node:zlib')
+  const tsv = zlib.gunzipSync(Buffer.from(buffer)).toString('utf-8')
+  return parseSalesReportInstalls(tsv)
+}
+
+/**
+ * Total iOS installs (first-time app downloads), summed over the trailing
+ * `REPORT_WINDOW_DAYS` days via the Sales and Trends Reports endpoint (one
+ * report per day — there is no native "last 30 days" aggregate). Returns
+ * `needs-credentials` when any credential is missing, and `unavailable`
+ * (never throws) on a network/auth/parse failure — the page shows "not
+ * connected yet" rather than crash the SSR render.
  */
 export const fetchAppStoreInstalls = async (
   creds: AppStoreConnectCredentials | undefined
 ): Promise<MetricResult<number>> => {
-  if (!creds || !creds.keyId || !creds.issuerId || !creds.privateKey || !creds.vendorNumber) {
+  // Field-by-field completeness is the caller's job (apps/website's
+  // `appStoreConnectCredentials()` builds this object only when every env var
+  // is set) — checking again here would duplicate that check, so this module
+  // only distinguishes "no credentials at all" from "have them."
+  if (!creds) {
     return needsCredentials(SOURCE, 'APP_STORE_CONNECT_* env vars not set')
   }
 
   try {
     const token = buildAppStoreConnectToken(creds)
-    const reportDate = new Date()
-    reportDate.setUTCDate(reportDate.getUTCDate() - 1) // yesterday — today's report isn't final yet
-    const [filterDate] = reportDate.toISOString().split('T')
-
-    const params = new URLSearchParams({
-      'filter[frequency]': 'DAILY',
-      'filter[reportType]': 'SALES',
-      'filter[reportSubType]': 'SUMMARY',
-      'filter[vendorNumber]': creds.vendorNumber,
-      'filter[reportDate]': filterDate ?? '',
-    })
-    const response = await fetch(
-      `https://api.appstoreconnect.apple.com/v1/salesReports?${params}`,
-      {
-        headers: {Authorization: `Bearer ${token}`, Accept: 'application/a-gzip'},
-      }
-    )
-    if (!response.ok) {
-      return unavailable(SOURCE, `Apple returned ${response.status}`)
+    const dates = reportWindowDates()
+    let total = 0
+    for (let i = 0; i < dates.length; i += CONCURRENCY) {
+      const batch = dates.slice(i, i + CONCURRENCY)
+      const counts = await Promise.all(batch.map((date) => fetchDailyInstalls(creds, token, date)))
+      total += counts.reduce((sum, count) => sum + count, 0)
     }
-
-    // Response body is gzip-compressed TSV — one row per unit type; installs are
-    // rows where "Product Type Identifier" starts with "1" (a first-time download).
-    const buffer = await response.arrayBuffer()
-    const zlib = await import('node:zlib')
-    const tsv = zlib.gunzipSync(Buffer.from(buffer)).toString('utf-8')
-    const installs = parseSalesReportInstalls(tsv)
-    return live(installs, SOURCE)
+    return live(total, SOURCE)
   } catch (error) {
     return unavailable(SOURCE, error instanceof Error ? error.message : 'unknown error')
   }

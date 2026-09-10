@@ -56,4 +56,34 @@ describe('fetchCountrySplit — live', () => {
     expect(result.status).toBe('unavailable')
     fetchSpy.mockRestore()
   })
+
+  it('sets a request timeout signal on the fetch call', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({results: []}), {status: 200}))
+    await fetchCountrySplit({
+      personalApiKey: 'phx_test',
+      projectId: '123',
+      host: 'https://who.whocards.cc',
+    })
+    const [, init] = fetchSpy.mock.calls[0] ?? []
+    expect(init?.signal).toBeInstanceOf(AbortSignal)
+    fetchSpy.mockRestore()
+  })
+
+  it('queries the PostHog app/UI host, not whatever host is passed — the caller is responsible for passing PUBLIC_POSTHOG_UI_HOST, and this asserts the URL is built from `creds.host` verbatim', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({results: []}), {status: 200}))
+    await fetchCountrySplit({
+      personalApiKey: 'phx_test',
+      projectId: '123',
+      host: 'https://eu.posthog.com',
+    })
+    const [url] = fetchSpy.mock.calls[0] ?? []
+    expect(url instanceof Request ? url.url : String(url)).toBe(
+      'https://eu.posthog.com/api/projects/123/query/'
+    )
+    fetchSpy.mockRestore()
+  })
 })

@@ -5,15 +5,17 @@
  * PGlite test harness (see ../db/test-helpers) exactly like ./upsert.ts.
  *
  * The Answer record (`answer` table) is the headline source for
- * questions-asked/platform/trend — CONTEXT.md calls it out as the single
+ * questions-answered/platform/trend — CONTEXT.md calls it out as the single
  * source of truth, not PostHog. `conference_question_tracking` (Hajnalig-style
- * in-person events) is counted separately as "Live events", per the researcher
- * findings — it is a distinct kind of interaction, not folded into the web/iOS/
- * Android split.
+ * in-person events) is counted separately as "Live events" because those rows
+ * have no Device — but per CONTEXT.md it is the *same* Answer concept in its
+ * first, event-scoped form, not a distinct kind of interaction, so its counts
+ * are folded into the hero total and weekly trend, not siloed off from them.
  */
 import {gte, sql} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
-import type {AnswerTimestampRow, NamedCount, Platform, PlatformCountRow} from '@whocards/analytics'
+import {ANSWER_PLATFORMS} from '@whocards/api/platform'
+import type {AnswerTimestampRow, NamedCount, Platform, PlatformCountRow} from './types'
 import * as schema from '../db/schema'
 
 type Db<T extends PgQueryResultHKT> = PgDatabase<T, typeof schema>
@@ -25,7 +27,7 @@ const TREND_WINDOW_WEEKS = 26
 const ACTIVE_WINDOW_DAYS = 30
 
 /** Total Answers ever recorded, and how many landed in the last 7 days. */
-export const getQuestionsAsked = async <T extends PgQueryResultHKT>(
+export const getQuestionsAnswered = async <T extends PgQueryResultHKT>(
   database: Db<T>
 ): Promise<{total: number; thisWeek: number}> => {
   const weekAgo = new Date(Date.now() - WEEK_MS)
@@ -41,9 +43,8 @@ export const getQuestionsAsked = async <T extends PgQueryResultHKT>(
   return {total: Number(row?.total ?? 0), thisWeek: Number(row?.thisWeek ?? 0)}
 }
 
-const PLATFORMS: readonly Platform[] = ['web', 'ios', 'android']
 const isPlatform = (value: string | null): value is Platform =>
-  value !== null && (PLATFORMS as readonly string[]).includes(value)
+  value !== null && (ANSWER_PLATFORMS as readonly string[]).includes(value)
 
 /** One row per distinct `platform` value (including `null`, for legacy/un-instrumented rows). */
 export const getPlatformCounts = async <T extends PgQueryResultHKT>(
@@ -61,8 +62,8 @@ export const getPlatformCounts = async <T extends PgQueryResultHKT>(
 
 /**
  * Raw Answer timestamps within the trend window — bucketed into weeks by
- * `@whocards/analytics`'s `weeklyTrend` rollup, not here, so the bucketing
- * logic stays pure/testable without a DB.
+ * `./rollups.ts`'s `weeklyTrend`, not here, so the bucketing logic stays
+ * pure/testable without a DB.
  */
 export const getAnswerTimestamps = async <T extends PgQueryResultHKT>(
   database: Db<T>
@@ -132,14 +133,38 @@ export const getDataSince = async <T extends PgQueryResultHKT>(
 
 /**
  * Live events (in-person, e.g. Hajnalig conference decks): total rows in
- * `conference_question_tracking`. Kept as its own slice, not merged into the
- * platform breakdown — these interactions have no Device/Answer record.
+ * `conference_question_tracking`, and how many landed in the last 7 days —
+ * same shape as `getQuestionsAnswered` so the two can be summed for the hero
+ * total and "this week" badge. Kept as its own slice in the platform
+ * breakdown (rather than merged into web/iOS/Android) since these rows have
+ * no Device to attribute to a platform.
  */
-export const getLiveEventsTotal = async <T extends PgQueryResultHKT>(
+export const getLiveEvents = async <T extends PgQueryResultHKT>(
   database: Db<T>
-): Promise<{total: number}> => {
+): Promise<{total: number; thisWeek: number}> => {
+  const weekAgo = new Date(Date.now() - WEEK_MS)
   const [row] = await database
-    .select({total: sql<string>`count(*)`})
+    .select({
+      total: sql<string>`count(*)`,
+      thisWeek: sql<string>`count(*) filter (where ${schema.conferenceQuestionTracking.createdAt} >= ${weekAgo.toISOString()})`,
+    })
     .from(schema.conferenceQuestionTracking)
-  return {total: Number(row?.total ?? 0)}
+  return {total: Number(row?.total ?? 0), thisWeek: Number(row?.thisWeek ?? 0)}
+}
+
+/**
+ * Raw Live-event timestamps within the trend window — same shape as
+ * `getAnswerTimestamps` (`{createdAt}`) so the caller can concatenate both
+ * arrays before handing them to `weeklyTrend`, letting an in-person spike
+ * (e.g. a conference day) show up in the weekly chart.
+ */
+export const getLiveEventTimestamps = async <T extends PgQueryResultHKT>(
+  database: Db<T>
+): Promise<AnswerTimestampRow[]> => {
+  const windowStart = new Date(Date.now() - TREND_WINDOW_WEEKS * WEEK_MS)
+  const rows = await database
+    .select({createdAt: schema.conferenceQuestionTracking.createdAt})
+    .from(schema.conferenceQuestionTracking)
+    .where(gte(schema.conferenceQuestionTracking.createdAt, windowStart.toISOString()))
+  return rows.map((row) => ({createdAt: new Date(row.createdAt)}))
 }

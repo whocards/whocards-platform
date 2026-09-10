@@ -39,9 +39,9 @@ export const env = createEnv({
     // /request-cards forms. Required: the build fails without it (incl. dev) so bot
     // protection can never be silently dropped by a missing env var.
     TURNSTILE_SECRET_KEY: z.string().min(1),
-    // --- Public stats page (analytics page) — all optional, all server-only.
+    // --- Public stats page — all optional, all server-only.
     // Every source degrades gracefully to a "needs credentials" state on the page
-    // when unset (see @whocards/analytics), so none of these gate the build.
+    // when unset (see ~server/stats), so none of these gate the build.
     //
     // App Store Connect (iOS installs, Sales/Analytics Reports API). Get these from
     // App Store Connect → Users and Access → Integrations → App Store Connect API:

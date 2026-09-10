@@ -26,6 +26,7 @@ export type PostHogCredentials = {
 }
 
 const SOURCE = 'posthog'
+const FETCH_TIMEOUT_MS = 10_000
 
 /**
  * Distinct-device counts per country over the last 90 days, via a HogQL
@@ -36,7 +37,11 @@ const SOURCE = 'posthog'
 export const fetchCountrySplit = async (
   creds: PostHogCredentials | undefined
 ): Promise<MetricResult<NamedCount[]>> => {
-  if (!creds || !creds.personalApiKey || !creds.projectId) {
+  // Field-by-field completeness is the caller's job (apps/website's
+  // `postHogCredentials()` builds this object only when both env vars are
+  // set) — checking again here would duplicate that check, so this module
+  // only distinguishes "no credentials at all" from "have them."
+  if (!creds) {
     return needsCredentials(SOURCE, 'POSTHOG_PERSONAL_API_KEY / POSTHOG_PROJECT_ID not set')
   }
 
@@ -60,6 +65,7 @@ export const fetchCountrySplit = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({query}),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     })
     if (!response.ok) {
       return unavailable(SOURCE, `PostHog returned ${response.status}`)
