@@ -1,5 +1,7 @@
 import {initTRPC} from '@trpc/server'
 
+import type {AnswerPlatform} from './platform'
+
 /**
  * The API context. The content router is public and stateless, but the host
  * supplies a `recordAnswer` port so `answers.record` can persist to the Answer
@@ -15,11 +17,11 @@ export type Context = {
     language: string
     type: string
     /**
-     * Which client sent this Answer — 'web' | 'ios' | 'android'. Optional so
-     * older, not-yet-updated clients keep working; absent/unset means the
-     * stats page buckets the row as "Unattributed" rather than guessing.
+     * Which client sent this Answer. Optional so older, not-yet-updated
+     * clients keep working; absent/unset means the stats page buckets the
+     * row as "Unattributed" rather than guessing.
      */
-    platform?: string
+    platform?: AnswerPlatform
   }) => Promise<void>
 }
 
