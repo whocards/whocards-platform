@@ -25,13 +25,6 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
 }))
 
-afterEach(() => {
-  // The resolved colour scheme is a global observable — reset it so a test that
-  // sets it doesn't bleed into whichever test runs next (mirrors
-  // settings-modal.test.tsx).
-  act(() => setColorScheme('system'))
-})
-
 // PressableScale drives its press animation through react-native-reanimated /
 // react-native-worklets, whose native module isn't available under plain
 // jest-expo (unrelated to this test — see pressable-scale.tsx). Swap it for a

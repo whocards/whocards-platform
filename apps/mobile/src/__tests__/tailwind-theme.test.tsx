@@ -133,6 +133,42 @@ describe('Tailwind theme — fonts', () => {
   })
 })
 
+/**
+ * Line height — the one silently breaking change in the NativeWind v5 upgrade.
+ *
+ * v4 emitted `leading-<n>` as a `rem` length (`leading-8` = 2rem = 28px). v5's
+ * `nativewind/theme` overrides the utility to a *unitless* value, which
+ * react-native-css multiplies by the element's own font size — so the same
+ * `leading-8` is now 2em, which is 35px at `text-xl`. Nothing throws when that
+ * changes; the text just gets taller. These are the cases that would catch it.
+ *
+ * The migration recipe is "divide the old value by the font size": v4's
+ * `text-xl leading-8` is 2rem ÷ 1.25rem = 1.6em, and each v5 step is 0.25em, so
+ * the exact equivalent would be `leading-6.4` — which the override can't
+ * express (it takes integers only). `leading-6` (1.5em = 26.25px) is the
+ * nearest step, and what src/app/index.tsx's tagline now uses.
+ */
+const lineHeightOf = (className: string) => {
+  render(<Text testID="line" className={className} />)
+  return resolvedStyle(screen.getByTestId('line')).lineHeight
+}
+
+describe('Tailwind theme — line height', () => {
+  it('gives each text size its own line height, in px', () => {
+    // text-sm is 0.875rem/1.25rem — so its *default* line height is exactly
+    // what v4's `text-sm leading-5` pinned, which is why theme-settings-page.tsx
+    // could drop the class outright rather than restate it as an em ratio.
+    expect(lineHeightOf('text-sm')).toBe(rem('1.25rem'))
+    expect(lineHeightOf('text-xl')).toBe(rem('1.75rem'))
+  })
+
+  it('parses a leading-* step as 0.25em, not 0.25rem', () => {
+    // Against text-xl's 1.25rem (17.5px) font size.
+    expect(lineHeightOf('text-xl leading-6')).toBe(1.5 * rem('1.25rem'))
+    expect(lineHeightOf('text-xl leading-8')).toBe(2 * rem('1.25rem'))
+  })
+})
+
 describe('Tailwind theme — modifiers', () => {
   it('applies the /NN opacity modifier to a token colour', () => {
     expect(styleFor('bg-primary-dark/25').backgroundColor).toBe(
@@ -148,8 +184,4 @@ describe('Tailwind theme — modifiers', () => {
     act(() => setColorScheme('dark'))
     expect(styleFor('bg-canvasLight dark:bg-darkest').backgroundColor).toBe(colors.darkest)
   })
-
-  // The resolved colour scheme is a global observable — reset it so a test that
-  // sets it doesn't bleed into whichever test runs next.
-  afterEach(() => act(() => setColorScheme('system')))
 })

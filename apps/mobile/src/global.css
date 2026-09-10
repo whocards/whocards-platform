@@ -20,8 +20,19 @@
  */
 @import '@whocards/tokens/theme.css';
 
-/* Replaces Tailwind v3's `content: ['./src/**‍/*.{ts,tsx}']`. */
+/*
+ * Replaces Tailwind v3's `content: ['./src/**‍/*.{ts,tsx}']`.
+ *
+ * `__tests__` is excluded: Tailwind emits a utility for every class name it
+ * sees literally in a scanned file, and tailwind-theme.test.tsx names ~40 of
+ * them (one per design token) purely to assert they resolve. Scanning it would
+ * compile all of those into the stylesheet the app ships. The test pipeline
+ * needs them, so jest.global-setup.js compiles ../jest.global.css instead —
+ * this file plus the tests — and tailwind-theme.test.tsx fails loudly if that
+ * re-inclusion ever stops working.
+ */
 @source './**/*.{ts,tsx}';
+@source not './__tests__/**';
 
 :root {
   /*

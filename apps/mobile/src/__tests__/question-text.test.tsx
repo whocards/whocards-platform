@@ -127,10 +127,6 @@ describe('QuestionText — themedText (issue #173, final)', () => {
   const question = 'What matters to you right now?'
   const secondaryText = '¿Qué te importa ahora mismo?'
 
-  // The resolved colour scheme is a global observable — reset it so a test that
-  // sets it doesn't bleed into whichever test runs next.
-  afterEach(() => act(() => setColorScheme('system')))
-
   it('defaults to hardcoded white — card surfaces (Pick a Card) omit themedText', () => {
     render(
       <QuestionText

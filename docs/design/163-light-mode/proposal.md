@@ -316,7 +316,8 @@ Dark — not a plain two-way toggle.
   remembered" — not a Game, and not a decision that lives in the play engine.
 - Persisted device-locally via `lib/theme-store.ts` (mirrors `lib/game-store.ts`'s pattern: a
   global `whocards-theme` AsyncStorage key, in-memory cache, default fallback), read on boot in
-  `_layout.tsx` and applied via NativeWind's `colorScheme.set()`.
+  `_layout.tsx` and applied via `setColorScheme()` (`lib/color-scheme.ts` — originally NativeWind's
+  own `colorScheme.set()`; see [§ Theming mechanism](#theming-mechanism)).
 
 **Where it lives:** a new **"Theme"** chip, styled identically to the existing "Game: Global
 Game" quiet outline chip on the Library screen, opening a page-sheet in the same house style as
@@ -330,24 +331,28 @@ see [§ Overlapping in-flight work](#overlapping-in-flight-work-and-how-it-was-r
 
 ## Theming mechanism
 
-**NativeWind's built-in `dark:` variant + `colorScheme` API** — no new theming library, no
-Tailwind config changes needed.
+**NativeWind's built-in `dark:` variant + a colour-scheme observable** — no new theming library,
+no Tailwind config changes needed.
 
-- `apps/mobile/tailwind.config.ts` needed no changes: NativeWind v4 wires the `dark:` class
-  variant to a runtime `colorScheme` observable automatically. Out of the box, with nothing
-  called, it already follows `Appearance` (confirmed by reading
-  `react-native-css-interop`'s `appearance-observables.js` — `systemColorScheme` tracks
-  `Appearance.getColorScheme()` and `colorScheme.get()` falls back to it whenever no explicit
-  override has been set). "System-follow" is the _default_ behavior, not something this
-  implementation had to build.
-- `colorScheme.set('light' | 'dark' | 'system')` (imperative, from `'nativewind'`) sets or clears
-  a manual override. `useColorScheme()` (also from `'nativewind'`) returns the live resolved
-  `{colorScheme: 'light' | 'dark'}` for the rare JS-level conditional (an `Ionicons` `color` prop,
-  a `StatusBar` `style`, picking which `Image` source to `require`) that can't be expressed as a
-  `dark:` class.
+- ~~`apps/mobile/tailwind.config.ts` needed no changes~~ _(historical: there is no
+  `tailwind.config.ts` any more — the NativeWind v5 / Tailwind v4 upgrade moved the theme into
+  CSS, `apps/mobile/src/global.css`, generated from `@whocards/tokens`.)_ NativeWind wires the
+  `dark:` class variant to a runtime colour-scheme observable automatically, and out of the box,
+  with nothing called, it already follows `Appearance`. "System-follow" is the _default_
+  behavior, not something this implementation had to build.
+- ~~`colorScheme.set('light' | 'dark' | 'system')` (imperative, from `'nativewind'`)~~
+  _(historical: v5 dropped that export. The underlying `react-native-css` observable is
+  two-valued — light or dark, seeded from `Appearance` — so "system" became the app's job, and
+  `apps/mobile/src/lib/color-scheme.ts` is now the one module that owns it.)_
+  `setColorScheme('light' | 'dark' | 'system')` sets or clears the manual override, and
+  `useColorScheme()` (both from `@/lib/color-scheme`) returns the live resolved
+  `'light' | 'dark'` for the rare JS-level conditional (an `Ionicons` `color` prop, a `StatusBar`
+  `style`, picking which `Image` source to `require`) that can't be expressed as a `dark:` class.
+  Deliberately _not_ `Appearance.setColorScheme()`: that overrides what `Appearance` reports, so
+  once used the real OS preference is unreadable and "System" could never resolve back to it.
 - `apps/mobile/src/hooks/use-theme-setting.ts` is the one new piece of glue: on mount, reads
-  `getStoredTheme()` and calls `colorScheme.set()` with it; exposes a `select(next)` that updates
-  the colorScheme, persists it, and fires the `theme_changed` observability event.
+  `getStoredTheme()` and calls `setColorScheme()` with it; exposes a `select(next)` that updates
+  the colour scheme, persists it, and fires the `theme_changed` observability event.
 - **Status bar handling, deliberately NOT made globally theme-aware:** `_layout.tsx`'s root
   `<StatusBar style="light" />` default is untouched. Play and Pick a Card are _always_ dark
   (amendment 2) and need light status-bar icons regardless of the Theme setting — if the root

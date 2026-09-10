@@ -157,7 +157,11 @@ export default function LandingScreen() {
           </Pressable>
           <Animated.Text
             style={contentStyle}
-            className="text-darker/80 dark:text-white/80 mt-7 text-center font-sans text-xl font-semibold leading-8"
+            // `leading-6`, not the v4 `leading-8`: NativeWind v5 parses a
+            // leading-* step as em, so `leading-8` is now 2em (35px at
+            // text-xl), not the 2rem (28px) it used to be. See the
+            // line-height cases in src/__tests__/tailwind-theme.test.tsx.
+            className="text-darker/80 dark:text-white/80 mt-7 text-center font-sans text-xl font-semibold leading-6"
           >
             Change your world,{'\n'}one conversation at a time.
           </Animated.Text>

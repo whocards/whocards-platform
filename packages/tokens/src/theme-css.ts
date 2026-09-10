@@ -9,6 +9,13 @@
  * committed next to them and imported by both apps. `theme-css.test.ts` fails
  * if the committed file ever drifts from this renderer.
  *
+ * That drift check is byte-exact, which is why `.oxfmtrc.json` lists
+ * `packages/tokens/theme.css` under `ignorePatterns`: oxfmt rewraps the five
+ * long `--font-*` declarations this renderer emits on one line each, and a
+ * formatted `theme.css` can never equal `renderThemeCss()` again — the check
+ * would fail on a clean checkout and stay failing. Formatting the *generated*
+ * file is meaningless anyway; format this renderer instead, and regenerate.
+ *
  * Keep in sync with the Tailwind v4 theme namespaces:
  * https://tailwindcss.com/docs/theme#theme-variable-namespaces
  */

@@ -55,13 +55,6 @@ jest.mock('@/lib/share-image', () => ({
 
 import {ShareModal} from '../components/share-modal'
 
-afterEach(() => {
-  // The resolved colour scheme is a global observable — reset it so a test that
-  // sets it doesn't bleed into whichever test runs next (mirrors
-  // settings-modal.test.tsx).
-  act(() => setColorScheme('system'))
-})
-
 const PROPS = {
   questionText: 'What is your favorite memory?',
   shareUrl: 'https://whocards.cc/play?lang=en&q=q-1',

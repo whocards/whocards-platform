@@ -13,7 +13,7 @@ import {act, fireEvent, render, screen} from '@testing-library/react-native'
 import {colors} from '@whocards/tokens'
 
 import {setColorScheme} from '@/lib/color-scheme'
-import {resolvedStyle} from '@/test-utils/resolved-style'
+import {rem, resolvedStyle} from '@/test-utils/resolved-style'
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
@@ -45,6 +45,18 @@ describe('ThemeSettingsPage — options (issue #189, third pass)', () => {
     expect(onSelect).toHaveBeenCalledWith('light')
   })
 
+  it('keeps the explanatory copy at its pre-NativeWind-5 line height', async () => {
+    // This copy used to carry `leading-5` on top of `text-sm`. NativeWind v5
+    // reads a leading-* step as em rather than rem, which would have squashed
+    // 1.25rem (17.5px) to 1.4285…em × 12.25px (15.3px) — so the class was
+    // dropped. text-sm's own line height was already exactly 1.25rem, so this
+    // is the value the class was pinning all along; assert it, because nothing
+    // about the rendered output says the class is gone on purpose.
+    renderPage()
+    const copy = await screen.findByText(/Matches your device by default/)
+    expect(resolvedStyle(copy).lineHeight).toBe(rem('1.25rem'))
+  })
+
   it('reports the back arrow press via onBack', async () => {
     const onBack = jest.fn()
     renderPage('system', undefined, onBack)
@@ -61,8 +73,6 @@ describe('ThemeSettingsPage — options (issue #189, third pass)', () => {
 const background = (label: string) => resolvedStyle(screen.getByLabelText(label)).backgroundColor
 
 describe('ThemeSettingsPage — selected segment styling', () => {
-  afterEach(() => act(() => setColorScheme('system')))
-
   it('fills the selected segment with white on light, leaving the others bare', async () => {
     act(() => setColorScheme('light'))
     renderPage('dark')
