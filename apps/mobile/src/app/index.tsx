@@ -157,9 +157,18 @@ export default function LandingScreen() {
           </Pressable>
           <Animated.Text
             style={contentStyle}
-            // `leading-6`, not the v4 `leading-8`: NativeWind v5 parses a
-            // leading-* step as em, so `leading-8` is now 2em (35px at
-            // text-xl), not the 2rem (28px) it used to be. See the
+            // `leading-6`, not the v4 `leading-8`, and this line is a hair
+            // tighter than it was — the one deliberate visual change in the
+            // NativeWind v5 migration. v5 parses a leading-* step as em, so at
+            // text-xl (17.5px) the measured options are: leading-6 = 26.25px,
+            // leading-7 = 30.63px, and the unmigrated leading-8 = 35px, against
+            // v4's 28px. The exact equivalent is 2rem ÷ 1.25rem = 1.6em =
+            // `leading-6.4`, which the `--value(integer)` override in
+            // nativewind/theme.css can't express, and no arbitrary value
+            // reaches it either: react-native-css takes only a plain number for
+            // lineHeight, so `leading-[1.6]`, `leading-[1.6em]`, `leading-[2rem]`
+            // and `leading-[28px]` all compile but resolve to no lineHeight at
+            // all. 26.25px is the nearest step and what we accept. See the
             // line-height cases in src/__tests__/tailwind-theme.test.tsx.
             className="text-darker/80 dark:text-white/80 mt-7 text-center font-sans text-xl font-semibold leading-6"
           >

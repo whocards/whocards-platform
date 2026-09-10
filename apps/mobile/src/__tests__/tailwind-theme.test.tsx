@@ -145,21 +145,42 @@ describe('Tailwind theme — fonts', () => {
  * The migration recipe is "divide the old value by the font size": v4's
  * `text-xl leading-8` is 2rem ÷ 1.25rem = 1.6em, and each v5 step is 0.25em, so
  * the exact equivalent would be `leading-6.4` — which the override can't
- * express (it takes integers only). `leading-6` (1.5em = 26.25px) is the
- * nearest step, and what src/app/index.tsx's tagline now uses.
+ * express (it takes integers only). Nor can an arbitrary value: `leading-[…]`
+ * does fall through to Tailwind's built-in utility and compiles fine, but
+ * react-native-css accepts only a plain number for lineHeight, so
+ * `leading-[1.6]`, `leading-[1.6em]`, `leading-[2rem]` and `leading-[28px]` all
+ * resolve to no lineHeight at all (measured). `leading-6` (1.5em = 26.25px) is
+ * the nearest step, and what src/app/index.tsx's tagline now uses — 1.75px
+ * tighter than v4's 28px, and the migration's one accepted visual change.
  */
-const lineHeightOf = (className: string) => {
+const renderClass = (className: string) => {
   render(<Text testID="line" className={className} />)
-  return resolvedStyle(screen.getByTestId('line')).lineHeight
+  return screen.getByTestId('line')
 }
+
+const lineHeightOf = (className: string) => resolvedStyle(renderClass(className)).lineHeight
 
 describe('Tailwind theme — line height', () => {
   it('gives each text size its own line height, in px', () => {
-    // text-sm is 0.875rem/1.25rem — so its *default* line height is exactly
-    // what v4's `text-sm leading-5` pinned, which is why theme-settings-page.tsx
-    // could drop the class outright rather than restate it as an em ratio.
-    expect(lineHeightOf('text-sm')).toBe(rem('1.25rem'))
-    expect(lineHeightOf('text-xl')).toBe(rem('1.75rem'))
+    // Each `text-*` carries a line height distinct from its font size, and the
+    // two are asserted together so neither reading can be mistaken for the
+    // other: text-sm is 0.875rem/1.25rem, text-xl is 1.25rem/1.75rem.
+    //
+    // v4 emitted those line heights as rem lengths; v5 emits Tailwind's
+    // `calc(<line-height> / <font-size>)` em ratio instead — 1.4em for text-xl
+    // — which lands on the same pixel value by construction, for any font size
+    // expressed in rem. That equality is the thing worth pinning: it is why
+    // `text-sm`'s default is exactly what v4's `text-sm leading-5` pinned, and
+    // so why theme-settings-page.tsx could drop that class outright rather than
+    // restate it as a ratio.
+    expect(resolvedStyle(renderClass('text-sm'))).toMatchObject({
+      fontSize: rem('0.875rem'),
+      lineHeight: rem('1.25rem'),
+    })
+    expect(resolvedStyle(renderClass('text-xl'))).toMatchObject({
+      fontSize: rem('1.25rem'),
+      lineHeight: rem('1.75rem'),
+    })
   })
 
   it('parses a leading-* step as 0.25em, not 0.25rem', () => {
