@@ -6,15 +6,7 @@ import {StatusBar} from 'expo-status-bar'
 import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {
-  AppState,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native'
+import {AppState, Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -161,7 +153,7 @@ export const PickPlayer = ({
   useEffect(() => {
     track({
       name: EVENTS.DECK_OPENED,
-      props: {deck_id: deckSlug, source: 'browse', platform: Platform.OS},
+      props: {deck_id: deckSlug, source: 'browse'},
     })
   }, [deckSlug])
 
@@ -176,7 +168,6 @@ export const PickPlayer = ({
         game: GAMES.PICK,
         language,
         secondary_languages: secondary,
-        platform: Platform.OS,
       },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -209,7 +200,6 @@ export const PickPlayer = ({
         question_id: questionId,
         language,
         source: 'pick',
-        platform: Platform.OS,
       },
     })
     viewTracker.startView({deck_id: deckSlug, question_id: questionId, language})

@@ -37,24 +37,24 @@ export const GAMES = {WH: 'wh', PICK: 'pick'} as const
 /** The three rows offered by the Share sheet (epic #152) — one shape for web and mobile. */
 export type ShareFormat = 'link' | 'story' | 'post'
 
-// `platform` is 'web' on the website, React Native's `Platform.OS` ('ios' | 'android')
-// on mobile (see AppReviewRequestedProps); typed as an optional string so the shared
-// package needn't depend on react-native types and older callers keep compiling.
-// Used by the stats page's per-platform breakdown (analytics page).
-export type DeckOpenedProps = {deck_id: string; source: string; platform?: string}
+// Note: the stats page's per-platform breakdown does NOT read a `platform`
+// prop off these PostHog events — it reads the DB `answer.platform` column
+// (written by each client's answer-transport.ts). `platform` is instead a
+// PostHog super-property, registered once per session (see each app's
+// lib/observability.ts `posthog.register({platform: ...})` call) rather than
+// repeated on every event payload here.
+export type DeckOpenedProps = {deck_id: string; source: string}
 export type GameStartedProps = {
   deck_id: string
   game: string
   language: string
   secondary_languages?: string[]
-  platform?: string
 }
 export type QuestionShownProps = {
   deck_id: string
   question_id: string
   language: string
   source: string
-  platform?: string
 }
 export type QuestionNextProps = {
   deck_id: string

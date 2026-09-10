@@ -20,4 +20,9 @@ const provider: ObservabilityProvider = {
 
 export const initObservability = (): void => {
   configureObservability({dev: import.meta.env.DEV, provider})
+  // `platform` as a super property (not a per-event prop — see the doc
+  // comment on DeckOpenedProps et al. in @whocards/observability/events) so
+  // every event this session sends carries it without every call site
+  // repeating it. Mirrors apps/mobile/src/lib/observability.ts.
+  window.posthog?.register({platform: 'web'})
 }

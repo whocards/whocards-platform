@@ -20,6 +20,6 @@ export const send: SendAnswer = async (event: AnswerEvent): Promise<void> => {
   const optIn = env.EXPO_PUBLIC_RECORD_ANSWERS
   if (!shouldRecordAnswers({dev: __DEV__, optIn})) return
   // platform is set here, once, regardless of which screen served the event —
-  // every mobile Answer flows through this one seam (analytics page).
+  // every mobile Answer flows through this one seam (stats page).
   await trpc.answers.record.mutate({...event, platform: Platform.OS === 'ios' ? 'ios' : 'android'})
 }

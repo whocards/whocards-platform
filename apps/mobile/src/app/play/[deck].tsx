@@ -4,7 +4,7 @@ import {StatusBar} from 'expo-status-bar'
 import {useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Platform, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -280,7 +280,6 @@ const DeckPlayer = ({
       props: {
         deck_id: deckSlug,
         source: startId ? 'deep_link' : 'browse',
-        platform: Platform.OS,
       },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -297,7 +296,6 @@ const DeckPlayer = ({
         game: GAMES.WH,
         language,
         secondary_languages: secondary,
-        platform: Platform.OS,
       },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -391,7 +389,6 @@ const DeckPlayer = ({
         question_id: questionId,
         language,
         source: 'nav',
-        platform: Platform.OS,
       },
     })
     viewTracker.startView({deck_id: deckSlug, question_id: questionId, language})

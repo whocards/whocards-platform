@@ -12,6 +12,4 @@ export type AnswerEvent = {
   deckSlug: string
   questionId: string
   language: string
-  /** 'web' — set once by answer-transport.ts, never at the enqueue call sites. */
-  platform?: 'web'
 }
