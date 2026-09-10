@@ -125,10 +125,9 @@ flow once per ref and compares the two sets frame-for-frame.
 upgrade branch only describes the upgrade's own output — it can never disagree with
 itself, so it proves nothing. That is the entire reason this exists.
 
-The script does not switch branches, install, or rebuild: an SDK upgrade needs a
-native rebuild between the two captures, and this checkout shares a git stash stack
-with other worktrees, so automated branch switching would be unsafe. You do the
-checkout; the script does the capture and the comparison.
+The script does not switch branches, install, or rebuild. Build and install each
+ref before capturing it. Separate worktrees keep the two refs' native projects
+and dependencies isolated.
 
 ```bash
 # 1) baseline — on the PRE-upgrade ref
@@ -158,11 +157,8 @@ hashes are pixel-identical output. If ImageMagick's `compare` happens to be on P
 diff PNG per differing frame is written to `.ui-diff/diff-<a>-vs-<b>/` as well; it is
 optional, and its absence is not an error.
 
-> **Caveat — captures 03/04.** Those two frames drive the Settings pager, and the note
-> in `.maestro/screenshots/store-screens.yaml` records that the pager rework (issue
-> #189, third pass) was never re-run on device. If the flow fails at
-> "Choose your language" or at capture 04, suspect a **stale flow** before suspecting
-> the upgrade under test — 01/02 capturing cleanly while 03/04 don't is the signature.
+Capture 03 reveals the player controls before exiting to Settings. Capture 04
+waits for the Hebrew question to render before waiting for the controls to hide.
 
 This is the on-device half of upgrade evidence. The JS half is
 `src/__tests__/ui-snapshot-*.test.tsx`, whose baselines are recorded on the
