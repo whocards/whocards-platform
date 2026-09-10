@@ -43,6 +43,20 @@ describe('getQuestionsAnswered', () => {
     expect(result.total).toBe(2)
     expect(result.thisWeek).toBe(1)
   })
+
+  it('uses the Monday-00:00-UTC week cutoff, not a rolling 7-day window', async () => {
+    // now = Wednesday 2026-01-14T12:00Z → that week's Monday is 2026-01-12T00:00Z.
+    const now = new Date('2026-01-14T12:00:00.000Z')
+    // Six days before `now` (2026-01-08T12:00Z, a Thursday) is inside a naive
+    // rolling-7-day window (now - 7d = 2026-01-07T12:00Z) but before that
+    // week's Monday cutoff — must NOT count as "this week".
+    await insertAnswer({createdAt: '2026-01-08T12:00:00.000Z'})
+    // Exactly at the Monday cutoff — must count.
+    await insertAnswer({createdAt: '2026-01-12T00:00:00.000Z'})
+    const result = await getQuestionsAnswered(db, now)
+    expect(result.total).toBe(2)
+    expect(result.thisWeek).toBe(1)
+  })
 })
 
 describe('getPlatformCounts', () => {
@@ -139,6 +153,16 @@ describe('getLiveEvents', () => {
     await insertLiveEvent(conf.id, {createdAt: new Date().toISOString()})
     await insertLiveEvent(conf.id, {createdAt: '2000-01-01T00:00:00.000Z'})
     const result = await getLiveEvents(db)
+    expect(result.total).toBe(2)
+    expect(result.thisWeek).toBe(1)
+  })
+
+  it('uses the Monday-00:00-UTC week cutoff, not a rolling 7-day window — same cutoff as getQuestionsAnswered', async () => {
+    const conf = await insertConference()
+    const now = new Date('2026-01-14T12:00:00.000Z')
+    await insertLiveEvent(conf.id, {createdAt: '2026-01-08T12:00:00.000Z'})
+    await insertLiveEvent(conf.id, {createdAt: '2026-01-12T00:00:00.000Z'})
+    const result = await getLiveEvents(db, now)
     expect(result.total).toBe(2)
     expect(result.thisWeek).toBe(1)
   })

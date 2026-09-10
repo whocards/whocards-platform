@@ -70,7 +70,15 @@ export const env = createEnv({
   client: {
     PUBLIC_POSTHOG_KEY: z.string().optional(),
     PUBLIC_POSTHOG_HOST: z.string().url().optional().default('https://who.whocards.cc'),
-    PUBLIC_POSTHOG_UI_HOST: z.string().url().optional().default('https://eu.posthog.com'),
+    // Must be https — the stats page sends POSTHOG_PERSONAL_API_KEY to this
+    // host in an Authorization header (see ~server/stats/sources/posthog.ts),
+    // so a plaintext host would leak the key on the wire.
+    PUBLIC_POSTHOG_UI_HOST: z
+      .string()
+      .url()
+      .refine((url) => url.startsWith('https://'), 'PUBLIC_POSTHOG_UI_HOST must use https')
+      .optional()
+      .default('https://eu.posthog.com'),
     // iOS and Android launch on separate timelines: iOS is approved and public,
     // Android trails by Google's mandatory 12-tester / 14-day Closed Test. Each
     // store has its own switch so /app can offer a real download for one platform

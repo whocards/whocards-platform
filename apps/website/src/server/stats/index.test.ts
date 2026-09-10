@@ -190,3 +190,57 @@ describe('getStatsSnapshot — PostHog credentials use the app/UI host, not the 
     })
   })
 })
+
+describe('getStatsSnapshot — one failing DB query degrades only its own field(s)', () => {
+  it('degrades only activeDevices to unavailable when its query rejects, leaving every other field live', async () => {
+    query.getActiveDevices.mockRejectedValue(new Error('connection terminated'))
+    const {getStatsSnapshot} = await freshIndex()
+    const snapshot = await getStatsSnapshot()
+    expect(snapshot.activeDevices).toMatchObject({
+      status: 'unavailable',
+      reason: 'connection terminated',
+    })
+    expect(snapshot.decksPlayed.status).toBe('live')
+    expect(snapshot.platformBreakdown.status).toBe('live')
+    expect(snapshot.languages.status).toBe('live')
+  })
+
+  it('degrades the combined questionsAnswered field to unavailable if either half fails, rather than silently summing in a 0', async () => {
+    query.getQuestionsAnswered.mockResolvedValue({total: 100, thisWeek: 10})
+    query.getLiveEvents.mockRejectedValue(new Error('timeout'))
+    const {getStatsSnapshot} = await freshIndex()
+    const snapshot = await getStatsSnapshot()
+    expect(snapshot.questionsAnswered.status).toBe('unavailable')
+    // liveEvents itself also reflects the failure.
+    expect(snapshot.liveEvents.status).toBe('unavailable')
+  })
+
+  it('degrades the combined weeklyTrend field to unavailable if either timestamp query fails', async () => {
+    query.getAnswerTimestamps.mockResolvedValue(DEFAULTS.answerTimestamps)
+    query.getLiveEventTimestamps.mockRejectedValue(new Error('timeout'))
+    const {getStatsSnapshot} = await freshIndex()
+    const snapshot = await getStatsSnapshot()
+    expect(snapshot.weeklyTrend.status).toBe('unavailable')
+  })
+})
+
+describe('getStatsSnapshot — concurrent cache-miss callers share one in-flight build', () => {
+  it('calls the underlying query only once for two concurrent callers, and returns the same snapshot', async () => {
+    const {getStatsSnapshot} = await freshIndex()
+    const [first, second] = await Promise.all([getStatsSnapshot(), getStatsSnapshot()])
+    expect(query.getQuestionsAnswered).toHaveBeenCalledTimes(1)
+    expect(first).toBe(second)
+  })
+
+  it('clears the in-flight promise on rejection, so a subsequent call retries rather than replaying the failure', async () => {
+    sources.fetchAppStoreInstalls
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValue({status: 'needs-credentials', source: 'app-store-connect'})
+    const {getStatsSnapshot} = await freshIndex()
+    await expect(getStatsSnapshot()).rejects.toThrow('boom')
+    // The failed build must not linger as "the" in-flight promise — this
+    // second call has to kick off a fresh build, not hang or re-reject.
+    const snapshot = await getStatsSnapshot()
+    expect(snapshot.installsIos.status).toBe('needs-credentials')
+  })
+})

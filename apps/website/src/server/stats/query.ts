@@ -15,6 +15,7 @@
 import {gte, sql} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import {ANSWER_PLATFORMS} from '@whocards/api/platform'
+import {currentWeekStart} from './date-utils'
 import type {AnswerTimestampRow, NamedCount, Platform, PlatformCountRow} from './types'
 import * as schema from '../db/schema'
 
@@ -26,18 +27,25 @@ const TREND_WINDOW_WEEKS = 26
 /** "Active" device window for the counter row. */
 const ACTIVE_WINDOW_DAYS = 30
 
-/** Total Answers ever recorded, and how many landed in the last 7 days. */
+/**
+ * Total Answers ever recorded, and how many landed since Monday 00:00 UTC —
+ * the same cutoff `./rollups.ts`'s `weeklyTrend` uses for the current week's
+ * bucket, so this "this week" counter always agrees with the chart's last
+ * bar rather than a rolling-7-day count that can disagree with it near a
+ * week boundary. `now` is injectable for tests.
+ */
 export const getQuestionsAnswered = async <T extends PgQueryResultHKT>(
-  database: Db<T>
+  database: Db<T>,
+  now: Date = new Date()
 ): Promise<{total: number; thisWeek: number}> => {
-  const weekAgo = new Date(Date.now() - WEEK_MS)
+  const weekStart = currentWeekStart(now)
   const [row] = await database
     .select({
       // Postgres returns COUNT() as a bigint, which the driver serializes as a
       // string — type it as `string` (not `number`) so the `Number(...)` below
       // is a real conversion, not a no-op the linter flags.
       total: sql<string>`count(*)`,
-      thisWeek: sql<string>`count(*) filter (where ${schema.answer.createdAt} >= ${weekAgo.toISOString()})`,
+      thisWeek: sql<string>`count(*) filter (where ${schema.answer.createdAt} >= ${weekStart.toISOString()})`,
     })
     .from(schema.answer)
   return {total: Number(row?.total ?? 0), thisWeek: Number(row?.thisWeek ?? 0)}
@@ -133,20 +141,21 @@ export const getDataSince = async <T extends PgQueryResultHKT>(
 
 /**
  * Live events (in-person, e.g. Hajnalig conference decks): total rows in
- * `conference_question_tracking`, and how many landed in the last 7 days —
- * same shape as `getQuestionsAnswered` so the two can be summed for the hero
- * total and "this week" badge. Kept as its own slice in the platform
- * breakdown (rather than merged into web/iOS/Android) since these rows have
- * no Device to attribute to a platform.
+ * `conference_question_tracking`, and how many landed since Monday 00:00 UTC —
+ * same shape (and same week cutoff) as `getQuestionsAnswered` so the two can
+ * be summed for the hero total and "this week" badge. Kept as its own slice
+ * in the platform breakdown (rather than merged into web/iOS/Android) since
+ * these rows have no Device to attribute to a platform.
  */
 export const getLiveEvents = async <T extends PgQueryResultHKT>(
-  database: Db<T>
+  database: Db<T>,
+  now: Date = new Date()
 ): Promise<{total: number; thisWeek: number}> => {
-  const weekAgo = new Date(Date.now() - WEEK_MS)
+  const weekStart = currentWeekStart(now)
   const [row] = await database
     .select({
       total: sql<string>`count(*)`,
-      thisWeek: sql<string>`count(*) filter (where ${schema.conferenceQuestionTracking.createdAt} >= ${weekAgo.toISOString()})`,
+      thisWeek: sql<string>`count(*) filter (where ${schema.conferenceQuestionTracking.createdAt} >= ${weekStart.toISOString()})`,
     })
     .from(schema.conferenceQuestionTracking)
   return {total: Number(row?.total ?? 0), thisWeek: Number(row?.thisWeek ?? 0)}

@@ -15,6 +15,61 @@ describe('fetchCountrySplit — missing credentials', () => {
   })
 })
 
+describe('fetchCountrySplit — non-https host', () => {
+  it('degrades to unavailable without sending the API key, when host is not https', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const result = await fetchCountrySplit({
+      personalApiKey: 'phx_test',
+      projectId: '123',
+      host: 'http://who.whocards.cc',
+    })
+    expect(result.status).toBe('unavailable')
+    expect(fetchSpy).not.toHaveBeenCalled()
+    fetchSpy.mockRestore()
+  })
+})
+
+describe('fetchCountrySplit — malformed results', () => {
+  it('degrades to unavailable when the results key is missing entirely', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({}), {status: 200}))
+    const result = await fetchCountrySplit({
+      personalApiKey: 'phx_test',
+      projectId: '123',
+      host: 'https://who.whocards.cc',
+    })
+    expect(result.status).toBe('unavailable')
+    fetchSpy.mockRestore()
+  })
+
+  it('degrades to unavailable when results is not an array', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({results: 'oops'}), {status: 200}))
+    const result = await fetchCountrySplit({
+      personalApiKey: 'phx_test',
+      projectId: '123',
+      host: 'https://who.whocards.cc',
+    })
+    expect(result.status).toBe('unavailable')
+    fetchSpy.mockRestore()
+  })
+
+  it('stays live with an empty value for a genuine, well-formed empty result set', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({results: []}), {status: 200}))
+    const result = await fetchCountrySplit({
+      personalApiKey: 'phx_test',
+      projectId: '123',
+      host: 'https://who.whocards.cc',
+    })
+    expect(result).toEqual({status: 'live', source: 'posthog', value: []})
+    fetchSpy.mockRestore()
+  })
+})
+
 describe('fetchCountrySplit — live', () => {
   it('maps HogQL [name, count] result rows to NamedCount', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(

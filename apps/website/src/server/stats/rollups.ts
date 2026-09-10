@@ -4,6 +4,7 @@
  * page's chart/counter inputs. Kept pure so they're cheap to unit test and can
  * be reused unchanged if the storage layer ever changes.
  */
+import {weekStartOf} from './date-utils'
 import type {
   AnswerTimestampRow,
   NamedCount,
@@ -29,17 +30,6 @@ export const platformBreakdown = (rows: PlatformCountRow[]): PlatformBreakdown =
     else result.unattributed += row.count
   }
   return result
-}
-
-/** Monday (UTC) of the week containing `date`, as an ISO `YYYY-MM-DD` string. */
-const weekStartOf = (date: Date): string => {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
-  // getUTCDay(): 0=Sun..6=Sat — shift to Monday-start.
-  const dayOfWeek = d.getUTCDay()
-  const diffToMonday = (dayOfWeek + 6) % 7
-  d.setUTCDate(d.getUTCDate() - diffToMonday)
-  const [iso] = d.toISOString().split('T')
-  return iso ?? d.toISOString()
 }
 
 /**

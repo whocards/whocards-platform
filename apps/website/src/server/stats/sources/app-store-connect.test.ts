@@ -95,11 +95,25 @@ describe('parseSalesReportInstalls', () => {
     expect(parseSalesReportInstalls(tsv)).toBe(15)
   })
 
-  it('returns 0 for an empty or headerless report', () => {
-    expect(parseSalesReportInstalls('')).toBe(0)
+  it('throws for an empty or headerless report, rather than returning a false 0', () => {
+    expect(() => parseSalesReportInstalls('')).toThrow(/empty/)
   })
 
-  it('returns 0 when expected columns are missing', () => {
-    expect(parseSalesReportInstalls('Foo\tBar\n1\t2')).toBe(0)
+  it('throws when expected columns are missing, rather than returning a false 0', () => {
+    expect(() => parseSalesReportInstalls('Foo\tBar\n1\t2')).toThrow(/missing expected columns/)
+  })
+})
+
+describe('fetchAppStoreInstalls — a malformed report degrades to unavailable', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('does not surface a false live 0 when a report is missing expected columns', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      async () => new Response(gzipTsv('Foo\tBar\n1\t2'), {status: 200})
+    )
+    const result = await fetchAppStoreInstalls(CREDS)
+    expect(result.status).toBe('unavailable')
   })
 })

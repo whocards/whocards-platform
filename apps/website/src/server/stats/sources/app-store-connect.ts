@@ -21,6 +21,7 @@ import jwt from 'jsonwebtoken'
 
 import type {MetricResult} from '../types'
 import {live, needsCredentials, unavailable} from '../types'
+import {reportWindowDates} from './report-window'
 
 export type AppStoreConnectCredentials = {
   keyId: string
@@ -34,8 +35,6 @@ const SOURCE = 'app-store-connect'
 const AUDIENCE = 'appstoreconnect-v1'
 const TOKEN_TTL_SECONDS = 20 * 60 // Apple caps this token at 20 minutes.
 const FETCH_TIMEOUT_MS = 10_000
-/** Apple only publishes one SALES/SUMMARY report per day — sum the trailing month for a stable count. */
-const REPORT_WINDOW_DAYS = 30
 /** Cap concurrent report fetches so a 30-day backfill doesn't open 30 sockets at once. */
 const CONCURRENCY = 5
 
@@ -48,18 +47,6 @@ export const buildAppStoreConnectToken = (creds: AppStoreConnectCredentials): st
     audience: AUDIENCE,
     expiresIn: TOKEN_TTL_SECONDS,
   })
-
-/** The last `REPORT_WINDOW_DAYS` calendar dates (UTC, `YYYY-MM-DD`), starting yesterday — today's report isn't final yet. */
-const reportWindowDates = (): string[] => {
-  const dates: string[] = []
-  for (let daysAgo = 1; daysAgo <= REPORT_WINDOW_DAYS; daysAgo++) {
-    const d = new Date()
-    d.setUTCDate(d.getUTCDate() - daysAgo)
-    const [iso] = d.toISOString().split('T')
-    if (iso) dates.push(iso)
-  }
-  return dates
-}
 
 /**
  * Fetches and sums one day's SALES/SUMMARY report. A 404 means Apple hasn't
@@ -136,11 +123,20 @@ export const fetchAppStoreInstalls = async (
 export const parseSalesReportInstalls = (tsv: string): number => {
   const lines = tsv.trim().split('\n')
   const [headerLine, ...rows] = lines
-  if (!headerLine) return 0
+  if (!headerLine) {
+    // A 200 response with no header row isn't "zero installs" — it's a
+    // response we can't trust. Throw so the caller degrades to `unavailable`
+    // instead of the page silently showing a false live 0.
+    throw new Error('App Store sales report is empty')
+  }
   const headers = headerLine.split('\t')
   const unitsIdx = headers.indexOf('Units')
   const productTypeIdx = headers.indexOf('Product Type Identifier')
-  if (unitsIdx === -1 || productTypeIdx === -1) return 0
+  if (unitsIdx === -1 || productTypeIdx === -1) {
+    throw new Error(
+      'App Store sales report missing expected columns (Units / Product Type Identifier)'
+    )
+  }
 
   let total = 0
   for (const row of rows) {

@@ -44,6 +44,13 @@ export const fetchCountrySplit = async (
   if (!creds) {
     return needsCredentials(SOURCE, 'POSTHOG_PERSONAL_API_KEY / POSTHOG_PROJECT_ID not set')
   }
+  // The personal API key goes out as an Authorization header — never send it
+  // over a plaintext connection. Enforced again in ~env's schema for
+  // PUBLIC_POSTHOG_UI_HOST, but checked here too since this is the module
+  // that actually puts the key on the wire.
+  if (!creds.host.startsWith('https://')) {
+    return unavailable(SOURCE, 'PostHog host must use https — refusing to send the API key over it')
+  }
 
   try {
     const query = {
@@ -71,10 +78,17 @@ export const fetchCountrySplit = async (
       return unavailable(SOURCE, `PostHog returned ${response.status}`)
     }
     const json: unknown = await response.json()
-    const results =
-      typeof json === 'object' && json !== null && 'results' in json && Array.isArray(json.results)
-        ? json.results
-        : []
+    const results: unknown =
+      typeof json === 'object' && json !== null && 'results' in json ? json.results : undefined
+    if (!Array.isArray(results)) {
+      // A missing/non-array `results` means the response shape isn't what we
+      // expect (API change, error payload with a 200, etc.) — that must not
+      // become a silent live `[]`, which would render as "no countries" on
+      // the page rather than "not connected." A genuine `results: []` (a
+      // well-formed but empty result set) IS an array, so it passes this
+      // check and stays `live` with an empty value below.
+      return unavailable(SOURCE, 'PostHog response missing a results array')
+    }
     const rows: NamedCount[] = results
       .filter(
         (row): row is [string, number] =>
