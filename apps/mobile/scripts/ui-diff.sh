@@ -14,11 +14,9 @@
 # `capture before` → check out the upgrade branch → install → build →
 # `capture after` → `compare before after`.
 #
-# This script deliberately does NOT switch branches, install, or rebuild. An SDK
-# upgrade needs a native rebuild between the two captures, which a script can't
-# do unattended, and this checkout shares a git stash stack with other
-# worktrees — automated branch switching here would be unsafe. The human owns
-# the checkout; the script owns deterministic capture and comparison.
+# This script does not switch branches, install, or rebuild. Build and install
+# each ref explicitly before its capture; separate worktrees keep their native
+# projects and dependencies isolated.
 #
 # Captures live in apps/mobile/.ui-diff/<label>/ (gitignored), NOT in the tracked
 # tree, so switching branches between the two captures can't clobber the first.
@@ -27,13 +25,6 @@
 # output, no dependencies needed. If ImageMagick's `compare` happens to be
 # installed, a diff PNG is written per differing frame too; it is optional and
 # its absence is not an error.
-#
-# CAVEAT — captures 03/04 (the language picker and the Hebrew card that follows
-# it) drive the Settings pager, and per the note in
-# .maestro/screenshots/store-screens.yaml the pager rework (issue #189, third
-# pass) was never re-run on device. If the flow fails at "Choose your language"
-# or at capture 04, suspect a stale flow before suspecting the upgrade under
-# test: 01/02 capturing cleanly while 03/04 don't is the signature.
 #
 # Requires Maestro, and Maestro requires a valid JAVA_HOME (a JDK) — if it dies
 # with "JAVA_HOME is set to an invalid directory", run
@@ -201,8 +192,6 @@ compare_labels() {
   if [[ -z "$magick" ]]; then
     echo "  (ImageMagick isn't installed, so no diff images were written — 'brew install imagemagick' to get them)" >&2
   fi
-  echo "  Before reading this as a regression: 03/04 drive the Settings pager, whose flow" >&2
-  echo "  is known-stale (see the caveat at the top of this script and .maestro/README.md)." >&2
   return 1
 }
 
