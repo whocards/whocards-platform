@@ -1,0 +1,38 @@
+---
+import {Icon} from 'astro-icon/components'
+
+// WhoCard's visual treatment for a Question that isn't in the main deck
+// (e.g. the AI Check-In deck). Pass `href` to make the card a link into the
+// deck; leave it out for a decorative card.
+export type Props = {
+  text: string
+  href?: string
+  ariaLabel?: string
+  class?: string
+}
+
+const {text, href, ariaLabel, class: classes} = Astro.props
+const Tag = href ? 'a' : 'div'
+---
+
+<Tag
+  href={href}
+  aria-label={href ? ariaLabel : undefined}
+  class='block h-[225px] w-[165px] min-w-[165px] snap-start rounded-t-xl bg-gradient-to-br from-gray-light to-dark to-70% pl-[0.5px] pt-[0.5px] lg:h-[22.5rem] lg:w-[16.5rem] lg:min-w-[16.5rem]'
+  class:list={[
+    href &&
+      'transition-transform hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light',
+    classes,
+  ]}
+>
+  <span class='relative block h-full w-full overflow-hidden rounded-t-xl bg-dark'>
+    <Icon name='pattern-card' class='absolute -top-4 right-0 bottom-0' />
+    <span lang='en' class='block p-6 text-sm font-bold text-white lg:text-xl'>{text}</span>
+    <span
+      class='absolute right-5 bottom-5 font-title text-3xl font-bold text-primary-dark lg:right-6 lg:bottom-10 lg:text-5xl'
+      aria-hidden='true'
+    >
+      ?
+    </span>
+  </span>
+</Tag>

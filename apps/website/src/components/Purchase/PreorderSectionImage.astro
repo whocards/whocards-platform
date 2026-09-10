@@ -1,6 +1,7 @@
 ---
 export type Props = {
-  title: string
+  // Plain title; pass a `title` slot instead when the title needs accent spans.
+  title?: string
   subtitle: string
   description?: string
   class?: string
@@ -29,7 +30,7 @@ const id = subtitle.replaceAll(' ', '-').replace('?', '')
       <h2
         class='text-3xl font-semibold font-title leading-10 lg:text-[54px] lg:leading-tight lg:tracking-tighter'
       >
-        {title}
+        <slot name='title'>{title}</slot>
       </h2>
       {
         description && (
