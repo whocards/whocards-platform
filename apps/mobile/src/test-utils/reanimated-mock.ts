@@ -84,7 +84,19 @@ const useAnimatedStyle = (factory: () => Record<string, unknown>) => {
   return factory()
 }
 
-/** Jump straight to the end value and report completion, for every animation helper. */
+/**
+ * Jump straight to the end value and report completion, for every animation helper.
+ *
+ * Ordering note: real Reanimated commits the value and then runs the callback,
+ * whereas here the callback runs first — the commit is the caller's own
+ * `sharedValue.set(withTiming(...))`, which cannot happen until this returns.
+ * That is only observable to a callback that reads the value it is being
+ * written into, and no call site does: all five (settings-modal goToPage /
+ * goBack, play/[deck]'s two swipe commits, pick-player putDown) only
+ * `runOnJS` an unrelated state setter or dispatcher. Deferring the callback to
+ * a microtask to fix the order would buy nothing and would make these tests
+ * depend on when `act()` happens to flush, so the order stays as it is.
+ */
 const settle = <T>(toValue: T, _config?: unknown, callback?: (finished: boolean) => void): T => {
   callback?.(true)
   return toValue

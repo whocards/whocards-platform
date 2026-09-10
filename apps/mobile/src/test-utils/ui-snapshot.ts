@@ -19,6 +19,16 @@
  * Everything else — function props, refs, `testID`, `collapsable`, `source`,
  * and every RN-internal prop — is dropped on purpose.
  *
+ * `source` is worth a word, because dropping it means swapping a bundled asset
+ * for a different image does not move these snapshots. That is deliberate on
+ * two counts. A bundled `source` resolves to a numeric asset-registry id whose
+ * value depends on module registration order, so it churns on exactly the
+ * bundler and toolchain upgrades this suite exists to hold still — it would add
+ * false diffs, not real ones. And asset identity is a different question from
+ * "did the render change", answerable far more cheaply by the assets being in
+ * git. If asset swaps ever need catching, assert on them directly; do not
+ * reintroduce the churn here.
+ *
  * Two things it deliberately cannot see:
  *
  * 1. The native side. This is the JS half of the render only; what the native

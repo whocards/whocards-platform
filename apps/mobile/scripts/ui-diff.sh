@@ -60,8 +60,22 @@ frames_of() {
   (cd "$OUT_ROOT/$1" && find . -name '*.png' | sed 's|^\./||' | sort)
 }
 
+# A label names a directory under .ui-diff and is interpolated into `rm -rf`, so
+# it has to be an opaque name and nothing else. `../<other>` would resolve out of
+# .ui-diff and delete somewhere real — a slip while pasting a ref name is enough,
+# no attacker required.
+validate_label() {
+  local label="$1"
+  if [[ ! "$label" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+    echo "✗ '$label' is not a usable label — use letters, numbers, '.', '_' and '-' only," >&2
+    echo "  starting with a letter or number (e.g. 'before', 'rn-0.86.3')" >&2
+    exit 2
+  fi
+}
+
 require_label() {
   local label="$1"
+  validate_label "$label"
   if [[ ! -d "$OUT_ROOT/$label" ]]; then
     echo "✗ no capture labelled '$label' — run 'pnpm -F mobile ui-diff capture $label' first" >&2
     echo "  captured so far: $(ls "$OUT_ROOT" 2>/dev/null | tr '\n' ' ')" >&2
@@ -76,6 +90,7 @@ require_label() {
 capture() {
   local label="${1:-}"
   [[ -n "$label" ]] || usage
+  validate_label "$label"
 
   command -v maestro >/dev/null 2>&1 || {
     echo "✗ maestro is not on PATH — install it with:" >&2
