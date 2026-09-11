@@ -37,8 +37,8 @@ catalog:
   # react (shared major across web React-DOM islands + React Native)
   react: ^19.2.1
   react-dom: ^19.2.1
-  '@types/react': ^19.2.18
-  '@types/react-dom': ^19.2.7
+  '@types/react': ^19.3.0
+  '@types/react-dom': ^19.3.0
   '@types/node': ^24.10.2
 
 # react-native-css 3 (NativeWind v5) resolves lightningcss through
