@@ -8,7 +8,9 @@ import type {
   NamedCount,
   PeriodCountRow,
   PlatformCountRow,
+  StatsSnapshot,
 } from './types'
+import {live, unavailable} from './types'
 
 // freshIndex() re-imports ./index so its module-level cache doesn't leak between tests.
 
@@ -32,6 +34,12 @@ const query = vi.hoisted(() => ({
   getCountryCounts: vi.fn<() => Promise<NamedCount[]>>(),
 }))
 vi.mock('./query', () => query)
+
+const store = vi.hoisted(() => ({
+  readLatestSnapshot: vi.fn<() => Promise<StatsSnapshot | undefined>>(),
+  writeSnapshot: vi.fn<(db: unknown, snapshot: StatsSnapshot) => Promise<void>>(),
+}))
+vi.mock('./snapshot-store', () => store)
 
 const sources = vi.hoisted(() => ({
   fetchAppStoreInstalls:
@@ -65,6 +73,8 @@ const DEFAULTS = {
 beforeEach(() => {
   for (const key of Object.keys(envMock)) envMock[key] = undefined
   vi.clearAllMocks()
+  store.readLatestSnapshot.mockResolvedValue(undefined)
+  store.writeSnapshot.mockResolvedValue(undefined)
   query.getAnswerTotals.mockResolvedValue(DEFAULTS.totals)
   query.getPlatformCounts.mockResolvedValue(DEFAULTS.platformCounts)
   query.getWeeklyCounts.mockResolvedValue(DEFAULTS.weekRows)
@@ -194,7 +204,73 @@ describe('getStatsSnapshot — one failing DB query degrades only its own field(
   })
 })
 
-describe('getStatsSnapshot — concurrent cache-miss callers share one in-flight build', () => {
+const storedAt = (generatedAt: string): StatsSnapshot => {
+  const stale = unavailable('test', 'stub')
+  return {
+    generatedAt,
+    questionsAnswered: live({total: 7, thisWeek: 1}, 'stored'),
+    platformBreakdown: stale,
+    trend: stale,
+    activeDevices: stale,
+    decksPlayed: stale,
+    languages: stale,
+    countries: stale,
+    installsIos: stale,
+    installsAndroid: stale,
+    dataSince: stale,
+  }
+}
+
+describe('getStatsSnapshot — serves the stored snapshot, rebuilds inline only when missing or stale', () => {
+  it('returns a fresh stored snapshot without touching the source queries', async () => {
+    const stored = storedAt(new Date().toISOString())
+    store.readLatestSnapshot.mockResolvedValue(stored)
+    const {getStatsSnapshot} = await freshIndex()
+    expect(await getStatsSnapshot()).toBe(stored)
+    expect(query.getAnswerTotals).not.toHaveBeenCalled()
+    expect(store.writeSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('rebuilds and stores when the newest snapshot is older than MAX_SNAPSHOT_AGE_MS', async () => {
+    const {getStatsSnapshot, MAX_SNAPSHOT_AGE_MS} = await freshIndex()
+    store.readLatestSnapshot.mockResolvedValue(
+      storedAt(new Date(Date.now() - MAX_SNAPSHOT_AGE_MS - 1000).toISOString())
+    )
+    const snapshot = await getStatsSnapshot()
+    expect(query.getAnswerTotals).toHaveBeenCalledTimes(1)
+    expect(snapshot.questionsAnswered).toMatchObject({value: {total: 100}})
+    expect(store.writeSnapshot).toHaveBeenCalledWith(expect.anything(), snapshot)
+  })
+
+  it('still returns the inline build when storing it fails', async () => {
+    store.writeSnapshot.mockRejectedValue(new Error('read-only replica'))
+    const {getStatsSnapshot} = await freshIndex()
+    const snapshot = await getStatsSnapshot()
+    expect(snapshot.questionsAnswered.status).toBe('live')
+  })
+
+  it('stamps generatedAt on every build', async () => {
+    const {getStatsSnapshot} = await freshIndex()
+    const snapshot = await getStatsSnapshot()
+    expect(Date.parse(snapshot.generatedAt)).not.toBeNaN()
+  })
+})
+
+describe('refreshStatsSnapshot — builds and stores, propagating a store failure', () => {
+  it('writes the built snapshot', async () => {
+    const {refreshStatsSnapshot} = await freshIndex()
+    const snapshot = await refreshStatsSnapshot()
+    expect(store.writeSnapshot).toHaveBeenCalledWith(expect.anything(), snapshot)
+  })
+
+  it('rejects when the write fails, so the refresh route reports it', async () => {
+    store.writeSnapshot.mockRejectedValue(new Error('disk full'))
+    const {refreshStatsSnapshot} = await freshIndex()
+    await expect(refreshStatsSnapshot()).rejects.toThrow('disk full')
+  })
+})
+
+describe('getStatsSnapshot — concurrent inline rebuilds share one in-flight build', () => {
   it('calls the underlying query only once for two concurrent callers, and returns the same snapshot', async () => {
     const {getStatsSnapshot} = await freshIndex()
     const [first, second] = await Promise.all([getStatsSnapshot(), getStatsSnapshot()])

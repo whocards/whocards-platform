@@ -46,6 +46,8 @@ export const env = createEnv({
     APP_STORE_CONNECT_VENDOR_NUMBER: z.string().optional(),
     GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: z.string().optional(),
     GOOGLE_PLAY_REPORTS_BUCKET: z.string().optional(),
+    // Bearer token the scheduled refresh presents to POST /api/stats/refresh.
+    STATS_REFRESH_SECRET: z.string().min(16).optional(),
   },
   clientPrefix: 'PUBLIC_',
   client: {

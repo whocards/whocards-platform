@@ -29,6 +29,13 @@
       "when": 1789116099771,
       "tag": "0003_answer_country",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789116632155,
+      "tag": "0004_stats_snapshot",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,7 @@ import {
   getWeeklyCounts,
 } from './query'
 import {applyPrivacyThreshold, buildTrend, platformBreakdown} from './rollups'
+import {readLatestSnapshot, writeSnapshot} from './snapshot-store'
 import type {AppStoreConnectCredentials} from './sources/app-store-connect'
 import {fetchAppStoreInstalls} from './sources/app-store-connect'
 import type {GooglePlayCredentials} from './sources/google-play'
@@ -18,10 +19,13 @@ import {fetchGooglePlayInstalls} from './sources/google-play'
 import type {StatsSnapshot} from './types'
 import {live, unavailable} from './types'
 
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes — matches the page's Cache-Control max-age.
+/**
+ * The scheduled refresh runs hourly. A stored snapshot older than this means the cron is
+ * broken, so the page rebuilds inline (and stores the result) rather than serving stale data.
+ */
+export const MAX_SNAPSHOT_AGE_MS = 3 * 60 * 60 * 1000
 
-let cache: {snapshot: StatsSnapshot; expiresAt: number} | undefined
-/** Shared by concurrent cache misses, so a cold cache triggers one rebuild instead of one per request. */
+/** Shared by concurrent inline rebuilds, so a missing snapshot triggers one build instead of one per request. */
 let inFlight: Promise<StatsSnapshot> | undefined
 
 const appStoreConnectCredentials = (): AppStoreConnectCredentials | undefined => {
@@ -101,6 +105,7 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
   const spokenLanguages = languageRows.ok ? applyPrivacyThreshold(languageRows.value) : []
 
   return {
+    generatedAt: now.toISOString(),
     // Answer record only. Live events (conference tracking) aren't counted until
     // they fold into the Answer record — today they can't be attributed or de-duplicated.
     questionsAnswered: totals.ok
@@ -147,13 +152,29 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
   }
 }
 
+/** Builds a fresh snapshot and stores it. Used by the scheduled refresh (POST /api/stats/refresh). */
+export const refreshStatsSnapshot = async (): Promise<StatsSnapshot> => {
+  const snapshot = await buildStatsSnapshot()
+  await writeSnapshot(db, snapshot)
+  return snapshot
+}
+
+const isFresh = (snapshot: StatsSnapshot, now: number): boolean =>
+  now - Date.parse(snapshot.generatedAt) < MAX_SNAPSHOT_AGE_MS
+
+/**
+ * What the page renders: the newest stored snapshot (one small query). Falls back to an
+ * inline build when there is none yet or it is stale; the inline build still stores its
+ * result on a best-effort basis so the next request is cheap again.
+ */
 export const getStatsSnapshot = async (): Promise<StatsSnapshot> => {
-  if (cache && cache.expiresAt > Date.now()) return cache.snapshot
+  const stored = await readLatestSnapshot(db).catch(() => undefined)
+  if (stored && isFresh(stored, Date.now())) return stored
   if (inFlight) return inFlight
 
   inFlight = buildStatsSnapshot()
-    .then((snapshot) => {
-      cache = {snapshot, expiresAt: Date.now() + CACHE_TTL_MS}
+    .then(async (snapshot) => {
+      await writeSnapshot(db, snapshot).catch(() => undefined)
       return snapshot
     })
     .finally(() => {

@@ -62,6 +62,8 @@ export type AnswerTotals = {
 export type NamedCount = {name: string; count: number}
 
 export type StatsSnapshot = {
+  /** ISO timestamp of when this snapshot was computed. */
+  generatedAt: string
   questionsAnswered: MetricResult<{total: number; thisWeek: number}>
   platformBreakdown: MetricResult<PlatformBreakdown>
   trend: MetricResult<Trend>
