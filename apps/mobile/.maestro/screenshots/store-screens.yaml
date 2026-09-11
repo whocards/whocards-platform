@@ -25,6 +25,7 @@ tags:
 
 # 1) Landing — logo, tagline, Play CTA.
 - assertVisible: 'Play'
+- waitForAnimationToEnd
 - takeScreenshot: store-assets/${DEVICE}/01-landing
 
 # 2) Question card (English). Stop the app, then cold deep-link to q=1 (a foregrounded
