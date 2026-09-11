@@ -9,13 +9,8 @@
 # Issue #176 moved the language picker out of the play screen into the home
 # screen's Settings menu — capture 03 now shows it over the LANDING screen,
 # not over the card, and the flow returns to the player for capture 04.
-# NOTE (issue #189, third pass): Settings is now a single Modal with sliding
-# internal pages, not a stack of separate Modals — the header on the Language
-# page is a "back" chevron, not "close" (only the root menu page has "close"),
-# and picking a language does NOT auto-return to the menu (unlike Game/Theme),
-# so getting back to the menu needs an explicit "back" tap first. Not yet
-# re-run on device in the PR that made this change; regenerate the store
-# assets before relying on them.
+# Settings uses sliding pages in one Modal. Choosing a language returns to the
+# menu, whose close button dismisses the sheet.
 appId: ${APP_ID}
 tags:
   - screenshots
@@ -30,6 +25,7 @@ tags:
 
 # 1) Landing — logo, tagline, Play CTA.
 - assertVisible: 'Play'
+- waitForAnimationToEnd
 - takeScreenshot: store-assets/${DEVICE}/01-landing
 
 # 2) Question card (English). Stop the app, then cold deep-link to q=1 (a foregrounded
@@ -47,6 +43,9 @@ tags:
 - takeScreenshot: store-assets/${DEVICE}/02-card-en
 
 # 3) Language picker — back to the home screen, open Settings → Language.
+# Capture 02 waited for the controls to hide; reveal them before tapping Exit.
+- tapOn:
+    point: '50%,45%'
 - tapOn: 'exit deck'
 - tapOn: 'Settings'
 - tapOn: 'Language: English'
@@ -64,6 +63,7 @@ tags:
 - tapOn:
     text: 'Open'
     optional: true
+- assertVisible: '(?s).*מה הדבר הכי מעניין שלמדת לאחרונה.*'
 - extendedWaitUntil:
     notVisible: 'next question'
     timeout: 4000

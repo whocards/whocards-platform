@@ -51,14 +51,18 @@ describe('SettingsSheetHeader — Android/iOS inset', () => {
   // big dead band above the title. Flat 16 on both platforms.
   it('uses flat 16px top padding on Android — a bottom sheet never meets the status bar', async () => {
     Object.defineProperty(Platform, 'OS', {configurable: true, value: 'android'})
-    render(<SettingsSheetHeader title="Choose your language" icon="back" onPress={() => {}} />)
+    await render(
+      <SettingsSheetHeader title="Choose your language" icon="back" onPress={() => {}} />
+    )
     await screen.findByText('Choose your language')
     expect(headerPaddingTop()).toBe(16)
   })
 
   it('uses flat 16px top padding on iOS (bottom-anchored, content-hugging sheet)', async () => {
     Object.defineProperty(Platform, 'OS', {configurable: true, value: 'ios'})
-    render(<SettingsSheetHeader title="Choose your language" icon="back" onPress={() => {}} />)
+    await render(
+      <SettingsSheetHeader title="Choose your language" icon="back" onPress={() => {}} />
+    )
     await screen.findByText('Choose your language')
     expect(headerPaddingTop()).toBe(16)
   })
@@ -67,18 +71,18 @@ describe('SettingsSheetHeader — Android/iOS inset', () => {
 describe('SettingsSheetHeader — icon variants', () => {
   it('renders a chevron-back labeled "back" for a pushed page', async () => {
     const onPress = jest.fn()
-    render(<SettingsSheetHeader title="Theme" icon="back" onPress={onPress} />)
+    await render(<SettingsSheetHeader title="Theme" icon="back" onPress={onPress} />)
     await screen.findByText('Theme')
-    fireEvent.press(screen.getByLabelText('back'))
+    await fireEvent.press(screen.getByLabelText('back'))
     expect(onPress).toHaveBeenCalled()
     expect(screen.queryByLabelText('close')).toBeNull()
   })
 
   it('renders a close "X" labeled "close" for the root menu page', async () => {
     const onPress = jest.fn()
-    render(<SettingsSheetHeader title="Settings" icon="close" onPress={onPress} />)
+    await render(<SettingsSheetHeader title="Settings" icon="close" onPress={onPress} />)
     await screen.findByText('Settings')
-    fireEvent.press(screen.getByLabelText('close'))
+    await fireEvent.press(screen.getByLabelText('close'))
     expect(onPress).toHaveBeenCalled()
     expect(screen.queryByLabelText('back')).toBeNull()
   })

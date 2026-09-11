@@ -22,14 +22,14 @@ const renderPage = (onSelect = jest.fn(), onBack = jest.fn()) =>
 
 describe('GameSettingsPage (issue #189, third pass)', () => {
   it('renders the game catalog under a "Choose your game" header', async () => {
-    renderPage()
+    await renderPage()
     await screen.findByText('Choose your game')
     expect(screen.getByText('Classic')).toBeTruthy()
     expect(screen.getByText('Pick a Card')).toBeTruthy()
   })
 
   it('marks the current game selected', async () => {
-    renderPage()
+    await renderPage()
     const selected = await screen.findByLabelText('Classic')
     expect(selected.props.accessibilityState).toEqual({selected: true})
     expect(screen.getByLabelText('Pick a Card').props.accessibilityState).toEqual({
@@ -39,17 +39,17 @@ describe('GameSettingsPage (issue #189, third pass)', () => {
 
   it('reports the pressed game via onSelect', async () => {
     const onSelect = jest.fn()
-    renderPage(onSelect)
+    await renderPage(onSelect)
     const pick = await screen.findByLabelText('Pick a Card')
-    fireEvent.press(pick)
+    await fireEvent.press(pick)
     expect(onSelect).toHaveBeenCalledWith('pick')
   })
 
   it('reports the back arrow press via onBack', async () => {
     const onBack = jest.fn()
-    renderPage(undefined, onBack)
+    await renderPage(undefined, onBack)
     await screen.findByText('Choose your game')
-    fireEvent.press(screen.getByLabelText('back'))
+    await fireEvent.press(screen.getByLabelText('back'))
     expect(onBack).toHaveBeenCalled()
   })
 })

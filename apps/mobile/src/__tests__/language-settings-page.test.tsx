@@ -41,7 +41,7 @@ const renderPage = () =>
 
 describe('LanguageSettingsPage — Tabletop mode moved out (issue #176)', () => {
   it('never renders a Tabletop mode row — that setting lives in settings-modal.tsx now', async () => {
-    renderPage()
+    await renderPage()
     await screen.findByText('Choose your language')
     expect(screen.queryByText('Tabletop mode')).toBeNull()
     expect(screen.queryByLabelText('Tabletop mode')).toBeNull()
@@ -50,7 +50,7 @@ describe('LanguageSettingsPage — Tabletop mode moved out (issue #176)', () => 
 
 describe('LanguageSettingsPage — "Also show" moved out (issue #189, fourth pass)', () => {
   it('never renders an "Also show" section — that setting is its own page now', async () => {
-    renderPage()
+    await renderPage()
     await screen.findByText('Choose your language')
     expect(screen.queryByText('Also show')).toBeNull()
   })
@@ -59,7 +59,7 @@ describe('LanguageSettingsPage — "Also show" moved out (issue #189, fourth pas
 describe('LanguageSettingsPage — back arrow', () => {
   it('reports the back arrow press via onBack', async () => {
     const onBack = jest.fn()
-    render(
+    await render(
       <LanguageSettingsPage
         languages={['en', 'he']}
         current="en"
@@ -68,14 +68,14 @@ describe('LanguageSettingsPage — back arrow', () => {
       />
     )
     await screen.findByText('Choose your language')
-    fireEvent.press(screen.getByLabelText('back'))
+    await fireEvent.press(screen.getByLabelText('back'))
     expect(onBack).toHaveBeenCalled()
   })
 })
 
 describe('LanguageSettingsPage — single-language deck (issue #148 review, carried by #176)', () => {
   it('titles the page "Language", not "Choose your language"', async () => {
-    render(
+    await render(
       <LanguageSettingsPage languages={['en']} current="en" onSelect={() => {}} onBack={() => {}} />
     )
     await screen.findByText('Language')
@@ -83,7 +83,7 @@ describe('LanguageSettingsPage — single-language deck (issue #148 review, carr
   })
 
   it('hides the inert, always-checked language row', async () => {
-    render(
+    await render(
       <LanguageSettingsPage languages={['en']} current="en" onSelect={() => {}} onBack={() => {}} />
     )
     await screen.findByText('Language')
@@ -91,7 +91,7 @@ describe('LanguageSettingsPage — single-language deck (issue #148 review, carr
   })
 
   it('keeps "Choose your language" and the language row for a multi-language deck', async () => {
-    renderPage()
+    await renderPage()
     await screen.findByText('Choose your language')
     expect(screen.getByText('English')).toBeTruthy()
   })
@@ -100,7 +100,7 @@ describe('LanguageSettingsPage — single-language deck (issue #148 review, carr
 describe('LanguageSettingsPage — primary selection', () => {
   it('reports the pressed language via onSelect', async () => {
     const onSelect = jest.fn()
-    render(
+    await render(
       <LanguageSettingsPage
         languages={['en', 'he']}
         current="en"
@@ -109,12 +109,12 @@ describe('LanguageSettingsPage — primary selection', () => {
       />
     )
     const hebrew = await screen.findByText('Hebrew')
-    fireEvent.press(hebrew)
+    await fireEvent.press(hebrew)
     expect(onSelect).toHaveBeenCalledWith('he')
   })
 
   it('marks the current primary language selected', async () => {
-    renderPage()
+    await renderPage()
     const english = await screen.findByText('English')
     // The primary rows are matched by their Text content (no explicit
     // accessibilityLabel — same as before the split), so walk up from the

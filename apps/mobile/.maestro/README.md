@@ -115,6 +115,56 @@ The framing/compositing step (device frames + marketing copy, e.g. fastlane `fra
 Sharp/Satori compositor reusing `apps/website/src/server/card-image.ts`) is a follow-up —
 this produces the raw, correctly-sized device captures it consumes.
 
+## Before/after UI diff for dependency upgrades — `pnpm -F mobile ui-diff`
+
+A dependency upgrade (Expo SDK, React Native, NativeWind…) is only safe if the app
+still renders the same pixels. `scripts/ui-diff.sh` captures the store-screenshot
+flow once per ref and compares the two sets frame-for-frame.
+
+**The baseline MUST be captured on the pre-upgrade ref.** A baseline captured on the
+upgrade branch only describes the upgrade's own output — it can never disagree with
+itself, so it proves nothing. That is the entire reason this exists.
+
+The script does not switch branches, install, or rebuild. Build and install each
+ref before capturing it. Separate worktrees keep the two refs' native projects
+and dependencies isolated.
+
+```bash
+# 1) baseline — on the PRE-upgrade ref
+git checkout main
+pnpm install
+pnpm -F mobile exec expo run:ios --configuration Release --device "iPhone 14 Plus"
+pnpm -F mobile ui-diff capture before
+
+# 2) candidate — on the upgrade branch
+git checkout chore/my-upgrade
+pnpm install
+pnpm -F mobile exec expo run:ios --configuration Release --device "iPhone 14 Plus"
+pnpm -F mobile ui-diff capture after
+
+# 3) compare (exits non-zero if any frame differs)
+pnpm -F mobile ui-diff compare before after
+```
+
+Captures land in `apps/mobile/.ui-diff/<label>/<device>/NN-*.png` (gitignored), not in
+`store-assets/`, so checking out the other ref between the two captures can't clobber
+the first one. `DEVICES="<device-id>:<name> ..."` is passed straight through to
+`scripts/capture-screenshots.sh`; unset, both captures use its default 6.5" iOS set —
+just use the _same_ devices for both, or the comparison refuses to run.
+
+Comparison is `shasum -a 256` per frame, so it needs nothing installed: identical
+hashes are pixel-identical output. If ImageMagick's `compare` happens to be on PATH, a
+diff PNG per differing frame is written to `.ui-diff/diff-<a>-vs-<b>/` as well; it is
+optional, and its absence is not an error.
+
+Capture 03 reveals the player controls before exiting to Settings. Capture 04
+waits for the Hebrew question to render before waiting for the controls to hide.
+
+This is the on-device half of upgrade evidence. The JS half is
+`src/__tests__/ui-snapshot-*.test.tsx`, whose baselines are recorded on the
+pre-upgrade toolchain and replayed unchanged after it; those can't see the native
+side at all, which is what this makes up for.
+
 ## Prerequisites (one-time)
 
 - **Maestro CLI** — `curl -fsSL "https://get.maestro.mobile.dev" | bash`.

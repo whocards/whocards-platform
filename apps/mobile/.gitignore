@@ -50,3 +50,8 @@ example
 
 # generated store-listing screenshots (regenerate with `pnpm -F mobile screenshots`)
 store-assets/
+
+# before/after upgrade captures (`pnpm -F mobile ui-diff capture <label>`) — kept
+# out of the tracked tree so switching branches between two captures can't clobber
+# the first one
+.ui-diff/

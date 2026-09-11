@@ -32,7 +32,7 @@ const renderPage = (secondary: string[] = [], onChange = jest.fn(), onBack = jes
 
 describe('SecondLanguageSettingsPage — "None" option', () => {
   it('is selected when no secondary is chosen', async () => {
-    renderPage([])
+    await renderPage([])
     const none = await screen.findByText('None')
     let node: typeof none | null = none
     while (node && node.props?.accessibilityState === undefined) node = node.parent
@@ -40,7 +40,7 @@ describe('SecondLanguageSettingsPage — "None" option', () => {
   })
 
   it('is not selected once a secondary is chosen', async () => {
-    renderPage(['he'])
+    await renderPage(['he'])
     const none = await screen.findByText('None')
     let node: typeof none | null = none
     while (node && node.props?.accessibilityState === undefined) node = node.parent
@@ -49,21 +49,21 @@ describe('SecondLanguageSettingsPage — "None" option', () => {
 
   it('reports an empty array via onChange when pressed', async () => {
     const onChange = jest.fn()
-    renderPage(['he'], onChange)
-    fireEvent.press(await screen.findByText('None'))
+    await renderPage(['he'], onChange)
+    await fireEvent.press(await screen.findByText('None'))
     expect(onChange).toHaveBeenCalledWith([])
   })
 })
 
 describe('SecondLanguageSettingsPage — language options (issue #176: at most 1)', () => {
   it('never lists the current primary as an option', async () => {
-    renderPage([])
+    await renderPage([])
     await screen.findByText('None')
     expect(screen.queryByText('English')).toBeNull()
   })
 
   it('reflects the checked state of the current secondary', async () => {
-    renderPage(['he'])
+    await renderPage(['he'])
     const checked = await screen.findByText('Hebrew')
     let node: typeof checked | null = checked
     while (node && node.props?.accessibilityState === undefined) node = node.parent
@@ -72,8 +72,8 @@ describe('SecondLanguageSettingsPage — language options (issue #176: at most 1
 
   it('picking a new secondary REPLACES the previous one (no append-until-cap)', async () => {
     const onChange = jest.fn()
-    renderPage(['he'], onChange)
-    fireEvent.press(await screen.findByText('Spanish'))
+    await renderPage(['he'], onChange)
+    await fireEvent.press(await screen.findByText('Spanish'))
     expect(onChange).toHaveBeenCalledWith(['es'])
   })
 })
@@ -81,9 +81,9 @@ describe('SecondLanguageSettingsPage — language options (issue #176: at most 1
 describe('SecondLanguageSettingsPage — back arrow', () => {
   it('reports the back arrow press via onBack', async () => {
     const onBack = jest.fn()
-    renderPage([], jest.fn(), onBack)
+    await renderPage([], jest.fn(), onBack)
     await screen.findByText('None')
-    fireEvent.press(screen.getByLabelText('back'))
+    await fireEvent.press(screen.getByLabelText('back'))
     expect(onBack).toHaveBeenCalled()
   })
 })

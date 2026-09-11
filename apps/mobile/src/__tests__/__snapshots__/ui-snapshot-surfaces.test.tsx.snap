@@ -1,0 +1,864 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Player bar renders Prev / Exit / Share / Next unchanged 1`] = `
+<View>
+  | flex: 1
+  <View>
+    ~ className: "border-darker/10 bg-white/90 flex-row items-stretch border-t px-4 pt-2 dark:border-white/10 dark:bg-darker/80"
+    | paddingBottom: 10
+    <View accessibilityRole="button" accessibilityLabel="previous question">
+      ~ className: "flex-1 items-center gap-1 py-1"
+      | transform: [{"scale":1}]
+      <Text>
+        | color: "#111516"
+        | fontFamily: "ionicons"
+        | fontSize: 24
+        | fontStyle: "normal"
+        | fontWeight: "normal"
+        ""
+      <Text>
+        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        "Back"
+    <View accessibilityRole="button" accessibilityLabel="exit deck">
+      ~ className: "flex-1 items-center gap-1 py-1"
+      | transform: [{"scale":1}]
+      <Text>
+        | color: "#111516"
+        | fontFamily: "ionicons"
+        | fontSize: 24
+        | fontStyle: "normal"
+        | fontWeight: "normal"
+        ""
+      <Text>
+        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        "Exit"
+    <View accessibilityRole="button" accessibilityLabel="share question">
+      ~ className: "flex-1 items-center gap-1 py-1"
+      | transform: [{"scale":1}]
+      <Text>
+        | color: "#111516"
+        | fontFamily: "ionicons"
+        | fontSize: 24
+        | fontStyle: "normal"
+        | fontWeight: "normal"
+        ""
+      <Text>
+        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        "Share"
+    <View accessibilityRole="button" accessibilityLabel="next question">
+      ~ className: "flex-1 items-center gap-1 py-1"
+      | transform: [{"scale":1}]
+      <Text>
+        | color: "#111516"
+        | fontFamily: "ionicons"
+        | fontSize: 24
+        | fontStyle: "normal"
+        | fontWeight: "normal"
+        ""
+      <Text>
+        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        "Next"
+`;
+
+exports[`Player bar renders without Share unchanged (the pick screen before a deal) 1`] = `
+<View>
+  | flex: 1
+  <View>
+    ~ className: "border-darker/10 bg-white/90 flex-row items-stretch border-t px-4 pt-2 dark:border-white/10 dark:bg-darker/80"
+    | paddingBottom: 10
+    <View accessibilityRole="button" accessibilityLabel="previous question">
+      ~ className: "flex-1 items-center gap-1 py-1"
+      | transform: [{"scale":1}]
+      <Text>
+        | color: "#111516"
+        | fontFamily: "ionicons"
+        | fontSize: 24
+        | fontStyle: "normal"
+        | fontWeight: "normal"
+        ""
+      <Text>
+        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        "Back"
+    <View accessibilityRole="button" accessibilityLabel="exit deck">
+      ~ className: "flex-1 items-center gap-1 py-1"
+      | transform: [{"scale":1}]
+      <Text>
+        | color: "#111516"
+        | fontFamily: "ionicons"
+        | fontSize: 24
+        | fontStyle: "normal"
+        | fontWeight: "normal"
+        ""
+      <Text>
+        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        "Exit"
+    <View accessibilityRole="button" accessibilityLabel="next question">
+      ~ className: "flex-1 items-center gap-1 py-1"
+      | transform: [{"scale":1}]
+      <Text>
+        | color: "#111516"
+        | fontFamily: "ionicons"
+        | fontSize: 24
+        | fontStyle: "normal"
+        | fontWeight: "normal"
+        ""
+      <Text>
+        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        "Next"
+`;
+
+exports[`Settings pages renders the Game page unchanged 1`] = `
+<View>
+  | flex: 1
+  <View>
+    <View>
+      ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+      | paddingTop: 16
+      <View>
+        ~ className: "flex-row items-center gap-1"
+        <View accessibilityLabel="back" accessibilityState={}>
+          <Text>
+            | color: "#111516"
+            | fontFamily: "ionicons"
+            | fontSize: 24
+            | fontStyle: "normal"
+            | fontWeight: "normal"
+            ""
+        <Text>
+          ~ className: "text-darker dark:text-white font-title text-2xl"
+          "Choose your game"
+    <RCTScrollView>
+      | maxHeight: 1067.2
+      <View>
+        <View accessibilityRole="button" accessibilityLabel="Classic" accessibilityState={"selected":true}>
+          ~ className: "gap-1 px-5 py-4 bg-yellow-300/40"
+          <View>
+            ~ className: "flex-row items-center justify-between"
+            <View>
+              ~ className: "flex-row items-center gap-2"
+              <Text>
+                ~ className: "text-darker dark:text-white font-sans text-lg"
+                "Classic"
+            <Text>
+              ~ className: "text-accentOnLight dark:text-accentOnDark text-lg font-bold"
+              "✓"
+          <Text>
+            ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+            "Swipe through the deck, one question after another."
+        <View accessibilityRole="button" accessibilityLabel="Pick a Card" accessibilityState={"selected":false}>
+          ~ className: "gap-1 px-5 py-4 "
+          <View>
+            ~ className: "flex-row items-center justify-between"
+            <View>
+              ~ className: "flex-row items-center gap-2"
+              <Text>
+                ~ className: "text-darker dark:text-white font-sans text-lg"
+                "Pick a Card"
+              <View>
+                ~ className: "rounded-full bg-yellow-400 px-2 py-0.5"
+                <Text>
+                  ~ className: "text-darker font-sans text-xs font-bold"
+                  "Included in early access"
+          <Text>
+            ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+            "Draw each card yourself — a fresh deal for every question."
+`;
+
+exports[`Settings pages renders the Language page unchanged 1`] = `
+<View>
+  | flex: 1
+  <View>
+    <View>
+      ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+      | paddingTop: 16
+      <View>
+        ~ className: "flex-row items-center gap-1"
+        <View accessibilityLabel="back" accessibilityState={}>
+          <Text>
+            | color: "#111516"
+            | fontFamily: "ionicons"
+            | fontSize: 24
+            | fontStyle: "normal"
+            | fontWeight: "normal"
+            ""
+        <Text>
+          ~ className: "text-darker dark:text-white font-title text-2xl"
+          "Choose your language"
+    <RCTScrollView>
+      | maxHeight: 1067.2
+      <View>
+        <View accessibilityRole="button" accessibilityState={"selected":true}>
+          ~ className: "flex-row items-center justify-between px-5 py-4 bg-yellow-300/40"
+          <Text>
+            ~ className: "text-darker dark:text-white font-sans text-lg"
+            "English"
+          <Text>
+            ~ className: "text-accentOnLight dark:text-accentOnDark text-lg font-bold"
+            "✓"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          ~ className: "flex-row items-center justify-between px-5 py-4 "
+          <Text>
+            ~ className: "text-darker dark:text-white font-sans text-lg"
+            "Hebrew"
+`;
+
+exports[`Settings pages renders the Second language page unchanged 1`] = `
+<View>
+  | flex: 1
+  <View>
+    <View>
+      ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+      | paddingTop: 16
+      <View>
+        ~ className: "flex-row items-center gap-1"
+        <View accessibilityLabel="back" accessibilityState={}>
+          <Text>
+            | color: "#111516"
+            | fontFamily: "ionicons"
+            | fontSize: 24
+            | fontStyle: "normal"
+            | fontWeight: "normal"
+            ""
+        <Text>
+          ~ className: "text-darker dark:text-white font-title text-2xl"
+          "Second language"
+    <RCTScrollView>
+      | maxHeight: 1067.2
+      <View>
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          ~ className: "flex-row items-center justify-between px-5 py-4 "
+          <Text>
+            ~ className: "text-darker dark:text-white font-sans text-lg"
+            "None"
+        <View accessibilityRole="button" accessibilityState={"selected":true}>
+          ~ className: "flex-row items-center justify-between px-5 py-4 bg-yellow-300/40"
+          <Text>
+            ~ className: "text-darker dark:text-white font-sans text-lg"
+            "Hebrew"
+          <Text>
+            ~ className: "text-accentOnLight dark:text-accentOnDark text-lg font-bold"
+            "✓"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          ~ className: "flex-row items-center justify-between px-5 py-4 "
+          <Text>
+            ~ className: "text-darker dark:text-white font-sans text-lg"
+            "Spanish"
+`;
+
+exports[`Settings pages renders the Theme page unchanged 1`] = `
+<View>
+  | flex: 1
+  <View>
+    <View>
+      ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+      | paddingTop: 16
+      <View>
+        ~ className: "flex-row items-center gap-1"
+        <View accessibilityLabel="back" accessibilityState={}>
+          <Text>
+            | color: "#111516"
+            | fontFamily: "ionicons"
+            | fontSize: 24
+            | fontStyle: "normal"
+            | fontWeight: "normal"
+            ""
+        <Text>
+          ~ className: "text-darker dark:text-white font-title text-2xl"
+          "Theme"
+    <View>
+      ~ className: "px-5 py-4"
+      <View>
+        ~ className: "bg-gray-lighter dark:bg-white/10 flex-row rounded-xl p-1"
+        <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":true}>
+          ~ className: "flex-1 items-center rounded-lg py-2.5 bg-white dark:bg-dark"
+          | elevation: 1
+          | shadowColor: "#000"
+          | shadowOffset: {"height":1,"width":0}
+          | shadowOpacity: 0.12
+          | shadowRadius: 2
+          <Text>
+            ~ className: "text-darker dark:text-white font-sans text-sm font-bold"
+            "System"
+        <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
+          ~ className: "flex-1 items-center rounded-lg py-2.5 "
+          <Text>
+            ~ className: "text-darker dark:text-white font-sans text-sm "
+            "Light"
+        <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":false}>
+          ~ className: "flex-1 items-center rounded-lg py-2.5 "
+          <Text>
+            ~ className: "text-darker dark:text-white font-sans text-sm "
+            "Dark"
+      <Text>
+        ~ className: "text-mutedOnLight dark:text-gray-dark mt-4 font-sans text-sm leading-5"
+        "Matches your device by default. Presentation only — it never changes which Card is drawn or your progress."
+`;
+
+exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] = `
+<View>
+  | flex: 1
+  <Modal>
+    <View>
+      ~ className: "flex-1 justify-end"
+      <View accessibilityLabel="dismiss" accessibilityState={}>
+        ~ className: "absolute inset-0"
+      <View accessibilityState={}>
+        ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+        | paddingBottom: 24
+        <View>
+          <View>
+            ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+            | paddingTop: 16
+            <Text>
+              ~ className: "text-darker dark:text-white font-title text-2xl"
+              "Settings"
+            <View accessibilityLabel="close" accessibilityState={}>
+              <Text>
+                | color: "#111516"
+                | fontFamily: "ionicons"
+                | fontSize: 24
+                | fontStyle: "normal"
+                | fontWeight: "normal"
+                ""
+          <RCTScrollView>
+            | maxHeight: 1067.2
+            <View>
+              <Text>
+                ~ className: "text-mutedOnLight dark:text-gray-dark px-5 pb-1 pt-4 font-sans text-xs font-bold uppercase tracking-wide"
+                "Gameplay"
+              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={}>
+                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Game"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "Classic"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
+                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Language"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "English"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
+                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Second language"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "None"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View>
+                ~ className: "px-5 pb-1 pt-5"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-title text-lg"
+                  "Tabletop mode"
+                <Text>
+                  ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                  "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
+              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                ~ className: "flex-row items-center justify-between px-5 py-3 "
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Two-way readable"
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "ionicons"
+                  | fontSize: 20
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+              <Text>
+                ~ className: "text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide"
+                "Appearance"
+              <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={}>
+                ~ className: "flex-row items-center justify-between px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Theme"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "System"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+      <View>
+        | bottom: 0
+        | left: 0
+        | position: "absolute"
+        | right: 0
+        | top: 0
+        <View>
+          | bottom: 0
+          | left: 0
+          | opacity: 0.3
+          | position: "absolute"
+          | right: 0
+          | top: 0
+          <View accessibilityLabel="dismiss page" accessibilityState={}>
+            ~ className: "flex-1 bg-black"
+        <View>
+          | flex: 1
+          | justifyContent: "flex-end"
+          | transform: [{"translateY":0}]
+          <View accessibilityState={}>
+            ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+            | paddingBottom: 24
+            <View>
+              <View>
+                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | paddingTop: 16
+                <View>
+                  ~ className: "flex-row items-center gap-1"
+                  <View accessibilityLabel="back" accessibilityState={}>
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "ionicons"
+                      | fontSize: 24
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+                  <Text>
+                    ~ className: "text-darker dark:text-white font-title text-2xl"
+                    "Choose your game"
+              <RCTScrollView>
+                | maxHeight: 1067.2
+                <View>
+                  <View accessibilityRole="button" accessibilityLabel="Classic" accessibilityState={"selected":true}>
+                    ~ className: "gap-1 px-5 py-4 bg-yellow-300/40"
+                    <View>
+                      ~ className: "flex-row items-center justify-between"
+                      <View>
+                        ~ className: "flex-row items-center gap-2"
+                        <Text>
+                          ~ className: "text-darker dark:text-white font-sans text-lg"
+                          "Classic"
+                      <Text>
+                        ~ className: "text-accentOnLight dark:text-accentOnDark text-lg font-bold"
+                        "✓"
+                    <Text>
+                      ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                      "Swipe through the deck, one question after another."
+                  <View accessibilityRole="button" accessibilityLabel="Pick a Card" accessibilityState={"selected":false}>
+                    ~ className: "gap-1 px-5 py-4 "
+                    <View>
+                      ~ className: "flex-row items-center justify-between"
+                      <View>
+                        ~ className: "flex-row items-center gap-2"
+                        <Text>
+                          ~ className: "text-darker dark:text-white font-sans text-lg"
+                          "Pick a Card"
+                        <View>
+                          ~ className: "rounded-full bg-yellow-400 px-2 py-0.5"
+                          <Text>
+                            ~ className: "text-darker font-sans text-xs font-bold"
+                            "Included in early access"
+                    <Text>
+                      ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                      "Draw each card yourself — a fresh deal for every question."
+`;
+
+exports[`Settings sheet renders the menu unchanged 1`] = `
+<View>
+  | flex: 1
+  <Modal>
+    <View>
+      ~ className: "flex-1 justify-end"
+      <View accessibilityLabel="dismiss" accessibilityState={}>
+        ~ className: "absolute inset-0"
+      <View accessibilityState={}>
+        ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+        | paddingBottom: 24
+        <View>
+          <View>
+            ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+            | paddingTop: 16
+            <Text>
+              ~ className: "text-darker dark:text-white font-title text-2xl"
+              "Settings"
+            <View accessibilityLabel="close" accessibilityState={}>
+              <Text>
+                | color: "#111516"
+                | fontFamily: "ionicons"
+                | fontSize: 24
+                | fontStyle: "normal"
+                | fontWeight: "normal"
+                ""
+          <RCTScrollView>
+            | maxHeight: 1067.2
+            <View>
+              <Text>
+                ~ className: "text-mutedOnLight dark:text-gray-dark px-5 pb-1 pt-4 font-sans text-xs font-bold uppercase tracking-wide"
+                "Gameplay"
+              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={}>
+                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Game"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "Classic"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
+                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Language"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "English"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
+                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Second language"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "None"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View>
+                ~ className: "px-5 pb-1 pt-5"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-title text-lg"
+                  "Tabletop mode"
+                <Text>
+                  ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                  "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
+              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                ~ className: "flex-row items-center justify-between px-5 py-3 "
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Two-way readable"
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "ionicons"
+                  | fontSize: 20
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+              <Text>
+                ~ className: "text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide"
+                "Appearance"
+              <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={}>
+                ~ className: "flex-row items-center justify-between px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Theme"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "System"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+`;
+
+exports[`Settings sheet renders the menu unchanged in the Dark Theme Display setting 1`] = `
+<View>
+  | flex: 1
+  <Modal>
+    <View>
+      ~ className: "flex-1 justify-end"
+      <View accessibilityLabel="dismiss" accessibilityState={}>
+        ~ className: "absolute inset-0"
+      <View accessibilityState={}>
+        ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+        | paddingBottom: 24
+        <View>
+          <View>
+            ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+            | paddingTop: 16
+            <Text>
+              ~ className: "text-darker dark:text-white font-title text-2xl"
+              "Settings"
+            <View accessibilityLabel="close" accessibilityState={}>
+              <Text>
+                | color: "#f5f5f5"
+                | fontFamily: "ionicons"
+                | fontSize: 24
+                | fontStyle: "normal"
+                | fontWeight: "normal"
+                ""
+          <RCTScrollView>
+            | maxHeight: 1067.2
+            <View>
+              <Text>
+                ~ className: "text-mutedOnLight dark:text-gray-dark px-5 pb-1 pt-4 font-sans text-xs font-bold uppercase tracking-wide"
+                "Gameplay"
+              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={}>
+                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Game"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "Classic"
+                  <Text>
+                    | color: "#9698af"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
+                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Language"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "English"
+                  <Text>
+                    | color: "#9698af"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
+                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Second language"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "None"
+                  <Text>
+                    | color: "#9698af"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View>
+                ~ className: "px-5 pb-1 pt-5"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-title text-lg"
+                  "Tabletop mode"
+                <Text>
+                  ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                  "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
+              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                ~ className: "flex-row items-center justify-between px-5 py-3 "
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Two-way readable"
+                <Text>
+                  | color: "#9698af"
+                  | fontFamily: "ionicons"
+                  | fontSize: 20
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+              <Text>
+                ~ className: "text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide"
+                "Appearance"
+              <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={}>
+                ~ className: "flex-row items-center justify-between px-5 py-4"
+                <Text>
+                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  "Theme"
+                <View>
+                  ~ className: "flex-row items-center gap-1.5"
+                  <Text>
+                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    "Dark"
+                  <Text>
+                    | color: "#9698af"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+`;
+
+exports[`Share sheet renders all three rows unchanged for a Pool-backed Deck 1`] = `
+<View>
+  | flex: 1
+  <Modal>
+    <View>
+      | flex: 1
+      <View>
+        ~ className: "flex-1 justify-end"
+        <View accessibilityLabel="dismiss" accessibilityState={}>
+          ~ className: "absolute inset-0"
+        <View>
+          ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+          | paddingBottom: 24
+          <View>
+            ~ className: "items-center pb-1 pt-3"
+            <View>
+              ~ className: "bg-gray-lighter dark:bg-white/20 h-1 w-10 rounded-full"
+          <RCTScrollView>
+            | maxHeight: 1067.2
+            <View>
+              <View accessibilityState={}>
+                <View>
+                  ~ className: "flex-row items-center justify-between px-5 pb-2 pt-2"
+                  <Text>
+                    ~ className: "text-darker dark:text-white font-title text-2xl"
+                    "Share"
+                  <View accessibilityLabel="close" accessibilityState={}>
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "ionicons"
+                      | fontSize: 24
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+                <View accessibilityRole="button" accessibilityLabel="Share link" accessibilityState={"busy":false,"disabled":false}>
+                  ~ className: "flex-row items-center gap-3 px-5 py-4 "
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "ionicons"
+                    | fontSize: 22
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+                  <Text>
+                    ~ className: "text-darker dark:text-white font-sans text-lg"
+                    "Share link"
+                <View accessibilityRole="button" accessibilityLabel="Story image" accessibilityState={"busy":false,"disabled":false}>
+                  ~ className: "flex-row items-center gap-3 px-5 py-4 "
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "ionicons"
+                    | fontSize: 22
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+                  <Text>
+                    ~ className: "text-darker dark:text-white font-sans text-lg"
+                    "Story image"
+                <View accessibilityRole="button" accessibilityLabel="Post image" accessibilityState={"busy":false,"disabled":false}>
+                  ~ className: "flex-row items-center gap-3 px-5 py-4 "
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "ionicons"
+                    | fontSize: 22
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+                  <Text>
+                    ~ className: "text-darker dark:text-white font-sans text-lg"
+                    "Post image"
+`;
+
+exports[`Share sheet renders the link row alone unchanged for an inline-source Deck 1`] = `
+<View>
+  | flex: 1
+  <Modal>
+    <View>
+      | flex: 1
+      <View>
+        ~ className: "flex-1 justify-end"
+        <View accessibilityLabel="dismiss" accessibilityState={}>
+          ~ className: "absolute inset-0"
+        <View>
+          ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+          | paddingBottom: 24
+          <View>
+            ~ className: "items-center pb-1 pt-3"
+            <View>
+              ~ className: "bg-gray-lighter dark:bg-white/20 h-1 w-10 rounded-full"
+          <RCTScrollView>
+            | maxHeight: 1067.2
+            <View>
+              <View accessibilityState={}>
+                <View>
+                  ~ className: "flex-row items-center justify-between px-5 pb-2 pt-2"
+                  <Text>
+                    ~ className: "text-darker dark:text-white font-title text-2xl"
+                    "Share"
+                  <View accessibilityLabel="close" accessibilityState={}>
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "ionicons"
+                      | fontSize: 24
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+                <View accessibilityRole="button" accessibilityLabel="Share link" accessibilityState={"busy":false,"disabled":false}>
+                  ~ className: "flex-row items-center gap-3 px-5 py-4 "
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "ionicons"
+                    | fontSize: 22
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+                  <Text>
+                    ~ className: "text-darker dark:text-white font-sans text-lg"
+                    "Share link"
+`;

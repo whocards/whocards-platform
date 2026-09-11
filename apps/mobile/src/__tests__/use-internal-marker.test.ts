@@ -37,7 +37,7 @@ describe('useInternalMarker', () => {
   })
 
   it('starts off, and stays off, when nothing has ever been persisted', async () => {
-    const {result} = renderHook(() => useInternalMarker())
+    const {result} = await renderHook(() => useInternalMarker())
     expect(result.current.internal).toBe(false)
     await waitFor(() => expect(getStoredInternal()).resolves.toBe(false))
     expect(result.current.internal).toBe(false)
@@ -46,7 +46,7 @@ describe('useInternalMarker', () => {
 
   it('restores a persisted "on" marker on mount and re-applies it to PostHog', async () => {
     await setStoredInternal(true)
-    const {result} = renderHook(() => useInternalMarker())
+    const {result} = await renderHook(() => useInternalMarker())
     await waitFor(() => expect(result.current.internal).toBe(true))
     expect(mockSetInternalMarker).toHaveBeenCalledWith(true)
   })
@@ -55,10 +55,10 @@ describe('useInternalMarker', () => {
     // explicit, like theme-store's tests — an earlier test in this file may have
     // left the module-level cache (internal-store.ts) warm at `true`
     await setStoredInternal(false)
-    const {result} = renderHook(() => useInternalMarker())
+    const {result} = await renderHook(() => useInternalMarker())
     await waitFor(() => expect(result.current.internal).toBe(false))
 
-    act(() => result.current.toggle())
+    await act(() => result.current.toggle())
 
     expect(result.current.internal).toBe(true)
     expect(await getStoredInternal()).toBe(true)
@@ -69,11 +69,11 @@ describe('useInternalMarker', () => {
 
   it('toggle() again turns the marker back off and unregisters with PostHog', async () => {
     await setStoredInternal(true)
-    const {result} = renderHook(() => useInternalMarker())
+    const {result} = await renderHook(() => useInternalMarker())
     await waitFor(() => expect(result.current.internal).toBe(true))
     mockSetInternalMarker.mockClear()
 
-    act(() => result.current.toggle())
+    await act(() => result.current.toggle())
 
     expect(result.current.internal).toBe(false)
     expect(await getStoredInternal()).toBe(false)

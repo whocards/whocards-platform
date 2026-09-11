@@ -74,20 +74,20 @@ describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
   const box = {width: 300, height: 400}
   const question = 'What matters to you right now?'
 
-  it('renders the question once when not mirrored', () => {
-    render(<QuestionText text={question} language="en" box={box} />)
+  it('renders the question once when not mirrored', async () => {
+    await render(<QuestionText text={question} language="en" box={box} />)
     expect(screen.getAllByText(question)).toHaveLength(1)
   })
 
-  it('renders the question twice in the tree when mirrored — one normal, one rotated', () => {
-    render(<QuestionText text={question} language="en" box={box} mirrored />)
+  it('renders the question twice in the tree when mirrored — one normal, one rotated', async () => {
+    await render(<QuestionText text={question} language="en" box={box} mirrored />)
     // includeHiddenElements: true bypasses RNTL's default accessibility-hidden
     // filter, so this counts both copies regardless of a11y state.
     expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(2)
   })
 
-  it('hides the rotated copy from the accessibility tree — only one is queryable by default', () => {
-    render(<QuestionText text={question} language="en" box={box} mirrored />)
+  it('hides the rotated copy from the accessibility tree — only one is queryable by default', async () => {
+    await render(<QuestionText text={question} language="en" box={box} mirrored />)
     // RNTL's default query excludes accessibilityElementsHidden /
     // importantForAccessibility="no-hide-descendants" subtrees — exactly the
     // marking QuestionText puts on the rotated half. A screen reader hits the
@@ -96,8 +96,8 @@ describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
     expect(screen.getAllByText(question)).toHaveLength(1)
   })
 
-  it('renders secondaries in both mirrored halves, one hidden from accessibility', () => {
-    render(
+  it('renders secondaries in both mirrored halves, one hidden from accessibility', async () => {
+    await render(
       <QuestionText
         text={question}
         language="en"
@@ -118,8 +118,8 @@ describe('QuestionText — themedText (issue #173, final)', () => {
   const question = 'What matters to you right now?'
   const secondaryText = '¿Qué te importa ahora mismo?'
 
-  it('defaults to hardcoded white — card surfaces (Pick a Card) omit themedText', () => {
-    render(
+  it('defaults to hardcoded white — card surfaces (Pick a Card) omit themedText', async () => {
+    await render(
       <QuestionText
         text={question}
         language="en"
@@ -131,8 +131,8 @@ describe('QuestionText — themedText (issue #173, final)', () => {
     expect(screen.getByText(secondaryText).props.className).toBe('text-white/70')
   })
 
-  it('follows the theme when themedText is set — classic play on the themed canvas', () => {
-    render(
+  it('follows the theme when themedText is set — classic play on the themed canvas', async () => {
+    await render(
       <QuestionText
         text={question}
         language="en"
@@ -147,8 +147,8 @@ describe('QuestionText — themedText (issue #173, final)', () => {
     )
   })
 
-  it('threads themedText through both mirrored (Tabletop) halves', () => {
-    render(<QuestionText text={question} language="en" box={box} mirrored themedText />)
+  it('threads themedText through both mirrored (Tabletop) halves', async () => {
+    await render(<QuestionText text={question} language="en" box={box} mirrored themedText />)
     for (const node of screen.getAllByText(question, {includeHiddenElements: true})) {
       expect(node.props.className).toBe('text-darker dark:text-white')
     }
@@ -159,10 +159,10 @@ describe('QuestionText — secondary language sizing (issue #189)', () => {
   const box = {width: 300, height: 400}
   const secondaryText = 'Hola'
 
-  it('renders the secondary noticeably bigger under a short primary than a long one', () => {
+  it('renders the secondary noticeably bigger under a short primary than a long one', async () => {
     // Each render is queried through its own RenderResult (rather than the
     // shared `screen`) so the two independent trees can't cross-match.
-    const short = render(
+    const short = await render(
       <QuestionText
         text="Hi?"
         language="en"
@@ -172,7 +172,7 @@ describe('QuestionText — secondary language sizing (issue #189)', () => {
     )
     const shortPrimarySecondarySize = short.getByText(secondaryText).props.style.fontSize
 
-    const long = render(
+    const long = await render(
       <QuestionText
         text="What is the most complicated, layered thing you have ever had to explain to someone you love?"
         language="en"

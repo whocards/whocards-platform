@@ -25,7 +25,7 @@ const renderPage = (
 
 describe('ThemeSettingsPage — options (issue #189, third pass)', () => {
   it('marks the current theme selected', async () => {
-    renderPage('dark')
+    await renderPage('dark')
     const selected = await screen.findByLabelText('Theme: Dark')
     expect(selected.props.accessibilityState).toEqual({selected: true})
     expect(screen.getByLabelText('Theme: System').props.accessibilityState).toEqual({
@@ -35,17 +35,17 @@ describe('ThemeSettingsPage — options (issue #189, third pass)', () => {
 
   it('reports the pressed option via onSelect', async () => {
     const onSelect = jest.fn()
-    renderPage('system', onSelect)
+    await renderPage('system', onSelect)
     const lightOption = await screen.findByLabelText('Theme: Light')
-    fireEvent.press(lightOption)
+    await fireEvent.press(lightOption)
     expect(onSelect).toHaveBeenCalledWith('light')
   })
 
   it('reports the back arrow press via onBack', async () => {
     const onBack = jest.fn()
-    renderPage('system', undefined, onBack)
+    await renderPage('system', undefined, onBack)
     await screen.findByText('Theme')
-    fireEvent.press(screen.getByLabelText('back'))
+    await fireEvent.press(screen.getByLabelText('back'))
     expect(onBack).toHaveBeenCalled()
   })
 })
