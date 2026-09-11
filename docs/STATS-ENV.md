@@ -166,7 +166,7 @@ Site: **`whocards-calmly`**. Not `whocards-app`, which is WhoCards @ Work.
 **In the UI:** Netlify → `whocards-calmly` → **Site configuration** → **Environment variables** →
 **Add a variable**:
 
-- Tick **Contains secret values** for the keys (`*_PRIVATE_KEY`, `*_JSON`, `*_API_KEY`).
+- Tick **Contains secret values** for the keys (`*_PRIVATE_KEY`, `*_JSON`, `STATS_REFRESH_SECRET`).
 - Scopes: keep **all scopes**, or at least **Builds** and **Functions**. `~env` reads
   `import.meta.env`, which can be resolved at build time or by the SSR function at request time,
   so the vars need to be visible to both.
@@ -189,8 +189,7 @@ netlify env:set APP_STORE_CONNECT_VENDOR_NUMBER 85012345
 netlify env:set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON \
   "$(node -e 'process.stdout.write(JSON.stringify(require(process.argv[1])))' ~/Downloads/key.json)" --secret
 netlify env:set GOOGLE_PLAY_REPORTS_BUCKET pubsite_prod_rev_01234567890123456789
-netlify env:set POSTHOG_PERSONAL_API_KEY phx_… --secret
-netlify env:set POSTHOG_PROJECT_ID 12345
+netlify env:set STATS_REFRESH_SECRET "$(openssl rand -hex 32)" --secret
 
 # 3. Read back the names (not values) to confirm they landed on the right site
 netlify env:list
