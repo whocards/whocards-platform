@@ -26,15 +26,17 @@ production, the Netlify site **`whocards-calmly`** (serves whocards.cc).
 
 ## Before you start: production migration
 
-The page's platform breakdown reads `answer.platform`, added by migration
-`0002_answer_platform`. Netlify deploys don't run migrations, so run it against production
-**before** the page ships:
+The page reads three things that migrations add: `answer.platform` (`0002`), `answer.country`
+(`0003`) and the `stats_snapshot` table (`0004`). Netlify deploys don't run migrations, so
+run them against production **before** the page ships:
 
 ```sh
 pnpm --filter website db:migrate
 ```
 
-(`DB_URL` in the root `.env` is the production database.)
+`DB_URL` in the root `.env` is the production database, so this touches prod: read the
+pending migration files first, and don't run `db:push` (it diffs the whole schema and can
+drop columns).
 
 ---
 
@@ -125,7 +127,39 @@ previous month, for package `com.whocards.mobile`), summed over the same 30 days
 - A Cloud Storage API error naming the project: enable the **Cloud Storage JSON API** in the
   service account's project (new projects usually have it on).
 
-## 3. Set them on Netlify
+## 3. Hourly refresh (`STATS_REFRESH_SECRET`)
+
+The page doesn't compute anything per request. A Netlify scheduled function
+(`apps/website/netlify/functions/refresh-stats.mts`, `@hourly`) calls
+`POST /api/stats/refresh`, which runs every query and store fetch once and stores the result
+in `stats_snapshot`. The page reads the newest row. Without a fresh row (none yet, or older
+than 3 hours because the schedule is broken) the page computes inline and stores that, so the
+schedule is an optimisation, not a dependency.
+
+The route needs a bearer token so nobody else can make the site hammer Apple and Google:
+
+```sh
+openssl rand -hex 32
+```
+
+| Var                    | Value                                           |
+| ---------------------- | ----------------------------------------------- |
+| `STATS_REFRESH_SECRET` | The random string. At least 16 characters long. |
+
+Set it on Netlify (next section) **and** in the root `.env`, so you can trigger a refresh by
+hand after connecting a source instead of waiting for the hour:
+
+```sh
+pnpm --filter website stats:refresh                       # production
+pnpm --filter website stats:refresh -- http://localhost:4321   # local dev server
+```
+
+Scheduled functions only run on the production deploy, not on previews or branch deploys.
+Their logs are under Netlify → **Logs** → **Functions** → `refresh-stats`.
+
+---
+
+## 4. Set them on Netlify
 
 Site: **`whocards-calmly`**. Not `whocards-app`, which is WhoCards @ Work.
 
@@ -177,7 +211,7 @@ carries `DB_URL`, the Resend keys and the rest. If the deploy fails on function 
 node -e 'const k=require(process.argv[1]);process.stdout.write(JSON.stringify({client_email:k.client_email,private_key:k.private_key}))' ~/Downloads/key.json
 ```
 
-## 4. Check /stats
+## 5. Check /stats
 
 Open <https://whocards.cc/stats> after the deploy finishes:
 
@@ -187,10 +221,11 @@ Open <https://whocards.cc/stats> after the deploy finishes:
 - **"Temporarily unavailable."** means the vars are there but the call failed. See the
   troubleshooting list for that source above.
 
-Caching: a deploy clears Netlify's CDN cache, so the first load after a redeploy is fresh. Within
-one deploy, the page is cached for up to 5 minutes in the function, 5 minutes in the browser, and
-1 hour at the CDN (served stale for up to 24 hours while it refreshes). A fix that doesn't need a
-redeploy, such as Google's permission propagating, can take up to an hour to show.
+Freshness: the numbers come from the hourly snapshot, and the page itself is cached for 5
+minutes in the browser and 1 hour at the CDN (served stale for up to 24 hours while it
+refreshes). A deploy clears the CDN cache but not the snapshot. So after connecting a source,
+run `pnpm --filter website stats:refresh`, then redeploy (or wait up to an hour) to see it. The
+"Updated" line at the bottom of the page shows the snapshot's timestamp.
 
 ## Rotating a key
 
