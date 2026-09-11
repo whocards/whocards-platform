@@ -1,5 +1,11 @@
 import {describe, expect, it} from 'vitest'
-import {applyPrivacyThreshold, MIN_DEVICE_COUNT, platformBreakdown, weeklyTrend} from './rollups'
+import {
+  applyPrivacyThreshold,
+  buildTrend,
+  MIN_DEVICE_COUNT,
+  periodTrend,
+  platformBreakdown,
+} from './rollups'
 
 describe('platformBreakdown', () => {
   it('buckets known platforms and sums a total', () => {
@@ -34,72 +40,98 @@ describe('platformBreakdown', () => {
   })
 })
 
-describe('weeklyTrend', () => {
+describe('periodTrend', () => {
   it('empty input yields no points', () => {
-    expect(weeklyTrend([])).toEqual([])
-  })
-
-  it('buckets timestamps into the Monday-starting week they fall in', () => {
-    const points = weeklyTrend(
-      [
-        {createdAt: new Date('2026-01-05T00:00:00Z')}, // Monday
-        {createdAt: new Date('2026-01-07T12:00:00Z')}, // Wednesday, same week
-        {createdAt: new Date('2026-01-11T23:59:59Z')}, // Sunday, same week
-      ],
-      new Date('2026-01-07T00:00:00Z')
-    )
-    expect(points).toEqual([{weekStart: '2026-01-05', count: 3}])
+    expect(periodTrend('week', [])).toEqual([])
   })
 
   it('fills zero-count gap weeks between the first and last data point', () => {
-    const points = weeklyTrend(
+    const points = periodTrend(
+      'week',
       [
-        {createdAt: new Date('2026-01-05T00:00:00Z')}, // week of Jan 5
-        {createdAt: new Date('2026-01-19T00:00:00Z')}, // week of Jan 19 (two weeks later)
+        {periodStart: '2026-01-05', count: 1},
+        {periodStart: '2026-01-19', count: 1},
       ],
-      new Date('2026-01-19T00:00:00Z') // pin `now` to the last data point's week
+      new Date('2026-01-19T00:00:00Z')
     )
     expect(points).toEqual([
-      {weekStart: '2026-01-05', count: 1},
-      {weekStart: '2026-01-12', count: 0},
-      {weekStart: '2026-01-19', count: 1},
+      {periodStart: '2026-01-05', count: 1},
+      {periodStart: '2026-01-12', count: 0},
+      {periodStart: '2026-01-19', count: 1},
     ])
   })
 
-  it('zero-fills through the current week even if the most recent activity was weeks ago', () => {
-    const points = weeklyTrend(
-      [{createdAt: new Date('2026-01-05T00:00:00Z')}], // week of Jan 5
-      new Date('2026-01-26T00:00:00Z') // "now" is 3 weeks later
+  it('zero-fills through the current period even if the most recent activity was weeks ago', () => {
+    const points = periodTrend(
+      'week',
+      [{periodStart: '2026-01-05', count: 1}],
+      new Date('2026-01-28T00:00:00Z') // a Wednesday, 3 weeks later
     )
-    expect(points).toEqual([
-      {weekStart: '2026-01-05', count: 1},
-      {weekStart: '2026-01-12', count: 0},
-      {weekStart: '2026-01-19', count: 0},
-      {weekStart: '2026-01-26', count: 0},
+    expect(points.map((p) => p.periodStart)).toEqual([
+      '2026-01-05',
+      '2026-01-12',
+      '2026-01-19',
+      '2026-01-26',
     ])
   })
 
-  it('defaults `now` to the real current time when not passed, so it never shrinks below the data itself', () => {
-    const points = weeklyTrend([{createdAt: new Date('2026-01-05T00:00:00Z')}])
-    expect(points[0]).toEqual({weekStart: '2026-01-05', count: 1})
+  it('caps months at the last 24, dropping older buckets', () => {
+    const points = periodTrend(
+      'month',
+      [
+        {periodStart: '2020-01-01', count: 5},
+        {periodStart: '2026-01-01', count: 1},
+      ],
+      new Date('2026-01-15T00:00:00Z')
+    )
+    expect(points).toHaveLength(24)
+    expect(points[0]).toEqual({periodStart: '2024-02-01', count: 0})
+    expect(points.at(-1)).toEqual({periodStart: '2026-01-01', count: 1})
+  })
+
+  it('folds monthly rows into uncapped calendar years', () => {
+    const points = periodTrend(
+      'year',
+      [
+        {periodStart: '2024-11-01', count: 2},
+        {periodStart: '2024-12-01', count: 3},
+        {periodStart: '2026-01-01', count: 1},
+      ],
+      new Date('2026-01-15T00:00:00Z')
+    )
+    expect(points).toEqual([
+      {periodStart: '2024-01-01', count: 5},
+      {periodStart: '2025-01-01', count: 0},
+      {periodStart: '2026-01-01', count: 1},
+    ])
   })
 
   it('does not smooth — a single spiky week stays a spike, not an average', () => {
-    const points = weeklyTrend(
+    const points = periodTrend(
+      'week',
       [
-        {createdAt: new Date('2026-01-05T00:00:00Z')},
-        {createdAt: new Date('2026-01-06T00:00:00Z')},
-        {createdAt: new Date('2026-01-07T00:00:00Z')},
-        {createdAt: new Date('2026-01-08T00:00:00Z')},
-        {createdAt: new Date('2026-01-09T00:00:00Z')},
-        {createdAt: new Date('2026-01-12T00:00:00Z')}, // next week, one answer
+        {periodStart: '2026-01-05', count: 5},
+        {periodStart: '2026-01-12', count: 1},
       ],
-      new Date('2026-01-12T00:00:00Z') // pin `now` to the last data point's week
+      new Date('2026-01-12T00:00:00Z')
     )
     expect(points).toEqual([
-      {weekStart: '2026-01-05', count: 5},
-      {weekStart: '2026-01-12', count: 1},
+      {periodStart: '2026-01-05', count: 5},
+      {periodStart: '2026-01-12', count: 1},
     ])
+  })
+})
+
+describe('buildTrend', () => {
+  it('serves week from the weekly rows and both month and year from the monthly rows', () => {
+    const trend = buildTrend(
+      [{periodStart: '2026-01-05', count: 4}],
+      [{periodStart: '2026-01-01', count: 4}],
+      new Date('2026-01-07T00:00:00Z')
+    )
+    expect(trend.week).toEqual([{periodStart: '2026-01-05', count: 4}])
+    expect(trend.month).toEqual([{periodStart: '2026-01-01', count: 4}])
+    expect(trend.year).toEqual([{periodStart: '2026-01-01', count: 4}])
   })
 })
 

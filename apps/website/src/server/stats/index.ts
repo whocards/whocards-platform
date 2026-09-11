@@ -3,16 +3,14 @@ import {LANGUAGE_CODES} from '@whocards/decks'
 import {env} from '~env'
 import {db} from '~server/db'
 import {
-  getActiveDevices,
-  getAnswerTimestamps,
+  getAnswerTotals,
   getCountryCounts,
-  getDataSince,
-  getDecksPlayed,
   getLanguageCounts,
+  getMonthlyCounts,
   getPlatformCounts,
-  getQuestionsAnswered,
+  getWeeklyCounts,
 } from './query'
-import {applyPrivacyThreshold, platformBreakdown, weeklyTrend} from './rollups'
+import {applyPrivacyThreshold, buildTrend, platformBreakdown} from './rollups'
 import type {AppStoreConnectCredentials} from './sources/app-store-connect'
 import {fetchAppStoreInstalls} from './sources/app-store-connect'
 import type {GooglePlayCredentials} from './sources/google-play'
@@ -81,27 +79,23 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
   const now = new Date()
 
   const [
-    questionsAnswered,
+    totals,
     platformRows,
-    answerTimestamps,
-    activeDevices,
-    decksPlayed,
+    weekRows,
+    monthRows,
     languageRows,
     countryRows,
     installsIos,
     installsAndroid,
-    dataSince,
   ] = await Promise.all([
-    runDbQuery(() => getQuestionsAnswered(db, now)),
+    runDbQuery(() => getAnswerTotals(db, now)),
     runDbQuery(() => getPlatformCounts(db)),
-    runDbQuery(() => getAnswerTimestamps(db)),
-    runDbQuery(() => getActiveDevices(db)),
-    runDbQuery(() => getDecksPlayed(db)),
+    runDbQuery(() => getWeeklyCounts(db, now)),
+    runDbQuery(() => getMonthlyCounts(db)),
     runDbQuery(() => getLanguageCounts(db)),
     runDbQuery(() => getCountryCounts(db)),
     fetchAppStoreInstalls(appStoreConnectCredentials()),
     fetchGooglePlayInstalls(googlePlayCredentials(), ANDROID_PACKAGE_ID),
-    runDbQuery(() => getDataSince(db)),
   ])
 
   const spokenLanguages = languageRows.ok ? applyPrivacyThreshold(languageRows.value) : []
@@ -109,21 +103,28 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
   return {
     // Answer record only. Live events (conference tracking) aren't counted until
     // they fold into the Answer record — today they can't be attributed or de-duplicated.
-    questionsAnswered: questionsAnswered.ok
-      ? live(questionsAnswered.value, 'postgres:answer')
-      : unavailable('postgres:answer', dbFailureReason(questionsAnswered)),
+    questionsAnswered: totals.ok
+      ? live(
+          {total: totals.value.answers, thisWeek: totals.value.answersThisWeek},
+          'postgres:answer'
+        )
+      : unavailable('postgres:answer', dbFailureReason(totals)),
     platformBreakdown: platformRows.ok
       ? live(platformBreakdown(platformRows.value), 'postgres:answer')
       : unavailable('postgres:answer', dbFailureReason(platformRows)),
-    weeklyTrend: answerTimestamps.ok
-      ? live(weeklyTrend(answerTimestamps.value, now), 'postgres:answer')
-      : unavailable('postgres:answer', dbFailureReason(answerTimestamps)),
-    activeDevices: activeDevices.ok
-      ? live(activeDevices.value, 'postgres:answer')
-      : unavailable('postgres:answer', dbFailureReason(activeDevices)),
-    decksPlayed: decksPlayed.ok
-      ? live(decksPlayed.value, 'postgres:answer')
-      : unavailable('postgres:answer', dbFailureReason(decksPlayed)),
+    trend:
+      weekRows.ok && monthRows.ok
+        ? live(buildTrend(weekRows.value, monthRows.value, now), 'postgres:answer')
+        : unavailable('postgres:answer', dbFailureReason(weekRows, monthRows)),
+    activeDevices: totals.ok
+      ? live(
+          {total: totals.value.devices, last30Days: totals.value.devicesLast30Days},
+          'postgres:answer'
+        )
+      : unavailable('postgres:answer', dbFailureReason(totals)),
+    decksPlayed: totals.ok
+      ? live({total: totals.value.decks}, 'postgres:answer')
+      : unavailable('postgres:answer', dbFailureReason(totals)),
     languages: languageRows.ok
       ? live({spoken: spokenLanguages.length, ofTotal: LANGUAGE_CODES.length}, 'postgres:answer')
       : unavailable('postgres:answer', dbFailureReason(languageRows)),
@@ -138,11 +139,11 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
       installsAndroid.status === 'live'
         ? live({count: installsAndroid.value}, installsAndroid.source)
         : installsAndroid,
-    dataSince: dataSince.ok
-      ? dataSince.value
-        ? live(dataSince.value, 'postgres:answer')
+    dataSince: totals.ok
+      ? totals.value.earliest
+        ? live({date: totals.value.earliest}, 'postgres:answer')
         : unavailable('postgres:answer', 'no answers recorded yet')
-      : unavailable('postgres:answer', dbFailureReason(dataSince)),
+      : unavailable('postgres:answer', dbFailureReason(totals)),
   }
 }
 

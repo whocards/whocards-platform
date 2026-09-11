@@ -17,7 +17,8 @@ const SOURCE = 'app-store-connect'
 const AUDIENCE = 'appstoreconnect-v1'
 const TOKEN_TTL_SECONDS = 20 * 60 // Apple caps this token at 20 minutes.
 const FETCH_TIMEOUT_MS = 10_000
-const CONCURRENCY = 5
+// 30 daily reports at 10 wide is 3 rounds, comfortably inside the 10s function budget.
+const CONCURRENCY = 10
 
 export const buildAppStoreConnectToken = (creds: AppStoreConnectCredentials): string =>
   jwt.sign({}, creds.privateKey, {

@@ -2,7 +2,13 @@ import {beforeEach, describe, expect, it, vi} from 'vitest'
 
 import type {AppStoreConnectCredentials} from './sources/app-store-connect'
 import type {GooglePlayCredentials} from './sources/google-play'
-import type {AnswerTimestampRow, MetricResult, NamedCount, PlatformCountRow} from './types'
+import type {
+  AnswerTotals,
+  MetricResult,
+  NamedCount,
+  PeriodCountRow,
+  PlatformCountRow,
+} from './types'
 
 // freshIndex() re-imports ./index so its module-level cache doesn't leak between tests.
 
@@ -18,14 +24,12 @@ vi.mock('~env', () => ({env: envMock}))
 vi.mock('~server/db', () => ({db: {}}))
 
 const query = vi.hoisted(() => ({
-  getQuestionsAnswered: vi.fn<() => Promise<{total: number; thisWeek: number}>>(),
+  getAnswerTotals: vi.fn<() => Promise<AnswerTotals>>(),
   getPlatformCounts: vi.fn<() => Promise<PlatformCountRow[]>>(),
-  getAnswerTimestamps: vi.fn<() => Promise<AnswerTimestampRow[]>>(),
-  getActiveDevices: vi.fn<() => Promise<{total: number; last30Days: number}>>(),
-  getDecksPlayed: vi.fn<() => Promise<{total: number}>>(),
+  getWeeklyCounts: vi.fn<() => Promise<PeriodCountRow[]>>(),
+  getMonthlyCounts: vi.fn<() => Promise<PeriodCountRow[]>>(),
   getLanguageCounts: vi.fn<() => Promise<NamedCount[]>>(),
   getCountryCounts: vi.fn<() => Promise<NamedCount[]>>(),
-  getDataSince: vi.fn<() => Promise<{date: string} | undefined>>(),
 }))
 vi.mock('./query', () => query)
 
@@ -43,27 +47,30 @@ vi.mock('./sources/app-store-connect', () => ({
 vi.mock('./sources/google-play', () => ({fetchGooglePlayInstalls: sources.fetchGooglePlayInstalls}))
 
 const DEFAULTS = {
-  questionsAnswered: {total: 100, thisWeek: 10},
+  totals: {
+    answers: 100,
+    answersThisWeek: 10,
+    devices: 50,
+    devicesLast30Days: 20,
+    decks: 3,
+    earliest: '2026-01-01',
+  } satisfies AnswerTotals,
   platformCounts: [{platform: 'web' as const, count: 100}],
-  answerTimestamps: [{createdAt: new Date('2026-01-05T00:00:00Z')}],
-  activeDevices: {total: 50, last30Days: 20},
-  decksPlayed: {total: 3},
+  weekRows: [{periodStart: '2026-01-05', count: 100}],
+  monthRows: [{periodStart: '2026-01-01', count: 100}],
   languageRows: [{name: 'en', count: 10}],
   countryRows: [{name: 'HU', count: 12}],
-  dataSince: {date: '2026-01-01'},
 }
 
 beforeEach(() => {
   for (const key of Object.keys(envMock)) envMock[key] = undefined
   vi.clearAllMocks()
-  query.getQuestionsAnswered.mockResolvedValue(DEFAULTS.questionsAnswered)
+  query.getAnswerTotals.mockResolvedValue(DEFAULTS.totals)
   query.getPlatformCounts.mockResolvedValue(DEFAULTS.platformCounts)
-  query.getAnswerTimestamps.mockResolvedValue(DEFAULTS.answerTimestamps)
-  query.getActiveDevices.mockResolvedValue(DEFAULTS.activeDevices)
-  query.getDecksPlayed.mockResolvedValue(DEFAULTS.decksPlayed)
+  query.getWeeklyCounts.mockResolvedValue(DEFAULTS.weekRows)
+  query.getMonthlyCounts.mockResolvedValue(DEFAULTS.monthRows)
   query.getLanguageCounts.mockResolvedValue(DEFAULTS.languageRows)
   query.getCountryCounts.mockResolvedValue(DEFAULTS.countryRows)
-  query.getDataSince.mockResolvedValue(DEFAULTS.dataSince)
   sources.fetchAppStoreInstalls.mockResolvedValue({
     status: 'needs-credentials',
     source: 'app-store-connect',
@@ -81,7 +88,6 @@ const freshIndex = async () => {
 
 describe('getStatsSnapshot — questions answered come from the Answer record only', () => {
   it('does not add conference tracking rows to the hero total', async () => {
-    query.getQuestionsAnswered.mockResolvedValue({total: 100, thisWeek: 10})
     const {getStatsSnapshot} = await freshIndex()
     const snapshot = await getStatsSnapshot()
     expect(snapshot.questionsAnswered).toMatchObject({
@@ -89,6 +95,9 @@ describe('getStatsSnapshot — questions answered come from the Answer record on
       value: {total: 100, thisWeek: 10},
       source: 'postgres:answer',
     })
+    expect(snapshot.activeDevices).toMatchObject({value: {total: 50, last30Days: 20}})
+    expect(snapshot.decksPlayed).toMatchObject({value: {total: 3}})
+    expect(snapshot.dataSince).toMatchObject({value: {date: '2026-01-01'}})
   })
 })
 
@@ -159,24 +168,28 @@ describe('getStatsSnapshot — countries come from the Answer record, privacy-th
 })
 
 describe('getStatsSnapshot — one failing DB query degrades only its own field(s)', () => {
-  it('degrades only activeDevices to unavailable when its query rejects, leaving every other field live', async () => {
-    query.getActiveDevices.mockRejectedValue(new Error('connection terminated'))
+  it('degrades the totals-backed fields when the totals query rejects, leaving every other field live', async () => {
+    query.getAnswerTotals.mockRejectedValue(new Error('connection terminated'))
     const {getStatsSnapshot} = await freshIndex()
     const snapshot = await getStatsSnapshot()
-    expect(snapshot.activeDevices).toMatchObject({
-      status: 'unavailable',
-      reason: 'connection terminated',
-    })
-    expect(snapshot.decksPlayed.status).toBe('live')
+    for (const field of [
+      snapshot.questionsAnswered,
+      snapshot.activeDevices,
+      snapshot.decksPlayed,
+      snapshot.dataSince,
+    ]) {
+      expect(field).toMatchObject({status: 'unavailable', reason: 'connection terminated'})
+    }
+    expect(snapshot.trend.status).toBe('live')
     expect(snapshot.platformBreakdown.status).toBe('live')
     expect(snapshot.languages.status).toBe('live')
   })
 
-  it('degrades weeklyTrend to unavailable when the timestamp query fails', async () => {
-    query.getAnswerTimestamps.mockRejectedValue(new Error('timeout'))
+  it('degrades the whole trend when either bucket query fails', async () => {
+    query.getMonthlyCounts.mockRejectedValue(new Error('timeout'))
     const {getStatsSnapshot} = await freshIndex()
     const snapshot = await getStatsSnapshot()
-    expect(snapshot.weeklyTrend.status).toBe('unavailable')
+    expect(snapshot.trend).toMatchObject({status: 'unavailable', reason: 'timeout'})
     expect(snapshot.questionsAnswered.status).toBe('live')
   })
 })
@@ -185,7 +198,7 @@ describe('getStatsSnapshot — concurrent cache-miss callers share one in-flight
   it('calls the underlying query only once for two concurrent callers, and returns the same snapshot', async () => {
     const {getStatsSnapshot} = await freshIndex()
     const [first, second] = await Promise.all([getStatsSnapshot(), getStatsSnapshot()])
-    expect(query.getQuestionsAnswered).toHaveBeenCalledTimes(1)
+    expect(query.getAnswerTotals).toHaveBeenCalledTimes(1)
     expect(first).toBe(second)
   })
 

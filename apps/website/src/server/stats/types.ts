@@ -34,12 +34,29 @@ export type PlatformBreakdown = {
   total: number
 }
 
-export type AnswerTimestampRow = {createdAt: Date}
+export const TREND_PERIODS = ['week', 'month', 'year'] as const
+export type TrendPeriod = (typeof TREND_PERIODS)[number]
 
-export type WeeklyPoint = {
-  /** Monday (UTC) that starts this week, `YYYY-MM-DD`. */
-  weekStart: string
+/** One bucket as the DB returns it: `periodStart` is `YYYY-MM-DD` (UTC). */
+export type PeriodCountRow = {periodStart: string; count: number}
+
+export type TrendPoint = {
+  /** First day (UTC) of the bucket, `YYYY-MM-DD`: a Monday, the 1st, or Jan 1. */
+  periodStart: string
   count: number
+}
+
+export type Trend = Record<TrendPeriod, TrendPoint[]>
+
+/** Every all-time aggregate the page needs from the Answer record, from one query. */
+export type AnswerTotals = {
+  answers: number
+  answersThisWeek: number
+  devices: number
+  devicesLast30Days: number
+  decks: number
+  /** `YYYY-MM-DD` of the earliest Answer, or null when the table is empty. */
+  earliest: string | null
 }
 
 export type NamedCount = {name: string; count: number}
@@ -47,7 +64,7 @@ export type NamedCount = {name: string; count: number}
 export type StatsSnapshot = {
   questionsAnswered: MetricResult<{total: number; thisWeek: number}>
   platformBreakdown: MetricResult<PlatformBreakdown>
-  weeklyTrend: MetricResult<WeeklyPoint[]>
+  trend: MetricResult<Trend>
   activeDevices: MetricResult<{total: number; last30Days: number}>
   decksPlayed: MetricResult<{total: number}>
   languages: MetricResult<{spoken: number; ofTotal: number}>

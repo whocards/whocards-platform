@@ -3,13 +3,12 @@ import * as schema from '../db/schema'
 import {resetTestDb} from '../db/test-helpers'
 import type {TestDb} from '../db/test-helpers'
 import {
-  getActiveDevices,
-  getAnswerTimestamps,
-  getDecksPlayed,
+  getAnswerTotals,
   getCountryCounts,
   getLanguageCounts,
+  getMonthlyCounts,
   getPlatformCounts,
-  getQuestionsAnswered,
+  getWeeklyCounts,
 } from './query'
 
 let db: TestDb
@@ -27,26 +26,45 @@ const insertAnswer = (overrides: Partial<typeof schema.answer.$inferInsert> = {}
     ...overrides,
   })
 
-describe('getQuestionsAnswered', () => {
-  it('counts total answers and returns 0 for an empty table', async () => {
-    expect(await getQuestionsAnswered(db)).toEqual({total: 0, thisWeek: 0})
+describe('getAnswerTotals', () => {
+  it('returns zeros and no earliest date for an empty table', async () => {
+    expect(await getAnswerTotals(db)).toEqual({
+      answers: 0,
+      answersThisWeek: 0,
+      devices: 0,
+      devicesLast30Days: 0,
+      decks: 0,
+      earliest: null,
+    })
   })
 
-  it('counts rows written this week vs. older rows', async () => {
-    await insertAnswer({createdAt: new Date().toISOString()})
-    await insertAnswer({createdAt: '2000-01-01T00:00:00.000Z'})
-    const result = await getQuestionsAnswered(db)
-    expect(result.total).toBe(2)
-    expect(result.thisWeek).toBe(1)
+  it('counts answers, distinct devices and decks, and the earliest answer day, in one pass', async () => {
+    const now = new Date('2026-01-14T12:00:00.000Z') // Wed; week starts Mon 2026-01-12
+    await insertAnswer({deviceId: 'a', deckSlug: 'classic', createdAt: '2026-01-12T00:00:00.000Z'})
+    await insertAnswer({deviceId: 'a', deckSlug: 'classic', createdAt: '2026-01-13T00:00:00.000Z'})
+    await insertAnswer({
+      deviceId: 'b',
+      deckSlug: 'deep-cuts',
+      createdAt: '2025-12-20T00:00:00.000Z',
+    })
+    await insertAnswer({deviceId: 'c', deckSlug: 'classic', createdAt: '2025-06-01T23:30:00.000Z'})
+    expect(await getAnswerTotals(db, now)).toEqual({
+      answers: 4,
+      answersThisWeek: 2,
+      devices: 3,
+      devicesLast30Days: 2,
+      decks: 2,
+      earliest: '2025-06-01',
+    })
   })
 
   it('uses the Monday-00:00-UTC week cutoff, not a rolling 7-day window', async () => {
-    const now = new Date('2026-01-14T12:00:00.000Z') // Wed; week starts Mon 2026-01-12
+    const now = new Date('2026-01-14T12:00:00.000Z')
     await insertAnswer({createdAt: '2026-01-08T12:00:00.000Z'}) // within 7 days, but last week
     await insertAnswer({createdAt: '2026-01-12T00:00:00.000Z'})
-    const result = await getQuestionsAnswered(db, now)
-    expect(result.total).toBe(2)
-    expect(result.thisWeek).toBe(1)
+    const result = await getAnswerTotals(db, now)
+    expect(result.answers).toBe(2)
+    expect(result.answersThisWeek).toBe(1)
   })
 })
 
@@ -64,32 +82,30 @@ describe('getPlatformCounts', () => {
   })
 })
 
-describe('getAnswerTimestamps', () => {
-  it('only returns rows inside the trend window', async () => {
-    await insertAnswer({createdAt: new Date().toISOString()})
-    await insertAnswer({createdAt: '2000-01-01T00:00:00.000Z'})
-    const rows = await getAnswerTimestamps(db)
-    expect(rows).toHaveLength(1)
+describe('getWeeklyCounts', () => {
+  it('buckets by Monday-starting UTC week and only returns the last 26 weeks', async () => {
+    const now = new Date('2026-01-14T12:00:00.000Z')
+    await insertAnswer({createdAt: '2026-01-12T00:00:00.000Z'}) // Monday
+    await insertAnswer({createdAt: '2026-01-11T23:59:59.000Z'}) // Sunday before, previous week
+    await insertAnswer({createdAt: '2025-07-21T00:00:00.000Z'}) // 26th bar back: in
+    await insertAnswer({createdAt: '2025-07-20T23:59:59.000Z'}) // one second earlier: out
+    expect(await getWeeklyCounts(db, now)).toEqual([
+      {periodStart: '2025-07-21', count: 1},
+      {periodStart: '2026-01-05', count: 1},
+      {periodStart: '2026-01-12', count: 1},
+    ])
   })
 })
 
-describe('getActiveDevices', () => {
-  it('counts distinct devices overall and in the last 30 days', async () => {
-    await insertAnswer({deviceId: 'a', createdAt: new Date().toISOString()})
-    await insertAnswer({deviceId: 'a', createdAt: new Date().toISOString()})
-    await insertAnswer({deviceId: 'b', createdAt: '2000-01-01T00:00:00.000Z'})
-    const result = await getActiveDevices(db)
-    expect(result.total).toBe(2)
-    expect(result.last30Days).toBe(1)
-  })
-})
-
-describe('getDecksPlayed', () => {
-  it('counts distinct deck slugs', async () => {
-    await insertAnswer({deckSlug: 'classic'})
-    await insertAnswer({deckSlug: 'classic'})
-    await insertAnswer({deckSlug: 'deep-cuts'})
-    expect(await getDecksPlayed(db)).toEqual({total: 2})
+describe('getMonthlyCounts', () => {
+  it('buckets by calendar month (UTC) across all time', async () => {
+    await insertAnswer({createdAt: '2000-01-31T23:59:59.000Z'})
+    await insertAnswer({createdAt: '2000-02-01T00:00:00.000Z'})
+    await insertAnswer({createdAt: '2000-02-15T00:00:00.000Z'})
+    expect(await getMonthlyCounts(db)).toEqual([
+      {periodStart: '2000-01-01', count: 1},
+      {periodStart: '2000-02-01', count: 2},
+    ])
   })
 })
 
