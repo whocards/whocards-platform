@@ -63,8 +63,12 @@ const subscribe = (listener: () => void) => {
   return () => listeners.delete(listener)
 }
 
-/** Re-renders on every scheme change, whether from the OS or from Settings. */
-export const useColorScheme = () => useSyncExternalStore(subscribe, getColorScheme)
+/**
+ * Re-renders on every scheme change, whether from the OS or from Settings.
+ * The third argument is the server snapshot: app.json declares `web.output:
+ * "static"`, and React rejects a server render of useSyncExternalStore without one.
+ */
+export const useColorScheme = () => useSyncExternalStore(subscribe, getColorScheme, getColorScheme)
 
 /** Shorthand for the overwhelmingly common `useColorScheme() === 'dark'`. */
 export const useIsDark = () => useColorScheme() === 'dark'
