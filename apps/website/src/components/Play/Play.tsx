@@ -200,7 +200,11 @@ export const Play = ({
       })
       track({
         name: EVENTS.GAME_STARTED,
-        props: {deck_id: deckSlug, game: GAMES.WH, language: language ?? defaultLanguage ?? ''},
+        props: {
+          deck_id: deckSlug,
+          game: GAMES.WH,
+          language: language ?? defaultLanguage ?? '',
+        },
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

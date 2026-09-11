@@ -14,6 +14,8 @@ import type {send as Send} from '../lib/answer-transport'
 import type {AnswerEvent} from '../lib/answer-queue'
 
 const EVENT: AnswerEvent = {deviceId: 'd1', deckSlug: 'library', questionId: 'q1', language: 'en'}
+// The jest RN preset defaults Platform.OS to 'ios'.
+const SENT_EVENT = {...EVENT, platform: 'ios'}
 
 /** Toggle the React Native `__DEV__` global. Wrapped to avoid no-underscore-dangle. */
 const setDev = (value: boolean) => void ((globalThis as Record<string, unknown>)['__DEV__'] = value)
@@ -47,7 +49,7 @@ describe('send (recording gate)', () => {
     setDev(false)
     delete process.env.EXPO_PUBLIC_RECORD_ANSWERS
     await freshSend()(EVENT)
-    expect(mockMutate).toHaveBeenCalledWith(EVENT)
+    expect(mockMutate).toHaveBeenCalledWith(SENT_EVENT)
   })
 
   it('skips in dev without the opt-in env var', async () => {
@@ -61,6 +63,6 @@ describe('send (recording gate)', () => {
     setDev(true)
     process.env.EXPO_PUBLIC_RECORD_ANSWERS = 'true'
     await freshSend()(EVENT)
-    expect(mockMutate).toHaveBeenCalledWith(EVENT)
+    expect(mockMutate).toHaveBeenCalledWith(SENT_EVENT)
   })
 })

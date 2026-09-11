@@ -10,6 +10,8 @@ export const createCaller = createCallerFactory(appRouter)
 export {appRouter}
 export type {Context} from './trpc'
 export type {AppRouter}
+export {ANSWER_PLATFORMS} from './platform'
+export type {AnswerPlatform} from './platform'
 
 /** Inference helpers for end-to-end typed clients. */
 export type RouterInputs = inferRouterInputs<AppRouter>

@@ -1,4 +1,5 @@
 import {shouldRecordAnswers} from '@whocards/api/recording'
+import {Platform} from 'react-native'
 
 import {env} from '@/env'
 import {trpc} from '@/lib/trpc'
@@ -18,5 +19,5 @@ import type {AnswerEvent, SendAnswer} from '@/lib/answer-queue'
 export const send: SendAnswer = async (event: AnswerEvent): Promise<void> => {
   const optIn = env.EXPO_PUBLIC_RECORD_ANSWERS
   if (!shouldRecordAnswers({dev: __DEV__, optIn})) return
-  await trpc.answers.record.mutate(event)
+  await trpc.answers.record.mutate({...event, platform: Platform.OS === 'ios' ? 'ios' : 'android'})
 }

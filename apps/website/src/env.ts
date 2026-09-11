@@ -39,6 +39,15 @@ export const env = createEnv({
     // /request-cards forms. Required: the build fails without it (incl. dev) so bot
     // protection can never be silently dropped by a missing env var.
     TURNSTILE_SECRET_KEY: z.string().min(1),
+    // Public stats page (optional). Setup: docs/STATS-ENV.md
+    APP_STORE_CONNECT_KEY_ID: z.string().optional(),
+    APP_STORE_CONNECT_ISSUER_ID: z.string().optional(),
+    APP_STORE_CONNECT_PRIVATE_KEY: z.string().optional(),
+    APP_STORE_CONNECT_VENDOR_NUMBER: z.string().optional(),
+    GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: z.string().optional(),
+    GOOGLE_PLAY_REPORTS_BUCKET: z.string().optional(),
+    // Bearer token the scheduled refresh presents to POST /api/stats/refresh.
+    STATS_REFRESH_SECRET: z.string().min(16).optional(),
   },
   clientPrefix: 'PUBLIC_',
   client: {

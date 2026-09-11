@@ -15,6 +15,27 @@
       "when": 1782381684676,
       "tag": "0001_email_consent",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789027599966,
+      "tag": "0002_answer_platform",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789116099771,
+      "tag": "0003_answer_country",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789116632155,
+      "tag": "0004_stats_snapshot",
+      "breakpoints": true
     }
   ]
 }

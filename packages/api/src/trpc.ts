@@ -1,5 +1,7 @@
 import {initTRPC} from '@trpc/server'
 
+import type {AnswerPlatform} from './platform'
+
 /**
  * The API context. The content router is public and stateless, but the host
  * supplies a `recordAnswer` port so `answers.record` can persist to the Answer
@@ -14,6 +16,7 @@ export type Context = {
     questionId: string
     language: string
     type: string
+    platform?: AnswerPlatform
   }) => Promise<void>
 }
 

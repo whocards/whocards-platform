@@ -1,5 +1,6 @@
 import {z} from 'zod'
 
+import {ANSWER_PLATFORMS} from '../platform'
 import {createTRPCRouter, publicProcedure} from '../trpc'
 
 export const answersRouter = createTRPCRouter({
@@ -7,7 +8,8 @@ export const answersRouter = createTRPCRouter({
    * Record one Answer (CONTEXT.md → Answer record): the Device answered a
    * Question. Validates the event, then hands it to the host's `recordAnswer`
    * port (the Drizzle adapter in apps/website). `type` defaults to `'answered'`,
-   * today's only kind (a future dwell-timer / Skip may add others).
+   * today's only kind (a future dwell-timer / Skip may add others). `platform`
+   * is optional so older clients keep working.
    */
   record: publicProcedure
     .input(
@@ -17,6 +19,7 @@ export const answersRouter = createTRPCRouter({
         questionId: z.string().min(1),
         language: z.string().min(1),
         type: z.string().min(1).default('answered'),
+        platform: z.enum(ANSWER_PLATFORMS).optional(),
       })
     )
     .mutation(async ({ctx, input}) => {

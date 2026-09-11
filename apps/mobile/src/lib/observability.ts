@@ -1,5 +1,6 @@
 import * as Device from 'expo-device'
 import PostHog from 'posthog-react-native'
+import {Platform} from 'react-native'
 import {configureObservability, consoleProvider} from '@whocards/observability'
 import type {LogEntry, ObservabilityProvider} from '@whocards/observability'
 
@@ -47,6 +48,10 @@ export const posthog =
 // 2 physical dev phones, which this check can't reach.
 if (posthog && !Device.isDevice) {
   void posthog.register({is_internal: true})
+}
+
+if (posthog) {
+  void posthog.register({platform: Platform.OS})
 }
 
 // posthog-react-native types properties as JSON values; our EventProps is the wider

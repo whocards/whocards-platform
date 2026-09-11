@@ -57,6 +57,16 @@
       }
     },
     {
+      // Netlify functions are bundled outside the app: Netlify requires a default export,
+      // and the only env available is process.env (no `~env` layer), so log via console.
+      "files": ["**/netlify/functions/**"],
+      "rules": {
+        "no-console": "off",
+        "import/no-default-export": "off",
+        "node/no-process-env": "off"
+      }
+    },
+    {
       "files": ["**/env.ts", "**/env.node.ts", "**/env.test.ts"],
       "rules": {
         "node/no-process-env": "off"

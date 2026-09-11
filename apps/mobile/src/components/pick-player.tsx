@@ -151,7 +151,10 @@ export const PickPlayer = ({
   const prevNavRef = useRef<{ids: string[]; idx: number} | null>(null)
 
   useEffect(() => {
-    track({name: EVENTS.DECK_OPENED, props: {deck_id: deckSlug, source: 'browse'}})
+    track({
+      name: EVENTS.DECK_OPENED,
+      props: {deck_id: deckSlug, source: 'browse'},
+    })
   }, [deckSlug])
 
   const gameStartedRef = useRef(false)
@@ -160,7 +163,12 @@ export const PickPlayer = ({
     gameStartedRef.current = true
     track({
       name: EVENTS.GAME_STARTED,
-      props: {deck_id: deckSlug, game: GAMES.PICK, language, secondary_languages: secondary},
+      props: {
+        deck_id: deckSlug,
+        game: GAMES.PICK,
+        language,
+        secondary_languages: secondary,
+      },
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [languageReady])
@@ -187,7 +195,12 @@ export const PickPlayer = ({
     if (!onCard || !questionId) return
     track({
       name: EVENTS.QUESTION_SHOWN,
-      props: {deck_id: deckSlug, question_id: questionId, language, source: 'pick'},
+      props: {
+        deck_id: deckSlug,
+        question_id: questionId,
+        language,
+        source: 'pick',
+      },
     })
     viewTracker.startView({deck_id: deckSlug, question_id: questionId, language})
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -73,8 +73,12 @@ A single app install or browser, identified by a stable anonymous id minted once
 _Avoid_: user, account (neither exists yet), session (a Device persists across sessions), anonymous user
 
 **Answer record**:
-The permanent, append-only history of Answers — one entry each time a Device answers a Question (which Deck, which Question, which language, when). The single source of truth from which the `questions_answered` and `games_played` counts, the Global cycle, and any future per-player coverage are all derived. The existing **conference question tracking** is this same concept in its first, event-scoped form (keyed by a conference); the Answer record generalizes it across the whole app (keyed by Device + Deck), and the conference tracker is expected to fold into it.
+The permanent, append-only history of Answers — one entry each time a Device answers a Question (which Deck, which Question, which language, when). The single source of truth from which the `questions_answered` and `games_played` counts, the Global cycle, and any future per-player coverage are all derived. The existing **conference question tracking** is this same concept in its first, event-scoped form (keyed by a conference — see **Live event**); the Answer record generalizes it across the whole app (keyed by Device + Deck), and the conference tracker is expected to fold into it.
 _Avoid_: analytics (this is durable product state and the source of truth, not an aggregate metrics pipeline)
+
+**Live event**:
+An in-person gathering — a conference, a workshop, a Hajnalig night — where a Deck is played for a room, and whose Answers are recorded against that event rather than a Device. Its Answers are the event-scoped form of the Answer record (today's conference question tracking). They will count toward questions answered once the conference tracker folds into the Answer record; until then the public stats count Answers only, because a Live event serve on the web is also recorded as an ordinary Answer and would be counted twice. Not a Game: it says where a Deck was played, not how Cards are drawn.
+_Avoid_: conference (one kind of Live event, and the legacy name of its tracker), in-person mode, offline event (Offline play is a connectivity state)
 
 **Share Card**:
 A Card rendered as a standalone branded image made to travel outside the app — one Question as a picture, sized for where it lands (a link preview, a story, a post). The link-preview (OG) image is the first Share Card; the story and post sizes are the same concept in other shapes. Sharing one never affects play state.

@@ -20,7 +20,8 @@
     "db:migrate": "pnpm with-env drizzle-kit migrate",
     "db:push": "pnpm with-env drizzle-kit push",
     "db:studio": "pnpm with-env drizzle-kit studio",
-    "reconcile:resend": "pnpm with-env tsx scripts/reconcile-resend.ts"
+    "reconcile:resend": "pnpm with-env tsx scripts/reconcile-resend.ts",
+    "stats:refresh": "pnpm with-env node scripts/refresh-stats.mjs"
   },
   "dependencies": {
     "@whocards/api": "workspace:*",
@@ -59,6 +60,7 @@
     "daisyui": "^5.7.28",
     "drizzle-orm": "^0.45.2",
     "gsap": "^3.12.2",
+    "jsonwebtoken": "^9.0.3",
     "nanostores": "^0.9.4",
     "object-to-formdata": "^5.0.0",
     "pdf-lib": "^1.17.1",
@@ -83,6 +85,7 @@
     "@iconify/tools": "^5.0.14",
     "@netlify/functions": "^2.3.0",
     "@playwright/test": "^1.63.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "catalog:",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
