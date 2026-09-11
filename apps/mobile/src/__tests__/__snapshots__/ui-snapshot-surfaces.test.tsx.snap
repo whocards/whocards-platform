@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`Player bar renders Prev / Exit / Share / Next unchanged 1`] = `
+exports[`Player bar renders Prev / Exit / Share / Next 1`] = `
 <View>
   | flex: 1
   <View>
@@ -99,7 +99,7 @@ exports[`Player bar renders Prev / Exit / Share / Next unchanged 1`] = `
         "Next"
 `;
 
-exports[`Player bar renders without Share unchanged (the pick screen before a deal) 1`] = `
+exports[`Player bar renders without Share (the pick screen before a deal) 1`] = `
 <View>
   | flex: 1
   <View>
@@ -177,7 +177,7 @@ exports[`Player bar renders without Share unchanged (the pick screen before a de
         "Next"
 `;
 
-exports[`Settings pages renders the Game page unchanged 1`] = `
+exports[`Settings pages renders the Game page 1`] = `
 <View>
   | flex: 1
   <View>
@@ -281,7 +281,7 @@ exports[`Settings pages renders the Game page unchanged 1`] = `
             "Draw each card yourself — a fresh deal for every question."
 `;
 
-exports[`Settings pages renders the Language page unchanged 1`] = `
+exports[`Settings pages renders the Language page 1`] = `
 <View>
   | flex: 1
   <View>
@@ -349,7 +349,7 @@ exports[`Settings pages renders the Language page unchanged 1`] = `
             "Hebrew"
 `;
 
-exports[`Settings pages renders the Second language page unchanged 1`] = `
+exports[`Settings pages renders the Second language page 1`] = `
 <View>
   | flex: 1
   <View>
@@ -429,7 +429,7 @@ exports[`Settings pages renders the Second language page unchanged 1`] = `
             "Spanish"
 `;
 
-exports[`Settings pages renders the Theme page unchanged 1`] = `
+exports[`Settings pages renders the Theme page 1`] = `
 <View>
   | flex: 1
   <View>
@@ -524,7 +524,7 @@ exports[`Settings pages renders the Theme page unchanged 1`] = `
         "Matches your device by default. Presentation only — it never changes which Card is drawn or your progress."
 `;
 
-exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] = `
+exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
 <View>
   | flex: 1
   <Modal>
@@ -885,7 +885,7 @@ exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] 
                       "Draw each card yourself — a fresh deal for every question."
 `;
 
-exports[`Settings sheet renders the menu unchanged 1`] = `
+exports[`Settings sheet renders the menu 1`] = `
 <View>
   | flex: 1
   <Modal>
@@ -1120,7 +1120,7 @@ exports[`Settings sheet renders the menu unchanged 1`] = `
                     ""
 `;
 
-exports[`Settings sheet renders the menu unchanged in the Dark Theme Display setting 1`] = `
+exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] = `
 <View>
   | flex: 1
   <Modal>
@@ -1355,7 +1355,7 @@ exports[`Settings sheet renders the menu unchanged in the Dark Theme Display set
                     ""
 `;
 
-exports[`Share sheet renders all three rows unchanged for a Pool-backed Deck 1`] = `
+exports[`Share sheet renders all three rows for a Pool-backed Deck 1`] = `
 <View>
   | flex: 1
   <Modal>
@@ -1467,7 +1467,7 @@ exports[`Share sheet renders all three rows unchanged for a Pool-backed Deck 1`]
                     "Post image"
 `;
 
-exports[`Share sheet renders the link row alone unchanged for an inline-source Deck 1`] = `
+exports[`Share sheet renders the link row alone for an inline-source Deck 1`] = `
 <View>
   | flex: 1
   <Modal>

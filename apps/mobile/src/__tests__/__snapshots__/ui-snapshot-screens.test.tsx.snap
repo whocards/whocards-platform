@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`Library screen renders the Library unchanged 1`] = `
+exports[`Library screen renders the Library screen 1`] = `
 <View>
   | flex: 1
   <View>
@@ -20,7 +20,14 @@ exports[`Library screen renders the Library unchanged 1`] = `
         | right: 0
         | top: 0
     <View>
-      ~ className: "flex-1 items-center justify-between px-8 pb-8 pt-16"
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | justifyContent: "space-between"
+      | paddingBottom: 28
+      | paddingInline: 28
+      | paddingTop: 56
       <View>
         | alignItems: "center"
         | flexBasis: "0%"
@@ -109,7 +116,7 @@ exports[`Library screen renders the Library unchanged 1`] = `
             "Settings"
 `;
 
-exports[`Library screen renders the Library unchanged in the Dark Theme Display setting 1`] = `
+exports[`Library screen renders the Library screen in the Dark Theme Display setting 1`] = `
 <View>
   | flex: 1
   <View>
@@ -129,7 +136,14 @@ exports[`Library screen renders the Library unchanged in the Dark Theme Display 
         | right: 0
         | top: 0
     <View>
-      ~ className: "flex-1 items-center justify-between px-8 pb-8 pt-16"
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | justifyContent: "space-between"
+      | paddingBottom: 28
+      | paddingInline: 28
+      | paddingTop: 56
       <View>
         | alignItems: "center"
         | flexBasis: "0%"
@@ -218,7 +232,7 @@ exports[`Library screen renders the Library unchanged in the Dark Theme Display 
             "Settings"
 `;
 
-exports[`Play screen renders a Question unchanged 1`] = `
+exports[`Play screen renders a Question 1`] = `
 <View>
   | flex: 1
   <View>
@@ -365,7 +379,7 @@ exports[`Play screen renders a Question unchanged 1`] = `
               "Next"
 `;
 
-exports[`Play screen renders a Question unchanged in the Dark Theme Display setting 1`] = `
+exports[`Play screen renders a Question in the Dark Theme Display setting 1`] = `
 <View>
   | flex: 1
   <View>
@@ -512,7 +526,7 @@ exports[`Play screen renders a Question unchanged in the Dark Theme Display sett
               "Next"
 `;
 
-exports[`Play screen renders the Pick a Card deck unchanged before a deal 1`] = `
+exports[`Play screen renders the Pick a Card deck before a deal 1`] = `
 <View>
   | flex: 1
   <View>
@@ -694,7 +708,7 @@ exports[`Play screen renders the Pick a Card deck unchanged before a deal 1`] = 
               "Next"
 `;
 
-exports[`Play screen renders the unknown-Deck message unchanged 1`] = `
+exports[`Play screen renders the unknown-Deck message 1`] = `
 <View>
   | flex: 1
   <View>
@@ -714,21 +728,25 @@ exports[`Play screen renders the unknown-Deck message unchanged 1`] = `
         | right: 0
         | top: 0
     <View>
-      ~ className: "flex-1 items-center justify-center"
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | justifyContent: "center"
       <Text>
         | color: "#111516"
         | fontFamily: "golos-text"
         "Deck not found."
 `;
 
-exports[`Root layout renders the screen-transition background unchanged 1`] = `
+exports[`Root layout renders the screen-transition background 1`] = `
 <View>
   | flex: 1
   <View>
     | backgroundColor: "#efe7f7"
 `;
 
-exports[`Root layout renders the screen-transition background unchanged in Dark 1`] = `
+exports[`Root layout renders the screen-transition background in Dark 1`] = `
 <View>
   | flex: 1
   <View>

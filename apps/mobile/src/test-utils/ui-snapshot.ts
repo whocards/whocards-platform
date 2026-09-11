@@ -11,7 +11,8 @@
  *   - the host component type (`View`, `Text`, `Image`, `Modal`, …)
  *   - the FLATTENED resolved style (see `flattenStyle`) — one line per property,
  *     alphabetically, so a diff points straight at the property that changed
- *   - the `className` that NativeWind resolves into style at runtime
+ *   - a `className` only when a host mock still exposes it (NativeWind v5
+ *     normally compiles it away and emits the resolved `style` instead)
  *   - rendered text content
  *   - the accessibility props that have a presentational effect:
  *     `accessibilityRole`, `accessibilityLabel`, `accessibilityState`
@@ -34,13 +35,12 @@
  * 1. The native side. This is the JS half of the render only; what the native
  *    layer does with these props (Yoga's actual layout maths, text shaping,
  *    shadow rasterisation) is invisible here. A clean run is evidence that the
- *    JS render is unchanged, not that the screen is — that still needs an
- *    on-device / Maestro pass.
- * 2. Tailwind classes resolved to style. Jest has no Metro, so no compiled
- *    NativeWind CSS is ever registered and every `className` resolves to an
- *    empty style; the class strings are recorded verbatim instead. So the
- *    styles below are the inline / `StyleSheet` ones a component passes
- *    directly, and `className` is the unresolved rest.
+ *    JS render matches this baseline, not that the screen is identical — that
+ *    still needs an on-device / Maestro comparison.
+ * 2. Native layout and rasterization. Jest compiles and injects the app's
+ *    stylesheet, so Tailwind classes are represented by their resolved styles;
+ *    Yoga layout, text shaping, shadows, and platform rendering still need a
+ *    native comparison.
  *
  * Usage:
  *
@@ -125,7 +125,7 @@ const INDENT = '  '
 /**
  * Appends one node's lines. The format is indentation-structured:
  *   `<Type …>`      opens an element (no closing tag — indentation is structure)
- *   `~ className`   is the element's Tailwind classes, unresolved (see above)
+ *   `~ className`   is a class string exposed by a host mock (usually absent in v5)
  *   `| key: value`  is one resolved style property of the element above it
  *   `"…"`           is rendered text
  */

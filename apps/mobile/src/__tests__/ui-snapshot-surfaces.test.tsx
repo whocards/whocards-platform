@@ -2,17 +2,10 @@
  * UI snapshots of the app's interactive surfaces: the Settings sheet and its
  * pages, the Share sheet, and the player bar.
  *
- * These exist to answer one question — did a dependency upgrade change what a
- * player sees? — so the baseline `.snap` beside this file is recorded on the
- * PRE-upgrade toolchain and replayed, untouched, against the new one. A
- * snapshot generated on the upgrade branch would only ever describe the
- * upgrade's own output and prove nothing, so if one of these ever differs, the
- * answer is to read the diff, not to run `jest -u`.
- *
- * The one post-upgrade byte in the baseline file is its first line: jest 30
- * refuses to read a snapshot file carrying jest 29's guide-link header
- * ("Outdated guide link"). That line is Jest's own file-format marker, not test
- * output — everything below it is exactly what the old toolchain recorded.
+ * These are regression baselines for the upgraded React Native / NativeWind v5
+ * toolchain. They include styles compiled from the app's CSS and injected into
+ * Jest, while native layout and rasterization still require comparison on a
+ * device.
  *
  * The format is `@/test-utils/ui-snapshot`: host type + flattened resolved
  * style + text + presentational accessibility props, and nothing else. See that
@@ -117,20 +110,20 @@ const renderSettings = (overrides: Partial<React.ComponentProps<typeof SettingsM
   )
 
 describe('Settings sheet', () => {
-  it('renders the menu unchanged', async () => {
+  it('renders the menu', async () => {
     await renderSettings()
     await screen.findByText('Settings')
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders the menu unchanged in the Dark Theme Display setting', async () => {
+  it('renders the menu in the Dark Theme Display setting', async () => {
     await act(() => setColorScheme('dark'))
     await renderSettings({theme: 'dark'})
     await screen.findByText('Settings')
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders a risen page over the dimmed menu unchanged', async () => {
+  it('renders a risen page over the dimmed menu', async () => {
     await renderSettings()
     await fireEvent.press(await screen.findByLabelText('Game: Classic'))
     await screen.findByText('Choose your game')
@@ -139,19 +132,19 @@ describe('Settings sheet', () => {
 })
 
 describe('Settings pages', () => {
-  it('renders the Game page unchanged', async () => {
+  it('renders the Game page', async () => {
     await renderUi(<GameSettingsPage current="wh" onSelect={noop} onBack={noop} />)
     await screen.findByText('Choose your game')
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders the Theme page unchanged', async () => {
+  it('renders the Theme page', async () => {
     await renderUi(<ThemeSettingsPage current="system" onSelect={noop} onBack={noop} />)
     await screen.findByText('Theme')
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders the Language page unchanged', async () => {
+  it('renders the Language page', async () => {
     await renderUi(
       <LanguageSettingsPage languages={['en', 'he']} current="en" onSelect={noop} onBack={noop} />
     )
@@ -159,7 +152,7 @@ describe('Settings pages', () => {
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders the Second language page unchanged', async () => {
+  it('renders the Second language page', async () => {
     await renderUi(
       <SecondLanguageSettingsPage
         languages={['en', 'he', 'es']}
@@ -183,7 +176,7 @@ describe('Share sheet', () => {
     onClose: noop,
   }
 
-  it('renders all three rows unchanged for a Pool-backed Deck', async () => {
+  it('renders all three rows for a Pool-backed Deck', async () => {
     await renderUi(
       <ShareModal
         {...SHARE_PROPS}
@@ -195,7 +188,7 @@ describe('Share sheet', () => {
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders the link row alone unchanged for an inline-source Deck', async () => {
+  it('renders the link row alone for an inline-source Deck', async () => {
     await renderUi(<ShareModal {...SHARE_PROPS} />)
     await screen.findByLabelText('Share link')
     expect(uiSnapshot(screen)).toMatchSnapshot()
@@ -203,13 +196,13 @@ describe('Share sheet', () => {
 })
 
 describe('Player bar', () => {
-  it('renders Prev / Exit / Share / Next unchanged', async () => {
+  it('renders Prev / Exit / Share / Next', async () => {
     await renderUi(<PlayerBar onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} />)
     await screen.findByLabelText('exit deck')
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders without Share unchanged (the pick screen before a deal)', async () => {
+  it('renders without Share (the pick screen before a deal)', async () => {
     await renderUi(
       <PlayerBar showShare={false} onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} />
     )
