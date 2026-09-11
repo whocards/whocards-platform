@@ -18,19 +18,12 @@
 import React from 'react'
 import {StyleSheet} from 'react-native'
 import {act, fireEvent, render, screen} from '@testing-library/react-native'
-import {colorScheme} from 'nativewind'
+import {setColorScheme} from '@/lib/color-scheme'
 import {colors} from '@whocards/tokens'
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
 }))
-
-afterEach(async () => {
-  // NativeWind's colorScheme is a global observable — reset it so a test that
-  // sets it doesn't bleed into whichever test runs next (mirrors
-  // settings-modal.test.tsx).
-  await act(() => colorScheme.set('system'))
-})
 
 // PressableScale drives its press animation through react-native-reanimated /
 // react-native-worklets, whose native module isn't available under plain
@@ -55,8 +48,10 @@ import {PlayerBar} from '../components/player-bar'
 
 const noop = () => {}
 
-const renderBar = (props: Partial<React.ComponentProps<typeof PlayerBar>> = {}) =>
-  render(<PlayerBar onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} {...props} />)
+const renderBar = async (props: Partial<React.ComponentProps<typeof PlayerBar>> = {}) =>
+  await render(
+    <PlayerBar onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} {...props} />
+  )
 
 /**
  * The color of every rendered `Ionicons` glyph.
@@ -120,7 +115,7 @@ describe('PlayerBar — Exit button (issue #186)', () => {
 
 describe('PlayerBar — themed icon color (issue #173)', () => {
   it('uses white icons when the resolved scheme is dark', async () => {
-    await act(() => colorScheme.set('dark'))
+    await act(() => setColorScheme('dark'))
     await renderBar()
     const icons = iconColors()
     expect(icons.length).toBeGreaterThan(0)
@@ -130,7 +125,7 @@ describe('PlayerBar — themed icon color (issue #173)', () => {
   })
 
   it('uses darker icons when the resolved scheme is light', async () => {
-    await act(() => colorScheme.set('light'))
+    await act(() => setColorScheme('light'))
     await renderBar()
     const icons = iconColors()
     expect(icons.length).toBeGreaterThan(0)

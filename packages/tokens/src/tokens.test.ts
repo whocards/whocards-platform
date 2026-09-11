@@ -1,7 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
 import {colors, fonts, gradients, radius, spacing, tokens} from './index'
-import {tailwindTheme} from './tailwind-preset'
 
 /**
  * `Object.keys` always widens to `string[]`; every key set this test walks is
@@ -39,16 +38,8 @@ describe('gradients', () => {
   })
 })
 
-describe('aggregate + tailwind preset', () => {
+describe('aggregate', () => {
   it('groups every token family', () => {
     expect(tokens).toMatchObject({colors, spacing, radius, fonts, gradients})
-  })
-
-  it('shapes a tailwind theme.extend that mirrors the tokens', () => {
-    expect(tailwindTheme.extend.colors).toBe(colors)
-    expect(tailwindTheme.extend.borderRadius).toBe(radius)
-    expect(tailwindTheme.extend.spacing).toBe(spacing)
-    expect(tailwindTheme.extend.fontFamily.title[0]).toBe('aptly')
-    expect(tailwindTheme.extend.backgroundImage['gradient-primary']).toBe(gradients.primary)
   })
 })

@@ -1,0 +1,11 @@
+/*
+ * Test-only Tailwind entry point: the stylesheet the app ships, plus the class
+ * names that only ever appear in `src/__tests__`.
+ *
+ * `src/global.css` deliberately does not scan the test suite (see the `@source
+ * not` there) so ~40 assertion-only utilities stay out of the shipped bundle.
+ * The tests still have to resolve them, so jest.global-setup.js compiles this
+ * file instead — same imports, same theme, same compiler, one extra `@source`.
+ */
+@import './src/global.css';
+@source './src/__tests__/**/*.{ts,tsx}';

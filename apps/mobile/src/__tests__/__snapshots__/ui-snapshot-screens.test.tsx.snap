@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`Library screen renders the Library unchanged 1`] = `
+exports[`Library screen renders the Library screen 1`] = `
 <View>
   | flex: 1
   <View>
@@ -20,9 +20,18 @@ exports[`Library screen renders the Library unchanged 1`] = `
         | right: 0
         | top: 0
     <View>
-      ~ className: "flex-1 items-center justify-between px-8 pb-8 pt-16"
+      | alignItems: "center"
+      | flex: 1
+      | justifyContent: "space-between"
+      | paddingBottom: 28
+      | paddingHorizontal: 28
+      | paddingTop: 56
       <View>
-        ~ className: "flex-1 items-center justify-center"
+        | alignItems: "center"
+        | flexBasis: "0%"
+        | flexGrow: 1
+        | flexShrink: 1
+        | justifyContent: "center"
         <View accessibilityState={}>
           <View>
             | transform: [{"translateY":0}]
@@ -30,23 +39,40 @@ exports[`Library screen renders the Library unchanged 1`] = `
               | height: 53
               | width: 280
         <Text>
-          ~ className: "text-darker/80 dark:text-white/80 mt-7 text-center font-sans text-xl font-semibold leading-8"
+          | color: "#111516cc"
+          | fontFamily: "golos-text"
+          | fontSize: 17.5
+          | fontWeight: 600
+          | lineHeight: 26.25
+          | marginTop: 24.5
           | opacity: 1
+          | textAlign: "center"
           "Change your world,"
           "\\n"
           "one conversation at a time."
       <View>
-        ~ className: "w-full items-center gap-5"
+        | alignItems: "center"
+        | gap: 17.5
         | opacity: 1
+        | width: "100%"
         <Text>
-          ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+          | color: "#6b6d82"
+          | fontFamily: "golos-text"
+          | fontSize: 12.25
+          | lineHeight: 17.5
           "66"
           " cards · "
           "14"
           " languages"
-        <View accessibilityRole="button" accessibilityLabel="Play">
-          ~ className: "active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
+        <View accessibilityRole="button" accessibilityLabel="Play" accessibilityState={}>
+          | alignItems: "center"
+          | backgroundColor: "#f9d75f"
+          | borderRadius: 9007199254740990
+          | flexDirection: "row"
+          | justifyContent: "center"
+          | paddingBlock: 14
           | transform: [{"scale":1}]
+          | width: "100%"
           <Text>
             | color: "#111516"
             | fontFamily: "ionicons"
@@ -56,11 +82,22 @@ exports[`Library screen renders the Library unchanged 1`] = `
             | marginRight: 8
             ""
           <Text>
-            ~ className: "text-darker font-sans text-base font-bold"
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 14
+            | fontWeight: 700
+            | lineHeight: 21
             "Play"
-        <View accessibilityRole="button" accessibilityLabel="Settings">
-          ~ className: "group active:bg-gray bg-gray w-full flex-row items-center justify-center gap-2 rounded-full py-4"
+        <View accessibilityRole="button" accessibilityLabel="Settings" accessibilityState={}>
+          | alignItems: "center"
+          | backgroundColor: "#65636e"
+          | borderRadius: 9007199254740990
+          | flexDirection: "row"
+          | gap: 7
+          | justifyContent: "center"
+          | paddingBlock: 14
           | transform: [{"scale":1}]
+          | width: "100%"
           <Text>
             | color: "#f5f5f5"
             | fontFamily: "ionicons"
@@ -69,11 +106,15 @@ exports[`Library screen renders the Library unchanged 1`] = `
             | fontWeight: "normal"
             ""
           <Text>
-            ~ className: "group-active:text-yellow-500 font-sans text-base font-bold text-white"
+            | color: "#f5f5f5"
+            | fontFamily: "golos-text"
+            | fontSize: 14
+            | fontWeight: 700
+            | lineHeight: 21
             "Settings"
 `;
 
-exports[`Library screen renders the Library unchanged in the Dark Theme Display setting 1`] = `
+exports[`Library screen renders the Library screen in the Dark Theme Display setting 1`] = `
 <View>
   | flex: 1
   <View>
@@ -93,9 +134,18 @@ exports[`Library screen renders the Library unchanged in the Dark Theme Display 
         | right: 0
         | top: 0
     <View>
-      ~ className: "flex-1 items-center justify-between px-8 pb-8 pt-16"
+      | alignItems: "center"
+      | flex: 1
+      | justifyContent: "space-between"
+      | paddingBottom: 28
+      | paddingHorizontal: 28
+      | paddingTop: 56
       <View>
-        ~ className: "flex-1 items-center justify-center"
+        | alignItems: "center"
+        | flexBasis: "0%"
+        | flexGrow: 1
+        | flexShrink: 1
+        | justifyContent: "center"
         <View accessibilityState={}>
           <View>
             | transform: [{"translateY":0}]
@@ -103,23 +153,40 @@ exports[`Library screen renders the Library unchanged in the Dark Theme Display 
               | height: 53
               | width: 280
         <Text>
-          ~ className: "text-darker/80 dark:text-white/80 mt-7 text-center font-sans text-xl font-semibold leading-8"
+          | color: "#f5f5f5cc"
+          | fontFamily: "golos-text"
+          | fontSize: 17.5
+          | fontWeight: 600
+          | lineHeight: 26.25
+          | marginTop: 24.5
           | opacity: 1
+          | textAlign: "center"
           "Change your world,"
           "\\n"
           "one conversation at a time."
       <View>
-        ~ className: "w-full items-center gap-5"
+        | alignItems: "center"
+        | gap: 17.5
         | opacity: 1
+        | width: "100%"
         <Text>
-          ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+          | color: "#9698af"
+          | fontFamily: "golos-text"
+          | fontSize: 12.25
+          | lineHeight: 17.5
           "66"
           " cards · "
           "14"
           " languages"
-        <View accessibilityRole="button" accessibilityLabel="Play">
-          ~ className: "active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
+        <View accessibilityRole="button" accessibilityLabel="Play" accessibilityState={}>
+          | alignItems: "center"
+          | backgroundColor: "#f9d75f"
+          | borderRadius: 9007199254740990
+          | flexDirection: "row"
+          | justifyContent: "center"
+          | paddingBlock: 14
           | transform: [{"scale":1}]
+          | width: "100%"
           <Text>
             | color: "#111516"
             | fontFamily: "ionicons"
@@ -129,11 +196,22 @@ exports[`Library screen renders the Library unchanged in the Dark Theme Display 
             | marginRight: 8
             ""
           <Text>
-            ~ className: "text-darker font-sans text-base font-bold"
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 14
+            | fontWeight: 700
+            | lineHeight: 21
             "Play"
-        <View accessibilityRole="button" accessibilityLabel="Settings">
-          ~ className: "group active:bg-gray bg-gray w-full flex-row items-center justify-center gap-2 rounded-full py-4"
+        <View accessibilityRole="button" accessibilityLabel="Settings" accessibilityState={}>
+          | alignItems: "center"
+          | backgroundColor: "#65636e"
+          | borderRadius: 9007199254740990
+          | flexDirection: "row"
+          | gap: 7
+          | justifyContent: "center"
+          | paddingBlock: 14
           | transform: [{"scale":1}]
+          | width: "100%"
           <Text>
             | color: "#f5f5f5"
             | fontFamily: "ionicons"
@@ -142,11 +220,15 @@ exports[`Library screen renders the Library unchanged in the Dark Theme Display 
             | fontWeight: "normal"
             ""
           <Text>
-            ~ className: "group-active:text-yellow-500 font-sans text-base font-bold text-white"
+            | color: "#f5f5f5"
+            | fontFamily: "golos-text"
+            | fontSize: 14
+            | fontWeight: 700
+            | lineHeight: 21
             "Settings"
 `;
 
-exports[`Play screen renders a Question unchanged 1`] = `
+exports[`Play screen renders a Question 1`] = `
 <View>
   | flex: 1
   <View>
@@ -166,18 +248,26 @@ exports[`Play screen renders a Question unchanged 1`] = `
         | right: 0
         | top: 0
     <View>
-      ~ className: "flex-1"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
       <View>
-        ~ className: "flex-1 px-8"
+        | flexBasis: "0%"
+        | flexGrow: 1
+        | flexShrink: 1
         | paddingBottom: 0
+        | paddingInline: 28
         | paddingTop: 0
         <View>
-          ~ className: "flex-1 justify-center"
+          | flexBasis: "0%"
+          | flexGrow: 1
+          | flexShrink: 1
+          | justifyContent: "center"
           <View>
             | opacity: 1
             | transform: [{"translateX":0}]
             <Text>
-              ~ className: "text-darker dark:text-white"
+              | color: "#111516"
               | fontFamily: "golos-text"
               | fontSize: 81
               | lineHeight: 93.15
@@ -185,13 +275,27 @@ exports[`Play screen renders a Question unchanged 1`] = `
               | writingDirection: "ltr"
               "What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)"
       <View>
-        ~ className: "absolute inset-x-0 bottom-0"
+        | bottom: 0
+        | insetInline: 0
+        | position: "absolute"
         | transform: [{"translateY":0}]
         <View>
-          ~ className: "border-darker/10 bg-white/90 flex-row items-stretch border-t px-4 pt-2 dark:border-white/10 dark:bg-darker/80"
+          | alignItems: "stretch"
+          | backgroundColor: "#f5f5f5e5"
+          | borderColor: "#1115161a"
+          | borderTopStyle: "solid"
+          | borderTopWidth: 1
+          | flexDirection: "row"
           | paddingBottom: 10
+          | paddingInline: 14
+          | paddingTop: 7
           <View accessibilityRole="button" accessibilityLabel="previous question">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#111516"
@@ -201,10 +305,18 @@ exports[`Play screen renders a Question unchanged 1`] = `
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#6b6d82"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Back"
           <View accessibilityRole="button" accessibilityLabel="exit deck">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#111516"
@@ -214,10 +326,18 @@ exports[`Play screen renders a Question unchanged 1`] = `
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#6b6d82"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Exit"
           <View accessibilityRole="button" accessibilityLabel="share question">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#111516"
@@ -227,10 +347,18 @@ exports[`Play screen renders a Question unchanged 1`] = `
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#6b6d82"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Share"
           <View accessibilityRole="button" accessibilityLabel="next question">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#111516"
@@ -240,11 +368,14 @@ exports[`Play screen renders a Question unchanged 1`] = `
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#6b6d82"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Next"
 `;
 
-exports[`Play screen renders a Question unchanged in the Dark Theme Display setting 1`] = `
+exports[`Play screen renders a Question in the Dark Theme Display setting 1`] = `
 <View>
   | flex: 1
   <View>
@@ -264,18 +395,26 @@ exports[`Play screen renders a Question unchanged in the Dark Theme Display sett
         | right: 0
         | top: 0
     <View>
-      ~ className: "flex-1"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
       <View>
-        ~ className: "flex-1 px-8"
+        | flexBasis: "0%"
+        | flexGrow: 1
+        | flexShrink: 1
         | paddingBottom: 0
+        | paddingInline: 28
         | paddingTop: 0
         <View>
-          ~ className: "flex-1 justify-center"
+          | flexBasis: "0%"
+          | flexGrow: 1
+          | flexShrink: 1
+          | justifyContent: "center"
           <View>
             | opacity: 1
             | transform: [{"translateX":0}]
             <Text>
-              ~ className: "text-darker dark:text-white"
+              | color: "#f5f5f5"
               | fontFamily: "golos-text"
               | fontSize: 81
               | lineHeight: 93.15
@@ -283,13 +422,27 @@ exports[`Play screen renders a Question unchanged in the Dark Theme Display sett
               | writingDirection: "ltr"
               "What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)"
       <View>
-        ~ className: "absolute inset-x-0 bottom-0"
+        | bottom: 0
+        | insetInline: 0
+        | position: "absolute"
         | transform: [{"translateY":0}]
         <View>
-          ~ className: "border-darker/10 bg-white/90 flex-row items-stretch border-t px-4 pt-2 dark:border-white/10 dark:bg-darker/80"
+          | alignItems: "stretch"
+          | backgroundColor: "#111516cc"
+          | borderColor: "#f5f5f51a"
+          | borderTopStyle: "solid"
+          | borderTopWidth: 1
+          | flexDirection: "row"
           | paddingBottom: 10
+          | paddingInline: 14
+          | paddingTop: 7
           <View accessibilityRole="button" accessibilityLabel="previous question">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#f5f5f5"
@@ -299,10 +452,18 @@ exports[`Play screen renders a Question unchanged in the Dark Theme Display sett
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#9698af"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Back"
           <View accessibilityRole="button" accessibilityLabel="exit deck">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#f5f5f5"
@@ -312,10 +473,18 @@ exports[`Play screen renders a Question unchanged in the Dark Theme Display sett
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#9698af"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Exit"
           <View accessibilityRole="button" accessibilityLabel="share question">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#f5f5f5"
@@ -325,10 +494,18 @@ exports[`Play screen renders a Question unchanged in the Dark Theme Display sett
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#9698af"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Share"
           <View accessibilityRole="button" accessibilityLabel="next question">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#f5f5f5"
@@ -338,11 +515,14 @@ exports[`Play screen renders a Question unchanged in the Dark Theme Display sett
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#9698af"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Next"
 `;
 
-exports[`Play screen renders the Pick a Card deck unchanged before a deal 1`] = `
+exports[`Play screen renders the Pick a Card deck before a deal 1`] = `
 <View>
   | flex: 1
   <View>
@@ -362,29 +542,58 @@ exports[`Play screen renders the Pick a Card deck unchanged before a deal 1`] = 
         | right: 0
         | top: 0
     <View>
-      ~ className: "flex-1"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
       <View>
-        ~ className: "flex-1 px-8"
+        | flexBasis: "0%"
+        | flexGrow: 1
+        | flexShrink: 1
         | paddingBottom: 0
+        | paddingInline: 28
         | paddingTop: 0
         <View>
-          ~ className: "flex-1 items-center justify-center"
+          | alignItems: "center"
+          | flexBasis: "0%"
+          | flexGrow: 1
+          | flexShrink: 1
+          | justifyContent: "center"
           <View>
-            ~ className: "items-center"
+            | alignItems: "center"
             <View>
               | height: 953
               | width: 686
               <View>
-                ~ className: "bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
+                | backgroundColor: "#262432cc"
+                | borderColor: "#f5f5f51a"
+                | borderRadius: 20
+                | borderStyle: "solid"
+                | borderWidth: 1
+                | inset: 0
+                | position: "absolute"
                 | transform: [{"rotate":"-3deg"},{"translateY":10}]
               <View>
-                ~ className: "bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
+                | backgroundColor: "#262432cc"
+                | borderColor: "#f5f5f51a"
+                | borderRadius: 20
+                | borderStyle: "solid"
+                | borderWidth: 1
+                | inset: 0
+                | position: "absolute"
                 | transform: [{"rotate":"2deg"},{"translateY":5}]
               <View accessibilityRole="button" accessibilityLabel="Pick a card">
-                ~ className: "absolute inset-0"
+                | inset: 0
+                | position: "absolute"
                 | transform: [{"scale":1}]
                 <View>
-                  ~ className: "bg-darkest absolute inset-0 overflow-hidden rounded-[20px] border border-white/10"
+                  | backgroundColor: "#08001a"
+                  | borderColor: "#f5f5f51a"
+                  | borderRadius: 20
+                  | borderStyle: "solid"
+                  | borderWidth: 1
+                  | inset: 0
+                  | overflow: "hidden"
+                  | position: "absolute"
                   <ViewManagerAdapter_ExpoImage>
                     | bottom: 0
                     | left: 0
@@ -392,30 +601,51 @@ exports[`Play screen renders the Pick a Card deck unchanged before a deal 1`] = 
                     | right: 0
                     | top: 0
                   <Text>
-                    ~ className: "absolute bottom-5 right-5 font-title text-yellow-400"
+                    | bottom: 17.5
+                    | color: "#f9d75f"
+                    | fontFamily: "aptly"
                     | fontSize: 26
+                    | position: "absolute"
+                    | right: 17.5
                     "WHO"
                     <Text>
-                      ~ className: "text-primary-dark"
+                      | color: "#c058d2"
                       "?"
                     <Text>
-                      ~ className: "text-white"
+                      | color: "#f5f5f5"
                       "CARDS"
             <View accessibilityRole="button" accessibilityLabel="Tap to pick a card" accessibilityState={}>
-              ~ className: "justify-center"
               | height: 40
+              | justifyContent: "center"
               | marginTop: 28
               <Text>
-                ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                | color: "#6b6d82"
+                | fontFamily: "golos-text"
+                | fontSize: 12.25
+                | lineHeight: 17.5
                 "Tap to pick a card"
       <View>
-        ~ className: "absolute inset-x-0 bottom-0"
+        | bottom: 0
+        | insetInline: 0
+        | position: "absolute"
         | transform: [{"translateY":0}]
         <View>
-          ~ className: "border-darker/10 bg-white/90 flex-row items-stretch border-t px-4 pt-2 dark:border-white/10 dark:bg-darker/80"
+          | alignItems: "stretch"
+          | backgroundColor: "#f5f5f5e5"
+          | borderColor: "#1115161a"
+          | borderTopStyle: "solid"
+          | borderTopWidth: 1
+          | flexDirection: "row"
           | paddingBottom: 10
+          | paddingInline: 14
+          | paddingTop: 7
           <View accessibilityRole="button" accessibilityLabel="previous question">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#111516"
@@ -425,10 +655,18 @@ exports[`Play screen renders the Pick a Card deck unchanged before a deal 1`] = 
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#6b6d82"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Back"
           <View accessibilityRole="button" accessibilityLabel="exit deck">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#111516"
@@ -438,10 +676,18 @@ exports[`Play screen renders the Pick a Card deck unchanged before a deal 1`] = 
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#6b6d82"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Exit"
           <View accessibilityRole="button" accessibilityLabel="next question">
-            ~ className: "flex-1 items-center gap-1 py-1"
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
             | transform: [{"scale":1}]
             <Text>
               | color: "#111516"
@@ -451,11 +697,14 @@ exports[`Play screen renders the Pick a Card deck unchanged before a deal 1`] = 
               | fontWeight: "normal"
               ""
             <Text>
-              ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+              | color: "#6b6d82"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
               "Next"
 `;
 
-exports[`Play screen renders the unknown-Deck message unchanged 1`] = `
+exports[`Play screen renders the unknown-Deck message 1`] = `
 <View>
   | flex: 1
   <View>
@@ -475,20 +724,23 @@ exports[`Play screen renders the unknown-Deck message unchanged 1`] = `
         | right: 0
         | top: 0
     <View>
-      ~ className: "flex-1 items-center justify-center"
+      | alignItems: "center"
+      | flex: 1
+      | justifyContent: "center"
       <Text>
-        ~ className: "text-darker dark:text-white font-sans"
+        | color: "#111516"
+        | fontFamily: "golos-text"
         "Deck not found."
 `;
 
-exports[`Root layout renders the screen-transition background unchanged 1`] = `
+exports[`Root layout renders the screen-transition background 1`] = `
 <View>
   | flex: 1
   <View>
     | backgroundColor: "#efe7f7"
 `;
 
-exports[`Root layout renders the screen-transition background unchanged in Dark 1`] = `
+exports[`Root layout renders the screen-transition background in Dark 1`] = `
 <View>
   | flex: 1
   <View>

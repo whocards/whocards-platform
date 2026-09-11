@@ -1,0 +1,40 @@
+# Theme overrides survive a relaunch, and the player can return to System.
+# Screenshots also expose whether native styles repaint when the setting changes.
+appId: ${APP_ID}
+tags:
+  - ios
+  - android
+---
+- launchApp:
+    clearState: true
+- tapOn: 'Settings'
+- tapOn: 'Theme: System'
+- tapOn: 'Theme: Dark'
+- assertVisible: 'Theme: Dark'
+- tapOn: 'close'
+- takeScreenshot: .maestro/artifacts/theme-dark
+
+- stopApp
+- launchApp
+- tapOn: 'Settings'
+- assertVisible: 'Theme: Dark'
+- tapOn: 'Theme: Dark'
+- tapOn: 'Theme: Light'
+- assertVisible: 'Theme: Light'
+- tapOn: 'close'
+- takeScreenshot: .maestro/artifacts/theme-light
+
+- stopApp
+- launchApp
+- tapOn: 'Settings'
+- assertVisible: 'Theme: Light'
+- tapOn: 'Theme: Light'
+- tapOn: 'Theme: System'
+- assertVisible: 'Theme: System'
+- tapOn: 'close'
+- takeScreenshot: .maestro/artifacts/theme-system
+
+- stopApp
+- launchApp
+- tapOn: 'Settings'
+- assertVisible: 'Theme: System'

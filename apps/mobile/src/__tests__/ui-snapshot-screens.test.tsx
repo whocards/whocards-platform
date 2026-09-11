@@ -3,13 +3,10 @@
  * player (`src/app/play/[deck].tsx`, in each of its states) and the root layout
  * (`src/app/_layout.tsx`).
  *
- * Same contract as ui-snapshot-surfaces.test.tsx: the baseline `.snap` is
- * recorded on the PRE-upgrade toolchain and replayed untouched against the new
- * one, so a difference here is a finding to read, never a `jest -u`. (Its first
- * line is the exception: jest 30 refuses to read a snapshot file carrying
- * jest 29's guide-link header, and that line is Jest's own file-format marker
- * rather than test output. Everything below it is what the old toolchain
- * recorded.)
+ * Same contract as ui-snapshot-surfaces.test.tsx: the snapshots are regression
+ * baselines for the upgraded React Native / NativeWind v5 toolchain. They cover
+ * the resolved JS render, including the CSS compiled and injected by Jest;
+ * native layout and rasterization still require comparison on a device.
  *
  * How much of each screen is real:
  *   - Library and the player render for real, top to bottom — every component,
@@ -42,9 +39,9 @@
 import React from 'react'
 import {act, render, screen} from '@testing-library/react-native'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
-import {colorScheme} from 'nativewind'
+import {setColorScheme} from '@/lib/color-scheme'
 
-import {uiSnapshot} from '@/test-utils/ui-snapshot'
+import {flattenStyle, uiSnapshot} from '@/test-utils/ui-snapshot'
 
 // Whole screens, so slower than the per-component suites; see
 // settings-modal.test.tsx for why CI's shared runners need the headroom.
@@ -57,10 +54,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
 
-// The real `SafeAreaView` is a `View` plus whatever insets a provider reports;
-// with no provider mounted those insets are zero anyway, so this is that minus
-// the provider warning — and zero insets keep the padding in the snapshot fixed
-// rather than device-shaped.
+// The installed react-native-css safe-area adapter reexports the platform
+// SafeAreaView; it provides insets but does not make that primitive CSS-aware.
+// Use the raw native View here so this test exercises the same styling boundary
+// as the device. The landing container uses explicit styles for that reason.
 jest.mock('react-native-safe-area-context', () => {
   const {View} = jest.requireActual('react-native')
   return {
@@ -110,9 +107,8 @@ jest.mock('expo-router', () => {
 })
 
 // The root layout imports the Tailwind entry stylesheet for Metro to compile;
-// Jest has no CSS transform (and no Metro), so stub the module rather than let
-// it try to parse `@tailwind base` as JavaScript. Nothing is lost that this
-// format could have seen — see ui-snapshot.ts on unresolved classes.
+// Jest compiles and injects the same stylesheet in its global setup, but still
+// needs the module stub because Jest has no CSS module transform.
 jest.mock('../global.css', () => ({}))
 
 jest.mock('expo-splash-screen', () => ({
@@ -152,7 +148,9 @@ jest.mock('@/lib/language-store', () => ({
 // storing 'dark', not by poking NativeWind's observable, which the restore would
 // immediately overwrite with the stored value anyway.
 jest.mock('@/lib/theme-store', () => ({
-  getStoredTheme: jest.fn().mockResolvedValue('system'),
+  // Pin the default snapshot to light; the host machine's system appearance is
+  // otherwise allowed to change the deterministic baseline.
+  getStoredTheme: jest.fn().mockResolvedValue('light'),
   setStoredTheme: jest.fn().mockResolvedValue(undefined),
 }))
 
@@ -184,7 +182,7 @@ import {getStoredGame} from '@/lib/game-store'
 import {getStoredTheme} from '@/lib/theme-store'
 
 import RootLayout from '../app/_layout'
-import LandingScreen from '../app/index'
+import LandingScreen, {libraryContainerStyle} from '../app/index'
 import PlayScreen from '../app/play/[deck]'
 
 /** Every screen sits under the root layout's gesture root on device. */
@@ -192,7 +190,12 @@ const Root = ({children}: {children: React.ReactNode}) => (
   <GestureHandlerRootView>{children}</GestureHandlerRootView>
 )
 
-const renderUi = (ui: React.ReactElement) => render(ui, {wrapper: Root})
+const renderUi = async (ui: React.ReactElement) => await render(ui, {wrapper: Root})
+
+// The safe-area adapter's SafeAreaView ignores className, so the Library's
+// container spacing lives in explicit styles. Find the container by its own
+// testID (not by the values under test) and pin the whole style object.
+const librarySafeAreaStyle = () => flattenStyle(screen.getByTestId('library-safe-area').props.style)
 
 /**
  * Let the screen finish arriving. Both screens run their entrance behind a
@@ -207,28 +210,28 @@ const settle = async () => {
   })
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   mockParams = {}
   // The Deck engine shuffles with Math.random; a snapshot needs one deal.
   jest.spyOn(Math, 'random').mockReturnValue(0.42)
+  await act(() => setColorScheme('light'))
 })
 
-afterEach(async () => {
+// The colour scheme itself is reset globally in jest.setup.ts.
+afterEach(() => {
   jest.restoreAllMocks()
-  // NativeWind's colorScheme is a global observable — reset it so a Dark-theme
-  // snapshot can't bleed into whichever test runs next.
-  await act(() => colorScheme.set('system'))
 })
 
 describe('Library screen', () => {
-  it('renders the Library unchanged', async () => {
+  it('renders the Library screen', async () => {
     await renderUi(<LandingScreen />)
     await screen.findByLabelText('Play')
+    expect(librarySafeAreaStyle()).toEqual(libraryContainerStyle)
     await settle()
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders the Library unchanged in the Dark Theme Display setting', async () => {
+  it('renders the Library screen in the Dark Theme Display setting', async () => {
     jest.mocked(getStoredTheme).mockResolvedValueOnce('dark')
     await renderUi(<LandingScreen />)
     await screen.findByLabelText('Play')
@@ -238,7 +241,7 @@ describe('Library screen', () => {
 })
 
 describe('Play screen', () => {
-  it('renders a Question unchanged', async () => {
+  it('renders a Question', async () => {
     // `?q=` opens the classic player at that Question in natural order instead
     // of shuffling (ADR-0003) — which is also what makes it snapshottable.
     mockParams = {deck: 'library', q: '1'}
@@ -248,16 +251,16 @@ describe('Play screen', () => {
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders a Question unchanged in the Dark Theme Display setting', async () => {
+  it('renders a Question in the Dark Theme Display setting', async () => {
     mockParams = {deck: 'library', q: '1'}
-    await act(() => colorScheme.set('dark'))
+    await act(() => setColorScheme('dark'))
     await renderUi(<PlayScreen />)
     await screen.findByLabelText('exit deck')
     await settle()
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders the Pick a Card deck unchanged before a deal', async () => {
+  it('renders the Pick a Card deck before a deal', async () => {
     mockParams = {deck: 'library'}
     jest.mocked(getStoredGame).mockResolvedValueOnce('pick')
     await renderUi(<PlayScreen />)
@@ -266,7 +269,7 @@ describe('Play screen', () => {
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders the unknown-Deck message unchanged', async () => {
+  it('renders the unknown-Deck message', async () => {
     mockParams = {deck: 'no-such-deck'}
     await renderUi(<PlayScreen />)
     await screen.findByText('Deck not found.')
@@ -277,14 +280,14 @@ describe('Play screen', () => {
 describe('Root layout', () => {
   // Only the themed screen-transition background is under test here; see the
   // header comment for why the navigator itself is stubbed.
-  it('renders the screen-transition background unchanged', async () => {
+  it('renders the screen-transition background', async () => {
     await render(<RootLayout />)
     await settle()
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders the screen-transition background unchanged in Dark', async () => {
-    await act(() => colorScheme.set('dark'))
+  it('renders the screen-transition background in Dark', async () => {
+    await act(() => setColorScheme('dark'))
     await render(<RootLayout />)
     await settle()
     expect(uiSnapshot(screen)).toMatchSnapshot()

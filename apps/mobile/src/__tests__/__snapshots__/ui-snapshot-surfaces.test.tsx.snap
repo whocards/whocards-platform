@@ -1,13 +1,25 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`Player bar renders Prev / Exit / Share / Next unchanged 1`] = `
+exports[`Player bar renders Prev / Exit / Share / Next 1`] = `
 <View>
   | flex: 1
   <View>
-    ~ className: "border-darker/10 bg-white/90 flex-row items-stretch border-t px-4 pt-2 dark:border-white/10 dark:bg-darker/80"
+    | alignItems: "stretch"
+    | backgroundColor: "#f5f5f5e5"
+    | borderColor: "#1115161a"
+    | borderTopStyle: "solid"
+    | borderTopWidth: 1
+    | flexDirection: "row"
     | paddingBottom: 10
+    | paddingInline: 14
+    | paddingTop: 7
     <View accessibilityRole="button" accessibilityLabel="previous question">
-      ~ className: "flex-1 items-center gap-1 py-1"
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | gap: 3.5
+      | paddingBlock: 3.5
       | transform: [{"scale":1}]
       <Text>
         | color: "#111516"
@@ -17,10 +29,18 @@ exports[`Player bar renders Prev / Exit / Share / Next unchanged 1`] = `
         | fontWeight: "normal"
         ""
       <Text>
-        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        | color: "#6b6d82"
+        | fontFamily: "golos-text"
+        | fontSize: 10.5
+        | lineHeight: 14
         "Back"
     <View accessibilityRole="button" accessibilityLabel="exit deck">
-      ~ className: "flex-1 items-center gap-1 py-1"
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | gap: 3.5
+      | paddingBlock: 3.5
       | transform: [{"scale":1}]
       <Text>
         | color: "#111516"
@@ -30,10 +50,18 @@ exports[`Player bar renders Prev / Exit / Share / Next unchanged 1`] = `
         | fontWeight: "normal"
         ""
       <Text>
-        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        | color: "#6b6d82"
+        | fontFamily: "golos-text"
+        | fontSize: 10.5
+        | lineHeight: 14
         "Exit"
     <View accessibilityRole="button" accessibilityLabel="share question">
-      ~ className: "flex-1 items-center gap-1 py-1"
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | gap: 3.5
+      | paddingBlock: 3.5
       | transform: [{"scale":1}]
       <Text>
         | color: "#111516"
@@ -43,10 +71,18 @@ exports[`Player bar renders Prev / Exit / Share / Next unchanged 1`] = `
         | fontWeight: "normal"
         ""
       <Text>
-        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        | color: "#6b6d82"
+        | fontFamily: "golos-text"
+        | fontSize: 10.5
+        | lineHeight: 14
         "Share"
     <View accessibilityRole="button" accessibilityLabel="next question">
-      ~ className: "flex-1 items-center gap-1 py-1"
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | gap: 3.5
+      | paddingBlock: 3.5
       | transform: [{"scale":1}]
       <Text>
         | color: "#111516"
@@ -56,18 +92,33 @@ exports[`Player bar renders Prev / Exit / Share / Next unchanged 1`] = `
         | fontWeight: "normal"
         ""
       <Text>
-        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        | color: "#6b6d82"
+        | fontFamily: "golos-text"
+        | fontSize: 10.5
+        | lineHeight: 14
         "Next"
 `;
 
-exports[`Player bar renders without Share unchanged (the pick screen before a deal) 1`] = `
+exports[`Player bar renders without Share (the pick screen before a deal) 1`] = `
 <View>
   | flex: 1
   <View>
-    ~ className: "border-darker/10 bg-white/90 flex-row items-stretch border-t px-4 pt-2 dark:border-white/10 dark:bg-darker/80"
+    | alignItems: "stretch"
+    | backgroundColor: "#f5f5f5e5"
+    | borderColor: "#1115161a"
+    | borderTopStyle: "solid"
+    | borderTopWidth: 1
+    | flexDirection: "row"
     | paddingBottom: 10
+    | paddingInline: 14
+    | paddingTop: 7
     <View accessibilityRole="button" accessibilityLabel="previous question">
-      ~ className: "flex-1 items-center gap-1 py-1"
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | gap: 3.5
+      | paddingBlock: 3.5
       | transform: [{"scale":1}]
       <Text>
         | color: "#111516"
@@ -77,10 +128,18 @@ exports[`Player bar renders without Share unchanged (the pick screen before a de
         | fontWeight: "normal"
         ""
       <Text>
-        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        | color: "#6b6d82"
+        | fontFamily: "golos-text"
+        | fontSize: 10.5
+        | lineHeight: 14
         "Back"
     <View accessibilityRole="button" accessibilityLabel="exit deck">
-      ~ className: "flex-1 items-center gap-1 py-1"
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | gap: 3.5
+      | paddingBlock: 3.5
       | transform: [{"scale":1}]
       <Text>
         | color: "#111516"
@@ -90,10 +149,18 @@ exports[`Player bar renders without Share unchanged (the pick screen before a de
         | fontWeight: "normal"
         ""
       <Text>
-        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        | color: "#6b6d82"
+        | fontFamily: "golos-text"
+        | fontSize: 10.5
+        | lineHeight: 14
         "Exit"
     <View accessibilityRole="button" accessibilityLabel="next question">
-      ~ className: "flex-1 items-center gap-1 py-1"
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | gap: 3.5
+      | paddingBlock: 3.5
       | transform: [{"scale":1}]
       <Text>
         | color: "#111516"
@@ -103,19 +170,31 @@ exports[`Player bar renders without Share unchanged (the pick screen before a de
         | fontWeight: "normal"
         ""
       <Text>
-        ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-xs"
+        | color: "#6b6d82"
+        | fontFamily: "golos-text"
+        | fontSize: 10.5
+        | lineHeight: 14
         "Next"
 `;
 
-exports[`Settings pages renders the Game page unchanged 1`] = `
+exports[`Settings pages renders the Game page 1`] = `
 <View>
   | flex: 1
   <View>
     <View>
-      ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+      | alignItems: "center"
+      | borderBottomStyle: "solid"
+      | borderBottomWidth: 1
+      | borderColor: "#dcdee9"
+      | flexDirection: "row"
+      | justifyContent: "space-between"
+      | paddingBlock: 14
+      | paddingInline: 17.5
       | paddingTop: 16
       <View>
-        ~ className: "flex-row items-center gap-1"
+        | alignItems: "center"
+        | flexDirection: "row"
+        | gap: 3.5
         <View accessibilityLabel="back" accessibilityState={}>
           <Text>
             | color: "#111516"
@@ -125,54 +204,101 @@ exports[`Settings pages renders the Game page unchanged 1`] = `
             | fontWeight: "normal"
             ""
         <Text>
-          ~ className: "text-darker dark:text-white font-title text-2xl"
+          | color: "#111516"
+          | fontFamily: "aptly"
+          | fontSize: 21
+          | lineHeight: 28
           "Choose your game"
     <RCTScrollView>
       | maxHeight: 1067.2
       <View>
         <View accessibilityRole="button" accessibilityLabel="Classic" accessibilityState={"selected":true}>
-          ~ className: "gap-1 px-5 py-4 bg-yellow-300/40"
+          | backgroundColor: "#ffe37e66"
+          | gap: 3.5
+          | paddingBlock: 14
+          | paddingInline: 17.5
           <View>
-            ~ className: "flex-row items-center justify-between"
+            | alignItems: "center"
+            | flexDirection: "row"
+            | justifyContent: "space-between"
             <View>
-              ~ className: "flex-row items-center gap-2"
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 7
               <Text>
-                ~ className: "text-darker dark:text-white font-sans text-lg"
+                | color: "#111516"
+                | fontFamily: "golos-text"
+                | fontSize: 15.75
+                | lineHeight: 24.5
                 "Classic"
             <Text>
-              ~ className: "text-accentOnLight dark:text-accentOnDark text-lg font-bold"
+              | color: "#9a3aac"
+              | fontSize: 15.75
+              | fontWeight: 700
+              | lineHeight: 24.5
               "✓"
           <Text>
-            ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+            | color: "#6b6d82"
+            | fontFamily: "golos-text"
+            | fontSize: 12.25
+            | lineHeight: 17.5
             "Swipe through the deck, one question after another."
         <View accessibilityRole="button" accessibilityLabel="Pick a Card" accessibilityState={"selected":false}>
-          ~ className: "gap-1 px-5 py-4 "
+          | gap: 3.5
+          | paddingBlock: 14
+          | paddingInline: 17.5
           <View>
-            ~ className: "flex-row items-center justify-between"
+            | alignItems: "center"
+            | flexDirection: "row"
+            | justifyContent: "space-between"
             <View>
-              ~ className: "flex-row items-center gap-2"
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 7
               <Text>
-                ~ className: "text-darker dark:text-white font-sans text-lg"
+                | color: "#111516"
+                | fontFamily: "golos-text"
+                | fontSize: 15.75
+                | lineHeight: 24.5
                 "Pick a Card"
               <View>
-                ~ className: "rounded-full bg-yellow-400 px-2 py-0.5"
+                | backgroundColor: "#f9d75f"
+                | borderRadius: 9007199254740990
+                | paddingBlock: 1.75
+                | paddingInline: 7
                 <Text>
-                  ~ className: "text-darker font-sans text-xs font-bold"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | fontWeight: 700
+                  | lineHeight: 14
                   "Included in early access"
           <Text>
-            ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+            | color: "#6b6d82"
+            | fontFamily: "golos-text"
+            | fontSize: 12.25
+            | lineHeight: 17.5
             "Draw each card yourself — a fresh deal for every question."
 `;
 
-exports[`Settings pages renders the Language page unchanged 1`] = `
+exports[`Settings pages renders the Language page 1`] = `
 <View>
   | flex: 1
   <View>
     <View>
-      ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+      | alignItems: "center"
+      | borderBottomStyle: "solid"
+      | borderBottomWidth: 1
+      | borderColor: "#dcdee9"
+      | flexDirection: "row"
+      | justifyContent: "space-between"
+      | paddingBlock: 14
+      | paddingInline: 17.5
       | paddingTop: 16
       <View>
-        ~ className: "flex-row items-center gap-1"
+        | alignItems: "center"
+        | flexDirection: "row"
+        | gap: 3.5
         <View accessibilityLabel="back" accessibilityState={}>
           <Text>
             | color: "#111516"
@@ -182,35 +308,65 @@ exports[`Settings pages renders the Language page unchanged 1`] = `
             | fontWeight: "normal"
             ""
         <Text>
-          ~ className: "text-darker dark:text-white font-title text-2xl"
+          | color: "#111516"
+          | fontFamily: "aptly"
+          | fontSize: 21
+          | lineHeight: 28
           "Choose your language"
     <RCTScrollView>
       | maxHeight: 1067.2
       <View>
         <View accessibilityRole="button" accessibilityState={"selected":true}>
-          ~ className: "flex-row items-center justify-between px-5 py-4 bg-yellow-300/40"
+          | alignItems: "center"
+          | backgroundColor: "#ffe37e66"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
           <Text>
-            ~ className: "text-darker dark:text-white font-sans text-lg"
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
             "English"
           <Text>
-            ~ className: "text-accentOnLight dark:text-accentOnDark text-lg font-bold"
+            | color: "#9a3aac"
+            | fontSize: 15.75
+            | fontWeight: 700
+            | lineHeight: 24.5
             "✓"
         <View accessibilityRole="button" accessibilityState={"selected":false}>
-          ~ className: "flex-row items-center justify-between px-5 py-4 "
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
           <Text>
-            ~ className: "text-darker dark:text-white font-sans text-lg"
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
             "Hebrew"
 `;
 
-exports[`Settings pages renders the Second language page unchanged 1`] = `
+exports[`Settings pages renders the Second language page 1`] = `
 <View>
   | flex: 1
   <View>
     <View>
-      ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+      | alignItems: "center"
+      | borderBottomStyle: "solid"
+      | borderBottomWidth: 1
+      | borderColor: "#dcdee9"
+      | flexDirection: "row"
+      | justifyContent: "space-between"
+      | paddingBlock: 14
+      | paddingInline: 17.5
       | paddingTop: 16
       <View>
-        ~ className: "flex-row items-center gap-1"
+        | alignItems: "center"
+        | flexDirection: "row"
+        | gap: 3.5
         <View accessibilityLabel="back" accessibilityState={}>
           <Text>
             | color: "#111516"
@@ -220,40 +376,77 @@ exports[`Settings pages renders the Second language page unchanged 1`] = `
             | fontWeight: "normal"
             ""
         <Text>
-          ~ className: "text-darker dark:text-white font-title text-2xl"
+          | color: "#111516"
+          | fontFamily: "aptly"
+          | fontSize: 21
+          | lineHeight: 28
           "Second language"
     <RCTScrollView>
       | maxHeight: 1067.2
       <View>
         <View accessibilityRole="button" accessibilityState={"selected":false}>
-          ~ className: "flex-row items-center justify-between px-5 py-4 "
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
           <Text>
-            ~ className: "text-darker dark:text-white font-sans text-lg"
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
             "None"
         <View accessibilityRole="button" accessibilityState={"selected":true}>
-          ~ className: "flex-row items-center justify-between px-5 py-4 bg-yellow-300/40"
+          | alignItems: "center"
+          | backgroundColor: "#ffe37e66"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
           <Text>
-            ~ className: "text-darker dark:text-white font-sans text-lg"
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
             "Hebrew"
           <Text>
-            ~ className: "text-accentOnLight dark:text-accentOnDark text-lg font-bold"
+            | color: "#9a3aac"
+            | fontSize: 15.75
+            | fontWeight: 700
+            | lineHeight: 24.5
             "✓"
         <View accessibilityRole="button" accessibilityState={"selected":false}>
-          ~ className: "flex-row items-center justify-between px-5 py-4 "
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
           <Text>
-            ~ className: "text-darker dark:text-white font-sans text-lg"
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
             "Spanish"
 `;
 
-exports[`Settings pages renders the Theme page unchanged 1`] = `
+exports[`Settings pages renders the Theme page 1`] = `
 <View>
   | flex: 1
   <View>
     <View>
-      ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+      | alignItems: "center"
+      | borderBottomStyle: "solid"
+      | borderBottomWidth: 1
+      | borderColor: "#dcdee9"
+      | flexDirection: "row"
+      | justifyContent: "space-between"
+      | paddingBlock: 14
+      | paddingInline: 17.5
       | paddingTop: 16
       <View>
-        ~ className: "flex-row items-center gap-1"
+        | alignItems: "center"
+        | flexDirection: "row"
+        | gap: 3.5
         <View accessibilityLabel="back" accessibilityState={}>
           <Text>
             | color: "#111516"
@@ -263,54 +456,107 @@ exports[`Settings pages renders the Theme page unchanged 1`] = `
             | fontWeight: "normal"
             ""
         <Text>
-          ~ className: "text-darker dark:text-white font-title text-2xl"
+          | color: "#111516"
+          | fontFamily: "aptly"
+          | fontSize: 21
+          | lineHeight: 28
           "Theme"
     <View>
-      ~ className: "px-5 py-4"
+      | paddingBlock: 14
+      | paddingInline: 17.5
       <View>
-        ~ className: "bg-gray-lighter dark:bg-white/10 flex-row rounded-xl p-1"
+        | backgroundColor: "#dcdee9"
+        | borderRadius: 10.5
+        | flexDirection: "row"
+        | padding: 3.5
         <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":true}>
-          ~ className: "flex-1 items-center rounded-lg py-2.5 bg-white dark:bg-dark"
+          | alignItems: "center"
+          | backgroundColor: "#f5f5f5"
+          | borderRadius: 7
           | elevation: 1
+          | flexBasis: "0%"
+          | flexGrow: 1
+          | flexShrink: 1
+          | paddingBlock: 8.75
           | shadowColor: "#000"
           | shadowOffset: {"height":1,"width":0}
           | shadowOpacity: 0.12
           | shadowRadius: 2
           <Text>
-            ~ className: "text-darker dark:text-white font-sans text-sm font-bold"
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 12.25
+            | fontWeight: 700
+            | lineHeight: 17.5
             "System"
         <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
-          ~ className: "flex-1 items-center rounded-lg py-2.5 "
+          | alignItems: "center"
+          | borderRadius: 7
+          | flexBasis: "0%"
+          | flexGrow: 1
+          | flexShrink: 1
+          | paddingBlock: 8.75
           <Text>
-            ~ className: "text-darker dark:text-white font-sans text-sm "
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 12.25
+            | lineHeight: 17.5
             "Light"
         <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":false}>
-          ~ className: "flex-1 items-center rounded-lg py-2.5 "
+          | alignItems: "center"
+          | borderRadius: 7
+          | flexBasis: "0%"
+          | flexGrow: 1
+          | flexShrink: 1
+          | paddingBlock: 8.75
           <Text>
-            ~ className: "text-darker dark:text-white font-sans text-sm "
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 12.25
+            | lineHeight: 17.5
             "Dark"
       <Text>
-        ~ className: "text-mutedOnLight dark:text-gray-dark mt-4 font-sans text-sm leading-5"
+        | color: "#6b6d82"
+        | fontFamily: "golos-text"
+        | fontSize: 12.25
+        | lineHeight: 17.5
+        | marginTop: 14
         "Matches your device by default. Presentation only — it never changes which Card is drawn or your progress."
 `;
 
-exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] = `
+exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
 <View>
   | flex: 1
   <Modal>
     <View>
-      ~ className: "flex-1 justify-end"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | justifyContent: "flex-end"
       <View accessibilityLabel="dismiss" accessibilityState={}>
-        ~ className: "absolute inset-0"
+        | inset: 0
+        | position: "absolute"
       <View accessibilityState={}>
-        ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+        | backgroundColor: "#f5f5f5"
+        | borderTopLeftRadius: 21
+        | borderTopRightRadius: 21
         | paddingBottom: 24
         <View>
           <View>
-            ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+            | alignItems: "center"
+            | borderBottomStyle: "solid"
+            | borderBottomWidth: 1
+            | borderColor: "#dcdee9"
+            | flexDirection: "row"
+            | justifyContent: "space-between"
+            | paddingBlock: 14
+            | paddingInline: 17.5
             | paddingTop: 16
             <Text>
-              ~ className: "text-darker dark:text-white font-title text-2xl"
+              | color: "#111516"
+              | fontFamily: "aptly"
+              | fontSize: 21
+              | lineHeight: 28
               "Settings"
             <View accessibilityLabel="close" accessibilityState={}>
               <Text>
@@ -324,17 +570,41 @@ exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] 
             | maxHeight: 1067.2
             <View>
               <Text>
-                ~ className: "text-mutedOnLight dark:text-gray-dark px-5 pb-1 pt-4 font-sans text-xs font-bold uppercase tracking-wide"
+                | color: "#6b6d82"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 14
+                | textTransform: "uppercase"
                 "Gameplay"
               <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={}>
-                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Game"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "Classic"
                   <Text>
                     | color: "#6b6d82"
@@ -344,14 +614,29 @@ exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] 
                     | fontWeight: "normal"
                     ""
               <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
-                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Language"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "English"
                   <Text>
                     | color: "#6b6d82"
@@ -361,14 +646,29 @@ exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] 
                     | fontWeight: "normal"
                     ""
               <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
-                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Second language"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "None"
                   <Text>
                     | color: "#6b6d82"
@@ -378,17 +678,32 @@ exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] 
                     | fontWeight: "normal"
                     ""
               <View>
-                ~ className: "px-5 pb-1 pt-5"
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-title text-lg"
+                  | color: "#111516"
+                  | fontFamily: "aptly"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Tabletop mode"
                 <Text>
-                  ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 12.25
+                  | lineHeight: 17.5
                   "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
               <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
-                ~ className: "flex-row items-center justify-between px-5 py-3 "
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 10.5
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Two-way readable"
                 <Text>
                   | color: "#6b6d82"
@@ -398,17 +713,42 @@ exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] 
                   | fontWeight: "normal"
                   ""
               <Text>
-                ~ className: "text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide"
+                | borderColor: "#dcdee9"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | color: "#6b6d82"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | marginTop: 7
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
+                | textTransform: "uppercase"
                 "Appearance"
               <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={}>
-                ~ className: "flex-row items-center justify-between px-5 py-4"
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Theme"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "System"
                   <Text>
                     | color: "#6b6d82"
@@ -431,20 +771,34 @@ exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] 
           | right: 0
           | top: 0
           <View accessibilityLabel="dismiss page" accessibilityState={}>
-            ~ className: "flex-1 bg-black"
+            | backgroundColor: "#000"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
         <View>
           | flex: 1
           | justifyContent: "flex-end"
           | transform: [{"translateY":0}]
           <View accessibilityState={}>
-            ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+            | backgroundColor: "#f5f5f5"
+            | borderTopLeftRadius: 21
+            | borderTopRightRadius: 21
             | paddingBottom: 24
             <View>
               <View>
-                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 | paddingTop: 16
                 <View>
-                  ~ className: "flex-row items-center gap-1"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 3.5
                   <View accessibilityLabel="back" accessibilityState={}>
                     <Text>
                       | color: "#111516"
@@ -454,62 +808,116 @@ exports[`Settings sheet renders a risen page over the dimmed menu unchanged 1`] 
                       | fontWeight: "normal"
                       ""
                   <Text>
-                    ~ className: "text-darker dark:text-white font-title text-2xl"
+                    | color: "#111516"
+                    | fontFamily: "aptly"
+                    | fontSize: 21
+                    | lineHeight: 28
                     "Choose your game"
               <RCTScrollView>
                 | maxHeight: 1067.2
                 <View>
                   <View accessibilityRole="button" accessibilityLabel="Classic" accessibilityState={"selected":true}>
-                    ~ className: "gap-1 px-5 py-4 bg-yellow-300/40"
+                    | backgroundColor: "#ffe37e66"
+                    | gap: 3.5
+                    | paddingBlock: 14
+                    | paddingInline: 17.5
                     <View>
-                      ~ className: "flex-row items-center justify-between"
+                      | alignItems: "center"
+                      | flexDirection: "row"
+                      | justifyContent: "space-between"
                       <View>
-                        ~ className: "flex-row items-center gap-2"
+                        | alignItems: "center"
+                        | flexDirection: "row"
+                        | gap: 7
                         <Text>
-                          ~ className: "text-darker dark:text-white font-sans text-lg"
+                          | color: "#111516"
+                          | fontFamily: "golos-text"
+                          | fontSize: 15.75
+                          | lineHeight: 24.5
                           "Classic"
                       <Text>
-                        ~ className: "text-accentOnLight dark:text-accentOnDark text-lg font-bold"
+                        | color: "#9a3aac"
+                        | fontSize: 15.75
+                        | fontWeight: 700
+                        | lineHeight: 24.5
                         "✓"
                     <Text>
-                      ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                      | color: "#6b6d82"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
                       "Swipe through the deck, one question after another."
                   <View accessibilityRole="button" accessibilityLabel="Pick a Card" accessibilityState={"selected":false}>
-                    ~ className: "gap-1 px-5 py-4 "
+                    | gap: 3.5
+                    | paddingBlock: 14
+                    | paddingInline: 17.5
                     <View>
-                      ~ className: "flex-row items-center justify-between"
+                      | alignItems: "center"
+                      | flexDirection: "row"
+                      | justifyContent: "space-between"
                       <View>
-                        ~ className: "flex-row items-center gap-2"
+                        | alignItems: "center"
+                        | flexDirection: "row"
+                        | gap: 7
                         <Text>
-                          ~ className: "text-darker dark:text-white font-sans text-lg"
+                          | color: "#111516"
+                          | fontFamily: "golos-text"
+                          | fontSize: 15.75
+                          | lineHeight: 24.5
                           "Pick a Card"
                         <View>
-                          ~ className: "rounded-full bg-yellow-400 px-2 py-0.5"
+                          | backgroundColor: "#f9d75f"
+                          | borderRadius: 9007199254740990
+                          | paddingBlock: 1.75
+                          | paddingInline: 7
                           <Text>
-                            ~ className: "text-darker font-sans text-xs font-bold"
+                            | color: "#111516"
+                            | fontFamily: "golos-text"
+                            | fontSize: 10.5
+                            | fontWeight: 700
+                            | lineHeight: 14
                             "Included in early access"
                     <Text>
-                      ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                      | color: "#6b6d82"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
                       "Draw each card yourself — a fresh deal for every question."
 `;
 
-exports[`Settings sheet renders the menu unchanged 1`] = `
+exports[`Settings sheet renders the menu 1`] = `
 <View>
   | flex: 1
   <Modal>
     <View>
-      ~ className: "flex-1 justify-end"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | justifyContent: "flex-end"
       <View accessibilityLabel="dismiss" accessibilityState={}>
-        ~ className: "absolute inset-0"
+        | inset: 0
+        | position: "absolute"
       <View accessibilityState={}>
-        ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+        | backgroundColor: "#f5f5f5"
+        | borderTopLeftRadius: 21
+        | borderTopRightRadius: 21
         | paddingBottom: 24
         <View>
           <View>
-            ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+            | alignItems: "center"
+            | borderBottomStyle: "solid"
+            | borderBottomWidth: 1
+            | borderColor: "#dcdee9"
+            | flexDirection: "row"
+            | justifyContent: "space-between"
+            | paddingBlock: 14
+            | paddingInline: 17.5
             | paddingTop: 16
             <Text>
-              ~ className: "text-darker dark:text-white font-title text-2xl"
+              | color: "#111516"
+              | fontFamily: "aptly"
+              | fontSize: 21
+              | lineHeight: 28
               "Settings"
             <View accessibilityLabel="close" accessibilityState={}>
               <Text>
@@ -523,17 +931,41 @@ exports[`Settings sheet renders the menu unchanged 1`] = `
             | maxHeight: 1067.2
             <View>
               <Text>
-                ~ className: "text-mutedOnLight dark:text-gray-dark px-5 pb-1 pt-4 font-sans text-xs font-bold uppercase tracking-wide"
+                | color: "#6b6d82"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 14
+                | textTransform: "uppercase"
                 "Gameplay"
               <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={}>
-                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Game"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "Classic"
                   <Text>
                     | color: "#6b6d82"
@@ -543,14 +975,29 @@ exports[`Settings sheet renders the menu unchanged 1`] = `
                     | fontWeight: "normal"
                     ""
               <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
-                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Language"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "English"
                   <Text>
                     | color: "#6b6d82"
@@ -560,14 +1007,29 @@ exports[`Settings sheet renders the menu unchanged 1`] = `
                     | fontWeight: "normal"
                     ""
               <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
-                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Second language"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "None"
                   <Text>
                     | color: "#6b6d82"
@@ -577,17 +1039,32 @@ exports[`Settings sheet renders the menu unchanged 1`] = `
                     | fontWeight: "normal"
                     ""
               <View>
-                ~ className: "px-5 pb-1 pt-5"
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-title text-lg"
+                  | color: "#111516"
+                  | fontFamily: "aptly"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Tabletop mode"
                 <Text>
-                  ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 12.25
+                  | lineHeight: 17.5
                   "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
               <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
-                ~ className: "flex-row items-center justify-between px-5 py-3 "
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 10.5
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Two-way readable"
                 <Text>
                   | color: "#6b6d82"
@@ -597,17 +1074,42 @@ exports[`Settings sheet renders the menu unchanged 1`] = `
                   | fontWeight: "normal"
                   ""
               <Text>
-                ~ className: "text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide"
+                | borderColor: "#dcdee9"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | color: "#6b6d82"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | marginTop: 7
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
+                | textTransform: "uppercase"
                 "Appearance"
               <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={}>
-                ~ className: "flex-row items-center justify-between px-5 py-4"
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Theme"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "System"
                   <Text>
                     | color: "#6b6d82"
@@ -618,23 +1120,39 @@ exports[`Settings sheet renders the menu unchanged 1`] = `
                     ""
 `;
 
-exports[`Settings sheet renders the menu unchanged in the Dark Theme Display setting 1`] = `
+exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] = `
 <View>
   | flex: 1
   <Modal>
     <View>
-      ~ className: "flex-1 justify-end"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | justifyContent: "flex-end"
       <View accessibilityLabel="dismiss" accessibilityState={}>
-        ~ className: "absolute inset-0"
+        | inset: 0
+        | position: "absolute"
       <View accessibilityState={}>
-        ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+        | backgroundColor: "#262432"
+        | borderTopLeftRadius: 21
+        | borderTopRightRadius: 21
         | paddingBottom: 24
         <View>
           <View>
-            ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+            | alignItems: "center"
+            | borderBottomStyle: "solid"
+            | borderBottomWidth: 1
+            | borderColor: "#f5f5f51a"
+            | flexDirection: "row"
+            | justifyContent: "space-between"
+            | paddingBlock: 14
+            | paddingInline: 17.5
             | paddingTop: 16
             <Text>
-              ~ className: "text-darker dark:text-white font-title text-2xl"
+              | color: "#f5f5f5"
+              | fontFamily: "aptly"
+              | fontSize: 21
+              | lineHeight: 28
               "Settings"
             <View accessibilityLabel="close" accessibilityState={}>
               <Text>
@@ -648,17 +1166,41 @@ exports[`Settings sheet renders the menu unchanged in the Dark Theme Display set
             | maxHeight: 1067.2
             <View>
               <Text>
-                ~ className: "text-mutedOnLight dark:text-gray-dark px-5 pb-1 pt-4 font-sans text-xs font-bold uppercase tracking-wide"
+                | color: "#9698af"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 14
+                | textTransform: "uppercase"
                 "Gameplay"
               <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={}>
-                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#f5f5f51a"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#f5f5f5"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Game"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#9698af"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "Classic"
                   <Text>
                     | color: "#9698af"
@@ -668,14 +1210,29 @@ exports[`Settings sheet renders the menu unchanged in the Dark Theme Display set
                     | fontWeight: "normal"
                     ""
               <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
-                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#f5f5f51a"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#f5f5f5"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Language"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#9698af"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "English"
                   <Text>
                     | color: "#9698af"
@@ -685,14 +1242,29 @@ exports[`Settings sheet renders the menu unchanged in the Dark Theme Display set
                     | fontWeight: "normal"
                     ""
               <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
-                ~ className: "border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#f5f5f51a"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#f5f5f5"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Second language"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#9698af"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "None"
                   <Text>
                     | color: "#9698af"
@@ -702,17 +1274,32 @@ exports[`Settings sheet renders the menu unchanged in the Dark Theme Display set
                     | fontWeight: "normal"
                     ""
               <View>
-                ~ className: "px-5 pb-1 pt-5"
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-title text-lg"
+                  | color: "#f5f5f5"
+                  | fontFamily: "aptly"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Tabletop mode"
                 <Text>
-                  ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                  | color: "#9698af"
+                  | fontFamily: "golos-text"
+                  | fontSize: 12.25
+                  | lineHeight: 17.5
                   "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
               <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
-                ~ className: "flex-row items-center justify-between px-5 py-3 "
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 10.5
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#f5f5f5"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Two-way readable"
                 <Text>
                   | color: "#9698af"
@@ -722,17 +1309,42 @@ exports[`Settings sheet renders the menu unchanged in the Dark Theme Display set
                   | fontWeight: "normal"
                   ""
               <Text>
-                ~ className: "text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide"
+                | borderColor: "#f5f5f51a"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | color: "#9698af"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | marginTop: 7
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
+                | textTransform: "uppercase"
                 "Appearance"
               <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={}>
-                ~ className: "flex-row items-center justify-between px-5 py-4"
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
                 <Text>
-                  ~ className: "text-darker dark:text-white font-sans text-lg"
+                  | color: "#f5f5f5"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
                   "Theme"
                 <View>
-                  ~ className: "flex-row items-center gap-1.5"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
                   <Text>
-                    ~ className: "text-mutedOnLight dark:text-gray-dark font-sans text-base"
+                    | color: "#9698af"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
                     "Dark"
                   <Text>
                     | color: "#9698af"
@@ -743,31 +1355,50 @@ exports[`Settings sheet renders the menu unchanged in the Dark Theme Display set
                     ""
 `;
 
-exports[`Share sheet renders all three rows unchanged for a Pool-backed Deck 1`] = `
+exports[`Share sheet renders all three rows for a Pool-backed Deck 1`] = `
 <View>
   | flex: 1
   <Modal>
     <View>
       | flex: 1
       <View>
-        ~ className: "flex-1 justify-end"
+        | flexBasis: "0%"
+        | flexGrow: 1
+        | flexShrink: 1
+        | justifyContent: "flex-end"
         <View accessibilityLabel="dismiss" accessibilityState={}>
-          ~ className: "absolute inset-0"
+          | inset: 0
+          | position: "absolute"
         <View>
-          ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+          | backgroundColor: "#f5f5f5"
+          | borderTopLeftRadius: 21
+          | borderTopRightRadius: 21
           | paddingBottom: 24
           <View>
-            ~ className: "items-center pb-1 pt-3"
+            | alignItems: "center"
+            | paddingBottom: 3.5
+            | paddingTop: 10.5
             <View>
-              ~ className: "bg-gray-lighter dark:bg-white/20 h-1 w-10 rounded-full"
+              | backgroundColor: "#dcdee9"
+              | borderRadius: 9007199254740990
+              | height: 3.5
+              | width: 35
           <RCTScrollView>
             | maxHeight: 1067.2
             <View>
               <View accessibilityState={}>
                 <View>
-                  ~ className: "flex-row items-center justify-between px-5 pb-2 pt-2"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | justifyContent: "space-between"
+                  | paddingBottom: 7
+                  | paddingInline: 17.5
+                  | paddingTop: 7
                   <Text>
-                    ~ className: "text-darker dark:text-white font-title text-2xl"
+                    | color: "#111516"
+                    | fontFamily: "aptly"
+                    | fontSize: 21
+                    | lineHeight: 28
                     "Share"
                   <View accessibilityLabel="close" accessibilityState={}>
                     <Text>
@@ -778,7 +1409,11 @@ exports[`Share sheet renders all three rows unchanged for a Pool-backed Deck 1`]
                       | fontWeight: "normal"
                       ""
                 <View accessibilityRole="button" accessibilityLabel="Share link" accessibilityState={"busy":false,"disabled":false}>
-                  ~ className: "flex-row items-center gap-3 px-5 py-4 "
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 10.5
+                  | paddingBlock: 14
+                  | paddingInline: 17.5
                   <Text>
                     | color: "#111516"
                     | fontFamily: "ionicons"
@@ -787,10 +1422,17 @@ exports[`Share sheet renders all three rows unchanged for a Pool-backed Deck 1`]
                     | fontWeight: "normal"
                     ""
                   <Text>
-                    ~ className: "text-darker dark:text-white font-sans text-lg"
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 15.75
+                    | lineHeight: 24.5
                     "Share link"
                 <View accessibilityRole="button" accessibilityLabel="Story image" accessibilityState={"busy":false,"disabled":false}>
-                  ~ className: "flex-row items-center gap-3 px-5 py-4 "
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 10.5
+                  | paddingBlock: 14
+                  | paddingInline: 17.5
                   <Text>
                     | color: "#111516"
                     | fontFamily: "ionicons"
@@ -799,10 +1441,17 @@ exports[`Share sheet renders all three rows unchanged for a Pool-backed Deck 1`]
                     | fontWeight: "normal"
                     ""
                   <Text>
-                    ~ className: "text-darker dark:text-white font-sans text-lg"
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 15.75
+                    | lineHeight: 24.5
                     "Story image"
                 <View accessibilityRole="button" accessibilityLabel="Post image" accessibilityState={"busy":false,"disabled":false}>
-                  ~ className: "flex-row items-center gap-3 px-5 py-4 "
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 10.5
+                  | paddingBlock: 14
+                  | paddingInline: 17.5
                   <Text>
                     | color: "#111516"
                     | fontFamily: "ionicons"
@@ -811,35 +1460,57 @@ exports[`Share sheet renders all three rows unchanged for a Pool-backed Deck 1`]
                     | fontWeight: "normal"
                     ""
                   <Text>
-                    ~ className: "text-darker dark:text-white font-sans text-lg"
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 15.75
+                    | lineHeight: 24.5
                     "Post image"
 `;
 
-exports[`Share sheet renders the link row alone unchanged for an inline-source Deck 1`] = `
+exports[`Share sheet renders the link row alone for an inline-source Deck 1`] = `
 <View>
   | flex: 1
   <Modal>
     <View>
       | flex: 1
       <View>
-        ~ className: "flex-1 justify-end"
+        | flexBasis: "0%"
+        | flexGrow: 1
+        | flexShrink: 1
+        | justifyContent: "flex-end"
         <View accessibilityLabel="dismiss" accessibilityState={}>
-          ~ className: "absolute inset-0"
+          | inset: 0
+          | position: "absolute"
         <View>
-          ~ className: "bg-white dark:bg-dark rounded-t-3xl"
+          | backgroundColor: "#f5f5f5"
+          | borderTopLeftRadius: 21
+          | borderTopRightRadius: 21
           | paddingBottom: 24
           <View>
-            ~ className: "items-center pb-1 pt-3"
+            | alignItems: "center"
+            | paddingBottom: 3.5
+            | paddingTop: 10.5
             <View>
-              ~ className: "bg-gray-lighter dark:bg-white/20 h-1 w-10 rounded-full"
+              | backgroundColor: "#dcdee9"
+              | borderRadius: 9007199254740990
+              | height: 3.5
+              | width: 35
           <RCTScrollView>
             | maxHeight: 1067.2
             <View>
               <View accessibilityState={}>
                 <View>
-                  ~ className: "flex-row items-center justify-between px-5 pb-2 pt-2"
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | justifyContent: "space-between"
+                  | paddingBottom: 7
+                  | paddingInline: 17.5
+                  | paddingTop: 7
                   <Text>
-                    ~ className: "text-darker dark:text-white font-title text-2xl"
+                    | color: "#111516"
+                    | fontFamily: "aptly"
+                    | fontSize: 21
+                    | lineHeight: 28
                     "Share"
                   <View accessibilityLabel="close" accessibilityState={}>
                     <Text>
@@ -850,7 +1521,11 @@ exports[`Share sheet renders the link row alone unchanged for an inline-source D
                       | fontWeight: "normal"
                       ""
                 <View accessibilityRole="button" accessibilityLabel="Share link" accessibilityState={"busy":false,"disabled":false}>
-                  ~ className: "flex-row items-center gap-3 px-5 py-4 "
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 10.5
+                  | paddingBlock: 14
+                  | paddingInline: 17.5
                   <Text>
                     | color: "#111516"
                     | fontFamily: "ionicons"
@@ -859,6 +1534,9 @@ exports[`Share sheet renders the link row alone unchanged for an inline-source D
                     | fontWeight: "normal"
                     ""
                   <Text>
-                    ~ className: "text-darker dark:text-white font-sans text-lg"
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 15.75
+                    | lineHeight: 24.5
                     "Share link"
 `;

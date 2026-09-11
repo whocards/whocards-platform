@@ -1,7 +1,7 @@
-import {colorScheme, useColorScheme} from 'nativewind'
 import {useCallback, useEffect, useState} from 'react'
 import {EVENTS, track} from '@whocards/observability/events'
 
+import {setColorScheme, useColorScheme} from '@/lib/color-scheme'
 import {getStoredTheme, setStoredTheme} from '@/lib/theme-store'
 import type {ThemeSetting} from '@/lib/theme-store'
 
@@ -10,12 +10,9 @@ import type {ThemeSetting} from '@/lib/theme-store'
  * never affects which Card is drawn or whose progress is remembered):
  * System-follow by default, with a manual Light/Dark override.
  *
- * NativeWind already follows the OS Appearance out of the box (its
- * `colorScheme` observable falls back to `Appearance.getColorScheme()`
- * whenever no explicit override has been set) — this hook's job is just to
- * restore a previously-chosen manual override on boot and to apply/persist a
- * new choice, via NativeWind's own `colorScheme.set()` / `useColorScheme()`
- * rather than a separate theming mechanism.
+ * The scheme itself lives in `@/lib/color-scheme`, which follows the OS
+ * Appearance out of the box — this hook's job is just to restore a
+ * previously-chosen manual override on boot and to apply/persist a new choice.
  *
  * `resolvedScheme` is the live, effective 'light' | 'dark' for the rare
  * JS-level conditional (an `Ionicons` color, a `StatusBar` style, which
@@ -26,28 +23,21 @@ import type {ThemeSetting} from '@/lib/theme-store'
  */
 export const useThemeSetting = () => {
   const [theme, setTheme] = useState<ThemeSetting>('system')
-  const {colorScheme: resolvedScheme} = useColorScheme()
+  const resolvedScheme = useColorScheme()
 
   useEffect(() => {
     void getStoredTheme().then((stored) => {
-      colorScheme.set(stored)
+      setColorScheme(stored)
       setTheme(stored)
     })
   }, [])
 
   const select = useCallback((next: ThemeSetting) => {
-    colorScheme.set(next)
+    setColorScheme(next)
     setTheme(next)
     void setStoredTheme(next)
     track({name: EVENTS.THEME_CHANGED, props: {theme: next}})
   }, [])
 
-  return {
-    theme,
-    // Dark-first fallback for the brief window before the boot effect above
-    // resolves — matches the app's historical (dark-only) appearance rather
-    // than assuming light.
-    resolvedScheme: resolvedScheme ?? 'dark',
-    select,
-  }
+  return {theme, resolvedScheme, select}
 }

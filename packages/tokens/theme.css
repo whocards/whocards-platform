@@ -1,0 +1,51 @@
+/*
+ * GENERATED FILE — do not edit by hand.
+ * Source of truth: packages/tokens/src/*.ts, rendered by src/theme-css.ts.
+ * Regenerate with `pnpm --filter @whocards/tokens generate:theme`.
+ *
+ * Imported by every surface that uses Tailwind, so `bg-yellow-400`,
+ * `text-mutedOnLight`, `rounded-2.5xl`, `font-title`, … resolve to the same
+ * value on the website (Tailwind v4) and in the app (NativeWind v5).
+ */
+@theme {
+  /* Spacing — extra steps beyond Tailwind’s default scale */
+  --spacing-4\.5: 1.125rem;
+  --spacing-7\.5: 1.875rem;
+
+  /* Border radius */
+  --radius-2\.5xl: 1.25rem;
+
+  /* Colours */
+  --color-yellow-100: #7e7552;
+  --color-yellow-300: #ffe37e;
+  --color-yellow-400: #f9d75f;
+  --color-yellow-500: #f6c944;
+  --color-gray: #65636e;
+  --color-gray-lighter: #dcdee9;
+  --color-gray-light: #474a69;
+  --color-gray-dark: #9698af;
+  --color-primary-light: #f9d75f;
+  --color-primary-dark: #c058d2;
+  --color-dark: #262432;
+  --color-darker: #111516;
+  --color-darkest: #08001a;
+  --color-background: #0d051f;
+  --color-white: #f5f5f5;
+  --color-red: #ee1e23;
+  --color-canvasLight: #efe7f7;
+  --color-mutedOnLight: #6b6d82;
+  --color-accentOnLight: #9a3aac;
+  --color-errorOnLight: #c9151a;
+  --color-accentOnDark: #d485e2;
+  --color-errorOnDark: #ff5b5f;
+
+  /* Font families */
+  --font-sans: golos-text, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-title: aptly, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-chinese: noto-sans-chinese, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-hebrew: noto-sans-hebrew, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-japanese: noto-sans-japanese, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  /* Background images */
+  --background-image-gradient-primary: linear-gradient(to bottom left, #c058d2 25%, #f9d75f 92%);
+}

@@ -21,6 +21,7 @@
     "**/.turbo/**",
     "pnpm-lock.yaml",
     "**/drizzle/**",
+    "packages/tokens/theme.css",
     "apps/website/**",
     "**/routeTree.gen.ts"
   ]

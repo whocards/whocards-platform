@@ -6,9 +6,10 @@
  * expressed as a `dark:` class (an `Ionicons` color, the Library screen's
  * `<StatusBar>` override — see index.tsx).
  *
- * `theme-store.ts` and `nativewind`'s `colorScheme`/`useColorScheme` run for
- * real (only `AsyncStorage` is mocked) — this hook's whole job is composing
- * the two, so mocking either away would test nothing.
+ * `theme-store.ts` and `src/lib/color-scheme.ts` (our thin wrapper over
+ * react-native-css's colour-scheme observable, which is what NativeWind v5
+ * reads `dark:` off) run for real — only `AsyncStorage` is mocked. This hook's
+ * whole job is composing the two, so mocking either away would test nothing.
  *
  * Unlike theme-store.test.ts, this file does NOT `jest.resetModules()`
  * between tests: doing that alongside `renderHook` breaks React's internal

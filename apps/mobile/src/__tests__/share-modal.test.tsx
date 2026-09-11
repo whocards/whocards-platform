@@ -42,7 +42,7 @@ import React from 'react'
 import {Share} from 'react-native'
 import {act, fireEvent, render, screen} from '@testing-library/react-native'
 import {StatusBar} from 'expo-status-bar'
-import {colorScheme} from 'nativewind'
+import {setColorScheme} from '@/lib/color-scheme'
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
@@ -75,13 +75,6 @@ jest.mock('@/lib/share-image', () => ({
 }))
 
 import {ShareModal} from '../components/share-modal'
-
-afterEach(async () => {
-  // NativeWind's colorScheme is a global observable — reset it so a test that
-  // sets it doesn't bleed into whichever test runs next (mirrors
-  // settings-modal.test.tsx).
-  await act(() => colorScheme.set('system'))
-})
 
 const PROPS = {
   questionText: 'What is your favorite memory?',
@@ -274,13 +267,13 @@ describe('ShareModal — StatusBar override (issue #173)', () => {
   })
 
   it('shows light (white) status-bar icons when the resolved scheme is dark', async () => {
-    await act(() => colorScheme.set('dark'))
+    await act(() => setColorScheme('dark'))
     await render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
     expect(lastStatusBarStyle()).toBe('light')
   })
 
   it('shows dark status-bar icons when the resolved scheme is light', async () => {
-    await act(() => colorScheme.set('light'))
+    await act(() => setColorScheme('light'))
     await render(<ShareModal visible {...PROPS} onShare={() => {}} onClose={() => {}} />)
     expect(lastStatusBarStyle()).toBe('dark')
   })

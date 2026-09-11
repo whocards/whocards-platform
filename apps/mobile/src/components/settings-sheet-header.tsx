@@ -1,8 +1,8 @@
 import {Ionicons} from '@expo/vector-icons'
-import {useColorScheme} from 'nativewind'
 import {Pressable, Text, View} from 'react-native'
 import {colors} from '@whocards/tokens'
 
+import {useIsDark} from '@/lib/color-scheme'
 type SettingsSheetHeaderProps = {
   title: string
   /**
@@ -31,8 +31,7 @@ type SettingsSheetHeaderProps = {
  * this app (the close button this replaces used the same "close" label).
  */
 export const SettingsSheetHeader = ({title, icon, onPress}: SettingsSheetHeaderProps) => {
-  const {colorScheme} = useColorScheme()
-  const isDark = colorScheme !== 'light'
+  const isDark = useIsDark()
   const iconColor = isDark ? colors.white : colors.darker
 
   return (

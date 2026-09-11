@@ -64,7 +64,7 @@ export const ThemeSettingsPage = ({current, onSelect, onBack}: ThemeSettingsPage
           )
         })}
       </View>
-      <Text className="text-mutedOnLight dark:text-gray-dark mt-4 font-sans text-sm leading-5">
+      <Text className="text-mutedOnLight dark:text-gray-dark mt-4 font-sans text-sm">
         Matches your device by default. Presentation only — it never changes which Card is drawn or
         your progress.
       </Text>

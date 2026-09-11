@@ -1,3 +1,45 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+ * NativeWind v5 / Tailwind v4 entry point. Compiled by Metro (see
+ * metro.config.js) and, in tests, by the same Tailwind pipeline — see
+ * jest.global-setup.js.
+ *
+ * The explicit `@import`s below are what NativeWind v5 recommends over a bare
+ * `@import "tailwindcss"`: react-native-web needs preflight in its own layer.
+ */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
+
+/* NativeWind's own theme: elevation-*, ripple-*, the unitless leading-* override. */
+@import 'nativewind/theme';
+
+/*
+ * The WhoCards design tokens, generated from packages/tokens/src/*.ts. Imported
+ * after nativewind/theme so the brand faces win over the platform defaults that
+ * file sets for --font-sans/--font-serif/--font-mono.
+ */
+@import '@whocards/tokens/theme.css';
+
+/*
+ * Replaces Tailwind v3's `content: ['./src/**‍/*.{ts,tsx}']`.
+ *
+ * `__tests__` is excluded: Tailwind emits a utility for every class name it
+ * sees literally in a scanned file, and tailwind-theme.test.tsx names ~40 of
+ * them (one per design token) purely to assert they resolve. Scanning it would
+ * compile all of those into the stylesheet the app ships. The test pipeline
+ * needs them, so jest.global-setup.js compiles ../jest.global.css instead —
+ * this file plus the tests — and tailwind-theme.test.tsx fails loudly if that
+ * re-inclusion ever stops working.
+ */
+@source './**/*.{ts,tsx}';
+@source not './__tests__/**';
+
+:root {
+  /*
+   * nativewind/theme sets --font-sans per platform in an *unlayered* `:root`,
+   * which outranks any `@theme` block no matter the import order. Restate the
+   * brand face here, unlayered and last, so `font-sans` stays golos-text on
+   * device. Asserted by src/__tests__/tailwind-theme.test.tsx.
+   */
+  --font-sans: golos-text;
+}

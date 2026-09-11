@@ -1,6 +1,6 @@
 // Learn more: https://docs.expo.dev/guides/monorepo/
 const {getDefaultConfig} = require('expo/metro-config')
-const {withNativeWind} = require('nativewind/metro')
+const {withNativewind} = require('nativewind/metro')
 const path = require('path')
 
 const projectRoot = __dirname
@@ -20,4 +20,8 @@ config.resolver.nodeModulesPaths = [
 // 3. Honour the "exports" field so @whocards/* resolve to their src entry points.
 config.resolver.unstable_enablePackageExports = true
 
-module.exports = withNativeWind(config, {input: './src/global.css'})
+// 4. NativeWind v5: registers the CSS transformer and the resolver that swaps
+//    `react-native` for `react-native-css/components`, which is what gives every
+//    primitive its `className` prop. There is no `input` option any more —
+//    src/global.css is imported as a normal module from src/app/_layout.tsx.
+module.exports = withNativewind(config)
