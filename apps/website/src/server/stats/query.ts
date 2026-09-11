@@ -100,29 +100,3 @@ export const getDataSince = async <T extends PgQueryResultHKT>(
     .from(schema.answer)
   return row?.earliest ? {date: row.earliest} : undefined
 }
-
-/** Live events are the `conference_question_tracking` rows (CONTEXT.md → Live event). */
-export const getLiveEvents = async <T extends PgQueryResultHKT>(
-  database: Db<T>,
-  now: Date = new Date()
-): Promise<{total: number; thisWeek: number}> => {
-  const weekStart = currentWeekStart(now)
-  const [row] = await database
-    .select({
-      total: sql<string>`count(*)`,
-      thisWeek: sql<string>`count(*) filter (where ${schema.conferenceQuestionTracking.createdAt} >= ${weekStart.toISOString()})`,
-    })
-    .from(schema.conferenceQuestionTracking)
-  return {total: Number(row?.total ?? 0), thisWeek: Number(row?.thisWeek ?? 0)}
-}
-
-export const getLiveEventTimestamps = async <T extends PgQueryResultHKT>(
-  database: Db<T>
-): Promise<AnswerTimestampRow[]> => {
-  const windowStart = new Date(Date.now() - TREND_WINDOW_WEEKS * WEEK_MS)
-  const rows = await database
-    .select({createdAt: schema.conferenceQuestionTracking.createdAt})
-    .from(schema.conferenceQuestionTracking)
-    .where(gte(schema.conferenceQuestionTracking.createdAt, windowStart.toISOString()))
-  return rows.map((row) => ({createdAt: new Date(row.createdAt)}))
-}

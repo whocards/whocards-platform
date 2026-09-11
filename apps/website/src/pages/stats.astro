@@ -29,16 +29,12 @@ const notConnectedMessage = (result: MetricResult<unknown>): string => {
 const weeklyTrend = isLive(snapshot.weeklyTrend) ? snapshot.weeklyTrend.value : []
 const maxWeekly = Math.max(1, ...weeklyTrend.map((point) => point.count))
 
-// Live events are in the hero total, so they get a slice here too.
 const platformRows = isLive(snapshot.platformBreakdown)
   ? [
       {label: 'Website', count: snapshot.platformBreakdown.value.web},
       {label: 'iOS', count: snapshot.platformBreakdown.value.ios},
       {label: 'Android', count: snapshot.platformBreakdown.value.android},
       {label: 'Unattributed', count: snapshot.platformBreakdown.value.unattributed},
-      ...(isLive(snapshot.liveEvents)
-        ? [{label: 'Live events', count: snapshot.liveEvents.value.total}]
-        : []),
     ].filter((row) => row.count > 0)
   : []
 
@@ -61,8 +57,8 @@ const dataSinceLabel = isLive(snapshot.dataSince)
       The numbers behind the cards
     </h1>
     <p class='mt-3 max-w-xl text-base leading-7 text-gray-lighter'>
-      Every real Question someone has answered — on the web, in the app, or in person. No accounts,
-      no per-person tracking, just totals.
+      Every question someone has answered on the web or in the app. No accounts, no per-person
+      tracking, just totals.
     </p>
 
     <!-- Hero: questions answered -->

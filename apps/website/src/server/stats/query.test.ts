@@ -7,8 +7,6 @@ import {
   getAnswerTimestamps,
   getDecksPlayed,
   getLanguageCounts,
-  getLiveEventTimestamps,
-  getLiveEvents,
   getPlatformCounts,
   getQuestionsAnswered,
 } from './query'
@@ -109,63 +107,5 @@ describe('getLanguageCounts', () => {
     await insertAnswer({language: null})
     const rows = await getLanguageCounts(db)
     expect(rows).toHaveLength(0)
-  })
-})
-
-const insertConference = async () => {
-  await db.insert(schema.conference).values({name: 'Hajnalig', isActive: true})
-  const [conf] = await db.select().from(schema.conference)
-  if (!conf) throw new Error('conference insert failed')
-  return conf
-}
-
-const insertLiveEvent = (
-  conferenceId: number,
-  overrides: Partial<typeof schema.conferenceQuestionTracking.$inferInsert> = {}
-) =>
-  db.insert(schema.conferenceQuestionTracking).values({
-    conferenceId,
-    questionId: 1,
-    language: 'hu',
-    ...overrides,
-  })
-
-describe('getLiveEvents', () => {
-  it('counts conference_question_tracking rows, separate from the answer table', async () => {
-    const conf = await insertConference()
-    await insertLiveEvent(conf.id, {questionId: 1})
-    await insertLiveEvent(conf.id, {questionId: 2})
-    await insertAnswer() // an ordinary Answer must not be counted as a Live event
-    const result = await getLiveEvents(db)
-    expect(result.total).toBe(2)
-  })
-
-  it('counts rows written this week vs. older rows', async () => {
-    const conf = await insertConference()
-    await insertLiveEvent(conf.id, {createdAt: new Date().toISOString()})
-    await insertLiveEvent(conf.id, {createdAt: '2000-01-01T00:00:00.000Z'})
-    const result = await getLiveEvents(db)
-    expect(result.total).toBe(2)
-    expect(result.thisWeek).toBe(1)
-  })
-
-  it('uses the Monday-00:00-UTC week cutoff, not a rolling 7-day window — same cutoff as getQuestionsAnswered', async () => {
-    const conf = await insertConference()
-    const now = new Date('2026-01-14T12:00:00.000Z')
-    await insertLiveEvent(conf.id, {createdAt: '2026-01-08T12:00:00.000Z'})
-    await insertLiveEvent(conf.id, {createdAt: '2026-01-12T00:00:00.000Z'})
-    const result = await getLiveEvents(db, now)
-    expect(result.total).toBe(2)
-    expect(result.thisWeek).toBe(1)
-  })
-})
-
-describe('getLiveEventTimestamps', () => {
-  it('only returns rows inside the trend window', async () => {
-    const conf = await insertConference()
-    await insertLiveEvent(conf.id, {createdAt: new Date().toISOString()})
-    await insertLiveEvent(conf.id, {createdAt: '2000-01-01T00:00:00.000Z'})
-    const rows = await getLiveEventTimestamps(db)
-    expect(rows).toHaveLength(1)
   })
 })

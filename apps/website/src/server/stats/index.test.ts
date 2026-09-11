@@ -28,8 +28,6 @@ const query = vi.hoisted(() => ({
   getActiveDevices: vi.fn<() => Promise<{total: number; last30Days: number}>>(),
   getDecksPlayed: vi.fn<() => Promise<{total: number}>>(),
   getLanguageCounts: vi.fn<() => Promise<NamedCount[]>>(),
-  getLiveEvents: vi.fn<() => Promise<{total: number; thisWeek: number}>>(),
-  getLiveEventTimestamps: vi.fn<() => Promise<AnswerTimestampRow[]>>(),
   getDataSince: vi.fn<() => Promise<{date: string} | undefined>>(),
 }))
 vi.mock('./query', () => query)
@@ -57,8 +55,6 @@ const DEFAULTS = {
   activeDevices: {total: 50, last30Days: 20},
   decksPlayed: {total: 3},
   languageRows: [{name: 'en', count: 10}],
-  liveEvents: {total: 0, thisWeek: 0},
-  liveEventTimestamps: [] as {createdAt: Date}[],
   dataSince: {date: '2026-01-01'},
 }
 
@@ -73,8 +69,6 @@ beforeEach(() => {
   query.getActiveDevices.mockResolvedValue(DEFAULTS.activeDevices)
   query.getDecksPlayed.mockResolvedValue(DEFAULTS.decksPlayed)
   query.getLanguageCounts.mockResolvedValue(DEFAULTS.languageRows)
-  query.getLiveEvents.mockResolvedValue(DEFAULTS.liveEvents)
-  query.getLiveEventTimestamps.mockResolvedValue(DEFAULTS.liveEventTimestamps)
   query.getDataSince.mockResolvedValue(DEFAULTS.dataSince)
   sources.fetchAppStoreInstalls.mockResolvedValue({
     status: 'needs-credentials',
@@ -92,27 +86,15 @@ const freshIndex = async () => {
   return import('./index')
 }
 
-describe('getStatsSnapshot — live events folded into the hero total and weekly trend', () => {
-  it('sums Live events into questionsAnswered rather than keeping them siloed', async () => {
+describe('getStatsSnapshot — questions answered come from the Answer record only', () => {
+  it('does not add conference tracking rows to the hero total', async () => {
     query.getQuestionsAnswered.mockResolvedValue({total: 100, thisWeek: 10})
-    query.getLiveEvents.mockResolvedValue({total: 7, thisWeek: 2})
     const {getStatsSnapshot} = await freshIndex()
     const snapshot = await getStatsSnapshot()
     expect(snapshot.questionsAnswered).toMatchObject({
       status: 'live',
-      value: {total: 107, thisWeek: 12},
-    })
-  })
-
-  it('merges Live-event timestamps into the weekly trend so an event spike can show', async () => {
-    const now = new Date()
-    query.getAnswerTimestamps.mockResolvedValue([{createdAt: now}])
-    query.getLiveEventTimestamps.mockResolvedValue([{createdAt: now}])
-    const {getStatsSnapshot} = await freshIndex()
-    const snapshot = await getStatsSnapshot()
-    expect(snapshot.weeklyTrend).toMatchObject({
-      status: 'live',
-      value: [expect.objectContaining({count: 2})],
+      value: {total: 100, thisWeek: 10},
+      source: 'postgres:answer',
     })
   })
 })
@@ -195,21 +177,12 @@ describe('getStatsSnapshot — one failing DB query degrades only its own field(
     expect(snapshot.languages.status).toBe('live')
   })
 
-  it('degrades the combined questionsAnswered field to unavailable if either half fails, rather than silently summing in a 0', async () => {
-    query.getQuestionsAnswered.mockResolvedValue({total: 100, thisWeek: 10})
-    query.getLiveEvents.mockRejectedValue(new Error('timeout'))
-    const {getStatsSnapshot} = await freshIndex()
-    const snapshot = await getStatsSnapshot()
-    expect(snapshot.questionsAnswered.status).toBe('unavailable')
-    expect(snapshot.liveEvents.status).toBe('unavailable')
-  })
-
-  it('degrades the combined weeklyTrend field to unavailable if either timestamp query fails', async () => {
-    query.getAnswerTimestamps.mockResolvedValue(DEFAULTS.answerTimestamps)
-    query.getLiveEventTimestamps.mockRejectedValue(new Error('timeout'))
+  it('degrades weeklyTrend to unavailable when the timestamp query fails', async () => {
+    query.getAnswerTimestamps.mockRejectedValue(new Error('timeout'))
     const {getStatsSnapshot} = await freshIndex()
     const snapshot = await getStatsSnapshot()
     expect(snapshot.weeklyTrend.status).toBe('unavailable')
+    expect(snapshot.questionsAnswered.status).toBe('live')
   })
 })
 

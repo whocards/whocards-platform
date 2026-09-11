@@ -48,7 +48,6 @@ export type StatsSnapshot = {
   questionsAnswered: MetricResult<{total: number; thisWeek: number}>
   platformBreakdown: MetricResult<PlatformBreakdown>
   weeklyTrend: MetricResult<WeeklyPoint[]>
-  liveEvents: MetricResult<{total: number; thisWeek: number}>
   activeDevices: MetricResult<{total: number; last30Days: number}>
   decksPlayed: MetricResult<{total: number}>
   languages: MetricResult<{spoken: number; ofTotal: number}>

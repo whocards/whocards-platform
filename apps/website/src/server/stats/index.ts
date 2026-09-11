@@ -8,8 +8,6 @@ import {
   getDataSince,
   getDecksPlayed,
   getLanguageCounts,
-  getLiveEventTimestamps,
-  getLiveEvents,
   getPlatformCounts,
   getQuestionsAnswered,
 } from './query'
@@ -97,8 +95,6 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
     activeDevices,
     decksPlayed,
     languageRows,
-    liveEvents,
-    liveEventTimestamps,
     installsIos,
     installsAndroid,
     countries,
@@ -110,8 +106,6 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
     runDbQuery(() => getActiveDevices(db)),
     runDbQuery(() => getDecksPlayed(db)),
     runDbQuery(() => getLanguageCounts(db)),
-    runDbQuery(() => getLiveEvents(db, now)),
-    runDbQuery(() => getLiveEventTimestamps(db)),
     fetchAppStoreInstalls(appStoreConnectCredentials()),
     fetchGooglePlayInstalls(googlePlayCredentials(), ANDROID_PACKAGE_ID),
     fetchCountrySplit(postHogCredentials()),
@@ -121,36 +115,17 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
   const spokenLanguages = languageRows.ok ? applyPrivacyThreshold(languageRows.value) : []
 
   return {
-    // Live event Answers count toward questions answered (CONTEXT.md → Live event).
-    questionsAnswered:
-      questionsAnswered.ok && liveEvents.ok
-        ? live(
-            {
-              total: questionsAnswered.value.total + liveEvents.value.total,
-              thisWeek: questionsAnswered.value.thisWeek + liveEvents.value.thisWeek,
-            },
-            'postgres:answer+conference_question_tracking'
-          )
-        : unavailable(
-            'postgres:answer+conference_question_tracking',
-            dbFailureReason(questionsAnswered, liveEvents)
-          ),
+    // Answer record only. Live events (conference tracking) aren't counted until
+    // they fold into the Answer record — today they can't be attributed or de-duplicated.
+    questionsAnswered: questionsAnswered.ok
+      ? live(questionsAnswered.value, 'postgres:answer')
+      : unavailable('postgres:answer', dbFailureReason(questionsAnswered)),
     platformBreakdown: platformRows.ok
       ? live(platformBreakdown(platformRows.value), 'postgres:answer')
       : unavailable('postgres:answer', dbFailureReason(platformRows)),
-    weeklyTrend:
-      answerTimestamps.ok && liveEventTimestamps.ok
-        ? live(
-            weeklyTrend([...answerTimestamps.value, ...liveEventTimestamps.value], now),
-            'postgres:answer+conference_question_tracking'
-          )
-        : unavailable(
-            'postgres:answer+conference_question_tracking',
-            dbFailureReason(answerTimestamps, liveEventTimestamps)
-          ),
-    liveEvents: liveEvents.ok
-      ? live(liveEvents.value, 'postgres:conference_question_tracking')
-      : unavailable('postgres:conference_question_tracking', dbFailureReason(liveEvents)),
+    weeklyTrend: answerTimestamps.ok
+      ? live(weeklyTrend(answerTimestamps.value, now), 'postgres:answer')
+      : unavailable('postgres:answer', dbFailureReason(answerTimestamps)),
     activeDevices: activeDevices.ok
       ? live(activeDevices.value, 'postgres:answer')
       : unavailable('postgres:answer', dbFailureReason(activeDevices)),

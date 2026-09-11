@@ -4,8 +4,8 @@ How to get every value the public [`/stats`](https://whocards.cc/stats) page rea
 set them on Netlify. The code lives in `apps/website/src/server/stats`; the schema is in
 `apps/website/src/env.ts`.
 
-Everything about Answers — questions answered, the platform split, the weekly trend, Live
-events, active Devices, Decks, languages — comes straight from Postgres and needs no extra
+Everything about Answers — questions answered, the platform split, the weekly trend,
+active Devices, Decks, languages — comes straight from Postgres and needs no extra
 config. Three **optional** external sources fill in the rest:
 
 | Card             | Source                      | Vars                                                                                                                          |
