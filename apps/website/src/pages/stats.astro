@@ -1,9 +1,11 @@
 ---
 export const prerender = false
 
-import type {MetricResult} from '../server/stats/types'
+import type {MetricResult, TrendPeriod, TrendPoint} from '../server/stats/types'
 import Layout from '~layouts/Layout.astro'
 import {getStatsSnapshot} from '../server/stats'
+import {TREND_BARS} from '../server/stats/rollups'
+import {TREND_PERIODS} from '../server/stats/types'
 
 // Netlify's edge ignores s-maxage, so the CDN TTL goes in Netlify-CDN-Cache-Control.
 Astro.response.headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=86400')
@@ -26,8 +28,40 @@ const notConnectedMessage = (result: MetricResult<unknown>): string => {
   return 'Temporarily unavailable.'
 }
 
-const weeklyTrend = isLive(snapshot.trend) ? snapshot.trend.value.week : []
-const maxWeekly = Math.max(1, ...weeklyTrend.map((point) => point.count))
+// Bucket labels are UTC because the buckets are (Monday 00:00 UTC, the 1st, Jan 1).
+const utc = (iso: string, options: Intl.DateTimeFormatOptions) =>
+  new Date(`${iso}T00:00:00.000Z`).toLocaleDateString('en-US', {timeZone: 'UTC', ...options})
+
+const periodLabel: Record<TrendPeriod, (point: TrendPoint) => string> = {
+  week: (p) => `Week of ${utc(p.periodStart, {month: 'short', day: 'numeric', year: 'numeric'})}`,
+  month: (p) => utc(p.periodStart, {month: 'short', year: 'numeric'}),
+  year: (p) => utc(p.periodStart, {year: 'numeric'}),
+}
+
+const periodCopy: Record<TrendPeriod, {tab: string; window: string; noun: string}> = {
+  week: {tab: 'Week', window: `Last ${TREND_BARS.week} weeks`, noun: 'week'},
+  month: {tab: 'Month', window: `Last ${TREND_BARS.month} months`, noun: 'month'},
+  year: {tab: 'Year', window: 'All time', noun: 'year'},
+}
+
+const charts = TREND_PERIODS.map((period) => {
+  const points = isLive(snapshot.trend) ? snapshot.trend.value[period] : []
+  const max = Math.max(1, ...points.map((point) => point.count))
+  const lastIndex = points.length - 1
+  return {
+    period,
+    ...periodCopy[period],
+    points: points.map((point, index) => ({
+      ...point,
+      label: periodLabel[period](point),
+      // Height is the visual bar; the hit target is the full column, so 0-count bars still show a tooltip.
+      height: Math.round((point.count / max) * 100),
+      current: index === lastIndex,
+    })),
+    peak: Math.max(0, ...points.map((point) => point.count)),
+  }
+})
+const hasTrend = charts.some((chart) => chart.points.length > 0)
 
 const platformRows = isLive(snapshot.platformBreakdown)
   ? [
@@ -98,25 +132,90 @@ const dataSinceLabel = isLive(snapshot.dataSince)
       )
     }
 
-    <!-- Weekly trend -->
+    <!-- Trend -->
     <div class='mt-12'>
-      <h2 class='font-title text-2xl font-bold text-white'>Questions per week</h2>
+      <div class='flex flex-wrap items-end justify-between gap-4'>
+        <h2 class='font-title text-2xl font-bold text-white'>Questions answered over time</h2>
+        {
+          hasTrend && (
+            <div
+              role='tablist'
+              aria-label='Trend granularity'
+              class='flex gap-1 rounded-full border border-white/10 bg-dark p-1'
+            >
+              {charts.map((chart) => (
+                <button
+                  type='button'
+                  role='tab'
+                  data-period-tab={chart.period}
+                  aria-selected={chart.period === 'week' ? 'true' : 'false'}
+                  aria-controls={`trend-${chart.period}`}
+                  class='rounded-full px-4 py-1.5 text-sm font-semibold text-gray-lighter transition-colors hover:text-white aria-selected:bg-primary-dark aria-selected:text-white'
+                >
+                  {chart.tab}
+                </button>
+              ))}
+            </div>
+          )
+        }
+      </div>
       {
-        weeklyTrend.length > 0 ? (
-          <div class='mt-6 flex h-40 items-end gap-1 rounded-2xl border border-white/10 bg-dark px-4 py-4 sm:gap-1.5'>
-            {weeklyTrend.map((point) => (
-              <div
-                class='group relative flex-1 rounded-t bg-primary-dark/70 transition-colors hover:bg-primary-light'
-                style={`height: ${Math.max(4, Math.round((point.count / maxWeekly) * 100))}%`}
-                title={`${point.periodStart}: ${point.count}`}
-              />
-            ))}
-          </div>
+        hasTrend ? (
+          charts.map((chart) => (
+            <div
+              id={`trend-${chart.period}`}
+              role='tabpanel'
+              data-period-chart={chart.period}
+              hidden={chart.period !== 'week'}
+              class='mt-6 rounded-2xl border border-white/10 bg-dark px-4 pb-3 pt-4 sm:px-6'
+            >
+              <div class='flex items-baseline justify-between text-xs text-gray-dark'>
+                <span>
+                  {chart.window} · per {chart.noun}, UTC
+                </span>
+                <span>Peak {fmt(chart.peak)}</span>
+              </div>
+              <div class='mt-3 flex h-40 items-end gap-1 border-b border-white/15 sm:gap-1.5'>
+                {chart.points.map((point) => (
+                  <button
+                    type='button'
+                    class='group relative flex h-full flex-1 items-end rounded-t outline-none'
+                    aria-label={`${point.label}: ${fmt(point.count)} questions${point.current ? ' so far' : ''}`}
+                  >
+                    <span
+                      class:list={[
+                        'block w-full rounded-t transition-colors group-hover:bg-primary-light group-focus-visible:bg-primary-light',
+                        point.current ? 'bg-primary-dark/40' : 'bg-primary-dark/70',
+                      ]}
+                      style={`height: ${point.height}%`}
+                    />
+                    <span
+                      role='tooltip'
+                      class='pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-black px-3 py-2 text-left text-xs text-white shadow-lg group-hover:block group-focus:block'
+                    >
+                      <span class='block text-gray-lighter'>
+                        {point.label}
+                        {point.current && ' (so far)'}
+                      </span>
+                      <span class='block font-title text-base font-bold'>{fmt(point.count)}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div class='mt-2 flex justify-between text-xs text-gray-dark'>
+                <span>{chart.points[0]?.label}</span>
+                <span>{chart.points[chart.points.length - 1]?.label}</span>
+              </div>
+            </div>
+          ))
         ) : (
           <p class='mt-4 text-gray-lighter'>{notConnectedMessage(snapshot.trend)}</p>
         )
       }
-      <p class='mt-3 text-xs text-gray-dark'>Raw weekly totals — not smoothed or averaged.</p>
+      <p class='mt-3 text-xs text-gray-dark'>
+        Raw totals per period — not smoothed or averaged. Weeks start on Monday. The last bar is the
+        current period and is still filling in.
+      </p>
     </div>
 
     <!-- Counter row -->
@@ -207,3 +306,15 @@ const dataSinceLabel = isLive(snapshot.dataSince)
     </div>
   </section>
 </Layout>
+
+<script>
+  const tabs = document.querySelectorAll<HTMLButtonElement>('[data-period-tab]')
+  const charts = document.querySelectorAll<HTMLElement>('[data-period-chart]')
+  for (const tab of tabs) {
+    tab.addEventListener('click', () => {
+      const period = tab.dataset.periodTab
+      for (const other of tabs) other.setAttribute('aria-selected', String(other === tab))
+      for (const chart of charts) chart.hidden = chart.dataset.periodChart !== period
+    })
+  }
+</script>
