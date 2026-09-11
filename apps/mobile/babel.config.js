@@ -18,6 +18,9 @@ module.exports = function (api) {
     // and deep `react-native/Libraries/**` imports as well as bare
     // `react-native`. Only react-native-css's own files and react-native's index
     // itself are exempt.
+    // The safe-area adapter wraps SafeAreaProvider to expose CSS inset variables;
+    // it re-exports SafeAreaView without adding className support. Pass native
+    // styles to SafeAreaView, and keep its Jest mock equally unstyled.
     //
     // Jest has no Metro, so there the rewrite has to happen in Babel, which is a
     // narrower tool: it only rewrites `react-native` and `react-native/<Module>`

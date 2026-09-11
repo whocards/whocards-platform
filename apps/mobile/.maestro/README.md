@@ -26,6 +26,8 @@ pnpm -F mobile e2e:android  # com.whocards.mobile
 - `language-persist.yaml` — a chosen language survives an app relaunch (the
   `language-store` persistence, ticket 0009). Uses `?q=1` so the same card renders
   before/after, making the switch observable.
+- `theme-persist.yaml` — Dark, Light, and System selections each survive a
+  relaunch. Captures the home screen after each selection for native color checks.
 - `rtl-alignment.yaml` — opens a card, screenshots the default (English, LTR) and the
   Hebrew (RTL) card to verify right-alignment. Screenshots land in `.maestro/artifacts/`.
 - `language-modal-inset.yaml` — opens the language sheet and screenshots it so the
@@ -160,10 +162,10 @@ optional, and its absence is not an error.
 Capture 03 reveals the player controls before exiting to Settings. Capture 04
 waits for the Hebrew question to render before waiting for the controls to hide.
 
-This is the on-device half of upgrade evidence. The JS half is
-`src/__tests__/ui-snapshot-*.test.tsx`, whose baselines are recorded on the
-pre-upgrade toolchain and replayed unchanged after it; those can't see the native
-side at all, which is what this makes up for.
+This is the on-device half of upgrade evidence. The JS render snapshots in
+`src/__tests__/ui-snapshot-*.test.tsx` use the compiled NativeWind 5 stylesheet.
+They are regression baselines for this toolchain, not a pixel comparison with
+the older toolchain. Native screenshots provide that comparison.
 
 ## Prerequisites (one-time)
 
