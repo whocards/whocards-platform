@@ -54,12 +54,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
 
-// The real `SafeAreaView` is a CSS-aware `View` plus whatever insets a provider reports;
-// with no provider mounted those insets are zero anyway, so this is that minus
-// the provider warning — and zero insets keep the padding in the snapshot fixed
-// rather than device-shaped.
+// The installed react-native-css safe-area adapter reexports the platform
+// SafeAreaView; it provides insets but does not make that primitive CSS-aware.
+// Use the raw native View here so this test exercises the same styling boundary
+// as the device. The landing container uses explicit styles for that reason.
 jest.mock('react-native-safe-area-context', () => {
-  const {View} = jest.requireActual('react-native-css/components')
+  const {View} = jest.requireActual('react-native')
   return {
     useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
     SafeAreaView: View,
@@ -196,7 +196,7 @@ const librarySafeAreaStyle = () => {
   let node: ReturnType<typeof screen.getByLabelText> | null = screen.getByLabelText('Play')
   while (node) {
     const style = flattenStyle(node.props.style)
-    if (style.flexGrow === 1 && style.paddingTop === 56) return style
+    if (style.flex === 1 && style.paddingTop === 56) return style
     node = node.parent
   }
   throw new Error('Library SafeAreaView style not found')
@@ -233,7 +233,7 @@ describe('Library screen', () => {
   it('renders the Library screen', async () => {
     await renderUi(<LandingScreen />)
     await screen.findByLabelText('Play')
-    expect(librarySafeAreaStyle()).toEqual(expect.objectContaining({flexGrow: 1, paddingTop: 56}))
+    expect(librarySafeAreaStyle()).toEqual(expect.objectContaining({flex: 1, paddingTop: 56}))
     await settle()
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })

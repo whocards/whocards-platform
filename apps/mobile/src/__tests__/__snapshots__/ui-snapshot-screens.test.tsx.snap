@@ -21,12 +21,10 @@ exports[`Library screen renders the Library screen 1`] = `
         | top: 0
     <View>
       | alignItems: "center"
-      | flexBasis: "0%"
-      | flexGrow: 1
-      | flexShrink: 1
+      | flex: 1
       | justifyContent: "space-between"
       | paddingBottom: 28
-      | paddingInline: 28
+      | paddingHorizontal: 28
       | paddingTop: 56
       <View>
         | alignItems: "center"
@@ -137,12 +135,10 @@ exports[`Library screen renders the Library screen in the Dark Theme Display set
         | top: 0
     <View>
       | alignItems: "center"
-      | flexBasis: "0%"
-      | flexGrow: 1
-      | flexShrink: 1
+      | flex: 1
       | justifyContent: "space-between"
       | paddingBottom: 28
-      | paddingInline: 28
+      | paddingHorizontal: 28
       | paddingTop: 56
       <View>
         | alignItems: "center"
@@ -728,11 +724,7 @@ exports[`Play screen renders the unknown-Deck message 1`] = `
         | right: 0
         | top: 0
     <View>
-      | alignItems: "center"
-      | flexBasis: "0%"
-      | flexGrow: 1
-      | flexShrink: 1
-      | justifyContent: "center"
+      ~ className: "flex-1 items-center justify-center"
       <Text>
         | color: "#111516"
         | fontFamily: "golos-text"

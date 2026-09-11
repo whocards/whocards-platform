@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {useCallback, useEffect, useRef, useState} from 'react'
 import type {View as RNView} from 'react-native'
-import {Pressable, Text, useWindowDimensions, View} from 'react-native'
+import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -38,6 +38,21 @@ const LOGO_HEIGHT = Math.round((LOGO_WIDTH * 226) / 1200)
 // in (FADE_MS) so nothing crosses the moving logo. The background fades with the logo.
 const LOGO_MS = 450
 const FADE_MS = 350
+
+// react-native-css's safe-area adapter provides the inset environment but
+// re-exports the platform SafeAreaView, which does not consume className.
+// Keep the layout-critical container styles explicit so the landing screen
+// keeps its intended spacing on native as well as in Jest.
+const libraryContainerStyle = StyleSheet.create({
+  root: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 28,
+    paddingBottom: 28,
+    paddingTop: 56,
+  },
+}).root
 
 export default function LandingScreen() {
   const [serverMeta, setServerMeta] = useState<{cards: number; languages: number} | null>(null)
@@ -134,7 +149,7 @@ export default function LandingScreen() {
           `style="light"` (white icons) for the always-dark Play/Pick a Card screens,
           which would go invisible over the near-white `canvasLight` background. */}
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <SafeAreaView className="flex-1 items-center justify-between px-8 pb-8 pt-16">
+      <SafeAreaView style={libraryContainerStyle}>
         <View className="flex-1 items-center justify-center">
           {/* Hidden dev marker (issue #178): a long-press on the wordmark toggles a
               persisted is_internal flag for this device — the manual counterpart to
