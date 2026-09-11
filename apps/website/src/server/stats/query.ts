@@ -92,6 +92,23 @@ export const getLanguageCounts = async <T extends PgQueryResultHKT>(
     .map((row) => ({name: row.language, count: Number(row.count)}))
 }
 
+/** Distinct Devices per country (ISO code), unfiltered — the caller applies the privacy threshold. */
+export const getCountryCounts = async <T extends PgQueryResultHKT>(
+  database: Db<T>
+): Promise<NamedCount[]> => {
+  const rows = await database
+    .select({
+      country: schema.answer.country,
+      count: sql<string>`count(distinct ${schema.answer.deviceId})`,
+    })
+    .from(schema.answer)
+    .where(sql`${schema.answer.country} is not null`)
+    .groupBy(schema.answer.country)
+  return rows
+    .filter((row): row is {country: string; count: string} => row.country !== null)
+    .map((row) => ({name: row.country, count: Number(row.count)}))
+}
+
 export const getDataSince = async <T extends PgQueryResultHKT>(
   database: Db<T>
 ): Promise<{date: string} | undefined> => {

@@ -46,20 +46,12 @@ export const env = createEnv({
     APP_STORE_CONNECT_VENDOR_NUMBER: z.string().optional(),
     GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: z.string().optional(),
     GOOGLE_PLAY_REPORTS_BUCKET: z.string().optional(),
-    POSTHOG_PERSONAL_API_KEY: z.string().optional(),
-    POSTHOG_PROJECT_ID: z.string().optional(),
   },
   clientPrefix: 'PUBLIC_',
   client: {
     PUBLIC_POSTHOG_KEY: z.string().optional(),
     PUBLIC_POSTHOG_HOST: z.string().url().optional().default('https://who.whocards.cc'),
-    // https only: the stats page sends POSTHOG_PERSONAL_API_KEY here.
-    PUBLIC_POSTHOG_UI_HOST: z
-      .string()
-      .url()
-      .refine((url) => url.startsWith('https://'), 'PUBLIC_POSTHOG_UI_HOST must use https')
-      .optional()
-      .default('https://eu.posthog.com'),
+    PUBLIC_POSTHOG_UI_HOST: z.string().url().optional().default('https://eu.posthog.com'),
     // iOS and Android launch on separate timelines: iOS is approved and public,
     // Android trails by Google's mandatory 12-tester / 14-day Closed Test. Each
     // store has its own switch so /app can offer a real download for one platform

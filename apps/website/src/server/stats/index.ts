@@ -5,6 +5,7 @@ import {db} from '~server/db'
 import {
   getActiveDevices,
   getAnswerTimestamps,
+  getCountryCounts,
   getDataSince,
   getDecksPlayed,
   getLanguageCounts,
@@ -16,8 +17,6 @@ import type {AppStoreConnectCredentials} from './sources/app-store-connect'
 import {fetchAppStoreInstalls} from './sources/app-store-connect'
 import type {GooglePlayCredentials} from './sources/google-play'
 import {fetchGooglePlayInstalls} from './sources/google-play'
-import type {PostHogCredentials} from './sources/posthog'
-import {fetchCountrySplit} from './sources/posthog'
 import type {StatsSnapshot} from './types'
 import {live, unavailable} from './types'
 
@@ -63,13 +62,6 @@ const googlePlayCredentials = (): GooglePlayCredentials | undefined => {
   }
 }
 
-const postHogCredentials = (): PostHogCredentials | undefined => {
-  const {POSTHOG_PERSONAL_API_KEY: personalApiKey, POSTHOG_PROJECT_ID: projectId} = env
-  if (!personalApiKey || !projectId) return undefined
-  // Not PUBLIC_POSTHOG_HOST: that's the ingestion proxy, which doesn't serve the query API.
-  return {personalApiKey, projectId, host: env.PUBLIC_POSTHOG_UI_HOST}
-}
-
 type DbResult<T> = {ok: true; value: T} | {ok: false; error: unknown}
 
 const runDbQuery = async <T>(fn: () => Promise<T>): Promise<DbResult<T>> => {
@@ -95,9 +87,9 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
     activeDevices,
     decksPlayed,
     languageRows,
+    countryRows,
     installsIos,
     installsAndroid,
-    countries,
     dataSince,
   ] = await Promise.all([
     runDbQuery(() => getQuestionsAnswered(db, now)),
@@ -106,9 +98,9 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
     runDbQuery(() => getActiveDevices(db)),
     runDbQuery(() => getDecksPlayed(db)),
     runDbQuery(() => getLanguageCounts(db)),
+    runDbQuery(() => getCountryCounts(db)),
     fetchAppStoreInstalls(appStoreConnectCredentials()),
     fetchGooglePlayInstalls(googlePlayCredentials(), ANDROID_PACKAGE_ID),
-    fetchCountrySplit(postHogCredentials()),
     runDbQuery(() => getDataSince(db)),
   ])
 
@@ -135,10 +127,9 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
     languages: languageRows.ok
       ? live({spoken: spokenLanguages.length, ofTotal: LANGUAGE_CODES.length}, 'postgres:answer')
       : unavailable('postgres:answer', dbFailureReason(languageRows)),
-    countries:
-      countries.status === 'live'
-        ? live(applyPrivacyThreshold(countries.value), 'posthog')
-        : countries,
+    countries: countryRows.ok
+      ? live(applyPrivacyThreshold(countryRows.value), 'postgres:answer')
+      : unavailable('postgres:answer', dbFailureReason(countryRows)),
     installsIos:
       installsIos.status === 'live'
         ? live({count: installsIos.value}, installsIos.source)

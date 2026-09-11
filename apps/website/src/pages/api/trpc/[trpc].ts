@@ -7,6 +7,13 @@ import {answer} from '~server/db/schema'
 // SSR (part of the Netlify function) — not prerendered.
 export const prerender = false
 
+// Netlify sets `x-country` (ISO 3166-1 alpha-2) on every function request.
+// Anything else (local dev, a spoofed header) is stored as null.
+const countryFrom = (request: Request): string | null => {
+  const value = request.headers.get('x-country')?.toUpperCase() ?? ''
+  return /^[A-Z]{2}$/.test(value) ? value : null
+}
+
 const handler: APIRoute = ({request}) =>
   fetchRequestHandler({
     endpoint: '/api/trpc',
@@ -23,6 +30,7 @@ const handler: APIRoute = ({request}) =>
           language: input.language,
           type: input.type,
           platform: input.platform ?? null,
+          country: countryFrom(request),
         })
       },
     }),

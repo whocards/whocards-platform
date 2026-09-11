@@ -70,7 +70,8 @@ const CREATE_TABLES = `
     "question_id" text NOT NULL,
     "language" text,
     "type" text DEFAULT 'answered' NOT NULL,
-    "platform" text
+    "platform" text,
+    "country" text
   );
   CREATE INDEX "answer_deck_slug_question_id_idx" ON "answer" ("deck_slug", "question_id");
   CREATE INDEX "answer_device_id_idx" ON "answer" ("device_id");

@@ -5,14 +5,16 @@ set them on Netlify. The code lives in `apps/website/src/server/stats`; the sche
 `apps/website/src/env.ts`.
 
 Everything about Answers — questions answered, the platform split, the weekly trend,
-active Devices, Decks, languages — comes straight from Postgres and needs no extra
-config. Three **optional** external sources fill in the rest:
+active Devices, Decks, languages, countries — comes straight from Postgres and needs no
+extra config. Two **optional** external sources fill in the rest:
 
 | Card             | Source                      | Vars                                                                                                                          |
 | ---------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | iOS installs     | App Store Connect Sales API | `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_PRIVATE_KEY`, `APP_STORE_CONNECT_VENDOR_NUMBER` |
 | Android installs | Google Play reports bucket  | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `GOOGLE_PLAY_REPORTS_BUCKET`                                                              |
-| Countries        | PostHog HogQL query API     | `POSTHOG_PERSONAL_API_KEY`, `POSTHOG_PROJECT_ID` (+ the existing `PUBLIC_POSTHOG_UI_HOST`)                                    |
+
+Countries need no key: every recorded Answer is stamped with the ISO country code Netlify
+attaches to the request (the `x-country` header), so the count is a plain group-by.
 
 None of them gate the build. A source with any var missing shows **"Not connected yet."**; a
 source whose vars are set but whose call fails (bad key, missing permission, network) shows
@@ -123,35 +125,7 @@ previous month, for package `com.whocards.mobile`), summed over the same 30 days
 - A Cloud Storage API error naming the project: enable the **Cloud Storage JSON API** in the
   service account's project (new projects usually have it on).
 
-## 3. PostHog (countries)
-
-1. PostHog (<https://eu.posthog.com>) → **Settings** → **Project** → **General**. Copy the
-   numeric **Project ID** (it's also the number in the URL, `/project/<id>`).
-2. **Settings** → **User** → **Personal API keys** → **Create personal API key**. Name it
-   `whocards-stats`. Limit it to the WhoCards project, and give it only the **Query: Read**
-   scope.
-3. Copy the key (`phx_…`). PostHog shows it once.
-
-| Var                        | Value                                            |
-| -------------------------- | ------------------------------------------------ |
-| `POSTHOG_PERSONAL_API_KEY` | The `phx_…` key                                  |
-| `POSTHOG_PROJECT_ID`       | The numeric project ID                           |
-| `PUBLIC_POSTHOG_UI_HOST`   | Already set: `https://eu.posthog.com`. Leave it. |
-
-`PUBLIC_POSTHOG_UI_HOST` is where the query goes, and it **must be `https://`**. The env
-schema fails the build otherwise, because the API key is sent as a header. Don't point it at
-`PUBLIC_POSTHOG_HOST` (`who.whocards.cc`): that's the ingestion proxy, and it doesn't serve the
-query API.
-
-What it counts: distinct people per country who saw a Question (`question_shown`) in the last
-90 days. Countries with fewer than 5 are hidden.
-
-**If the card says "Temporarily unavailable":** `401`/`403` means a wrong key, or the key is
-missing the Query: Read scope or access to this project. `404` means a wrong project ID.
-
----
-
-## 4. Set them on Netlify
+## 3. Set them on Netlify
 
 Site: **`whocards-calmly`**. Not `whocards-app`, which is WhoCards @ Work.
 
@@ -203,7 +177,7 @@ carries `DB_URL`, the Resend keys and the rest. If the deploy fails on function 
 node -e 'const k=require(process.argv[1]);process.stdout.write(JSON.stringify({client_email:k.client_email,private_key:k.private_key}))' ~/Downloads/key.json
 ```
 
-## 5. Check /stats
+## 4. Check /stats
 
 Open <https://whocards.cc/stats> after the deploy finishes:
 
@@ -225,4 +199,3 @@ one:
 
 - App Store Connect: **Revoke** on the key's row.
 - Google Cloud: delete the old key under the service account's **Keys**.
-- PostHog: delete it under **Personal API keys**.

@@ -6,6 +6,7 @@ import {
   getActiveDevices,
   getAnswerTimestamps,
   getDecksPlayed,
+  getCountryCounts,
   getLanguageCounts,
   getPlatformCounts,
   getQuestionsAnswered,
@@ -107,5 +108,20 @@ describe('getLanguageCounts', () => {
     await insertAnswer({language: null})
     const rows = await getLanguageCounts(db)
     expect(rows).toHaveLength(0)
+  })
+})
+
+describe('getCountryCounts', () => {
+  it('counts distinct devices per country and skips rows without one', async () => {
+    await insertAnswer({deviceId: 'a', country: 'HU'})
+    await insertAnswer({deviceId: 'a', country: 'HU'})
+    await insertAnswer({deviceId: 'b', country: 'HU'})
+    await insertAnswer({deviceId: 'c', country: 'AT'})
+    await insertAnswer({deviceId: 'd', country: null})
+    const rows = await getCountryCounts(db)
+    expect(rows.toSorted((x, y) => x.name.localeCompare(y.name))).toEqual([
+      {name: 'AT', count: 1},
+      {name: 'HU', count: 2},
+    ])
   })
 })

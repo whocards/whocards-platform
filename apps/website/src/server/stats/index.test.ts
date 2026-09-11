@@ -2,7 +2,6 @@ import {beforeEach, describe, expect, it, vi} from 'vitest'
 
 import type {AppStoreConnectCredentials} from './sources/app-store-connect'
 import type {GooglePlayCredentials} from './sources/google-play'
-import type {PostHogCredentials} from './sources/posthog'
 import type {AnswerTimestampRow, MetricResult, NamedCount, PlatformCountRow} from './types'
 
 // freshIndex() re-imports ./index so its module-level cache doesn't leak between tests.
@@ -14,9 +13,6 @@ const envMock: Record<string, string | undefined> = {
   APP_STORE_CONNECT_VENDOR_NUMBER: undefined,
   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: undefined,
   GOOGLE_PLAY_REPORTS_BUCKET: undefined,
-  POSTHOG_PERSONAL_API_KEY: undefined,
-  POSTHOG_PROJECT_ID: undefined,
-  PUBLIC_POSTHOG_UI_HOST: 'https://eu.posthog.com',
 }
 vi.mock('~env', () => ({env: envMock}))
 vi.mock('~server/db', () => ({db: {}}))
@@ -28,6 +24,7 @@ const query = vi.hoisted(() => ({
   getActiveDevices: vi.fn<() => Promise<{total: number; last30Days: number}>>(),
   getDecksPlayed: vi.fn<() => Promise<{total: number}>>(),
   getLanguageCounts: vi.fn<() => Promise<NamedCount[]>>(),
+  getCountryCounts: vi.fn<() => Promise<NamedCount[]>>(),
   getDataSince: vi.fn<() => Promise<{date: string} | undefined>>(),
 }))
 vi.mock('./query', () => query)
@@ -39,14 +36,11 @@ const sources = vi.hoisted(() => ({
     vi.fn<
       (creds: GooglePlayCredentials | undefined, packageId: string) => Promise<MetricResult<number>>
     >(),
-  fetchCountrySplit:
-    vi.fn<(creds: PostHogCredentials | undefined) => Promise<MetricResult<NamedCount[]>>>(),
 }))
 vi.mock('./sources/app-store-connect', () => ({
   fetchAppStoreInstalls: sources.fetchAppStoreInstalls,
 }))
 vi.mock('./sources/google-play', () => ({fetchGooglePlayInstalls: sources.fetchGooglePlayInstalls}))
-vi.mock('./sources/posthog', () => ({fetchCountrySplit: sources.fetchCountrySplit}))
 
 const DEFAULTS = {
   questionsAnswered: {total: 100, thisWeek: 10},
@@ -55,13 +49,12 @@ const DEFAULTS = {
   activeDevices: {total: 50, last30Days: 20},
   decksPlayed: {total: 3},
   languageRows: [{name: 'en', count: 10}],
+  countryRows: [{name: 'HU', count: 12}],
   dataSince: {date: '2026-01-01'},
 }
 
 beforeEach(() => {
-  for (const key of Object.keys(envMock)) {
-    if (key !== 'PUBLIC_POSTHOG_UI_HOST') envMock[key] = undefined
-  }
+  for (const key of Object.keys(envMock)) envMock[key] = undefined
   vi.clearAllMocks()
   query.getQuestionsAnswered.mockResolvedValue(DEFAULTS.questionsAnswered)
   query.getPlatformCounts.mockResolvedValue(DEFAULTS.platformCounts)
@@ -69,6 +62,7 @@ beforeEach(() => {
   query.getActiveDevices.mockResolvedValue(DEFAULTS.activeDevices)
   query.getDecksPlayed.mockResolvedValue(DEFAULTS.decksPlayed)
   query.getLanguageCounts.mockResolvedValue(DEFAULTS.languageRows)
+  query.getCountryCounts.mockResolvedValue(DEFAULTS.countryRows)
   query.getDataSince.mockResolvedValue(DEFAULTS.dataSince)
   sources.fetchAppStoreInstalls.mockResolvedValue({
     status: 'needs-credentials',
@@ -78,7 +72,6 @@ beforeEach(() => {
     status: 'needs-credentials',
     source: 'google-play',
   })
-  sources.fetchCountrySplit.mockResolvedValue({status: 'needs-credentials', source: 'posthog'})
 })
 
 const freshIndex = async () => {
@@ -149,16 +142,18 @@ describe('getStatsSnapshot — credential completeness is checked exactly once',
   })
 })
 
-describe('getStatsSnapshot — PostHog credentials use the app/UI host, not the ingestion host', () => {
-  it('builds the PostHog credentials with PUBLIC_POSTHOG_UI_HOST', async () => {
-    envMock.POSTHOG_PERSONAL_API_KEY = 'phx_test'
-    envMock.POSTHOG_PROJECT_ID = '123'
+describe('getStatsSnapshot — countries come from the Answer record, privacy-thresholded', () => {
+  it('drops countries backed by fewer than 5 devices before they reach the page', async () => {
+    query.getCountryCounts.mockResolvedValue([
+      {name: 'HU', count: 12},
+      {name: 'AT', count: 4},
+    ])
     const {getStatsSnapshot} = await freshIndex()
-    await getStatsSnapshot()
-    expect(sources.fetchCountrySplit).toHaveBeenCalledWith({
-      personalApiKey: 'phx_test',
-      projectId: '123',
-      host: 'https://eu.posthog.com',
+    const snapshot = await getStatsSnapshot()
+    expect(snapshot.countries).toEqual({
+      status: 'live',
+      value: [{name: 'HU', count: 12}],
+      source: 'postgres:answer',
     })
   })
 })

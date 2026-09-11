@@ -449,6 +449,9 @@ export const answer = pgTable(
     type: text('type').notNull().default('answered'),
     // NULL = Unattributed (rows from before this column, or old clients).
     platform: text('platform'),
+    // ISO 3166-1 alpha-2, stamped server-side from Netlify's geo header at record
+    // time. NULL for rows from before this column or requests without geo data.
+    country: text('country'),
   },
   (table) => {
     return {
