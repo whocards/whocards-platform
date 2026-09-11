@@ -90,12 +90,6 @@ beforeEach(async () => {
   await act(() => setColorScheme('light'))
 })
 
-afterEach(async () => {
-  // NativeWind's colorScheme is a global observable — reset it so a Dark-theme
-  // snapshot can't bleed into whichever test runs next.
-  await act(() => setColorScheme('system'))
-})
-
 const renderSettings = (overrides: Partial<React.ComponentProps<typeof SettingsModal>> = {}) =>
   renderUi(
     <SettingsModal

@@ -182,7 +182,7 @@ import {getStoredGame} from '@/lib/game-store'
 import {getStoredTheme} from '@/lib/theme-store'
 
 import RootLayout from '../app/_layout'
-import LandingScreen from '../app/index'
+import LandingScreen, {libraryContainerStyle} from '../app/index'
 import PlayScreen from '../app/play/[deck]'
 
 /** Every screen sits under the root layout's gesture root on device. */
@@ -192,15 +192,10 @@ const Root = ({children}: {children: React.ReactNode}) => (
 
 const renderUi = async (ui: React.ReactElement) => await render(ui, {wrapper: Root})
 
-const librarySafeAreaStyle = () => {
-  let node: ReturnType<typeof screen.getByLabelText> | null = screen.getByLabelText('Play')
-  while (node) {
-    const style = flattenStyle(node.props.style)
-    if (style.flex === 1 && style.paddingTop === 56) return style
-    node = node.parent
-  }
-  throw new Error('Library SafeAreaView style not found')
-}
+// The safe-area adapter's SafeAreaView ignores className, so the Library's
+// container spacing lives in explicit styles. Find the container by its own
+// testID (not by the values under test) and pin the whole style object.
+const librarySafeAreaStyle = () => flattenStyle(screen.getByTestId('library-safe-area').props.style)
 
 /**
  * Let the screen finish arriving. Both screens run their entrance behind a
@@ -222,18 +217,16 @@ beforeEach(async () => {
   await act(() => setColorScheme('light'))
 })
 
-afterEach(async () => {
+// The colour scheme itself is reset globally in jest.setup.ts.
+afterEach(() => {
   jest.restoreAllMocks()
-  // NativeWind's colorScheme is a global observable — reset it so a Dark-theme
-  // snapshot can't bleed into whichever test runs next.
-  await act(() => setColorScheme('system'))
 })
 
 describe('Library screen', () => {
   it('renders the Library screen', async () => {
     await renderUi(<LandingScreen />)
     await screen.findByLabelText('Play')
-    expect(librarySafeAreaStyle()).toEqual(expect.objectContaining({flex: 1, paddingTop: 56}))
+    expect(librarySafeAreaStyle()).toEqual(libraryContainerStyle)
     await settle()
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })

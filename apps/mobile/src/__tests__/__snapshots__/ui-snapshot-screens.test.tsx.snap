@@ -724,7 +724,9 @@ exports[`Play screen renders the unknown-Deck message 1`] = `
         | right: 0
         | top: 0
     <View>
-      ~ className: "flex-1 items-center justify-center"
+      | alignItems: "center"
+      | flex: 1
+      | justifyContent: "center"
       <Text>
         | color: "#111516"
         | fontFamily: "golos-text"

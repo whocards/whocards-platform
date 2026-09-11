@@ -42,8 +42,10 @@ const FADE_MS = 350
 // react-native-css's safe-area adapter provides the inset environment but
 // re-exports the platform SafeAreaView, which does not consume className.
 // Keep the layout-critical container styles explicit so the landing screen
-// keeps its intended spacing on native as well as in Jest.
-const libraryContainerStyle = StyleSheet.create({
+// keeps its intended spacing on native as well as in Jest. Values mirror the
+// former `flex-1 items-center justify-between px-8 pb-8 pt-16` classes
+// (NativeWind resolves rem as 14px on native, so 8 → 28px and 16 → 56px).
+export const libraryContainerStyle = StyleSheet.create({
   root: {
     flex: 1,
     alignItems: 'center',
@@ -149,7 +151,7 @@ export default function LandingScreen() {
           `style="light"` (white icons) for the always-dark Play/Pick a Card screens,
           which would go invisible over the near-white `canvasLight` background. */}
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <SafeAreaView style={libraryContainerStyle}>
+      <SafeAreaView testID="library-safe-area" style={libraryContainerStyle}>
         <View className="flex-1 items-center justify-center">
           {/* Hidden dev marker (issue #178): a long-press on the wordmark toggles a
               persisted is_internal flag for this device — the manual counterpart to

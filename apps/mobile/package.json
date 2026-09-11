@@ -60,7 +60,6 @@
     "react-dom": "19.2.8",
     "react-native": "0.86.3",
     "react-native-css": "^3.0.7",
-    "react-native-css-interop": "0.2.6",
     "react-native-gesture-handler": "~3.2.1",
     "react-native-reanimated": "4.6.0",
     "react-native-safe-area-context": "~5.9.1",

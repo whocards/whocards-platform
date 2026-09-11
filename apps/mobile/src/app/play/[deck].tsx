@@ -3,7 +3,7 @@ import {useLocalSearchParams, useRouter} from 'expo-router'
 import {StatusBar} from 'expo-status-bar'
 import {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react'
 import type {AppStateStatus, LayoutChangeEvent} from 'react-native'
-import {AppState, Text, useWindowDimensions, View} from 'react-native'
+import {AppState, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import {Gesture, GestureDetector} from 'react-native-gesture-handler'
 import Animated, {
   interpolate,
@@ -39,6 +39,13 @@ import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-sto
 import {parsePlayLink} from '@/lib/play-link'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 import {getStoredTabletopMode} from '@/lib/tabletop-store'
+
+// react-native-css's safe-area adapter re-exports the platform SafeAreaView,
+// which does not consume className (see app/index.tsx). `flex-1 items-center
+// justify-center` as explicit styles.
+const missingDeckContainerStyle = StyleSheet.create({
+  root: {flex: 1, alignItems: 'center', justifyContent: 'center'},
+}).root
 
 const SWIPE_THRESHOLD = 60
 // How far off-screen the card travels when a swipe commits (points)
@@ -114,7 +121,7 @@ export default function PlayScreen() {
   if (!deck) {
     return (
       <ScreenBackground>
-        <SafeAreaView className="flex-1 items-center justify-center">
+        <SafeAreaView style={missingDeckContainerStyle}>
           <Text className="text-darker dark:text-white font-sans">Deck not found.</Text>
         </SafeAreaView>
       </ScreenBackground>

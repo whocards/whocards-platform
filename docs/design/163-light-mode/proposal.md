@@ -134,7 +134,7 @@ tokens** (`canvasLight`, `mutedOnLight`, `accentOnLight`, `accentOnDark`, `error
 `dark`, `darkest`, `primary-dark`, `red` all keep their current values and current call sites
 unchanged. Every themed surface picks between an existing token and a new one via NativeWind's
 `dark:` variant (e.g. `className="bg-white dark:bg-dark"`) or a small conditional in JS
-(`useColorScheme()` from `nativewind`) for props that take a raw color (`Ionicons` `color`,
+(~~`useColorScheme()` from `nativewind`~~ — now `useIsDark()` from `@/lib/color-scheme`, see §Theming mechanism) for props that take a raw color (`Ionicons` `color`,
 `StatusBar` `style`, `Image` `source`).
 
 ## Wordmark & the maze texture
