@@ -6,7 +6,7 @@ import {appWaitlistSchema, confirmationEmail, confirmationMessage} from '~server
 import {CONSENT_SOURCE, normalizeEmail} from '~server/consent'
 import {db, insertConsent, insertUser} from '~server/db'
 import {makeSegmentIdResolver, syncEmailConsents} from '~server/resend-sync'
-import {verifyTurnstile} from '~server/turnstile'
+import {TURNSTILE_ACTION, turnstileMessageFor, verifyTurnstile} from '~server/turnstile'
 
 // SSR endpoint for the /app waitlist and launch-day reminder capture.
 // Modelled on ai-checkin-subscribe.ts — same DB pattern, same error handling.
@@ -18,7 +18,7 @@ const json = (body: unknown, status: number) =>
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
-export const POST: APIRoute = async ({request, clientAddress}) => {
+export const POST: APIRoute = async ({request, clientAddress, url}) => {
   const body = await request.json().catch(() => null)
   const parsed = appWaitlistSchema.safeParse(body)
 
@@ -32,17 +32,13 @@ export const POST: APIRoute = async ({request, clientAddress}) => {
   // is read from the raw body (not a schema field — it's verified separately).
   const turnstileToken =
     isRecord(body) && typeof body.turnstileToken === 'string' ? body.turnstileToken : ''
-  const turnstile = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY, clientAddress)
+  const turnstile = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY, {
+    action: TURNSTILE_ACTION.appWaitlist,
+    hostname: url.hostname,
+    remoteip: clientAddress,
+  })
   if (!turnstile.ok) {
-    return json(
-      {
-        message:
-          turnstile.reason === 'missing-token'
-            ? 'Please complete the security check.'
-            : 'Security check failed. Please try again.',
-      },
-      403
-    )
+    return json({message: turnstileMessageFor(turnstile.reason)}, 403)
   }
 
   const {email: rawEmail, name, newsletter, source} = parsed.data

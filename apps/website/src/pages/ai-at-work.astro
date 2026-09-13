@@ -7,6 +7,7 @@ import WhatCard from '~components/Purchase/WhatCard.astro'
 import {aiAtWorkFaqs} from '~constants/faqs'
 import {env} from '~env'
 import Layout from '~layouts/Layout.astro'
+import {TURNSTILE_ACTION} from '~server/turnstile'
 
 // AI Check-In marketing landing page (Tier 0 "lead magnet" wedge).
 // See docs/strategy/ai-at-work.md §5 (Tier 0) and §7 (positioning), and the
@@ -162,7 +163,16 @@ const stats = [
           Get the 10-question starter
         </Button>
       </div>
-      {siteKey && <div class='cf-turnstile' data-sitekey={siteKey} data-theme='dark' />}
+      {
+        siteKey && (
+          <div
+            class='cf-turnstile'
+            data-sitekey={siteKey}
+            data-action={TURNSTILE_ACTION.aiCheckin}
+            data-theme='dark'
+          />
+        )
+      }
     </form>
     <p
       id='lead-magnet-status'
@@ -200,7 +210,8 @@ const stats = [
         <a
           href='/'
           class='font-semibold text-primary-dark underline underline-offset-4 transition-colors hover:text-primary-light'
-        >free WhoCards conversation game</a>.
+          >free WhoCards conversation game</a
+        >.
       </p>
       <span class='px-5'>
         <Button tag='a' href={deckHref} size='lg'>Run the check-in</Button>

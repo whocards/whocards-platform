@@ -5,7 +5,7 @@ import {z} from 'zod'
 import questions from '~data/decks/ai-at-work.questions.json'
 import {env} from '~env'
 import {insertUser} from '~server/db'
-import {verifyTurnstile} from '~server/turnstile'
+import {TURNSTILE_ACTION, turnstileMessageFor, verifyTurnstile} from '~server/turnstile'
 
 // SSR endpoint for the AI Check-In lead magnet (/ai-at-work). Captures the email
 // as a newsletter user (reusing the existing users table — no migration) and
@@ -73,7 +73,7 @@ const buildEmailHtml = () => {
   </div>`
 }
 
-export const POST: APIRoute = async ({request, clientAddress}) => {
+export const POST: APIRoute = async ({request, clientAddress, url}) => {
   const body = await request.json().catch(() => null)
   const parsed = schema.safeParse(body)
 
@@ -86,17 +86,13 @@ export const POST: APIRoute = async ({request, clientAddress}) => {
   // raw body (verified separately, never a schema field).
   const turnstileToken =
     isRecord(body) && typeof body.turnstileToken === 'string' ? body.turnstileToken : ''
-  const turnstile = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY, clientAddress)
+  const turnstile = await verifyTurnstile(turnstileToken, env.TURNSTILE_SECRET_KEY, {
+    action: TURNSTILE_ACTION.aiCheckin,
+    hostname: url.hostname,
+    remoteip: clientAddress,
+  })
   if (!turnstile.ok) {
-    return json(
-      {
-        message:
-          turnstile.reason === 'missing-token'
-            ? 'Please complete the security check.'
-            : 'Security check failed. Please try again.',
-      },
-      403
-    )
+    return json({message: turnstileMessageFor(turnstile.reason)}, 403)
   }
 
   const {email, name} = parsed.data

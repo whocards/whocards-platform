@@ -15,6 +15,7 @@ import {
 import {ANDROID_TESTER_SIGNUP_URL} from '~constants/android-testers'
 import {env} from '~env'
 import Layout from '~layouts/Layout.astro'
+import {TURNSTILE_ACTION} from '~server/turnstile'
 
 // /app is visible once a store is live (PUBLIC_APP_IOS_LAUNCHED, default on /
 // PUBLIC_APP_ANDROID_LAUNCHED). If neither is, the route redirects home (302).
@@ -207,7 +208,16 @@ const features = [
               product news. <span class='text-gray-dark'>Optional.</span>
             </span>
           </label>
-          {siteKey && <div class='cf-turnstile' data-sitekey={siteKey} data-theme='dark' />}
+          {
+            siteKey && (
+              <div
+                class='cf-turnstile'
+                data-sitekey={siteKey}
+                data-action={TURNSTILE_ACTION.appWaitlist}
+                data-theme='dark'
+              />
+            )
+          }
         </form>
         <p
           id='waitlist-status'
