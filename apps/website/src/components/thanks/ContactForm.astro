@@ -2,6 +2,7 @@
 import type {ZodIssue} from 'zod'
 import Button from '~components/ui/Button.astro'
 import Input from '~components/ui/Input.astro'
+import {TURNSTILE_ACTION} from '~server/turnstile'
 
 export type Props = {
   formData?: Record<string, string>
@@ -60,7 +61,16 @@ const {formData, errors, serverError, siteKey} = Astro.props
       <p class='text-xs text-red'>{errors?.message?.message ?? <>&nbsp;</>}</p>
     </label>
 
-    {siteKey ? <div class='cf-turnstile mb-4' data-sitekey={siteKey} data-theme='dark' /> : null}
+    {
+      siteKey ? (
+        <div
+          class='cf-turnstile mb-4'
+          data-sitekey={siteKey}
+          data-action={TURNSTILE_ACTION.contact}
+          data-theme='dark'
+        />
+      ) : null
+    }
     {
       errors?.['cf-turnstile-response'] && (
         <p class='text-xs text-red mb-4'>{errors['cf-turnstile-response'].message}</p>

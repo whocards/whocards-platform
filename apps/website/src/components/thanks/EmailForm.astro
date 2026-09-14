@@ -4,6 +4,7 @@ import Button from '~components/ui/Button.astro'
 import Checkbox from '~components/ui/Checkbox.astro'
 import Input from '~components/ui/Input.astro'
 import type {UserSelect} from '~server/db'
+import {TURNSTILE_ACTION} from '~server/turnstile'
 
 export type Props = {
   formData?: Record<string, any>
@@ -161,7 +162,12 @@ const newsletterChecked =
 
     {
       siteKey ? (
-        <div class='cf-turnstile mt-2 mb-4' data-sitekey={siteKey} data-theme='dark' />
+        <div
+          class='cf-turnstile mt-2 mb-4'
+          data-sitekey={siteKey}
+          data-action={TURNSTILE_ACTION.requestCards}
+          data-theme='dark'
+        />
       ) : null
     }
     {
