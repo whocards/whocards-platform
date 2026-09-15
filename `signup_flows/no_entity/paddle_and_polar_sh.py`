@@ -1,0 +1,54 @@
+```python
+import paddle_sdk
+import polar_sh_sdk
+
+def verify_paddle_individual_signup():
+    # Create a Paddle client
+    paddle_client = paddle_sdk.Client(api_key='your_paddle_api_key')
+    
+    # Create an individual user
+    individual_user = {
+        'email': 'individual@example.com',
+        'country': 'Hungary',
+        'currency': 'HUF'
+    }
+    
+    # Start the signup process
+    paddle_signup_flow = paddle_client.start_signup(individual_user)
+    
+    # Confirm KYC
+    paddle_client.confirm_kyc(paddle_signup_flow.id)
+    
+    # Check Hungary payout methods
+    payout_methods = paddle_client.get_payout_methods(paddle_signup_flow.id)
+    assert 'HUF' in payout_methods, "HUF should be among the payout methods"
+    
+    print("Paddle individual signup flow verified successfully.")
+
+def verify_polar_sh_individual_signup():
+    # Create a Polar.sh client
+    polar_sh_client = polar_sh_sdk.Client(api_key='your_polar_sh_api_key')
+    
+    # Create an individual user
+    individual_user = {
+        'email': 'individual@example.com',
+        'country': 'Hungary',
+        'currency': 'HUF'
+    }
+    
+    # Start the signup process
+    polar_sh_signup_flow = polar_sh_client.start_signup(individual_user)
+    
+    # Confirm KYC
+    polar_sh_client.confirm_kyc(polar_sh_signup_flow.id)
+    
+    # Check Hungary payout methods
+    payout_methods = polar_sh_client.get_payout_methods(polar_sh_signup_flow.id)
+    assert 'HUF' in payout_methods, "HUF should be among the payout methods"
+    
+    print("Polar.sh individual signup flow verified successfully.")
+
+if __name__ == "__main__":
+    verify_paddle_individual_signup()
+    verify_polar_sh_individual_signup()
+```
