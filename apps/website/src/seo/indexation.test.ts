@@ -21,6 +21,7 @@ describe('search indexation policy', () => {
   it.each([
     '/',
     '/ai-at-work',
+    '/third-relationship',
     '/app',
     '/contact',
     '/mission',
@@ -52,10 +53,7 @@ describe('search indexation policy', () => {
     '/android-testers-birthday-present.html',
     '/events/hajnalig/play.html',
     '/events/hajnalig/2025/play.html',
-  ])(
-    'recognizes file-format production pathname %s as noindex',
-    (pathname) => {
-      expect(isNoindexRoute(pathname)).toBe(true)
-    }
-  )
+  ])('recognizes file-format production pathname %s as noindex', (pathname) => {
+    expect(isNoindexRoute(pathname)).toBe(true)
+  })
 })

@@ -16,6 +16,8 @@ export const mainLinks: Link[] = [
   {href: '/#what-is-whocards', title: 'About'},
   {href: '/play', title: 'Play', play: true},
   {href: '/print', title: 'Print'},
+  // Free facilitated team prototype with Inner Mastery Lab (cards + conversation).
+  {href: '/third-relationship', title: 'Third Relationship'},
   // Only surface the /app entry when the funnel is visible (a store is live).
   // `pop` gives it a tasteful on-brand glow in the nav.
   ...(APP_VISIBLE ? [{href: '/app', title: 'Get the App', pop: true} as Link] : []),

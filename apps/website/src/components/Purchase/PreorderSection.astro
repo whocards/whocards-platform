@@ -1,6 +1,7 @@
 ---
 export type Props = {
-  title: string
+  /** Plain title; pass a `title` slot instead when the title needs accent spans. */
+  title?: string
   subtitle: string
   description?: string
   class?: string
@@ -23,7 +24,7 @@ const {title, subtitle, description, class: classes} = Astro.props
     class='text-3xl font-medium font-title leading-10 lg:text-[54px] lg:leading-snug lg:tracking-tighter'
     class:list={[!Astro.slots.has('outside') && 'lg:max-w-[50%]']}
   >
-    {title}
+    <slot name='title'>{title}</slot>
   </h2>
   {
     description && (

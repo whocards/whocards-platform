@@ -3,6 +3,9 @@
 Monorepo for WhoCards — the conversation game. See [CONTEXT.md](./CONTEXT.md) for the
 product glossary and [docs/adr](./docs/adr) for the architecture decisions.
 
+For the product's purpose, read [soul.md](./soul.md). For workshop design and workshop
+landing pages, start with [workshop foundations](./docs/workshops/foundations.md).
+
 ## Layout
 
 ```
