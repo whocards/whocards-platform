@@ -3,11 +3,15 @@ import {describe, expect, it} from 'vitest'
 import {
   createCallerFactory,
   createTRPCRouter,
+  entitledProcedure,
   protectedProcedure,
   publicProcedure,
   roleProcedure,
 } from './trpc'
 import type {TRPCContext} from './context'
+
+const alwaysGrant = async () => ({granted: true, reason: 'early_access'}) as const
+const alwaysDeny = async () => ({granted: false, reason: 'locked'}) as const
 
 // A tiny router exercising the middleware chain in isolation, without touching
 // the database — the real routers (people, questionReview) build on the exact
@@ -18,6 +22,11 @@ const testRouter = createTRPCRouter({
   membersOnly: protectedProcedure.query(() => 'members-only'),
   facilitatorsOnly: roleProcedure('facilitator').query(() => 'facilitators-only'),
   adminsOnly: roleProcedure('admin').query(() => 'admins-only'),
+  // Default resolver — proves entitledProcedure actually wires up to the real
+  // getEntitlement stub (which currently grants everything).
+  paidFeatureDefault: entitledProcedure('subscription').query(() => 'paid-feature'),
+  paidFeatureGranted: entitledProcedure('subscription', alwaysGrant).query(() => 'paid-feature'),
+  paidFeatureDenied: entitledProcedure('subscription', alwaysDeny).query(() => 'paid-feature'),
 })
 
 const createCaller = createCallerFactory(testRouter)
@@ -84,5 +93,32 @@ describe('roleProcedure', () => {
   it('rejects an unauthenticated caller before the role check', async () => {
     const caller = createCaller({user: null, membership: null})
     await expect(caller.facilitatorsOnly()).rejects.toMatchObject({code: 'UNAUTHORIZED'})
+  })
+})
+
+describe('entitledProcedure', () => {
+  it('allows any provisioned member when the entitlement resolves granted', async () => {
+    const caller = createCaller(contextFor({organizationId: 'org1', role: 'member'}))
+    await expect(caller.paidFeatureGranted()).resolves.toBe('paid-feature')
+  })
+
+  it('blocks a provisioned member when the entitlement resolves denied — the gate itself', async () => {
+    const caller = createCaller(contextFor({organizationId: 'org1', role: 'member'}))
+    await expect(caller.paidFeatureDenied()).rejects.toMatchObject({code: 'FORBIDDEN'})
+  })
+
+  it('rejects an unauthenticated caller before the entitlement check', async () => {
+    const caller = createCaller({user: null, membership: null})
+    await expect(caller.paidFeatureDenied()).rejects.toMatchObject({code: 'UNAUTHORIZED'})
+  })
+
+  it('is not gated by role — even the lowest role passes once entitled', async () => {
+    const caller = createCaller(contextFor({organizationId: 'org1', role: 'member'}))
+    await expect(caller.paidFeatureGranted()).resolves.toBe('paid-feature')
+  })
+
+  it('defaults to the real getEntitlement stub, which currently grants every tier', async () => {
+    const caller = createCaller(contextFor({organizationId: 'org1', role: 'member'}))
+    await expect(caller.paidFeatureDefault()).resolves.toBe('paid-feature')
   })
 })
