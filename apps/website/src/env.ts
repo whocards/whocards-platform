@@ -6,6 +6,11 @@ const optionalUrl = z.preprocess(
   z.string().url().optional()
 )
 
+const optionalString = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.string().min(1).optional()
+)
+
 export const env = createEnv({
   server: {
     NODE_ENV: z.enum(['development', 'test', 'production']).optional(),
@@ -39,6 +44,11 @@ export const env = createEnv({
     // /request-cards forms. Required: the build fails without it (incl. dev) so bot
     // protection can never be silently dropped by a missing env var.
     TURNSTILE_SECRET_KEY: z.string().min(1),
+    // Slack signing secret for the /whocards slash-command pilot (issue #179,
+    // docs/strategy/surface-chat.md). Optional: a single-workspace spike, not a
+    // shipped feature — absence must degrade to an ephemeral "not configured"
+    // reply (see pages/api/bots/slack/command.ts), never a crash or build failure.
+    SLACK_SIGNING_SECRET: optionalString,
   },
   clientPrefix: 'PUBLIC_',
   client: {
