@@ -15,6 +15,13 @@
       "when": 1783235909027,
       "tag": "0001_odd_silver_centurion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791642670694,
+      "tag": "0002_good_gunslinger",
+      "breakpoints": true
     }
   ]
 }

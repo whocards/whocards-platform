@@ -26,6 +26,7 @@
     "@trpc/server": "catalog:",
     "@whocards/decks": "workspace:*",
     "@whocards/emails": "workspace:*",
+    "@whocards/game": "workspace:*",
     "@whocards/tokens": "workspace:*",
     "better-auth": "^1.7.3",
     "diff": "^9.0.0",
