@@ -110,6 +110,9 @@ importers:
       '@whocards/emails':
         specifier: workspace:*
         version: link:../emails
+      '@whocards/game':
+        specifier: workspace:*
+        version: link:../../packages/game
       '@whocards/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -485,6 +488,9 @@ importers:
       '@whocards/emails':
         specifier: workspace:*
         version: link:../emails
+      '@whocards/game':
+        specifier: workspace:*
+        version: link:../../packages/game
       '@whocards/observability':
         specifier: workspace:*
         version: link:../../packages/observability
@@ -624,6 +630,9 @@ importers:
       '@whocards/decks':
         specifier: workspace:*
         version: link:../decks
+      '@whocards/game':
+        specifier: workspace:*
+        version: link:../game
       zod:
         specifier: 'catalog:'
         version: 4.4.3
@@ -658,6 +667,25 @@ importers:
       '@whocards/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.0(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(jsdom@20.0.3)(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
+
+  packages/game:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      '@whocards/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0)(@types/pg@8.20.0)(better-sqlite3@12.11.1)(kysely@0.29.5)(pg@8.23.0)(postgres@3.4.9)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

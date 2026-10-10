@@ -1,19 +1,23 @@
 import type {APIRoute} from 'astro'
 import {fetchRequestHandler} from '@trpc/server/adapters/fetch'
-import {appRouter} from '@whocards/api'
+import {appRouter, cacheControlFor} from '@whocards/api'
+import {PLAYER_TOKEN_HEADER} from '@whocards/game'
 import {db} from '~server/db'
 import {answer} from '~server/db/schema'
+import {createDrizzleGamePort} from '~server/game/drizzle-port'
 
 // SSR (part of the Netlify function) — not prerendered.
 export const prerender = false
+
+const game = createDrizzleGamePort(db)
 
 const handler: APIRoute = ({request}) =>
   fetchRequestHandler({
     endpoint: '/api/trpc',
     req: request,
     router: appRouter,
-    // The Drizzle-backed adapter for the `recordAnswer` port (ADR-0002): the
-    // router stays host-agnostic, persistence to the Answer record lives here.
+    // The Drizzle-backed adapters for the router's ports (ADR-0002): the
+    // router stays host-agnostic, persistence lives here.
     createContext: () => ({
       recordAnswer: async (input) => {
         await db.insert(answer).values({
@@ -24,18 +28,13 @@ const handler: APIRoute = ({request}) =>
           type: input.type,
         })
       },
+      game,
+      playerToken: request.headers.get(PLAYER_TOKEN_HEADER),
     }),
-    responseMeta: ({errors, type}) => {
-      // Read-only content queries are edge-cacheable (ADR-0002). Only cache
-      // successful queries; never cache errors or mutations.
-      const cacheable = errors.length === 0 && type === 'query'
-      return cacheable
-        ? {
-            headers: {
-              'cache-control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
-            },
-          }
-        : {}
+    responseMeta: ({info, type, errors}) => {
+      const paths = info?.calls.map((call) => call.path)
+      const cacheControl = cacheControlFor({paths, type, errorCount: errors.length})
+      return cacheControl ? {headers: {'cache-control': cacheControl}} : {}
     },
   })
 

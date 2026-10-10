@@ -39,6 +39,11 @@ export const env = createEnv({
     // /request-cards forms. Required: the build fails without it (incl. dev) so bot
     // protection can never be silently dropped by a missing env var.
     TURNSTILE_SECRET_KEY: z.string().min(1),
+    // Workshop game transcription; optional so dev/preview fall back to a fake transcriber.
+    OPENAI_API_KEY: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().optional()
+    ),
   },
   clientPrefix: 'PUBLIC_',
   client: {

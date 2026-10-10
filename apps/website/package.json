@@ -27,6 +27,7 @@
     "@whocards/app-store": "workspace:*",
     "@whocards/decks": "workspace:*",
     "@whocards/emails": "workspace:*",
+    "@whocards/game": "workspace:*",
     "@whocards/observability": "workspace:*",
     "@whocards/tokens": "workspace:*",
     "@trpc/client": "catalog:",

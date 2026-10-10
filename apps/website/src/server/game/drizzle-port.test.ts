@@ -1,0 +1,127 @@
+import {PGlite} from '@electric-sql/pglite'
+import {createCaller} from '@whocards/api'
+import * as gameSchema from '@whocards/game/db'
+import {gamePlayer, gameRound, hostedGame} from '@whocards/game/db'
+import {generateDrizzleJson, generateMigration} from 'drizzle-kit/api'
+import {drizzle} from 'drizzle-orm/pglite'
+import {beforeAll, beforeEach, describe, expect, it} from 'vitest'
+import {createDrizzleGamePort, hashToken} from './drizzle-port'
+
+const client = new PGlite()
+const db = drizzle(client)
+let clock = Date.UTC(2026, 9, 10, 9)
+const port = createDrizzleGamePort(db, {now: () => clock, random: () => 0.5})
+const as = (playerToken: string | null) =>
+  createCaller({recordAnswer: async () => {}, game: port, playerToken})
+
+let gameId = ''
+let roundId = ''
+
+beforeAll(async () => {
+  // Same DDL drizzle-kit writes into apps/app's migration, derived from the schema itself.
+  const statements = await generateMigration(
+    generateDrizzleJson({}),
+    generateDrizzleJson({...gameSchema})
+  )
+  for (const statement of statements) await client.exec(statement)
+})
+
+beforeEach(async () => {
+  await client.exec('TRUNCATE hosted_game CASCADE')
+  clock = Date.UTC(2026, 9, 10, 9)
+  const [game] = await db
+    .insert(hostedGame)
+    .values({code: 'WORK', title: 'Workshop', status: 'live'})
+    .returning()
+  const [round] = await db
+    .insert(gameRound)
+    .values({
+      gameId: game?.id ?? '',
+      n: 1,
+      deckSlug: 'library',
+      turnSeconds: 60,
+      status: 'live',
+      startedAt: new Date(clock),
+    })
+    .returning()
+  gameId = game?.id ?? ''
+  roundId = round?.id ?? ''
+})
+
+const join = async (name: string) => {
+  const {token, state} = await as(null).game.join({code: 'work', name, language: 'en'})
+  return {token, state, caller: as(token)}
+}
+
+describe('drizzle game port', () => {
+  it('stores only a hash of the player token', async () => {
+    const {token, state} = await join('Ann')
+    const [row] = await db.select().from(gamePlayer)
+    expect(row?.tokenHash).toBe(hashToken(token))
+    expect(row?.tokenHash).not.toContain(token)
+    expect(state.me.pairCode).toMatch(/^[A-Z2-9]{4}$/)
+  })
+
+  it('runs a pair through a round end to end', async () => {
+    const a = await join('Ann')
+    const b = await join('Bo')
+    expect(b.state.me.pairCode).not.toBe(a.state.me.pairCode)
+
+    await a.caller.game.round.pair({partnerCode: b.state.me.pairCode})
+    const speaking = await a.caller.game.round.turn({action: 'claim'})
+    const turn = speaking.pair?.activeTurn
+    expect(turn?.questionText).toEqual(expect.any(String))
+    await expect(b.caller.game.round.turn({action: 'claim'})).rejects.toThrow(
+      'Your partner is answering'
+    )
+
+    clock += 20_000
+    const saved = await a.caller.game.round.response({
+      turnId: turn?.id ?? '',
+      language: 'en',
+      transcript: 'First answer',
+      durationMs: 20_000,
+      consent: true,
+    })
+    expect(saved.pair?.turns[0]?.finishedAt).toBe(clock)
+    expect((await b.caller.game.round.turn({action: 'claim'})).phase).toBe('speaking')
+
+    const mine = await a.caller.game.me.get()
+    expect(mine.responses).toMatchObject([{transcript: 'First answer', durationMs: 20_000}])
+    const responseId = mine.responses[0]?.id ?? ''
+    expect((await a.caller.game.me.deleteResponse({responseId})).responses).toEqual([])
+    await expect(a.caller.game.me.deleteResponse({responseId: 'not-a-uuid'})).rejects.toThrow(
+      'Not found'
+    )
+
+    await a.caller.game.feedback({rating: 4})
+    await a.caller.game.feedback({rating: 5, text: 'Again!'})
+    const screen = await as(null).game.screen({code: 'WORK'})
+    expect(screen.counts).toEqual({joined: 2, paired: 2, talking: 1, done: 0})
+  })
+
+  it('lets the database settle races the rules could not see', async () => {
+    const [a, b, c] = await Promise.all([join('Ann'), join('Bo'), join('Cy')])
+    const ids = [a.state.me.id, b.state.me.id, c.state.me.id] as const
+
+    expect(await port.createPair({roundId, playerIds: [ids[0], ids[1]]})).toBe('ok')
+    expect(await port.createPair({roundId, playerIds: [ids[2], ids[1]]})).toBe('conflict')
+
+    const snapshot = await port.loadSnapshot(gameId)
+    const pairId = snapshot?.pairs[0]?.id ?? ''
+    expect(snapshot?.pairs[0]?.playerIds).toEqual([ids[0], ids[1]])
+
+    const turn = {pairId, questionId: '1', startedAt: clock, expire: []}
+    expect(await port.startTurn({...turn, playerId: ids[0]})).toBe('ok')
+    expect(await port.startTurn({...turn, playerId: ids[1]})).toBe('conflict')
+
+    const openTurnId = (await port.loadSnapshot(gameId))?.turns[0]?.id ?? ''
+    expect(
+      await port.startTurn({
+        ...turn,
+        playerId: ids[1],
+        expire: [{turnId: openTurnId, finishedAt: clock + 90_000}],
+      })
+    ).toBe('ok')
+  })
+})
