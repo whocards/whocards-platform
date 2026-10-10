@@ -25,10 +25,10 @@ export const createTokenStore = (
   // Reading localStorage itself throws where storage is blocked.
   storage: Storage | null = safely(() => globalThis.localStorage ?? null, null)
 ): TokenStore => {
-  // Every write lands here too, so a storage that refuses writes doesn't drop the token.
-  const memory = new Map<string, string>()
+  // This tab's writes win over storage that may refuse them; null marks a cleared token.
+  const memory = new Map<string, string | null>()
   const read = (key: string) =>
-    safely(() => storage?.getItem(key) ?? null, null) ?? memory.get(key) ?? null
+    memory.has(key) ? (memory.get(key) ?? null) : safely(() => storage?.getItem(key) ?? null, null)
   const write = (key: string, value: string) => {
     memory.set(key, value)
     safely(() => storage?.setItem(key, value), undefined)
@@ -40,7 +40,7 @@ export const createTokenStore = (
       write(LAST_CODE_KEY, code.toUpperCase())
     },
     clear: (code) => {
-      memory.delete(tokenKey(code))
+      memory.set(tokenKey(code), null)
       safely(() => storage?.removeItem(tokenKey(code)), undefined)
     },
     lastCode: () => read(LAST_CODE_KEY),

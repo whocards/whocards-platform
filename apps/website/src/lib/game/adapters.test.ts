@@ -153,6 +153,19 @@ describe('createTokenStore', () => {
     expect(store.get('ABCD')).toBeNull()
   })
 
+  it('prefers this tab over a stale token when storage reads but will not write', () => {
+    const full = memoryStorage()
+    full.setItem('whocards:game:ABCD:token', 'old')
+    full.setItem = refuse
+    full.removeItem = refuse
+    const store = createTokenStore(full)
+    expect(store.get('ABCD')).toBe('old')
+    store.set('ABCD', 'new')
+    expect(store.get('ABCD')).toBe('new')
+    store.clear('ABCD')
+    expect(store.get('ABCD')).toBeNull()
+  })
+
   it('falls back to memory when localStorage cannot even be read', () => {
     const blocked = vi.spyOn(globalThis, 'localStorage', 'get').mockImplementation(refuse)
     const store = createTokenStore()

@@ -69,6 +69,8 @@ export const useTurn = <TAudio>({
   const stageNow = useRef<TurnStage>('idle')
   const take = useRef<Take<TAudio> | null>(null)
   const recordingTurn = useRef<string | null>(null)
+  // The recorder holds one session, so a second start must wait for the first mic answer.
+  const micPending = useRef(false)
   const latest = useRef(session)
   useEffect(() => {
     latest.current = session
@@ -100,19 +102,23 @@ export const useTurn = <TAudio>({
   const record = useCallback(async () => {
     const turn = myOpenTurn(latest.current.state)
     if (!recorder || !transcriber || !turn || stageNow.current !== 'idle') return
+    if (micPending.current) return
     go('starting')
     // The mic can answer after the player finished or left; a late stream is dropped.
     const still = (expected: TurnStage) => mounted.current && stageNow.current === expected
-    try {
-      await recorder.start()
-    } catch {
-      if (!still('starting')) return
-      setNotice('mic_unavailable')
-      go('idle')
+    micPending.current = true
+    const started = await recorder.start().then(
+      () => true,
+      () => false
+    )
+    micPending.current = false
+    if (!still('starting')) {
+      if (started) void recorder.cancel()
       return
     }
-    if (!still('starting')) {
-      void recorder.cancel()
+    if (!started) {
+      setNotice('mic_unavailable')
+      go('idle')
       return
     }
     recordingTurn.current = turn.id

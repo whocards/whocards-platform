@@ -197,6 +197,25 @@ describe('useTurn', () => {
     await hook.unmount()
   })
 
+  it('waits for a pending mic answer before starting a new take', async () => {
+    const {client, recorder, hook} = await setup()
+    const mic = deferred<undefined>()
+    recorder.start.mockReturnValueOnce(mic.promise)
+    client.turn.mockResolvedValueOnce(speakingState())
+    await flush(() => void hook.current.turn.record())
+    await flush(() => hook.current.turn.finish())
+    await flush(() => void hook.current.turn.record())
+    expect(recorder.start).toHaveBeenCalledOnce()
+    expect(hook.current.turn.stage).toBe('idle')
+
+    await flush(() => mic.resolve(undefined))
+    expect(recorder.cancel).toHaveBeenCalledOnce()
+    await flush(() => hook.current.turn.record())
+    expect(recorder.start).toHaveBeenCalledTimes(2)
+    expect(hook.current.turn.stage).toBe('recording')
+    await hook.unmount()
+  })
+
   it('drops a mic that answers after the screen went away', async () => {
     const {recorder, wakeLock, hook} = await setup()
     const mic = deferred<undefined>()
