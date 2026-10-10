@@ -16,6 +16,7 @@ import {and, asc, eq, isNull, sql} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 
 const PAIR_CODE_LENGTH = 4
+const PAIR_SLOTS = [0, 1, 2]
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const hashToken = (token: string) => createHash('sha256').update(token).digest('hex')
@@ -29,12 +30,15 @@ const errorCode = (error: unknown): unknown =>
 const isUniqueViolation = (error: unknown): boolean =>
   errorCode(error) === '23505' || (error instanceof Error && errorCode(error.cause) === '23505')
 
+/** A write refused on a rule the schema can't express. */
+class Conflict extends Error {}
+
 const settle = async (write: () => Promise<unknown>): Promise<WriteResult> => {
   try {
     await write()
     return 'ok'
   } catch (error) {
-    if (isUniqueViolation(error)) return 'conflict'
+    if (error instanceof Conflict || isUniqueViolation(error)) return 'conflict'
     throw error
   }
 }
@@ -144,6 +148,7 @@ export const createDrizzleGamePort = <
           .select({
             id: gameTurn.id,
             pairId: gameTurn.pairId,
+            roundId: gamePair.roundId,
             playerId: gameTurn.playerId,
             questionId: gameTurn.questionId,
             startedAt: gameTurn.startedAt,
@@ -188,11 +193,28 @@ export const createDrizzleGamePort = <
         })
       ),
 
-    addToPair: (input) => settle(() => db.insert(gamePairPlayer).values(input)),
+    addToPair: (input) =>
+      settle(async () => {
+        const rows = await db
+          .select({slot: gamePairPlayer.slot})
+          .from(gamePairPlayer)
+          .where(eq(gamePairPlayer.pairId, input.pairId))
+        const slot = PAIR_SLOTS.find((s) => !rows.some((r) => r.slot === s))
+        if (slot === undefined) throw new Conflict()
+        await db.insert(gamePairPlayer).values({...input, slot})
+      }),
 
     startTurn: ({expire, ...turn}) =>
       settle(() =>
         db.transaction(async (tx) => {
+          // Holding the round row makes the host's endRound wait for this turn, then close it too.
+          const [round] = await tx
+            .select({status: gameRound.status})
+            .from(gameRound)
+            .innerJoin(gamePair, eq(gamePair.roundId, gameRound.id))
+            .where(eq(gamePair.id, turn.pairId))
+            .for('share', {of: gameRound})
+          if (round?.status !== 'live') throw new Conflict()
           for (const e of expire) {
             await tx
               .update(gameTurn)

@@ -21,13 +21,9 @@ export type GamePort = {
   }) => Promise<{player: Player; token: string}>
   loadSnapshot: (gameId: string) => Promise<GameSnapshot | null>
   createPair: (input: {roundId: string; playerIds: [string, string]}) => Promise<WriteResult>
-  addToPair: (input: {
-    pairId: string
-    roundId: string
-    playerId: string
-    slot: number
-  }) => Promise<WriteResult>
-  /** Closes `expire` (still-open, timed-out turns) then opens the new turn, atomically. */
+  /** Takes the pair's lowest free slot; a slot freed by a removed player is reused. */
+  addToPair: (input: {pairId: string; roundId: string; playerId: string}) => Promise<WriteResult>
+  /** Closes `expire` (still-open, timed-out turns) then opens the new turn, atomically; conflict once the round is no longer live. */
   startTurn: (input: {
     pairId: string
     playerId: string

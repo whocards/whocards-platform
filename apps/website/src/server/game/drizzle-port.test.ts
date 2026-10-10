@@ -1,8 +1,9 @@
 import {PGlite} from '@electric-sql/pglite'
 import {createCaller} from '@whocards/api'
 import * as gameSchema from '@whocards/game/db'
-import {gamePlayer, gameRound, hostedGame} from '@whocards/game/db'
+import {gamePairPlayer, gamePlayer, gameRound, hostedGame} from '@whocards/game/db'
 import {generateDrizzleJson, generateMigration} from 'drizzle-kit/api'
+import {and, asc, eq} from 'drizzle-orm'
 import {drizzle} from 'drizzle-orm/pglite'
 import {beforeAll, beforeEach, describe, expect, it} from 'vitest'
 import {createDrizzleGamePort, hashToken} from './drizzle-port'
@@ -123,5 +124,39 @@ describe('drizzle game port', () => {
         expire: [{turnId: openTurnId, finishedAt: clock + 90_000}],
       })
     ).toBe('ok')
+  })
+
+  it('fills the slot a removed trio member left, then refuses a fourth', async () => {
+    const players = await Promise.all(['Ann', 'Bo', 'Cy', 'Di', 'Ed'].map(join))
+    const [a, b, c, d, e] = players.map((p) => p.state.me.id)
+    await port.createPair({roundId, playerIds: [a ?? '', b ?? '']})
+    const pairId = (await port.loadSnapshot(gameId))?.pairs[0]?.id ?? ''
+    expect(await port.addToPair({pairId, roundId, playerId: c ?? ''})).toBe('ok')
+
+    await db
+      .delete(gamePairPlayer)
+      .where(and(eq(gamePairPlayer.pairId, pairId), eq(gamePairPlayer.playerId, a ?? '')))
+    expect(await port.addToPair({pairId, roundId, playerId: d ?? ''})).toBe('ok')
+    expect(await port.addToPair({pairId, roundId, playerId: e ?? ''})).toBe('conflict')
+    const slots = await db
+      .select({slot: gamePairPlayer.slot})
+      .from(gamePairPlayer)
+      .orderBy(asc(gamePairPlayer.slot))
+    expect(slots.map((s) => s.slot)).toEqual([0, 1, 2])
+  })
+
+  it('opens no turn once the round is over, and keeps a turn whose pair emptied', async () => {
+    const [a, b] = await Promise.all([join('Ann'), join('Bo')])
+    const playerIds = [a.state.me.id, b.state.me.id] as [string, string]
+    await port.createPair({roundId, playerIds})
+    const pairId = (await port.loadSnapshot(gameId))?.pairs[0]?.id ?? ''
+    const turn = {pairId, questionId: '1', startedAt: clock, expire: []}
+    expect(await port.startTurn({...turn, playerId: playerIds[0]})).toBe('ok')
+
+    await db.delete(gamePairPlayer)
+    expect((await port.loadSnapshot(gameId))?.turns).toMatchObject([{pairId, roundId}])
+
+    await db.update(gameRound).set({status: 'done'}).where(eq(gameRound.id, roundId))
+    expect(await port.startTurn({...turn, playerId: playerIds[1]})).toBe('conflict')
   })
 })

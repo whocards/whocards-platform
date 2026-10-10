@@ -22,7 +22,6 @@ import {createTRPCRouter, roleProcedure} from '../trpc'
 import {
   buildRecaps,
   GAMES_MIN_ROLE,
-  openTurnsToClose,
   plannedRoundEnd,
   readRecapState,
   strandedByRemoval,
@@ -64,13 +63,10 @@ export type HostStore = {
     startedAt: number
     endsAt: number
   }) => Promise<WriteResult>
-  endRound: (input: {
-    roundId: string
-    endedAt: number
-    closeTurns: Array<{turnId: string; finishedAt: number}>
-  }) => Promise<WriteResult>
-  /** True only for the caller that moved the game to ended; that caller sends the recap. */
-  endGame: (gameId: string) => Promise<boolean>
+  /** Ends the live round and closes its open turns, in one transaction with any turn being claimed. */
+  endRound: (input: {roundId: string; endedAt: number}) => Promise<WriteResult>
+  /** Ends the live round, its open turns and the game atomically; true only for the caller that moved the game to ended, which sends the recap. */
+  endGame: (input: {gameId: string; endedAt: number}) => Promise<boolean>
   saveRecapState: (gameId: string, recap: RecapState) => Promise<void>
   /** Deletes the player; `release` frees partners stranded in this round's pair so they can re-pair. */
   removePlayer: (input: {
@@ -112,11 +108,9 @@ const detailOf = (
 ): GameDetail => {
   const screen = screenView(snapshot, now)
   const round = currentRound(snapshot)
-  const pairIdsByRound = new Map<string, Set<string>>()
+  const pairsByRound = new Map<string, number>()
   for (const pair of snapshot.pairs) {
-    const ids = pairIdsByRound.get(pair.roundId) ?? new Set<string>()
-    ids.add(pair.id)
-    pairIdsByRound.set(pair.roundId, ids)
+    pairsByRound.set(pair.roundId, (pairsByRound.get(pair.roundId) ?? 0) + 1)
   }
   return {
     serverNow: now,
@@ -133,18 +127,15 @@ const detailOf = (
       language: p.language,
       recap: p.consentRecap && p.email !== null,
     })),
-    rounds: snapshot.rounds.map((r) => {
-      const pairIds = pairIdsByRound.get(r.id) ?? new Set<string>()
-      return {
-        ...roundView(r),
-        pairs: pairIds.size,
-        turns: snapshot.turns.filter((t) => pairIds.has(t.pairId)).length,
-      }
-    }),
+    rounds: snapshot.rounds.map((r) => ({
+      ...roundView(r),
+      pairs: pairsByRound.get(r.id) ?? 0,
+      turns: snapshot.turns.filter((t) => t.roundId === r.id).length,
+    })),
     liveRoundId: round?.status === 'live' ? round.id : null,
     counts: {
       players: snapshot.players.length,
-      pairs: round ? (pairIdsByRound.get(round.id)?.size ?? 0) : 0,
+      pairs: round ? (pairsByRound.get(round.id) ?? 0) : 0,
       turnsInProgress: screen.counts.talking,
       responses: Object.values(saved).reduce((sum, n) => sum + n, 0),
     },
@@ -184,12 +175,7 @@ export const createGamesRouter = ({
   const endLiveRound = async (snapshot: GameSnapshot, roundId: string) => {
     const round = roundIn(snapshot, roundId)
     if (round.status !== 'live') throw fail('BAD_REQUEST', 'That round is not live.')
-    const now = store.now()
-    const result = await store.endRound({
-      roundId,
-      endedAt: now,
-      closeTurns: openTurnsToClose(snapshot, round, now),
-    })
+    const result = await store.endRound({roundId, endedAt: store.now()})
     conflictOr(result, 'That round already ended.')
   }
 
@@ -272,17 +258,9 @@ export const createGamesRouter = ({
       if (!canMoveGame(snapshot.game.status, 'ended')) {
         throw fail('BAD_REQUEST', 'This game cannot end from here.')
       }
-      const live = snapshot.rounds.find((r) => r.status === 'live')
-      if (live) {
-        const now = store.now()
-        // A double press may have ended it already; either way the round is over.
-        await store.endRound({
-          roundId: live.id,
-          endedAt: now,
-          closeTurns: openTurnsToClose(snapshot, live, now),
-        })
+      if (!(await store.endGame({gameId: input.gameId, endedAt: store.now()}))) {
+        return detail(input.gameId)
       }
-      if (!(await store.endGame(input.gameId))) return detail(input.gameId)
 
       const [final, saved] = await Promise.all([
         load(input.gameId),

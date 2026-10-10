@@ -183,6 +183,17 @@ describe('game.round.turn', () => {
     }
     expect(await refusalOf(a.caller.game.round.turn({action: 'claim'}))).toBe('partner_answering')
   })
+
+  it('refuses a claim that lands after the host ended the round', async () => {
+    const {a, fake} = await pairedUp()
+    const startTurn = fake.port.startTurn
+    fake.port.startTurn = async (input) => {
+      fake.snapshot.rounds[0] = {...liveRound, status: 'done'}
+      return startTurn(input)
+    }
+    expect(await refusalOf(a.caller.game.round.turn({action: 'claim'}))).toBe('round_not_live')
+    expect(fake.snapshot.turns).toEqual([])
+  })
 })
 
 describe('game.round.response / game.me', () => {
@@ -221,6 +232,21 @@ describe('game.round.response / game.me', () => {
     expect(await refusalOf(b.caller.game.me.deleteResponse({responseId}))).toBe('not_found')
     expect((await a.caller.game.me.deleteResponse({responseId})).responses).toEqual([])
     expect(await refusalOf(a.caller.game.me.deleteResponse({responseId}))).toBe('not_found')
+  })
+
+  it('still saves my turn after the host removed my partner and released me', async () => {
+    const {a, fake} = await pairedUp()
+    const turn = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
+    for (const p of fake.snapshot.pairs) p.playerIds = []
+    const saved = await a.caller.game.round.response({
+      turnId: turn?.id ?? '',
+      language: 'en',
+      transcript: 'Kept',
+      durationMs: 1000,
+      consent: true,
+    })
+    expect(saved.phase).toBe('unpaired')
+    expect((await a.caller.game.me.get()).responses).toMatchObject([{transcript: 'Kept'}])
   })
 
   it('takes feedback and returns fresh state', async () => {

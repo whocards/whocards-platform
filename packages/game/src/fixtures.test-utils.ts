@@ -34,6 +34,7 @@ export const pair = (id: string, playerIds: string[], roundId = 'r1'): Pair => (
 })
 
 export const turn = (extra: Partial<Turn> & Pick<Turn, 'id' | 'pairId' | 'playerId'>): Turn => ({
+  roundId: 'r1',
   questionId: 'q1',
   startedAt: 0,
   finishedAt: null,

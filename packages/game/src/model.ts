@@ -52,6 +52,8 @@ export type Pair = {
 export type Turn = {
   id: string
   pairId: string
+  /** Denormalised from the pair so a turn still resolves after its pair members leave. */
+  roundId: string
   playerId: string
   questionId: string
   startedAt: number

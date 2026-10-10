@@ -6,7 +6,7 @@ import type {TRPCContext} from '../context'
 import {createCallerFactory} from '../trpc'
 import {createGamesRouter} from './games'
 import type {GameSummary, HostStore, SendRecaps} from './games'
-import {buildRecaps, readRecapState} from './games-logic'
+import {buildRecaps, closingTimes, readRecapState} from './games-logic'
 
 const T0 = 1_760_000_000_000
 const ids = () => {
@@ -28,6 +28,18 @@ const memoryStore = (clock = {now: T0}) => {
   const id = ids()
   const mem: Mem = {games: [], players: [], rounds: [], pairs: [], turns: [], saved: []}
   const game = (gameId: string) => mem.games.find((g) => g.id === gameId)
+
+  const endLive = (roundId: string, endedAt: number): boolean => {
+    const round = mem.rounds.find((r) => r.id === roundId)
+    if (round?.status !== 'live') return false
+    Object.assign(round, {status: 'done', endsAt: endedAt})
+    const open = mem.turns.filter((t) => t.roundId === roundId && t.finishedAt === null)
+    for (const c of closingTimes(round, open, endedAt)) {
+      const turn = mem.turns.find((t) => t.id === c.turnId)
+      if (turn) turn.finishedAt = c.finishedAt
+    }
+    return true
+  }
 
   const store: HostStore = {
     now: () => clock.now,
@@ -63,13 +75,12 @@ const memoryStore = (clock = {now: T0}) => {
       const rounds = mem.rounds.filter((r) => r.gameId === gameId)
       const roundIds = new Set(rounds.map((r) => r.id))
       const pairs = mem.pairs.filter((p) => roundIds.has(p.roundId) && p.playerIds.length > 0)
-      const pairIds = new Set(mem.pairs.filter((p) => roundIds.has(p.roundId)).map((p) => p.id))
       return {
         game: {id: g.id, code: g.code, title: g.title, status: g.status, settings: g.settings},
         players: mem.players.filter((p) => p.gameId === gameId),
         rounds,
         pairs: pairs.map((p) => ({...p, playerIds: [...p.playerIds]})),
-        turns: mem.turns.filter((t) => pairIds.has(t.pairId)),
+        turns: mem.turns.filter((t) => roundIds.has(t.roundId)),
       }
     },
     savedResponses: async (gameId) => {
@@ -108,19 +119,12 @@ const memoryStore = (clock = {now: T0}) => {
       Object.assign(round, {status: 'live', startedAt, endsAt})
       return 'ok'
     },
-    endRound: async ({roundId, endedAt, closeTurns}) => {
-      const round = mem.rounds.find((r) => r.id === roundId)
-      if (round?.status !== 'live') return 'stale'
-      Object.assign(round, {status: 'done', endsAt: endedAt})
-      for (const c of closeTurns) {
-        const turn = mem.turns.find((t) => t.id === c.turnId)
-        if (turn && turn.finishedAt === null) turn.finishedAt = c.finishedAt
-      }
-      return 'ok'
-    },
-    endGame: async (gameId) => {
+    endRound: async ({roundId, endedAt}) => (endLive(roundId, endedAt) ? 'ok' : 'stale'),
+    endGame: async ({gameId, endedAt}) => {
       const g = game(gameId)
       if (!g || g.status === 'ended') return false
+      const live = mem.rounds.find((r) => r.gameId === gameId && r.status === 'live')
+      if (live) endLive(live.id, endedAt)
       g.status = 'ended'
       return true
     },
@@ -169,7 +173,8 @@ const memoryStore = (clock = {now: T0}) => {
     startedAt: number,
     finishedAt: number | null
   ) => {
-    const t = {id: id(), pairId, playerId, questionId, startedAt, finishedAt}
+    const roundId = mem.pairs.find((p) => p.id === pairId)?.roundId ?? ''
+    const t: Turn = {id: id(), pairId, roundId, playerId, questionId, startedAt, finishedAt}
     mem.turns.push(t)
     return t
   }
@@ -338,8 +343,8 @@ describe('games router', () => {
     expect(JSON.stringify(detail)).not.toContain('@')
   })
 
-  it('removes a player and frees their stranded partner to re-pair', async () => {
-    const {caller, mem, join, pair} = setup()
+  it('removes a player, frees the stranded partner and keeps their turn in the round', async () => {
+    const {caller, clock, mem, join, pair, turn} = setup()
     const c = caller()
     const {id: gameId} = await c.create({title: 'SDD'})
     const {rounds} = await c.addRound({gameId, settings: ROUND})
@@ -348,12 +353,19 @@ describe('games router', () => {
     const [a, b] = ['Anna', 'Bela'].map((n) => join(gameId, n))
     const p = pair(roundId, [a!.id, b!.id])
 
+    const kept = turn(p.id, b!.id, '1', clock.now, null)
+
     const detail = await c.removePlayer({gameId, playerId: a!.id})
     expect(detail.players.map((pl) => pl.name)).toEqual(['Bela'])
     expect(mem.pairs.find((x) => x.id === p.id)?.playerIds).toEqual([])
+    expect(detail.rounds[0]?.turns).toBe(1)
     await expect(c.removePlayer({gameId, playerId: a!.id})).rejects.toMatchObject({
       code: 'NOT_FOUND',
     })
+
+    clock.now += 10_000
+    await c.endRound({gameId, roundId})
+    expect(mem.turns.find((t) => t.id === kept.id)?.finishedAt).toBe(clock.now)
   })
 })
 
@@ -459,6 +471,7 @@ describe('buildRecaps', () => {
         {
           id: 't1',
           pairId: 'p1',
+          roundId: 'r1',
           playerId: 'a',
           questionId: '1',
           startedAt: T0,
@@ -467,12 +480,21 @@ describe('buildRecaps', () => {
         {
           id: 't2',
           pairId: 'p1',
+          roundId: 'r1',
           playerId: 'b',
           questionId: '2',
           startedAt: T0,
           finishedAt: T0 + 30_000,
         },
-        {id: 't3', pairId: 'p2', playerId: 'a', questionId: '3', startedAt: T0, finishedAt: null},
+        {
+          id: 't3',
+          pairId: 'p2',
+          roundId: 'r2',
+          playerId: 'a',
+          questionId: '3',
+          startedAt: T0,
+          finishedAt: null,
+        },
       ],
     }
   }

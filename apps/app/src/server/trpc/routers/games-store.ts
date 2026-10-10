@@ -12,10 +12,12 @@ import {
   hostedGame,
 } from '@whocards/game/db'
 
-import {and, asc, count, desc, eq, inArray, isNull, ne, sql} from 'drizzle-orm'
+import {and, asc, count, desc, eq, inArray, isNull, sql} from 'drizzle-orm'
+import type {SQL} from 'drizzle-orm'
 
 import type {db as appDb} from '~/server/db'
 import type {HostStore, WriteResult} from './games'
+import {closingTimes} from './games-logic'
 
 const GAME_CODE_LENGTH = 5
 
@@ -75,6 +77,40 @@ const toRound = (row: typeof gameRound.$inferSelect): Round => ({
   startedAt: ms(row.startedAt),
   endsAt: ms(row.endsAt),
 })
+
+type Tx = Parameters<Parameters<typeof appDb.transaction>[0]>[0]
+
+/** Ends the live round matching `which` and closes its open turns; false if none was live. */
+const endLiveRound = async (tx: Tx, which: SQL, endedAt: number): Promise<boolean> => {
+  const [row] = await tx
+    .update(gameRound)
+    .set({status: 'done', endsAt: new Date(endedAt)})
+    .where(and(which, eq(gameRound.status, 'live')))
+    .returning()
+  if (!row) return false
+  const open = await tx
+    .select({id: gameTurn.id, startedAt: gameTurn.startedAt})
+    .from(gameTurn)
+    .innerJoin(gamePair, eq(gamePair.id, gameTurn.pairId))
+    .where(and(eq(gamePair.roundId, row.id), isNull(gameTurn.finishedAt)))
+  const turns = open.map((t) => ({id: t.id, startedAt: t.startedAt.getTime()}))
+  for (const t of closingTimes(toRound(row), turns, endedAt)) {
+    await tx
+      .update(gameTurn)
+      .set({finishedAt: new Date(t.finishedAt)})
+      .where(and(eq(gameTurn.id, t.turnId), isNull(gameTurn.finishedAt)))
+  }
+  return true
+}
+
+const lockGame = async (tx: Tx, gameId: string) => {
+  const [game] = await tx
+    .select({status: hostedGame.status})
+    .from(hostedGame)
+    .where(eq(hostedGame.id, gameId))
+    .for('update')
+  return game ?? null
+}
 
 /** Host-side writes over the game tables; mirrors apps/website's player port for reads. */
 export const createDrizzleHostStore = (db: typeof appDb): HostStore => ({
@@ -154,6 +190,7 @@ export const createDrizzleHostStore = (db: typeof appDb): HostStore => ({
         .select({
           id: gameTurn.id,
           pairId: gameTurn.pairId,
+          roundId: gamePair.roundId,
           playerId: gameTurn.playerId,
           questionId: gameTurn.questionId,
           startedAt: gameTurn.startedAt,
@@ -212,15 +249,13 @@ export const createDrizzleHostStore = (db: typeof appDb): HostStore => ({
   startRound: ({gameId, roundId, startedAt, endsAt}) =>
     settle(() =>
       db.transaction(async (tx) => {
-        await tx
-          .update(hostedGame)
-          .set({status: 'live'})
-          .where(and(eq(hostedGame.id, gameId), eq(hostedGame.status, 'lobby')))
-        const [game] = await tx
-          .select({status: hostedGame.status})
-          .from(hostedGame)
-          .where(eq(hostedGame.id, gameId))
-        if (game?.status !== 'live') throw new StaleWrite()
+        // Same game lock as endGame, so a round can't go live in a game that is ending.
+        const game = await lockGame(tx, gameId)
+        if (game?.status === 'lobby') {
+          await tx.update(hostedGame).set({status: 'live'}).where(eq(hostedGame.id, gameId))
+        } else if (game?.status !== 'live') {
+          throw new StaleWrite()
+        }
         const rows = await tx
           .update(gameRound)
           .set({status: 'live', startedAt: new Date(startedAt), endsAt: new Date(endsAt)})
@@ -236,32 +271,21 @@ export const createDrizzleHostStore = (db: typeof appDb): HostStore => ({
       })
     ),
 
-  endRound: ({roundId, endedAt, closeTurns}) =>
+  endRound: ({roundId, endedAt}) =>
     settle(() =>
       db.transaction(async (tx) => {
-        const rows = await tx
-          .update(gameRound)
-          .set({status: 'done', endsAt: new Date(endedAt)})
-          .where(and(eq(gameRound.id, roundId), eq(gameRound.status, 'live')))
-          .returning({id: gameRound.id})
-        if (rows.length === 0) throw new StaleWrite()
-        for (const t of closeTurns) {
-          await tx
-            .update(gameTurn)
-            .set({finishedAt: new Date(t.finishedAt)})
-            .where(and(eq(gameTurn.id, t.turnId), isNull(gameTurn.finishedAt)))
-        }
+        if (!(await endLiveRound(tx, eq(gameRound.id, roundId), endedAt))) throw new StaleWrite()
       })
     ),
 
-  endGame: async (gameId) => {
-    const rows = await db
-      .update(hostedGame)
-      .set({status: 'ended'})
-      .where(and(eq(hostedGame.id, gameId), ne(hostedGame.status, 'ended')))
-      .returning({id: hostedGame.id})
-    return rows.length > 0
-  },
+  endGame: ({gameId, endedAt}) =>
+    db.transaction(async (tx) => {
+      const game = await lockGame(tx, gameId)
+      if (!game || game.status === 'ended') return false
+      await endLiveRound(tx, eq(gameRound.gameId, gameId), endedAt)
+      await tx.update(hostedGame).set({status: 'ended'}).where(eq(hostedGame.id, gameId))
+      return true
+    }),
 
   saveRecapState: async (gameId, recap) => {
     await db

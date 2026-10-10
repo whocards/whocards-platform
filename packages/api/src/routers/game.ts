@@ -87,12 +87,7 @@ const pair = async (port: GamePort, player: Player, partnerCode: string): Promis
     ? snapshot.pairs.find((p) => p.id === check.joinPairId)
     : undefined
   const result = joining
-    ? await port.addToPair({
-        pairId: joining.id,
-        roundId: round.id,
-        playerId: player.id,
-        slot: joining.playerIds.length,
-      })
+    ? await port.addToPair({pairId: joining.id, roundId: round.id, playerId: player.id})
     : await port.createPair({roundId: round.id, playerIds: [player.id, partner.id]})
   if (result === 'ok') return
 
@@ -135,7 +130,8 @@ const claim = async (port: GamePort, player: Player): Promise<void> => {
   if (result === 'ok') return
 
   const fresh = await load(port, player.gameId)
-  const again = checkClaim(round, myPair, turnsOf(fresh, myPair.id), player.id, port.now())
+  const freshRound = fresh.rounds.find((r) => r.id === round.id) ?? round
+  const again = checkClaim(freshRound, myPair, turnsOf(fresh, myPair.id), player.id, port.now())
   if (again.ok && !again.start) return
   throw refuse(again.ok ? 'partner_answering' : again.reason)
 }
@@ -195,8 +191,7 @@ export const gameRouter = createTRPCRouter({
     response: playerProcedure.input(responseInputSchema).mutation(async ({ctx, input}) => {
       const snapshot = await load(ctx.game, ctx.player.gameId)
       const turn = snapshot.turns.find((t) => t.id === input.turnId)
-      const turnPair = turn && snapshot.pairs.find((p) => p.id === turn.pairId)
-      const round = turnPair && snapshot.rounds.find((r) => r.id === turnPair.roundId)
+      const round = turn && snapshot.rounds.find((r) => r.id === turn.roundId)
       if (!turn || !round || turn.playerId !== ctx.player.id) throw refuse('not_found')
 
       if (turn.finishedAt === null) {

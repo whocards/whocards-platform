@@ -33,22 +33,16 @@ export const plannedRoundEnd = (round: Round, startedAt: number): number =>
       overtimeSeconds: round.overtimeSeconds,
     })
 
-const roundOfTurn = (snapshot: GameSnapshot, turn: Turn): Round | null => {
-  const pair = snapshot.pairs.find((p) => p.id === turn.pairId)
-  return snapshot.rounds.find((r) => r.id === pair?.roundId) ?? null
-}
+const roundOfTurn = (snapshot: GameSnapshot, turn: Turn): Round | null =>
+  snapshot.rounds.find((r) => r.id === turn.roundId) ?? null
 
-/** Turns still open in a round, each closed at now or its deadline, whichever came first. */
-export const openTurnsToClose = (
-  snapshot: GameSnapshot,
+/** When each of a round's open turns closes as the round ends: at `endedAt` or its deadline, whichever came first. */
+export const closingTimes = (
   round: Round,
-  now: number
-): Array<{turnId: string; finishedAt: number}> => {
-  const pairIds = new Set(snapshot.pairs.filter((p) => p.roundId === round.id).map((p) => p.id))
-  return snapshot.turns
-    .filter((t) => pairIds.has(t.pairId) && t.finishedAt === null)
-    .map((t) => ({turnId: t.id, finishedAt: Math.min(now, deadlineOf(round, t))}))
-}
+  openTurns: Array<Pick<Turn, 'id' | 'startedAt'>>,
+  endedAt: number
+): Array<{turnId: string; finishedAt: number}> =>
+  openTurns.map((t) => ({turnId: t.id, finishedAt: Math.min(endedAt, deadlineOf(round, t))}))
 
 const spokenMs = (snapshot: GameSnapshot, turn: Turn, now: number): number => {
   const round = roundOfTurn(snapshot, turn)
