@@ -1,6 +1,6 @@
 import type {ButtonHTMLAttributes, ReactNode} from 'react'
 
-import {qrPath} from '~lib/game/qr'
+import {qrPath} from '@whocards/game'
 import {cn} from '~utils/cn'
 
 type Variant = 'primary' | 'ghost'

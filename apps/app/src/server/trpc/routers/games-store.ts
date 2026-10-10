@@ -12,18 +12,9 @@ import {
   hostedGame,
 } from '@whocards/game/db'
 
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  inArray,
-  isNull,
-  ne,
-  sql,
-} from '../../../../../../packages/game/src/db/orm'
-import type {PostgresJsDatabase} from '../../../../../../packages/game/src/db/orm'
+import {and, asc, count, desc, eq, inArray, isNull, ne, sql} from 'drizzle-orm'
+
+import type {db as appDb} from '~/server/db'
 import type {HostStore, WriteResult} from './games'
 
 const GAME_CODE_LENGTH = 5
@@ -86,7 +77,7 @@ const toRound = (row: typeof gameRound.$inferSelect): Round => ({
 })
 
 /** Host-side writes over the game tables; mirrors apps/website's player port for reads. */
-export const createDrizzleHostStore = (db: PostgresJsDatabase): HostStore => ({
+export const createDrizzleHostStore = (db: typeof appDb): HostStore => ({
   now: Date.now,
   random: cryptoRandom,
 

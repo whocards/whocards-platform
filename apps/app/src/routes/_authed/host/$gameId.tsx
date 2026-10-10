@@ -1,10 +1,10 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {createFileRoute, Link, redirect} from '@tanstack/react-router'
+import {qrPath} from '@whocards/game'
 import type {OddRule, Overtime} from '@whocards/game'
 import {useMemo, useState} from 'react'
 
 import {eventLinks} from '~/lib/event-links'
-import {qrSvg} from '~/lib/qr'
 import {trpc} from '~/lib/trpc'
 import {roleAtLeast} from '~/server/auth/permissions'
 import type {GameDetail} from '~/server/trpc/routers/games'
@@ -177,13 +177,14 @@ function Stat({label, value}: Readonly<{label: string; value: number}>) {
 
 function JoinPanel({code}: Readonly<{code: string}>) {
   const links = eventLinks(code)
-  const src = useMemo(
-    () => `data:image/svg+xml,${encodeURIComponent(qrSvg(links.join))}`,
-    [links.join]
-  )
+  const {size, d} = useMemo(() => qrPath(links.join), [links.join])
   return (
     <section className="mb-8 flex flex-wrap items-center gap-6 rounded-2xl bg-gray-light/40 p-4">
-      <img src={src} width={200} height={200} alt={`QR code for ${links.join}`} />
+      <svg viewBox={`0 0 ${size} ${size}`} width={200} height={200} shapeRendering="crispEdges">
+        <title>{`QR code for ${links.join}`}</title>
+        <rect width={size} height={size} fill="#fff" />
+        <path d={d} fill="#000" />
+      </svg>
       <div className="flex min-w-0 flex-col gap-2">
         <p className="text-sm text-gray-lighter">Players join at</p>
         <a href={links.join} target="_blank" rel="noreferrer" className="font-semibold underline">

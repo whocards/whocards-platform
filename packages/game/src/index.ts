@@ -15,3 +15,4 @@ export * from './views'
 export const PLAYER_TOKEN_HEADER = 'x-whocards-player'
 
 export const MAX_AUDIO_BYTES = 25 * 1024 * 1024
+export {qrPath} from './qr'

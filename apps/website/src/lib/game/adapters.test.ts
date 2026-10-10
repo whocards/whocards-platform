@@ -1,7 +1,6 @@
 import {describe, expect, it, vi} from 'vitest'
 
 import {formatClock} from './format'
-import {qrPath} from './qr'
 import {pickMimeType} from './recorder'
 import {frameSize} from './scanner'
 import {createTokenStore} from './token-store'
@@ -159,14 +158,5 @@ describe('formatClock', () => {
     expect(formatClock(1)).toBe('0:01')
     expect(formatClock(0)).toBe('0:00')
     expect(formatClock(-5)).toBe('0:00')
-  })
-})
-
-describe('qrPath', () => {
-  it('draws a square code with a quiet border', () => {
-    const {size, d} = qrPath('ABC234')
-    expect(size).toBeGreaterThanOrEqual(25)
-    expect(d).toMatch(/^M\d+ \d+h1v1h-1z/)
-    expect(d).not.toContain('M0 0')
   })
 })

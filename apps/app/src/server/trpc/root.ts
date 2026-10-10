@@ -1,4 +1,4 @@
-import {gameDb} from '../db'
+import {db} from '../db'
 import {decksRouter} from './routers/decks'
 import {discussionAgentRouter} from './routers/discussion-agent'
 import {createGamesRouter} from './routers/games'
@@ -14,7 +14,7 @@ export const appRouter = createTRPCRouter({
   questionReview: questionReviewRouter,
   discussionAgent: discussionAgentRouter,
   games: createGamesRouter({
-    store: createDrizzleHostStore(gameDb),
+    store: createDrizzleHostStore(db),
     sendRecaps: sendRecapsWithResend,
   }),
 })
