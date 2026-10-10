@@ -21,8 +21,6 @@ export type GameSession = {
   refresh: () => Promise<void>
   /** Runs a mutation and takes its returned state; refusals trigger a resync. */
   act: (call: (client: GameClient) => Promise<PlayerState>) => Promise<GameError | null>
-  /** Holds polling while the player is mid-turn so a refresh can't yank the screen. */
-  setPaused: (paused: boolean) => void
 }
 
 export type HostedGameOptions = {
@@ -35,9 +33,9 @@ export type HostedGameOptions = {
   now?: () => number
 }
 
-/** Only `speaking` is driven by this phone alone; every other screen waits on someone else. */
+/** Polls until the game ends, mid-turn too, so a round or game the host ends reaches the phone. */
 export const shouldPoll = (state: PlayerState | null): boolean =>
-  state === null || (state.game.status !== 'ended' && state.phase !== 'speaking')
+  state === null || state.game.status !== 'ended'
 
 export const useHostedGame = ({
   client,
@@ -51,7 +49,6 @@ export const useHostedGame = ({
   const [offsetMs, setOffsetMs] = useState(0)
   const [loading, setLoading] = useState(joined)
   const [error, setError] = useState<GameError | null>(null)
-  const [paused, setPaused] = useState(false)
   const [inFlight, setInFlight] = useState(0)
   const [foreground, setForeground] = useState(() => platform.isForeground())
 
@@ -130,7 +127,7 @@ export const useHostedGame = ({
     [platform, joined, refresh]
   )
 
-  const polling = joined && foreground && !paused && inFlight === 0 && shouldPoll(state)
+  const polling = joined && foreground && inFlight === 0 && shouldPoll(state)
   // The first load rides the poll loop with no delay.
   const firstDelay = state === null ? 0 : pollMs
 
@@ -148,5 +145,5 @@ export const useHostedGame = ({
     }
   }, [polling, firstDelay, pollMs, refresh])
 
-  return {state, offsetMs, loading, error, join, refresh, act, setPaused}
+  return {state, offsetMs, loading, error, join, refresh, act}
 }

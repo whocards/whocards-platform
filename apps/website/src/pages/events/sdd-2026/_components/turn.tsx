@@ -75,7 +75,7 @@ export const Turn = ({state, timer, turn}: TurnProps) => {
           {!turn.canRecord && <span className='text-gray-dark'>{copy.turn.justTalk}</span>}
           <Button
             className='bg-primary-light text-darkest'
-            disabled={turn.stage !== 'idle' && turn.stage !== 'recording'}
+            disabled={!['idle', 'starting', 'recording'].includes(turn.stage)}
             onClick={() => void turn.finish()}
           >
             {rules.actions.finish}

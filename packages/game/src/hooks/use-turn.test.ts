@@ -4,7 +4,7 @@ import type {Recorder, Transcriber, WakeLock} from '../adapters'
 import type {TurnClock} from '../rules/timer'
 import type {GameClient, GamePlatform} from './client'
 import {flush, renderHook} from './render-hook.test-utils'
-import {playerState, speakingState, trpcError} from './state.test-utils'
+import {deferred, playerState, speakingState, trpcError} from './state.test-utils'
 import {useHostedGame} from './use-hosted-game'
 import {useTurn} from './use-turn'
 
@@ -163,6 +163,61 @@ describe('useTurn', () => {
     expect(client.turn).toHaveBeenCalledWith('finish')
     expect(transcriber.transcribe).not.toHaveBeenCalled()
     expect(hook.current.turn.stage).toBe('idle')
+    await hook.unmount()
+  })
+
+  it('starts the mic once on a double tap', async () => {
+    const {recorder, hook} = await setup()
+    const mic = deferred<undefined>()
+    recorder.start.mockReturnValueOnce(mic.promise)
+    await flush(() => {
+      void hook.current.turn.record()
+      void hook.current.turn.record()
+    })
+    expect(hook.current.turn.stage).toBe('starting')
+    await flush(() => mic.resolve(undefined))
+    expect(recorder.start).toHaveBeenCalledOnce()
+    expect(hook.current.turn.stage).toBe('recording')
+    await hook.unmount()
+  })
+
+  it('drops a mic that answers after the player already finished', async () => {
+    const {client, recorder, wakeLock, hook} = await setup()
+    const mic = deferred<undefined>()
+    recorder.start.mockReturnValueOnce(mic.promise)
+    await flush(() => void hook.current.turn.record())
+    await flush(() => hook.current.turn.finish())
+    expect(client.turn).toHaveBeenCalledWith('finish')
+    expect(hook.current.turn.stage).toBe('idle')
+
+    await flush(() => mic.resolve(undefined))
+    expect(recorder.cancel).toHaveBeenCalledOnce()
+    expect(wakeLock.acquire).not.toHaveBeenCalled()
+    expect(hook.current.turn.stage).toBe('idle')
+    await hook.unmount()
+  })
+
+  it('drops a mic that answers after the screen went away', async () => {
+    const {recorder, wakeLock, hook} = await setup()
+    const mic = deferred<undefined>()
+    recorder.start.mockReturnValueOnce(mic.promise)
+    await flush(() => void hook.current.turn.record())
+    await hook.unmount()
+    mic.resolve(undefined)
+    await vi.runAllTimersAsync()
+    expect(recorder.cancel).toHaveBeenCalledOnce()
+    expect(wakeLock.acquire).not.toHaveBeenCalled()
+  })
+
+  it('keeps the take for review when the host ends the round mid-recording', async () => {
+    const {client, recorder, hook} = await setup()
+    await flush(() => hook.current.turn.record())
+    client.state.mockResolvedValue(playerState({round: null, phase: 'waiting'}))
+    await flush(4000)
+    await flush()
+    expect(recorder.stop).toHaveBeenCalledOnce()
+    expect(hook.current.turn.stage).toBe('review')
+    expect(hook.current.turn.draft?.turnId).toBe('t1')
     await hook.unmount()
   })
 

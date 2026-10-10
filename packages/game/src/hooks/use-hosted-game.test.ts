@@ -70,26 +70,19 @@ describe('useHostedGame', () => {
     await hook.unmount()
   })
 
-  it('polls on waiting screens and stops while the player is speaking', async () => {
+  it('keeps polling while the player speaks and stops once the game ends', async () => {
     const {client, hook} = await setup()
     await flush()
-    await flush(4000)
-    expect(client.state).toHaveBeenCalledTimes(2)
-
     client.state.mockResolvedValue(speakingState())
     await flush(4000)
     expect(hook.current.state?.phase).toBe('speaking')
-    await flush(20_000)
+    await flush(4000)
     expect(client.state).toHaveBeenCalledTimes(3)
-    await hook.unmount()
-  })
 
-  it('holds polling while paused', async () => {
-    const {client, hook} = await setup()
-    await flush()
-    await flush(() => hook.current.setPaused(true))
+    client.state.mockResolvedValue(playerState({game: {...playerState().game, status: 'ended'}}))
+    await flush(4000)
     await flush(20_000)
-    expect(client.state).toHaveBeenCalledTimes(1)
+    expect(client.state).toHaveBeenCalledTimes(4)
     await hook.unmount()
   })
 

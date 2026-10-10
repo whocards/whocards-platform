@@ -11,6 +11,7 @@ import type {GameSession} from './use-hosted-game'
 export type TurnStage =
   | 'idle'
   | 'claiming'
+  | 'starting'
   | 'recording'
   | 'finishing'
   | 'transcribing'
@@ -72,16 +73,19 @@ export const useTurn = <TAudio>({
   useEffect(() => {
     latest.current = session
   }, [session])
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
 
-  const {act, refresh, setPaused} = session
-  const go = useCallback(
-    (next: TurnStage) => {
-      stageNow.current = next
-      setStage(next)
-      setPaused(next !== 'idle')
-    },
-    [setPaused]
-  )
+  const {act, refresh} = session
+  const go = useCallback((next: TurnStage) => {
+    stageNow.current = next
+    setStage(next)
+  }, [])
 
   const canRecord = recorder !== null && transcriber !== null
 
@@ -96,15 +100,30 @@ export const useTurn = <TAudio>({
   const record = useCallback(async () => {
     const turn = myOpenTurn(latest.current.state)
     if (!recorder || !transcriber || !turn || stageNow.current !== 'idle') return
+    go('starting')
+    // The mic can answer after the player finished or left; a late stream is dropped.
+    const still = (expected: TurnStage) => mounted.current && stageNow.current === expected
     try {
       await recorder.start()
     } catch {
+      if (!still('starting')) return
       setNotice('mic_unavailable')
+      go('idle')
+      return
+    }
+    if (!still('starting')) {
+      void recorder.cancel()
       return
     }
     recordingTurn.current = turn.id
     go('recording')
-    if (wakeLock && !(await wakeLock.acquire())) setNotice('keep_screen_on')
+    if (!wakeLock) return
+    const held = await wakeLock.acquire()
+    if (!still('recording')) {
+      if (held) void wakeLock.release()
+      return
+    }
+    if (!held) setNotice('keep_screen_on')
   }, [recorder, transcriber, wakeLock, go])
 
   const transcribe = useCallback(async () => {
@@ -129,7 +148,7 @@ export const useTurn = <TAudio>({
 
   const finish = useCallback(async () => {
     const from = stageNow.current
-    if (from !== 'idle' && from !== 'recording') return
+    if (from !== 'idle' && from !== 'starting' && from !== 'recording') return
     go('finishing')
     let recording: Recording<TAudio> | null = null
     if (from === 'recording' && recorder) {
@@ -197,12 +216,18 @@ export const useTurn = <TAudio>({
   useEffect(() => {
     if (clock?.phase !== 'over' || !openTurnId || autoFinished.current === openTurnId)
       return undefined
-    if (stage !== 'recording' && stage !== 'idle') return undefined
+    if (stage !== 'recording' && stage !== 'starting' && stage !== 'idle') return undefined
     return after(0, () => {
       autoFinished.current = openTurnId
       void finish()
     })
   }, [clock?.phase, stage, openTurnId, finish])
+
+  // The host ended the round or game, or the server closed the turn: keep the take for review.
+  useEffect(() => {
+    if (stage !== 'recording' || openTurnId === recordingTurn.current) return undefined
+    return after(0, () => void finish())
+  }, [stage, openTurnId, finish])
 
   useEffect(
     () => () => {
