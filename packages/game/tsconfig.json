@@ -1,0 +1,10 @@
+{
+  "extends": "@whocards/typescript-config/base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

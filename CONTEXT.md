@@ -87,3 +87,23 @@ _Avoid_: post, send (unqualified), invite
 **Android Tester**:
 A person who helps validate the Android app before public launch. An Android Tester is part of the beta cohort, not a public app waitlist subscriber or general newsletter subscriber.
 _Avoid_: beta tester (too vague), app waitlist subscriber
+
+**Hosted Game**:
+A live, in-room session of the SDD workshop game: a host runs it on a big screen under a short code, and players join from their own phones. It has a lifecycle (`lobby` → `live` → `ended`) and is made of numbered Rounds. Not a Game: a Game is a draw policy for a Deck, a Hosted Game is an event people attend.
+_Avoid_: game (unqualified, that is the draw policy), session, room, event
+
+**Round**:
+One timed stretch of a Hosted Game, played on one Deck with its own turn length and odd-player rule (a trio, or someone sits out). At most one Round is live at a time; players re-pair every Round.
+_Avoid_: level, stage, game
+
+**Pair**:
+Two players (three when the odd-player rule makes a trio) matched for one Round by entering each other's pair code. A player is in at most one Pair per Round and is steered away from partners they met in earlier Rounds.
+_Avoid_: team, group, match, couple
+
+**Turn**:
+One player's go at answering inside a Pair: they claim it, get a Question, and talk until they finish or the timer runs out. Only one Turn per Pair is open at a time; the first claim wins and the partner waits. Each player has one Turn per Round.
+_Avoid_: go, slot, answer (that is the Response, or the Answered state of a Card)
+
+**Response**:
+What a player said during their Turn, kept as a transcript (never the audio) only with their consent. The player can review and delete their own Responses.
+_Avoid_: answer (taken by Answered and the Answer record), recording, submission
