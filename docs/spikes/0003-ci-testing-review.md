@@ -74,7 +74,7 @@ The substantive comments were mostly P2 hygiene, but the P1s on the release scri
 4. **Gate name and scope are misleading.** `mobile-gate.yml` gates the whole repo. Rename to `ci.yml` when next touched; agents reading the workflow name will otherwise assume website has no gate.
 5. **`paths-ignore` on a required check is a latent trap.** A docs-only PR skips the workflow, and GitHub leaves the required `Quality gate` check as "expected" forever. It has not bitten yet because every PR so far touched code, or was merged by an admin. Fix: drop `paths-ignore` and instead short-circuit inside the job with `dorny/paths-filter`, or add a no-op job that reports the same check name.
 6. **Ruleset is thin.** _(Done 2026-09-07.)_ No force-push block on main. Add `non_fast_forward` and `required_linear_history` rules; both are free and stop an agent from rewriting main.
-7. **Standalone pnpm 11 cannot run on Intel Macs.** `@pnpm/macos-x64` was never published past 11.0.4, so the self-managing `@pnpm/exe` shim fails with `ERR_PNPM_PNPM_ENGINE_IDENTITY_UNVERIFIABLE` for the pinned 11.4.0. Fixed on jarvis by installing the pure-JS `pnpm@11.4.0` via npm; CI on ubuntu is unaffected. If stark-tower is Intel too, it needs the same fix.
+7. **Standalone pnpm 11 cannot run on Intel Macs.** _(Done 2026-10-10: repo moved to pnpm 12, which ships `@pnpm/exe.darwin-x64`.)_ `@pnpm/macos-x64` was never published past 11.0.4, so the self-managing `@pnpm/exe` shim fails with `ERR_PNPM_PNPM_ENGINE_IDENTITY_UNVERIFIABLE` for the pinned 11.4.0. Fixed on jarvis by installing the pure-JS `pnpm@11.4.0` via npm; CI on ubuntu is unaffected. If stark-tower is Intel too, it needs the same fix.
 
 ## Recommendations
 
