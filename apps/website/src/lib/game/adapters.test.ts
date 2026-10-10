@@ -167,11 +167,17 @@ describe('createTokenStore', () => {
   })
 
   it('falls back to memory when localStorage cannot even be read', () => {
-    const blocked = vi.spyOn(globalThis, 'localStorage', 'get').mockImplementation(refuse)
-    const store = createTokenStore()
-    store.set('ABCD', 'tok')
-    expect(store.get('ABCD')).toBe('tok')
-    blocked.mockRestore()
+    // Node only defines localStorage from v25, so install the throwing getter by hand.
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    Object.defineProperty(globalThis, 'localStorage', {configurable: true, get: refuse})
+    try {
+      const store = createTokenStore()
+      store.set('ABCD', 'tok')
+      expect(store.get('ABCD')).toBe('tok')
+    } finally {
+      if (original) Object.defineProperty(globalThis, 'localStorage', original)
+      else Reflect.deleteProperty(globalThis, 'localStorage')
+    }
   })
 })
 
