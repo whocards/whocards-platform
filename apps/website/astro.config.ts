@@ -70,7 +70,11 @@ export default defineConfig({
     }),
   ],
   output: 'static',
+  // The toolbar overlays the page and swallows Playwright clicks on bottom-of-screen controls.
+  devToolbar: {enabled: false},
   adapter: netlify({
+    // No edge functions here, and their dev emulation boots Deno, which broke `astro dev` in CI.
+    devFeatures: {images: true, environmentVariables: false, edgeFunctions: false},
     // `/api/print.pdf` (#38) and `/share-card/{size}/{language}/{id}.png`
     // (#153) are both `prerender = false` (real Netlify functions), so the
     // font/svg assets they read at request time via runtime-resolved paths
