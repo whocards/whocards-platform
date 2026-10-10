@@ -1,0 +1,28 @@
+---
+import Head from '~layouts/Head.astro'
+import {isNoindexRoute} from '~seo/indexation'
+import '~styles/base.css'
+
+export type Props = {title?: string; wide?: boolean}
+
+const {title = 'SDD 2026 · WhoCards', wide = false} = Astro.props
+---
+
+<!doctype html>
+<html lang='en'>
+  <head>
+    <Head
+      title={title}
+      description='WhoCards conversation game for the SDD workshop'
+      noindex={isNoindexRoute(Astro.url.pathname)}
+    />
+  </head>
+  <body class='m-0 flex min-h-dvh flex-col bg-[#FFF0E8] font-sans text-darkest'>
+    <main
+      class='mx-auto flex w-full flex-1 flex-col items-center px-4'
+      class:list={[wide ? 'max-w-none px-0' : 'max-w-md']}
+    >
+      <slot />
+    </main>
+  </body>
+</html>

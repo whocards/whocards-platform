@@ -1,0 +1,229 @@
+import {useCallback, useEffect, useRef, useState} from 'react'
+
+import type {Recorder, Recording, Transcriber, WakeLock} from '../adapters'
+import type {DeviceNotice} from '../player-copy'
+import type {TurnClock} from '../rules/timer'
+import type {PlayerState, Refusal, TurnView} from '../schemas'
+import type {GameError} from './errors'
+import {after} from './timers'
+import type {GameSession} from './use-hosted-game'
+
+export type TurnStage =
+  | 'idle'
+  | 'claiming'
+  | 'recording'
+  | 'finishing'
+  | 'transcribing'
+  | 'review'
+  | 'saving'
+
+export type TurnNotice = Refusal | DeviceNotice
+
+export type Draft = {turnId: string; text: string; durationMs: number}
+
+export type TurnOptions<TAudio> = {
+  session: GameSession
+  /** Null on the decline path: the player talks, nothing is recorded. */
+  recorder: Recorder<TAudio> | null
+  wakeLock: WakeLock | null
+  transcriber: Transcriber<TAudio> | null
+  clock: TurnClock | null
+}
+
+export type TurnControls = {
+  stage: TurnStage
+  notice: TurnNotice | null
+  draft: Draft | null
+  canRecord: boolean
+  claim: () => Promise<void>
+  record: () => Promise<void>
+  finish: () => Promise<void>
+  retryTranscribe: () => Promise<void>
+  save: (text: string) => Promise<void>
+  discard: () => void
+  dismissNotice: () => void
+}
+
+export const myOpenTurn = (state: PlayerState | null): TurnView | null => {
+  const turn = state?.pair?.activeTurn ?? null
+  return turn && turn.playerId === state?.me.id && turn.finishedAt === null ? turn : null
+}
+
+const noticeOf = (failure: GameError): TurnNotice => failure.refusal ?? 'network'
+
+type Take<TAudio> = {turnId: string; recording: Recording<TAudio>}
+
+export const useTurn = <TAudio>({
+  session,
+  recorder,
+  wakeLock,
+  transcriber,
+  clock,
+}: TurnOptions<TAudio>): TurnControls => {
+  const [stage, setStage] = useState<TurnStage>('idle')
+  const [notice, setNotice] = useState<TurnNotice | null>(null)
+  const [draft, setDraft] = useState<Draft | null>(null)
+
+  // Callbacks read these synchronously so a double tap can't start two flows.
+  const stageNow = useRef<TurnStage>('idle')
+  const take = useRef<Take<TAudio> | null>(null)
+  const recordingTurn = useRef<string | null>(null)
+  const latest = useRef(session)
+  useEffect(() => {
+    latest.current = session
+  }, [session])
+
+  const {act, refresh, setPaused} = session
+  const go = useCallback(
+    (next: TurnStage) => {
+      stageNow.current = next
+      setStage(next)
+      setPaused(next !== 'idle')
+    },
+    [setPaused]
+  )
+
+  const canRecord = recorder !== null && transcriber !== null
+
+  const claim = useCallback(async () => {
+    if (stageNow.current !== 'idle') return
+    go('claiming')
+    const failure = await act((c) => c.turn('claim'))
+    setNotice(failure ? noticeOf(failure) : null)
+    go('idle')
+  }, [act, go])
+
+  const record = useCallback(async () => {
+    const turn = myOpenTurn(latest.current.state)
+    if (!recorder || !transcriber || !turn || stageNow.current !== 'idle') return
+    try {
+      await recorder.start()
+    } catch {
+      setNotice('mic_unavailable')
+      return
+    }
+    recordingTurn.current = turn.id
+    go('recording')
+    if (wakeLock && !(await wakeLock.acquire())) setNotice('keep_screen_on')
+  }, [recorder, transcriber, wakeLock, go])
+
+  const transcribe = useCallback(async () => {
+    const pending = take.current
+    const language = latest.current.state?.me.language
+    if (!pending || !transcriber || !language) {
+      go('idle')
+      return
+    }
+    go('transcribing')
+    const {turnId, recording} = pending
+    try {
+      const transcript = await transcriber.transcribe(recording, language)
+      setDraft({turnId, text: transcript.text, durationMs: recording.durationMs})
+      setNotice(null)
+    } catch {
+      setDraft({turnId, text: '', durationMs: recording.durationMs})
+      setNotice('transcribe_failed')
+    }
+    go('review')
+  }, [transcriber, go])
+
+  const finish = useCallback(async () => {
+    const from = stageNow.current
+    if (from !== 'idle' && from !== 'recording') return
+    go('finishing')
+    let recording: Recording<TAudio> | null = null
+    if (from === 'recording' && recorder) {
+      recording = await recorder.stop().catch(() => null)
+      await wakeLock?.release()
+    }
+    const failure = await act((c) => c.turn('finish'))
+    // The server may already have closed the turn at its deadline.
+    if (failure && failure.refusal !== 'no_open_turn') setNotice(noticeOf(failure))
+    if (!recording || !recordingTurn.current) {
+      go('idle')
+      return
+    }
+    take.current = {turnId: recordingTurn.current, recording}
+    recordingTurn.current = null
+    await transcribe()
+  }, [recorder, wakeLock, act, transcribe, go])
+
+  const clear = useCallback(() => {
+    take.current = null
+    setDraft(null)
+    go('idle')
+  }, [go])
+
+  const save = useCallback(
+    async (text: string) => {
+      const language = latest.current.state?.me.language
+      if (!draft || !language || stageNow.current !== 'review') return
+      go('saving')
+      const failure = await act((c) =>
+        c.response({
+          turnId: draft.turnId,
+          language,
+          transcript: text,
+          durationMs: Math.round(draft.durationMs),
+          consent: true,
+        })
+      )
+      if (failure) {
+        setNotice(noticeOf(failure))
+        go('review')
+        return
+      }
+      setNotice(null)
+      clear()
+    },
+    [draft, act, clear, go]
+  )
+
+  const discard = useCallback(() => {
+    if (stageNow.current !== 'review') return
+    setNotice(null)
+    clear()
+    void refresh()
+  }, [clear, refresh])
+
+  const retryTranscribe = useCallback(async () => {
+    if (stageNow.current === 'review') await transcribe()
+  }, [transcribe])
+
+  const dismissNotice = useCallback(() => setNotice(null), [])
+
+  const openTurnId = myOpenTurn(session.state)?.id ?? null
+  const autoFinished = useRef<string | null>(null)
+  useEffect(() => {
+    if (clock?.phase !== 'over' || !openTurnId || autoFinished.current === openTurnId)
+      return undefined
+    if (stage !== 'recording' && stage !== 'idle') return undefined
+    return after(0, () => {
+      autoFinished.current = openTurnId
+      void finish()
+    })
+  }, [clock?.phase, stage, openTurnId, finish])
+
+  useEffect(
+    () => () => {
+      if (stageNow.current !== 'recording') return
+      void recorder?.cancel()
+      void wakeLock?.release()
+    },
+    [recorder, wakeLock]
+  )
+
+  return {
+    stage,
+    notice,
+    draft,
+    canRecord,
+    claim,
+    record,
+    finish,
+    retryTranscribe,
+    save,
+    discard,
+    dismissNotice,
+  }
+}

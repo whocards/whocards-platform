@@ -19,6 +19,8 @@ export function isNoindexRoute(pathname: string): boolean {
     route.endsWith('/images') ||
     route === '/events/hajnalig/play' ||
     /^\/events\/hajnalig\/[^/]+\/play$/.test(route) ||
+    route === '/events/sdd-2026' ||
+    route.startsWith('/events/sdd-2026/') ||
     route === '/dev' ||
     route.startsWith('/dev/')
   )

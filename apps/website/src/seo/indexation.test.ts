@@ -13,6 +13,9 @@ describe('search indexation policy', () => {
     '/dev/image-playground',
     '/events/hajnalig/play',
     '/events/hajnalig/2025/play',
+    '/events/sdd-2026',
+    '/events/sdd-2026/me',
+    '/events/sdd-2026/screen',
   ])('keeps noindexed route %s out of the sitemap', (pathname) => {
     expect(isNoindexRoute(pathname)).toBe(true)
     expect(shouldIncludeInSitemap(`${site}${pathname}`)).toBe(false)
@@ -52,10 +55,8 @@ describe('search indexation policy', () => {
     '/android-testers-birthday-present.html',
     '/events/hajnalig/play.html',
     '/events/hajnalig/2025/play.html',
-  ])(
-    'recognizes file-format production pathname %s as noindex',
-    (pathname) => {
-      expect(isNoindexRoute(pathname)).toBe(true)
-    }
-  )
+    '/events/sdd-2026.html',
+  ])('recognizes file-format production pathname %s as noindex', (pathname) => {
+    expect(isNoindexRoute(pathname)).toBe(true)
+  })
 })
