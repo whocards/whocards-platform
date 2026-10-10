@@ -26,6 +26,7 @@ function AuthedLayout() {
   const {user, membership} = Route.useRouteContext()
   const [menuOpen, setMenuOpen] = useState(false)
   const isAdmin = membership ? roleAtLeast(membership.role, 'admin') : false
+  const isHost = membership ? roleAtLeast(membership.role, 'facilitator') : false
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -42,6 +43,11 @@ function AuthedLayout() {
             <Link to="/decks" activeProps={{className: 'text-yellow-400'}}>
               Decks
             </Link>
+            {isHost ? (
+              <Link to="/host" activeProps={{className: 'text-yellow-400'}}>
+                Host
+              </Link>
+            ) : null}
             {isAdmin ? (
               <Link to="/admin/people" activeProps={{className: 'text-yellow-400'}}>
                 Admin › People
@@ -98,6 +104,16 @@ function AuthedLayout() {
             >
               Decks
             </Link>
+            {isHost ? (
+              <Link
+                to="/host"
+                onClick={() => setMenuOpen(false)}
+                activeProps={{className: 'text-yellow-400'}}
+                className="flex min-h-11 items-center rounded-xl px-3 py-2"
+              >
+                Host
+              </Link>
+            ) : null}
             {isAdmin ? (
               <Link
                 to="/admin/people"

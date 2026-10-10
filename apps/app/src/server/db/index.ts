@@ -1,6 +1,7 @@
 import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 
+import {drizzle as gameDrizzle} from '../../../../../packages/game/src/db/orm'
 import {env} from '~/server/env'
 import * as schema from './schema'
 
@@ -11,5 +12,7 @@ import * as schema from './schema'
  */
 const client = postgres(env.DB_URL)
 export const db = drizzle(client, {schema})
+/** Same connection, typed by the drizzle-orm copy the game tables are built on. */
+export const gameDb = gameDrizzle(client)
 
 export {schema}
