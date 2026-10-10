@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@whocards/decks": "workspace:*",
+    "@whocards/game": "workspace:*",
     "@trpc/server": "catalog:",
     "zod": "catalog:"
   },

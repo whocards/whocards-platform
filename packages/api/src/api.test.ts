@@ -1,10 +1,18 @@
 import {describe, expect, it, vi} from 'vitest'
 
+import {createFakeGamePort} from './game/fake-port.test-utils'
 import {createCaller} from './index'
 import type {Context} from './trpc'
 
-// the content routers are context-free; a no-op recordAnswer satisfies the port
-const caller = createCaller({recordAnswer: async () => {}})
+// the content routers are context-free; no-op ports satisfy the context
+const base: Context = {
+  recordAnswer: async () => {},
+  game: createFakeGamePort({
+    game: {id: 'g', code: 'GAME', title: '', status: 'lobby', settings: {round: {}}},
+  }).port,
+  playerToken: null,
+}
+const caller = createCaller(base)
 
 describe('decks router', () => {
   it('manifest lists every deck without question text', async () => {
@@ -37,7 +45,7 @@ describe('pool router', () => {
 describe('answers router', () => {
   it('record hands a valid Answer to the recordAnswer port (type defaults to "answered")', async () => {
     const recordAnswer = vi.fn<Context['recordAnswer']>(async () => {})
-    await createCaller({recordAnswer}).answers.record({
+    await createCaller({...base, recordAnswer}).answers.record({
       deviceId: 'dev-1',
       deckSlug: 'library',
       questionId: '1',
@@ -55,7 +63,7 @@ describe('answers router', () => {
   it('record rejects an empty deviceId without touching the port', async () => {
     const recordAnswer = vi.fn<Context['recordAnswer']>(async () => {})
     await expect(
-      createCaller({recordAnswer}).answers.record({
+      createCaller({...base, recordAnswer}).answers.record({
         deviceId: '',
         deckSlug: 'library',
         questionId: '1',
