@@ -122,6 +122,10 @@ const memoryStorage = (): Storage => {
   }
 }
 
+const refuse = () => {
+  throw new Error('SecurityError')
+}
+
 describe('createTokenStore', () => {
   it('keys tokens by game code and remembers the last game', () => {
     const store = createTokenStore(memoryStorage())
@@ -133,12 +137,28 @@ describe('createTokenStore', () => {
     expect(store.get('ABCD')).toBeNull()
   })
 
-  it('degrades to no storage when it throws', () => {
+  it('keeps the game in memory for this tab when storage throws', () => {
     const broken = memoryStorage()
-    broken.getItem = () => {
-      throw new Error('SecurityError')
-    }
-    expect(createTokenStore(broken).get('ABCD')).toBeNull()
+    broken.getItem = refuse
+    broken.setItem = refuse
+    broken.removeItem = refuse
+    const store = createTokenStore(broken)
+    expect(store.get('ABCD')).toBeNull()
+    store.set('abcd', 'tok')
+    store.setRecords('ABCD', true)
+    expect(store.get('ABCD')).toBe('tok')
+    expect(store.lastCode()).toBe('ABCD')
+    expect(store.records('ABCD')).toBe(true)
+    store.clear('ABCD')
+    expect(store.get('ABCD')).toBeNull()
+  })
+
+  it('falls back to memory when localStorage cannot even be read', () => {
+    const blocked = vi.spyOn(globalThis, 'localStorage', 'get').mockImplementation(refuse)
+    const store = createTokenStore()
+    store.set('ABCD', 'tok')
+    expect(store.get('ABCD')).toBe('tok')
+    blocked.mockRestore()
   })
 })
 

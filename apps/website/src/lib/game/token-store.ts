@@ -22,17 +22,29 @@ export type TokenStore = {
 }
 
 export const createTokenStore = (
-  storage: Storage | null = globalThis.localStorage ?? null
-): TokenStore => ({
-  get: (code) => safely(() => storage?.getItem(tokenKey(code)) ?? null, null),
-  set: (code, token) =>
-    safely(() => {
-      storage?.setItem(tokenKey(code), token)
-      storage?.setItem(LAST_CODE_KEY, code.toUpperCase())
-    }, undefined),
-  clear: (code) => safely(() => storage?.removeItem(tokenKey(code)), undefined),
-  lastCode: () => safely(() => storage?.getItem(LAST_CODE_KEY) ?? null, null),
-  records: (code) => safely(() => storage?.getItem(recordsKey(code)) === '1', false),
-  setRecords: (code, records) =>
-    safely(() => storage?.setItem(recordsKey(code), records ? '1' : '0'), undefined),
-})
+  // Reading localStorage itself throws where storage is blocked.
+  storage: Storage | null = safely(() => globalThis.localStorage ?? null, null)
+): TokenStore => {
+  // Every write lands here too, so a storage that refuses writes doesn't drop the token.
+  const memory = new Map<string, string>()
+  const read = (key: string) =>
+    safely(() => storage?.getItem(key) ?? null, null) ?? memory.get(key) ?? null
+  const write = (key: string, value: string) => {
+    memory.set(key, value)
+    safely(() => storage?.setItem(key, value), undefined)
+  }
+  return {
+    get: (code) => read(tokenKey(code)),
+    set: (code, token) => {
+      write(tokenKey(code), token)
+      write(LAST_CODE_KEY, code.toUpperCase())
+    },
+    clear: (code) => {
+      memory.delete(tokenKey(code))
+      safely(() => storage?.removeItem(tokenKey(code)), undefined)
+    },
+    lastCode: () => read(LAST_CODE_KEY),
+    records: (code) => read(recordsKey(code)) === '1',
+    setRecords: (code, records) => write(recordsKey(code), records ? '1' : '0'),
+  }
+}
