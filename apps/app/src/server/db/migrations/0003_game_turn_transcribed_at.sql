@@ -1,0 +1,1 @@
+ALTER TABLE "game_turn" ADD COLUMN "transcribed_at" timestamp with time zone;

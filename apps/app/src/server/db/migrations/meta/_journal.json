@@ -22,6 +22,13 @@
       "when": 1791642670694,
       "tag": "0002_good_gunslinger",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791659753822,
+      "tag": "0003_game_turn_transcribed_at",
+      "breakpoints": true
     }
   ]
 }

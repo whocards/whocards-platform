@@ -53,15 +53,20 @@ const snapshot = (
   turns,
 })
 
-const deps = (overrides: Partial<TranscribeDeps> = {}, state = snapshot('live', 'live')) => ({
-  game: {
-    now: () => NOW,
-    findPlayerByToken: async (token: string) => (token === 'good' ? player : null),
-    loadSnapshot: async () => state,
-  },
-  transcriber: vi.fn<ServerTranscriber>(fakeTranscriber),
-  ...overrides,
-})
+const deps = (overrides: Partial<TranscribeDeps> = {}, state = snapshot('live', 'live')) => {
+  const claimed = new Set<string>()
+  return {
+    game: {
+      now: () => NOW,
+      findPlayerByToken: async (token: string) => (token === 'good' ? player : null),
+      loadSnapshot: async () => state,
+      claimTranscription: async (turnId: string) => !claimed.has(turnId) && !!claimed.add(turnId),
+      releaseTranscription: async (turnId: string) => void claimed.delete(turnId),
+    },
+    transcriber: vi.fn<ServerTranscriber>(fakeTranscriber),
+    ...overrides,
+  }
+}
 
 const post = (fields: {audio?: Blob; token?: string; language?: string}) => {
   const form = new FormData()
@@ -127,11 +132,20 @@ describe('handleTranscribe', () => {
     expect((await handleTranscribe(post(valid), deps({transcriber: null}))).status).toBe(503)
   })
 
-  it('answers 502 when the transcriber fails', async () => {
-    const transcriber = vi.fn<ServerTranscriber>(async () => {
-      throw new Error('upstream down')
-    })
-    expect((await handleTranscribe(post(valid), deps({transcriber}))).status).toBe(502)
+  it('refuses a second transcription of the same turn', async () => {
+    const d = deps()
+    expect((await handleTranscribe(post(valid), d)).status).toBe(200)
+    expect((await handleTranscribe(post(valid), d)).status).toBe(409)
+    expect(d.transcriber).toHaveBeenCalledOnce()
+  })
+
+  it('answers 502 when the transcriber fails, and lets the player retry', async () => {
+    const transcriber = vi
+      .fn<ServerTranscriber>(fakeTranscriber)
+      .mockRejectedValueOnce(new Error('upstream down'))
+    const d = deps({transcriber})
+    expect((await handleTranscribe(post(valid), d)).status).toBe(502)
+    expect((await handleTranscribe(post(valid), d)).status).toBe(200)
   })
 })
 

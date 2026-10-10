@@ -33,6 +33,10 @@ export type GamePort = {
   }) => Promise<WriteResult>
   /** No-op if the turn is already finished. */
   finishTurn: (input: {turnId: string; finishedAt: number}) => Promise<void>
+  /** False if the turn already has a transcription in flight or done. */
+  claimTranscription: (turnId: string) => Promise<boolean>
+  /** Frees the claim after a failed transcription so the player can retry. */
+  releaseTranscription: (turnId: string) => Promise<void>
   /** One response per turn; saving again replaces it. */
   saveResponse: (input: {
     turnId: string

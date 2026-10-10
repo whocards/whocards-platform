@@ -232,6 +232,19 @@ export const createDrizzleGamePort = <
         .where(and(eq(gameTurn.id, turnId), isNull(gameTurn.finishedAt)))
     },
 
+    claimTranscription: async (turnId) => {
+      const claimed = await db
+        .update(gameTurn)
+        .set({transcribedAt: sql`now()`})
+        .where(and(eq(gameTurn.id, turnId), isNull(gameTurn.transcribedAt)))
+        .returning({id: gameTurn.id})
+      return claimed.length > 0
+    },
+
+    releaseTranscription: async (turnId) => {
+      await db.update(gameTurn).set({transcribedAt: null}).where(eq(gameTurn.id, turnId))
+    },
+
     saveResponse: async (input) => {
       await db
         .insert(gameResponse)

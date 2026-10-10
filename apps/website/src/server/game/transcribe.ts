@@ -19,7 +19,10 @@ const MAX_BODY_BYTES = MAX_AUDIO_BYTES + 1024 * 1024
 export type ServerTranscriber = (audio: Blob, language: GameLanguage) => Promise<Transcript>
 
 export type TranscribeDeps = {
-  game: Pick<GamePort, 'now' | 'findPlayerByToken' | 'loadSnapshot'>
+  game: Pick<
+    GamePort,
+    'now' | 'findPlayerByToken' | 'loadSnapshot' | 'claimTranscription' | 'releaseTranscription'
+  >
   transcriber: ServerTranscriber | null
 }
 
@@ -89,14 +92,15 @@ export const handleTranscribe = async (request: Request, deps: TranscribeDeps) =
   const player = await deps.game.findPlayerByToken(fields.data.token)
   if (!player) return fail(401, 'Join the game first')
   const snapshot = await deps.game.loadSnapshot(player.gameId)
-  if (!snapshot || !uploadableTurn(snapshot, player.id, deps.game.now())) {
-    return fail(409, 'No turn to transcribe')
-  }
+  const turn = snapshot && uploadableTurn(snapshot, player.id, deps.game.now())
+  if (!turn) return fail(409, 'No turn to transcribe')
+  if (!(await deps.game.claimTranscription(turn.id))) return fail(409, 'Turn already transcribed')
 
   try {
     return json(transcriptSchema.parse(await deps.transcriber(audio, fields.data.language)), 200)
   } catch (error) {
     logError('game/transcribe: transcriber failed', error)
+    await deps.game.releaseTranscription(turn.id)
     return fail(502, 'Transcription failed, try again')
   }
 }

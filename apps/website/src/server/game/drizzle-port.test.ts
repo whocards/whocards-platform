@@ -159,4 +159,25 @@ describe('drizzle game port', () => {
     await db.update(gameRound).set({status: 'done'}).where(eq(gameRound.id, roundId))
     expect(await port.startTurn({...turn, playerId: playerIds[1]})).toBe('conflict')
   })
+  it('lets one transcription claim a turn until it is released', async () => {
+    const [a, b] = await Promise.all([join('Ann'), join('Bo')])
+    await port.createPair({roundId, playerIds: [a.state.me.id, b.state.me.id]})
+    const pairId = (await port.loadSnapshot(gameId))?.pairs[0]?.id ?? ''
+    await port.startTurn({
+      pairId,
+      playerId: a.state.me.id,
+      questionId: '1',
+      startedAt: clock,
+      expire: [],
+    })
+    const turnId = (await port.loadSnapshot(gameId))?.turns[0]?.id ?? ''
+
+    const claims = await Promise.all([
+      port.claimTranscription(turnId),
+      port.claimTranscription(turnId),
+    ])
+    expect(claims.filter(Boolean)).toHaveLength(1)
+    await port.releaseTranscription(turnId)
+    expect(await port.claimTranscription(turnId)).toBe(true)
+  })
 })

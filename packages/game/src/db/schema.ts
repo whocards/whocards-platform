@@ -142,6 +142,8 @@ export const gameTurn = pgTable(
     questionId: text('question_id').notNull(),
     startedAt: timestamp('started_at', {withTimezone: true}).notNull(),
     finishedAt: timestamp('finished_at', {withTimezone: true}),
+    // Set while a transcription is in flight or done; cleared if it fails, so one success per turn.
+    transcribedAt: timestamp('transcribed_at', {withTimezone: true}),
   },
   (t) => [
     // The turn lock: a second claim while one is open fails here.

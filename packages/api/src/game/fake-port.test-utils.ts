@@ -27,6 +27,7 @@ export const createFakeGamePort = (seed: {game: HostedGame; rounds?: Round[]}) =
   const tokens = new Map<string, string>()
   const responses: StoredResponse[] = []
   const feedback = new Map<string, {rating: number; text: string | null}>()
+  const transcribed = new Set<string>()
 
   const port: GamePort = {
     now: () => clock,
@@ -89,6 +90,14 @@ export const createFakeGamePort = (seed: {game: HostedGame; rounds?: Round[]}) =
     finishTurn: async ({turnId, finishedAt}) => {
       const turn = snapshot.turns.find((t) => t.id === turnId)
       if (turn && turn.finishedAt === null) turn.finishedAt = finishedAt
+    },
+    claimTranscription: async (turnId) => {
+      if (transcribed.has(turnId)) return false
+      transcribed.add(turnId)
+      return true
+    },
+    releaseTranscription: async (turnId) => {
+      transcribed.delete(turnId)
     },
     saveResponse: async (input) => {
       const turn = snapshot.turns.find((t) => t.id === input.turnId)
