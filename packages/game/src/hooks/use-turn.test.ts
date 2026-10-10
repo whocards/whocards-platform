@@ -216,6 +216,20 @@ describe('useTurn', () => {
     await hook.unmount()
   })
 
+  it('drops a mic that answers after the turn already closed', async () => {
+    const {client, recorder, transcriber, hook} = await setup()
+    const mic = deferred<undefined>()
+    recorder.start.mockReturnValueOnce(mic.promise)
+    await flush(() => void hook.current.turn.record())
+    client.state.mockResolvedValue(playerState({round: null, phase: 'waiting'}))
+    await flush(4000)
+    await flush(() => mic.resolve(undefined))
+    expect(recorder.cancel).toHaveBeenCalledOnce()
+    expect(transcriber.transcribe).not.toHaveBeenCalled()
+    expect(hook.current.turn.stage).toBe('idle')
+    await hook.unmount()
+  })
+
   it('drops a mic that answers after the screen went away', async () => {
     const {recorder, wakeLock, hook} = await setup()
     const mic = deferred<undefined>()

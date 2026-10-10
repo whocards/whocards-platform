@@ -128,6 +128,17 @@ describe('uploadableTurn', () => {
     expect(uploadableTurn(done, 'a', 5001 + UPLOAD_GRACE_MS)).toBeNull()
   })
 
+  it('picks my newest turn while the previous one is still in its grace window', () => {
+    const back2back = snapshot({
+      rounds: [round({id: 'r0', status: 'done'}), round()],
+      turns: [
+        turn({id: 'prev', pairId: 'p0', roundId: 'r0', playerId: 'a', finishedAt: 190_000}),
+        turn({id: 'mine', pairId: 'p1', playerId: 'a', startedAt: 200_000}),
+      ],
+    })
+    expect(uploadableTurn(back2back, 'a', 210_000)?.id).toBe('mine')
+  })
+
   it('counts a turn nobody closed as ended at its deadline', () => {
     // 60 s turn plus 30 s nudge.
     expect(uploadableTurn(s, 'a', 290_000 + UPLOAD_GRACE_MS)?.id).toBe('mine')

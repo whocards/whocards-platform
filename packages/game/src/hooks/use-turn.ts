@@ -121,6 +121,11 @@ export const useTurn = <TAudio>({
       go('idle')
       return
     }
+    if (myOpenTurn(latest.current.state)?.id !== turn.id) {
+      void recorder.cancel()
+      go('idle')
+      return
+    }
     recordingTurn.current = turn.id
     go('recording')
     if (!wakeLock) return
