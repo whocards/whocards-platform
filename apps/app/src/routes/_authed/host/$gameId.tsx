@@ -123,9 +123,9 @@ function HostGame() {
         </p>
       ) : null}
 
-      <div className="mb-12 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
+      <div className="mb-12 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
         <JoinPanel code={game.code} />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-2">
           <Stat label="Players joined" value={counts.players} />
           <Stat label="Pairs this round" value={counts.pairs} />
           <Stat label="Turns in progress" value={counts.turnsInProgress} />

@@ -28,7 +28,7 @@ export function Badge({
   return (
     <span className={cn(badgeVariants({tone}), className)} {...props}>
       {tone === 'live' ? (
-        <span className="size-1.5 animate-pulse rounded-full bg-yellow-400" />
+        <span className="size-1.5 animate-pulse rounded-full bg-yellow-400 motion-reduce:animate-none" />
       ) : null}
       {children}
     </span>
