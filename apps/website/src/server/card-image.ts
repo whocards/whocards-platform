@@ -329,20 +329,21 @@ const wrapLine = (line: string, maxChars: number): string[] => {
   return out
 }
 
+const reorderRtl = (line: string): string => {
+  if (!line) return line
+  const levels = bidi.getEmbeddingLevels(line, 'rtl')
+  return bidi.getReorderedString(line, levels)
+}
+
 // Reorder logical-order RTL text into visual order (with bracket mirroring) and
 // wrap it, so Satori's plain LTR glyph placement renders it correctly.
 const toVisualRtl = (text: string, fontSize: number, size: CardSize): string => {
   const maxChars = maxCharsPerLine(fontSize, size)
-  const reorder = (line: string): string => {
-    if (!line) return line
-    const levels = bidi.getEmbeddingLevels(line, 'rtl')
-    return bidi.getReorderedString(line, levels)
-  }
   return text
     .split('\n')
     .flatMap((paragraph) => {
       if (paragraph === '') return ['']
-      return wrapLine(paragraph, maxChars).map(reorder)
+      return wrapLine(paragraph, maxChars).map(reorderRtl)
     })
     .join('\n')
 }

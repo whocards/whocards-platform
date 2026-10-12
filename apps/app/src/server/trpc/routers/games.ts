@@ -142,6 +142,16 @@ const detailOf = (
   }
 }
 
+const roundIn = (snapshot: GameSnapshot, roundId: string) => {
+  const round = snapshot.rounds.find((r) => r.id === roundId)
+  if (!round) throw fail('NOT_FOUND', 'No such round.')
+  return round
+}
+
+const conflictOr = (result: WriteResult, message: string) => {
+  if (result !== 'ok') throw fail('CONFLICT', message)
+}
+
 export const createGamesRouter = ({
   store,
   sendRecaps,
@@ -157,19 +167,9 @@ export const createGamesRouter = ({
     return snapshot
   }
 
-  const roundIn = (snapshot: GameSnapshot, roundId: string) => {
-    const round = snapshot.rounds.find((r) => r.id === roundId)
-    if (!round) throw fail('NOT_FOUND', 'No such round.')
-    return round
-  }
-
   const detail = async (gameId: string) => {
     const [snapshot, saved] = await Promise.all([load(gameId), store.savedResponses(gameId)])
     return detailOf(snapshot, saved, store.now())
-  }
-
-  const conflictOr = (result: WriteResult, message: string) => {
-    if (result !== 'ok') throw fail('CONFLICT', message)
   }
 
   const endLiveRound = async (snapshot: GameSnapshot, roundId: string) => {

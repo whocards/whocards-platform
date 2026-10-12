@@ -99,7 +99,7 @@ from the currently-deployed site to this repo.
   website derives **literal-union types** (`keyof typeof questions`, `keyof typeof languages` in
   `apps/website/src/types/index.ts`, used by `WhoCard.astro`, `card-image.ts`, `language.ts`,
   `gameplay.ts`, `pages/.../images.astro`), while `@whocards/decks` types broadly (`LanguageCode =
-string`, `QuestionId = string`). Consuming decks' value exports would **widen** the website's
+  string`, `QuestionId = string`). Consuming decks' value exports would **widen** the website's
   types and weaken its compile-time safety — a **design decision** (accept widening vs. preserve
   literals via a JSON re-export), so flag it for the user rather than doing it as "no-input" work.
 
@@ -150,7 +150,7 @@ string`, `QuestionId = string`). Consuming decks' value exports would **widen** 
   and `gh` works (issues/PRs). Earlier sessions had no remote. The user's flow still stands: coder
   works branch-local, **push/PR only with explicit user OK** (public repo — never commit `.env`).
 - **A `coder` subagent can die mid-run** — a previous coder crashed after ~13 min (`API Error:
-ConnectionRefused`; safety classifier also down) with **no report**, leaving uncommitted files on
+  ConnectionRefused`; safety classifier also down) with **no report**, leaving uncommitted files on
   its branch. Recovery: inspect `git status` + the branch, then run the verification the coder
   skipped and commit the output yourself — don't assume a silent/dead agent finished cleanly.
 - **`expo lint` / `pnpm -F mobile lint` is a footgun here** — it auto-installs `eslint` +

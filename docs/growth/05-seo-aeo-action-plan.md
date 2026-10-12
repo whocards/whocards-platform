@@ -194,7 +194,7 @@ and mobile.
    subtag; the correct value is `ja`. This is a real accessibility issue too (screen readers use
    `lang` to pick pronunciation rules) independent of SEO. Fixed via a small
    `toBCP47LanguageTag()` mapping in `~utils/language.ts`, applied in `Layout.astro`'s `<html
-lang>`, `Head.astro`'s `og:locale`, and the new hreflang tags.
+   lang>`, `Head.astro`'s `og:locale`, and the new hreflang tags.
 2. **`og:locale` used the bare internal key everywhere** (`en`, `hu`, `jp`...) rather than the
    Open Graph spec's `language_TERRITORY` format (`en_US`, `hu_HU`, `ja_JP`...). This is now at
    least spec-_valid_ (`ja` instead of `jp`) after the fix above, but still not spec-_complete_ —

@@ -119,7 +119,7 @@ migration per ADR-0008 — do not touch them tonight).
   brand components — new `MagicLinkEmail` template), Google provider scaffolded
   but hidden (`GOOGLE_CLIENT_ID`/`SECRET` absent, as expected). All better-auth
   tables are `app_`-prefixed (`app_user/session/account/verification/
-organization/member/invitation`) — fully separate from website's `user`/
+  organization/member/invitation`) — fully separate from website's `user`/
   `auth_*`/`account_*`. `avicharlop@gmail.com` auto-seeds as `owner` in a
   default "WhoCards" org on first sign-in; anyone else who signs in lands on a
   friendly "not yet invited" screen until an admin adds them via `/admin/people`
@@ -168,7 +168,7 @@ organization/member/invitation`) — fully separate from website's `user`/
   apps/website's typecheck.** Running the full workspace `pnpm check` for the
   first time (previously I'd only typechecked apps/app in isolation) turned up
   `website:typecheck` failing with `Type 'Plugin<any>[]' is not assignable to
-type 'PluginOption'` in `astro.config.ts`. Root cause: apps/app's
+  type 'PluginOption'` in `astro.config.ts`. Root cause: apps/app's
   `@tailwindcss/vite` + `vite@8.1.3` gave pnpm's peer-dependency resolver a
   second, newer "vite" to satisfy website's \_own* `@tailwindcss/vite@4.3.1`
   peer dependency against — it chose apps/app's vite 8 (rolldown-backed)
@@ -187,7 +187,7 @@ type 'PluginOption'` in `astro.config.ts`. Root cause: apps/app's
   upstream TanStack Start example's vite 8, and added `vite-tsconfig-paths`
   (vite 8's built-in `resolve.tsconfigPaths` doesn't exist in 7); (3) a
   **fresh `pnpm-lock.yaml` regenerated from scratch** (`rm -rf node_modules
-pnpm-lock.yaml && pnpm install`) — incremental `pnpm install`/`--force`/
+  pnpm-lock.yaml && pnpm install`) — incremental `pnpm install`/`--force`/
   `pnpm dedupe` all left stale vite-8 peer bindings in the lockfile from
   earlier in the session; only a full re-resolve cleared them. Verified after:
   `pnpm why vite` shows only 7.3.6 workspace-wide, `pnpm check` (format + lint
@@ -246,7 +246,7 @@ degraded pending a real `ANTHROPIC_API_KEY`). Draft PR #215 updated.
   is now labeled "Decks" and points at the overview.
 
   **Deck-scoping the existing router.** `questionReview.{variants, myVotes,
-vote, comments.*, approve}` and `discussionAgent.messages.*` all gained a
+  vote, comments.*, approve}` and `discussionAgent.messages.*` all gained a
   required `deckSlug` input (were hardcoded to the one `DECK_SLUG` constant).
   `emitDiff` stays ai-at-work-only and takes no `deckSlug` — per the
   constraint, it's the one deck with a shippable JSON file
@@ -278,7 +278,7 @@ vote, comments.*, approve}` and `discussionAgent.messages.*` all gained a
 
   **Deck status transitions (flagging for confirmation).** `updateStatus`
   only allows moving one step forward or back in `draft → in_review →
-approved → shipped` (`decks-logic.ts`'s `canTransitionDeckStatus`) — you
+  approved → shipped` (`decks-logic.ts`'s `canTransitionDeckStatus`) — you
   can't jump `draft` straight to `shipped`. This was a judgment call to keep
   status meaningful as a progress indicator; **ask Avi** if unrestricted jumps
   are wanted instead (one-line change: drop the adjacency check, keep the

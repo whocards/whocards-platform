@@ -36,6 +36,7 @@
     "react-dom": "catalog:",
     "zod": "catalog:"
   },
+  "//kysely": "Not imported. Pins drizzle-orm's optional kysely peer to the 0.29 that @whocards/game resolves; otherwise @better-auth/cli's 0.28 splits drizzle into two copies and the game tables stop type-checking.",
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",
     "@netlify/vite-plugin-tanstack-start": "^1.3.19",
@@ -48,6 +49,7 @@
     "@whocards/typescript-config": "workspace:*",
     "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.11",
+    "kysely": "^0.29.5",
     "nitro": "^3.0.260610-beta",
     "typescript": "catalog:",
     "vite": "^7.3.6",

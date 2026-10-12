@@ -369,24 +369,24 @@ describe('games router', () => {
   })
 })
 
-describe('endGame', () => {
-  const played = async (send?: SendRecaps) => {
-    const t = setup(send)
-    const c = t.caller()
-    const {id: gameId} = await c.create({title: 'SDD'})
-    const {rounds} = await c.addRound({gameId, settings: ROUND})
-    const roundId = rounds[0]!.id
-    await c.startRound({gameId, roundId})
-    const anna = t.join(gameId, 'Anna', {email: 'anna@example.com', consentRecap: true})
-    const bela = t.join(gameId, 'Bela', {email: 'bela@example.com', consentRecap: false})
-    const cili = t.join(gameId, 'Cili', {email: null, consentRecap: true})
-    const p = t.pair(roundId, [anna.id, bela.id])
-    t.turn(p.id, anna.id, '1', t.clock.now, t.clock.now + 60_000)
-    t.turn(p.id, bela.id, '2', t.clock.now + 60_000, null)
-    t.clock.now += 100_000
-    return {...t, c, gameId, roundId, anna, bela, cili}
-  }
+const played = async (send?: SendRecaps) => {
+  const t = setup(send)
+  const c = t.caller()
+  const {id: gameId} = await c.create({title: 'SDD'})
+  const {rounds} = await c.addRound({gameId, settings: ROUND})
+  const roundId = rounds[0]!.id
+  await c.startRound({gameId, roundId})
+  const anna = t.join(gameId, 'Anna', {email: 'anna@example.com', consentRecap: true})
+  const bela = t.join(gameId, 'Bela', {email: 'bela@example.com', consentRecap: false})
+  const cili = t.join(gameId, 'Cili', {email: null, consentRecap: true})
+  const p = t.pair(roundId, [anna.id, bela.id])
+  t.turn(p.id, anna.id, '1', t.clock.now, t.clock.now + 60_000)
+  t.turn(p.id, bela.id, '2', t.clock.now + 60_000, null)
+  t.clock.now += 100_000
+  return {...t, c, gameId, roundId, anna, bela, cili}
+}
 
+describe('endGame', () => {
   it('ends the live round, ends the game and mails only consenting players with an email', async () => {
     const {c, gameId, sendRecaps, mem} = await played()
     const detail = await c.endGame({gameId})
@@ -453,52 +453,52 @@ const player = (id: string, language: 'en' | 'hu'): Player => ({
   consentRecap: true,
 })
 
-describe('buildRecaps', () => {
-  const snapshot = (): GameSnapshot => {
-    return {
-      game: {id: 'g', code: 'K7QM2', title: 'SDD', status: 'ended', settings: {round: {}}},
-      players: [player('a', 'hu'), player('b', 'en'), player('c', 'en')],
-      rounds: [
-        round('r1', 1, 'hajnalig'),
-        round('r2', 2, 'hajnalig'),
-        {...round('r3', 3, 'library'), startedAt: null},
-      ],
-      pairs: [
-        {id: 'p1', roundId: 'r1', playerIds: ['a', 'b']},
-        {id: 'p2', roundId: 'r2', playerIds: ['a', 'c']},
-      ],
-      turns: [
-        {
-          id: 't1',
-          pairId: 'p1',
-          roundId: 'r1',
-          playerId: 'a',
-          questionId: '1',
-          startedAt: T0,
-          finishedAt: T0 + 90_000,
-        },
-        {
-          id: 't2',
-          pairId: 'p1',
-          roundId: 'r1',
-          playerId: 'b',
-          questionId: '2',
-          startedAt: T0,
-          finishedAt: T0 + 30_000,
-        },
-        {
-          id: 't3',
-          pairId: 'p2',
-          roundId: 'r2',
-          playerId: 'a',
-          questionId: '3',
-          startedAt: T0,
-          finishedAt: null,
-        },
-      ],
-    }
+const snapshot = (): GameSnapshot => {
+  return {
+    game: {id: 'g', code: 'K7QM2', title: 'SDD', status: 'ended', settings: {round: {}}},
+    players: [player('a', 'hu'), player('b', 'en'), player('c', 'en')],
+    rounds: [
+      round('r1', 1, 'hajnalig'),
+      round('r2', 2, 'hajnalig'),
+      {...round('r3', 3, 'library'), startedAt: null},
+    ],
+    pairs: [
+      {id: 'p1', roundId: 'r1', playerIds: ['a', 'b']},
+      {id: 'p2', roundId: 'r2', playerIds: ['a', 'c']},
+    ],
+    turns: [
+      {
+        id: 't1',
+        pairId: 'p1',
+        roundId: 'r1',
+        playerId: 'a',
+        questionId: '1',
+        startedAt: T0,
+        finishedAt: T0 + 90_000,
+      },
+      {
+        id: 't2',
+        pairId: 'p1',
+        roundId: 'r1',
+        playerId: 'b',
+        questionId: '2',
+        startedAt: T0,
+        finishedAt: T0 + 30_000,
+      },
+      {
+        id: 't3',
+        pairId: 'p2',
+        roundId: 'r2',
+        playerId: 'a',
+        questionId: '3',
+        startedAt: T0,
+        finishedAt: null,
+      },
+    ],
   }
+}
 
+describe('buildRecaps', () => {
   it('counts the room and the player, counts only, with links for the game code', () => {
     const [anna] = buildRecaps({
       snapshot: snapshot(),

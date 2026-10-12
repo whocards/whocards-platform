@@ -210,15 +210,13 @@ And a router alongside `people`/`questionReview`/`discussionAgent` in
 export const facilitationSessionRouter = createTRPCRouter({
   // facilitator+, org-scoped — mirrors questionReview's approve gating
   start: roleProcedure('facilitator').mutation(/* create a row, return its opaque id */),
-  advance:
-    roleProcedure('facilitator').mutation(
-      /* {action: 'pick'|'next'|'previous'} → navReducer → persist + the caller still owns broadcasting via sendMessage */
-    ),
+  advance: roleProcedure('facilitator').mutation(
+    /* {action: 'pick'|'next'|'previous'} → navReducer → persist + the caller still owns broadcasting via sendMessage */
+  ),
   // no auth at all — a participant is not a WhoCards user, just a reader of one session's state
-  getState:
-    publicProcedure.query(
-      /* keyed only by the opaque session id — late-join/reconnect hydration */
-    ),
+  getState: publicProcedure.query(
+    /* keyed only by the opaque session id — late-join/reconnect hydration */
+  ),
 })
 ```
 

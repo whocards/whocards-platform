@@ -52,6 +52,27 @@ updates:
       - dependency-name: '@resvg/resvg-js'
       - dependency-name: bidi-js
       - dependency-name: wawoff2
+      # The Expo SDK fixes these (react must match RN's bundled renderer); bump them via `expo install` on an SDK upgrade.
+      - dependency-name: react
+        update-types: [version-update:semver-minor]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-minor]
+      - dependency-name: react-test-renderer
+        update-types: [version-update:semver-minor]
+      - dependency-name: react-native
+        update-types: [version-update:semver-minor]
+      - dependency-name: react-native-gesture-handler
+        update-types: [version-update:semver-minor]
+      - dependency-name: react-native-reanimated
+        update-types: [version-update:semver-minor]
+      - dependency-name: react-native-safe-area-context
+        update-types: [version-update:semver-minor]
+      - dependency-name: react-native-screens
+        update-types: [version-update:semver-minor]
+      - dependency-name: react-native-worklets
+        update-types: [version-update:semver-minor]
+      # Pinned with a removal condition; see the override note in pnpm-workspace.yaml.
+      - dependency-name: lightningcss
     groups:
       # One PR per week for all non-breaking bumps.
       minor-and-patch:
