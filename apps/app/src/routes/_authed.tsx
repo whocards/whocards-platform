@@ -1,6 +1,9 @@
 import {createFileRoute, Link, Outlet, redirect} from '@tanstack/react-router'
 import {useState} from 'react'
 
+import {Logo} from '~/components/logo'
+import {Page, PageHeader} from '~/components/page'
+import {Button} from '~/components/ui/button'
 import {authClient} from '~/lib/auth-client'
 import {roleAtLeast} from '~/server/auth/permissions'
 import {getCurrentMember} from '~/server/auth/session'
@@ -19,123 +22,88 @@ const signOut = () => {
   void authClient.signOut({fetchOptions: {onSuccess: () => location.assign('/sign-in')}})
 }
 
-/** Every authed page gets this nav (founder feedback, 2026-07-05: "there's no
- *  way to navigate"). One breakpoint: a hamburger + slide-down panel below
- *  md (768px), a plain inline row above it — see app.css's `.md\:flex` etc. */
+const navLink =
+  'flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-gray-lighter transition-colors hover:bg-white/5 hover:text-white md:min-h-9'
+const navActive = {
+  className: 'bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400/10 hover:text-yellow-400',
+}
+
 function AuthedLayout() {
   const {user, membership} = Route.useRouteContext()
   const [menuOpen, setMenuOpen] = useState(false)
   const isAdmin = membership ? roleAtLeast(membership.role, 'admin') : false
   const isHost = membership ? roleAtLeast(membership.role, 'facilitator') : false
+  const close = () => setMenuOpen(false)
+
+  const links = (
+    <>
+      <Link to="/decks" onClick={close} activeProps={navActive} className={navLink}>
+        Decks
+      </Link>
+      {isHost ? (
+        <Link to="/host" onClick={close} activeProps={navActive} className={navLink}>
+          Host
+        </Link>
+      ) : null}
+      {isAdmin ? (
+        <Link to="/admin/people" onClick={close} activeProps={navActive} className={navLink}>
+          People
+        </Link>
+      ) : null}
+    </>
+  )
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-gray-light">
-        <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-6 md:py-4">
-          <Link to="/" className="shrink-0 font-bold" onClick={() => setMenuOpen(false)}>
-            WhoCards <span className="text-yellow-400">@</span> Work
+      <header className="sticky top-0 z-20 border-b border-white/8 bg-background/75 backdrop-blur-lg">
+        <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3 md:px-8">
+          <Link
+            to="/"
+            className="shrink-0 text-2xl"
+            onClick={close}
+            aria-label="WhoCards @ Work home"
+          >
+            <Logo />
           </Link>
 
-          <nav className="hidden items-center gap-6 text-sm md:flex" aria-label="Main">
-            <Link to="/" activeOptions={{exact: true}} activeProps={{className: 'text-yellow-400'}}>
-              Home
-            </Link>
-            <Link to="/decks" activeProps={{className: 'text-yellow-400'}}>
-              Decks
-            </Link>
-            {isHost ? (
-              <Link to="/host" activeProps={{className: 'text-yellow-400'}}>
-                Host
-              </Link>
-            ) : null}
-            {isAdmin ? (
-              <Link to="/admin/people" activeProps={{className: 'text-yellow-400'}}>
-                Admin › People
-              </Link>
-            ) : null}
+          <nav className="hidden flex-1 items-center gap-1 md:flex" aria-label="Main">
+            {links}
           </nav>
 
-          <div className="hidden items-center gap-4 text-sm text-gray-lighter md:flex">
-            <span>{user.email}</span>
-            {membership ? <span className="text-yellow-400">{membership.role}</span> : null}
-            <button
-              type="button"
-              onClick={signOut}
-              className="flex min-h-11 items-center justify-center rounded-full bg-gray-light px-4 font-semibold text-white"
-            >
+          <div className="ml-auto hidden items-center gap-3 md:flex">
+            <Account email={user.email} role={membership?.role} />
+            <Button variant="ghost" size="sm" onClick={signOut}>
               Sign out
-            </button>
+            </Button>
           </div>
 
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="icon"
             onClick={() => setMenuOpen((open) => !open)}
             aria-expanded={menuOpen}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-full bg-gray-light md:hidden"
+            className="ml-auto md:hidden"
           >
-            <span className="hamburger-icon">
-              <span />
-              <span />
-              <span />
+            <span className="flex w-4.5 flex-col gap-1">
+              <span className="h-0.5 rounded-full bg-current" />
+              <span className="h-0.5 rounded-full bg-current" />
+              <span className="h-0.5 rounded-full bg-current" />
             </span>
-          </button>
+          </Button>
         </div>
 
         {menuOpen ? (
           <nav
-            className="flex flex-col gap-1 border-t border-gray-light px-4 py-3 md:hidden"
+            className="flex flex-col gap-1 border-t border-white/8 px-4 py-3 md:hidden"
             aria-label="Main"
           >
-            <Link
-              to="/"
-              onClick={() => setMenuOpen(false)}
-              activeOptions={{exact: true}}
-              activeProps={{className: 'text-yellow-400'}}
-              className="flex min-h-11 items-center rounded-xl px-3 py-2"
-            >
-              Home
-            </Link>
-            <Link
-              to="/decks"
-              onClick={() => setMenuOpen(false)}
-              activeProps={{className: 'text-yellow-400'}}
-              className="flex min-h-11 items-center rounded-xl px-3 py-2"
-            >
-              Decks
-            </Link>
-            {isHost ? (
-              <Link
-                to="/host"
-                onClick={() => setMenuOpen(false)}
-                activeProps={{className: 'text-yellow-400'}}
-                className="flex min-h-11 items-center rounded-xl px-3 py-2"
-              >
-                Host
-              </Link>
-            ) : null}
-            {isAdmin ? (
-              <Link
-                to="/admin/people"
-                onClick={() => setMenuOpen(false)}
-                activeProps={{className: 'text-yellow-400'}}
-                className="flex min-h-11 items-center rounded-xl px-3 py-2"
-              >
-                Admin › People
-              </Link>
-            ) : null}
-            <div className="mt-2 flex items-center justify-between gap-3 border-t border-gray-light/40 pt-3">
-              <div className="text-sm text-gray-lighter">
-                <p>{user.email}</p>
-                {membership ? <p className="text-yellow-400">{membership.role}</p> : null}
-              </div>
-              <button
-                type="button"
-                onClick={signOut}
-                className="flex min-h-11 shrink-0 items-center justify-center rounded-full bg-gray-light px-4 text-sm font-semibold text-white"
-              >
+            {links}
+            <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/8 pt-3">
+              <Account email={user.email} role={membership?.role} />
+              <Button variant="ghost" size="sm" onClick={signOut}>
                 Sign out
-              </button>
+              </Button>
             </div>
           </nav>
         ) : null}
@@ -144,14 +112,26 @@ function AuthedLayout() {
         {membership ? (
           <Outlet />
         ) : (
-          <div className="flex flex-col items-center gap-2 p-10 text-center">
-            <p className="text-lg font-semibold">You&apos;re signed in, but not on the team yet.</p>
-            <p className="max-w-sm text-gray-lighter">
-              Ask an admin to invite {user.email} from Admin → People.
-            </p>
-          </div>
+          <Page className="text-center">
+            <PageHeader title="Not on the team yet" />
+            <p className="text-gray-lighter">Ask an admin to invite {user.email} from People.</p>
+          </Page>
         )}
       </main>
+    </div>
+  )
+}
+
+function Account({email, role}: Readonly<{email: string; role: string | undefined}>) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary font-title text-lg font-bold text-darkest uppercase">
+        {email.charAt(0)}
+      </span>
+      <div className="min-w-0 text-xs leading-tight">
+        <p className="truncate text-gray-lighter">{email}</p>
+        {role ? <p className="font-semibold text-accentOnDark capitalize">{role}</p> : null}
+      </div>
     </div>
   )
 }

@@ -2,6 +2,10 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {createFileRoute, redirect} from '@tanstack/react-router'
 import {useState} from 'react'
 
+import {ErrorText, Page, PageHeader, SectionTitle} from '~/components/page'
+import {Button} from '~/components/ui/button'
+import {Card} from '~/components/ui/card'
+import {Input, Label, Select} from '~/components/ui/field'
 import {trpc} from '~/lib/trpc'
 import {isAppRole, ROLE_RANK, roleAtLeast} from '~/server/auth/permissions'
 import type {AppRole} from '~/server/auth/permissions'
@@ -36,82 +40,94 @@ function People() {
   })
 
   return (
-    <div className="mx-auto max-w-2xl p-6">
-      <h1 className="mb-6 text-xl font-bold">People</h1>
+    <Page>
+      <PageHeader title="People" description="Invite teammates and choose what they can do." />
 
-      <form
-        onSubmit={(event) => {
-          event.preventDefault()
-          invite.mutate()
-        }}
-        className="mb-8 flex flex-wrap items-center gap-2"
-      >
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          placeholder="teammate@company.com"
-          className="rounded-full bg-gray-light px-4 py-2 text-white placeholder:text-gray-dark"
-        />
-        <select
-          value={role}
-          onChange={(event) => {
-            // <option> values are always ROLE_RANK below, so this only fails on a
-            // tampered DOM value — bail rather than cast.
-            const {value} = event.target
-            if (isAppRole(value)) setRole(value)
+      <Card className="mb-10">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            invite.mutate()
           }}
-          className="rounded-full bg-gray-light px-3 py-2 text-white"
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
-          {ROLE_RANK.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          disabled={invite.isPending}
-          className="rounded-full bg-yellow-400 px-4 py-2 font-bold text-darker disabled:opacity-60"
-        >
-          Invite
-        </button>
-        {invite.isError ? <p className="w-full text-sm text-red">{invite.error.message}</p> : null}
-      </form>
-
-      {people.isLoading ? <p className="text-gray-lighter">Loading…</p> : null}
-      {people.isError ? <p className="text-red">{people.error.message}</p> : null}
-
-      <ul className="flex flex-col gap-2">
-        {people.data?.map((person) => (
-          <li
-            key={person.userId}
-            className="flex items-center justify-between gap-3 rounded-2xl bg-gray-light/40 px-4 py-3"
-          >
-            <div>
-              <p className="font-semibold">{person.email}</p>
-              <p className="text-xs text-gray-lighter">
-                joined {new Date(person.joinedAt).toLocaleDateString()}
-              </p>
-            </div>
-            <select
-              value={person.role}
+          <Label label="Email" className="flex-1">
+            <Input
+              type="email"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="teammate@company.com"
+            />
+          </Label>
+          <Label label="Role" className="sm:w-44">
+            <Select
+              value={role}
               onChange={(event) => {
+                // <option> values are always ROLE_RANK below, so this only fails on a
+                // tampered DOM value — bail rather than cast.
                 const {value} = event.target
-                if (isAppRole(value)) updateRole.mutate({userId: person.userId, role: value})
+                if (isAppRole(value)) setRole(value)
               }}
-              className="rounded-full bg-darker px-3 py-1.5 text-sm text-white"
+              className="capitalize"
             >
               {ROLE_RANK.map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>
               ))}
-            </select>
+            </Select>
+          </Label>
+          <Button type="submit" variant="primary" disabled={invite.isPending}>
+            Invite
+          </Button>
+        </form>
+        {invite.isError ? <ErrorText className="mt-3">{invite.error.message}</ErrorText> : null}
+      </Card>
+
+      <SectionTitle
+        aside={
+          people.data ? <span className="text-sm text-gray-dark">{people.data.length}</span> : null
+        }
+      >
+        Team
+      </SectionTitle>
+      {people.isLoading ? <p className="text-gray-dark">Loading…</p> : null}
+      {people.isError ? <ErrorText>{people.error.message}</ErrorText> : null}
+
+      <ul className="flex flex-col gap-2">
+        {people.data?.map((person) => (
+          <li
+            key={person.userId}
+            className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.035] py-2.5 pr-2.5 pl-3"
+          >
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/8 font-title text-lg font-bold text-yellow-400 uppercase">
+              {person.email.charAt(0)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold wrap-anywhere">{person.email}</p>
+              <p className="text-xs text-gray-dark">
+                {`Joined ${new Date(person.joinedAt).toLocaleDateString()}`}
+              </p>
+            </div>
+            <Select
+              aria-label={`Role for ${person.email}`}
+              value={person.role}
+              onChange={(event) => {
+                const {value} = event.target
+                if (isAppRole(value)) updateRole.mutate({userId: person.userId, role: value})
+              }}
+              className="w-auto shrink-0 text-sm capitalize"
+            >
+              {ROLE_RANK.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </Select>
           </li>
         ))}
       </ul>
-    </div>
+    </Page>
   )
 }

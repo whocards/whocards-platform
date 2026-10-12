@@ -278,6 +278,12 @@ importers:
       better-auth:
         specifier: ^1.7.7
         version: 1.7.7(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0)(@tanstack/react-start@1.168.61(crossws@0.4.8(srvx@0.11.20))(esbuild@0.28.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.7)(rollup@4.62.2)(supports-color@8.1.1)(vite@7.3.6(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0)(@types/pg@8.20.0)(better-sqlite3@12.11.1)(kysely@0.29.5)(pg@8.23.1)(postgres@3.4.9))(pg@8.23.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(jsdom@20.0.3(supports-color@8.1.1))(vite@7.3.6(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       diff:
         specifier: ^9.0.0
         version: 9.0.0
@@ -293,6 +299,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.2.3(react@19.2.3)
+      tailwind-merge:
+        specifier: ^3.6.0
+        version: 3.7.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
@@ -303,6 +312,9 @@ importers:
       '@netlify/vite-plugin-tanstack-start':
         specifier: ^1.3.19
         version: 1.3.19(@parcel/watcher@2.6.0)(@tanstack/react-start@1.168.61(crossws@0.4.8(srvx@0.11.20))(esbuild@0.28.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.7)(rollup@4.62.2)(supports-color@8.1.1)(vite@7.3.6(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)))(db0@0.3.4(@electric-sql/pglite@0.5.8)(better-sqlite3@12.11.1)(drizzle-orm@0.45.4(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0)(@types/pg@8.20.0)(better-sqlite3@12.11.1)(kysely@0.29.5)(pg@8.23.1)(postgres@3.4.9)))(rollup@4.62.2)(srvx@0.11.20)(supports-color@8.1.1)(vite@7.3.6(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      '@tailwindcss/vite':
+        specifier: ^4.3.3
+        version: 4.3.3(vite@7.3.6(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
       '@tanstack/react-router-devtools':
         specifier: ^1.167.2
         version: 1.167.2(@tanstack/react-router@1.170.42(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(@tanstack/router-core@1.171.35)(csstype@3.2.3)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -336,6 +348,9 @@ importers:
       nitro:
         specifier: ^3.0.260610-beta
         version: 3.0.260610-beta(@electric-sql/pglite@0.5.8)(@netlify/blobs@11.0.3(supports-color@8.1.1))(@netlify/runtime@4.1.29(supports-color@8.1.1))(better-sqlite3@12.11.1)(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.4(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0)(@types/pg@8.20.0)(better-sqlite3@12.11.1)(kysely@0.29.5)(pg@8.23.1)(postgres@3.4.9))(giget@3.3.0)(jiti@2.7.0)(lru-cache@11.5.2)(rollup@4.62.2)(vite@7.3.6(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -7026,6 +7041,9 @@ packages:
 
   cjs-module-lexer@2.2.1:
     resolution: {integrity: sha512-Ca8swihM+/4yKecYHY52kgJd300hi2lADU/a1RxNTRe+RJ9jvqQlESpbz9DnG9mowez8qwXHB8qYdIUw9e+F5Q==}
+
+  class-variance-authority@0.7.1:
+    resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
 
   cli-cursor@2.1.0:
     resolution: {integrity: sha512-8lgKz8LmCRYZZQDpRyT2m5rKJ08TnU4tR9FFFW2rxpxR1FzWi4PQ/NfyODchAatHaUgnSPVcx/R5w6NuTBzFiw==}
@@ -18088,7 +18106,7 @@ snapshots:
       jiti: 2.7.0
       lightningcss: 1.32.0
       magic-string: 0.30.21
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
       tailwindcss: 4.3.3
 
   '@tailwindcss/oxide-android-arm64@4.3.3':
@@ -18154,6 +18172,13 @@ snapshots:
     dependencies:
       postcss-selector-parser: 6.0.10
       tailwindcss: 4.3.3
+
+  '@tailwindcss/vite@4.3.3(vite@7.3.6(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
+    dependencies:
+      '@tailwindcss/node': 4.3.3
+      '@tailwindcss/oxide': 4.3.3
+      tailwindcss: 4.3.3
+      vite: 7.3.6(@types/node@24.13.2)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0)
 
   '@tailwindcss/vite@4.3.3(vite@8.3.4(@types/node@24.13.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))':
     dependencies:
@@ -19959,6 +19984,10 @@ snapshots:
   citty@0.2.2: {}
 
   cjs-module-lexer@2.2.1: {}
+
+  class-variance-authority@0.7.1:
+    dependencies:
+      clsx: 2.1.1
 
   cli-cursor@2.1.0:
     dependencies:

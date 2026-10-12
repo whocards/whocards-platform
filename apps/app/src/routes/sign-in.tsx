@@ -2,6 +2,10 @@ import {createServerFn} from '@tanstack/react-start'
 import {createFileRoute, redirect} from '@tanstack/react-router'
 import {useState} from 'react'
 
+import {AuthScreen} from '~/components/auth-screen'
+import {ErrorText} from '~/components/page'
+import {Button} from '~/components/ui/button'
+import {Input} from '~/components/ui/field'
 import {authClient} from '~/lib/auth-client'
 import {getCurrentMember} from '~/server/auth/session'
 import {googleAuthEnabled} from '~/server/env'
@@ -32,54 +36,69 @@ function SignIn() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
-      <h1 className="text-2xl font-bold">
-        WhoCards <span className="text-yellow-400">@</span> Work
-      </h1>
+    <AuthScreen>
       {status === 'sent' ? (
-        <p className="max-w-sm text-center text-gray-lighter">
-          Check <span className="text-white">{email}</span> for a sign-in link.
-        </p>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <h1 className="font-title text-4xl font-bold tracking-wide">Check your inbox</h1>
+          <p className="text-gray-lighter">
+            We sent a sign-in link to <span className="text-white">{email}</span>.
+          </p>
+          <Button variant="ghost" size="sm" onClick={() => setStatus('idle')}>
+            Use a different email
+          </Button>
+        </div>
       ) : (
-        <form
-          onSubmit={(event) => {
-            void submit(event)
-          }}
-          className="flex w-full max-w-sm flex-col gap-3"
-        >
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@company.com"
-            className="rounded-full bg-gray-light px-4 py-3 text-white placeholder:text-gray-dark"
-          />
-          <button
-            type="submit"
-            disabled={status === 'sending'}
-            className="rounded-full bg-yellow-400 px-4 py-3 font-bold text-darker disabled:opacity-60"
+        <>
+          <div className="text-center">
+            <h1 className="font-title text-4xl font-bold tracking-wide">Sign in</h1>
+            <p className="mt-2 text-gray-lighter">Review decks and run live games.</p>
+          </div>
+          <form
+            onSubmit={(event) => {
+              void submit(event)
+            }}
+            className="flex w-full flex-col gap-3"
           >
-            {status === 'sending' ? 'Sending…' : 'Send sign-in link'}
-          </button>
-          {status === 'error' ? (
-            <p className="text-center text-sm text-red">
-              Couldn&apos;t send that link — try again in a moment.
-            </p>
+            <Input
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@company.com"
+              aria-label="Email"
+              className="h-12"
+            />
+            <Button type="submit" variant="primary" size="lg" disabled={status === 'sending'}>
+              {status === 'sending' ? 'Sending…' : 'Send sign-in link'}
+            </Button>
+            {status === 'error' ? (
+              <ErrorText className="text-center">
+                Couldn&apos;t send that link — try again in a moment.
+              </ErrorText>
+            ) : null}
+          </form>
+          {googleEnabled ? (
+            <>
+              <div className="flex w-full items-center gap-3 text-xs text-gray-dark">
+                <span className="h-px flex-1 bg-white/10" />
+                or
+                <span className="h-px flex-1 bg-white/10" />
+              </div>
+              <Button
+                variant="accent"
+                size="lg"
+                className="w-full"
+                onClick={() => {
+                  void authClient.signIn.social({provider: 'google', callbackURL: '/'})
+                }}
+              >
+                Continue with Google
+              </Button>
+            </>
           ) : null}
-        </form>
+        </>
       )}
-      {googleEnabled ? (
-        <button
-          type="button"
-          onClick={() => {
-            void authClient.signIn.social({provider: 'google', callbackURL: '/'})
-          }}
-          className="rounded-full border border-gray-light px-4 py-3 text-sm font-semibold"
-        >
-          Continue with Google
-        </button>
-      ) : null}
-    </div>
+    </AuthScreen>
   )
 }

@@ -2,6 +2,11 @@ import {useMutation, useQuery} from '@tanstack/react-query'
 import {createFileRoute, Link, redirect, useNavigate} from '@tanstack/react-router'
 import {useState} from 'react'
 
+import {Empty, ErrorText, Page, PageHeader, SectionTitle} from '~/components/page'
+import {Badge} from '~/components/ui/badge'
+import {Button} from '~/components/ui/button'
+import {Card} from '~/components/ui/card'
+import {Input, Label} from '~/components/ui/field'
 import {trpc} from '~/lib/trpc'
 import {roleAtLeast} from '~/server/auth/permissions'
 
@@ -27,69 +32,68 @@ function HostGames() {
   })
 
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-6">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold md:text-2xl">Host a game</h1>
-        <p className="mt-1 text-sm text-gray-lighter">
-          Create a game, put its code on the projector, run the rounds.
-        </p>
-      </div>
+    <Page>
+      <PageHeader
+        title="Host a game"
+        description="Create a game, put its code on the projector, run the rounds."
+      />
 
-      <form
-        onSubmit={(event) => {
-          event.preventDefault()
-          create.mutate()
-        }}
-        className="mb-8 flex flex-wrap items-center gap-2"
-      >
-        <input
-          required
-          maxLength={80}
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="SDD 2026 · main room"
-          aria-label="Game title"
-          className="rounded-full bg-gray-light px-4 py-2 text-white placeholder:text-gray-dark"
-        />
-        <button
-          type="submit"
-          disabled={create.isPending}
-          className="rounded-full bg-yellow-400 px-4 py-2 font-bold text-darker disabled:opacity-60"
+      <Card className="mb-10">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            create.mutate()
+          }}
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
-          Create game
-        </button>
-        {create.isError ? <p className="w-full text-sm text-red">{create.error.message}</p> : null}
-      </form>
+          <Label label="New game" className="flex-1">
+            <Input
+              required
+              maxLength={80}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="SDD 2026 · main room"
+            />
+          </Label>
+          <Button type="submit" variant="primary" disabled={create.isPending}>
+            {create.isPending ? 'Creating…' : 'Create game'}
+          </Button>
+        </form>
+        {create.isError ? <ErrorText className="mt-3">{create.error.message}</ErrorText> : null}
+      </Card>
 
-      {games.isLoading ? <p className="text-gray-lighter">Loading…</p> : null}
-      {games.isError ? <p className="text-red">{games.error.message}</p> : null}
-      {games.data?.length === 0 ? <p className="text-gray-lighter">No games yet.</p> : null}
+      <SectionTitle>Your games</SectionTitle>
+      {games.isLoading ? <p className="text-gray-dark">Loading…</p> : null}
+      {games.isError ? <ErrorText>{games.error.message}</ErrorText> : null}
+      {games.data?.length === 0 ? <Empty>No games yet. Create one above.</Empty> : null}
 
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-3">
         {games.data?.map((game) => (
           <li key={game.id}>
             <Link
               to="/host/$gameId"
               params={{gameId: game.id}}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-gray-light/40 px-4 py-3"
+              className="group flex items-center gap-4 rounded-2.5xl border border-white/8 bg-white/[0.035] px-5 py-4 transition-colors hover:border-yellow-400/40 hover:bg-white/[0.06]"
             >
-              <div className="min-w-0">
-                <p className="font-semibold">{game.title}</p>
-                <p className="text-xs text-gray-lighter">
-                  {`${game.code} · ${game.players} players · ${game.rounds} rounds · ${new Date(game.createdAt).toLocaleDateString()}`}
+              <span className="font-title text-2xl font-bold tracking-widest text-yellow-400">
+                {game.code}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">{game.title}</p>
+                <p className="text-xs text-gray-dark">
+                  {`${game.players} players · ${game.rounds} rounds · ${new Date(game.createdAt).toLocaleDateString()}`}
                 </p>
               </div>
-              <span
-                className={
-                  game.status === 'live' ? 'text-sm text-yellow-400' : 'text-sm text-gray-lighter'
-                }
-              >
+              <Badge tone={game.status === 'live' ? 'live' : 'neutral'}>
                 {STATUS_LABEL[game.status]}
+              </Badge>
+              <span className="text-gray-dark transition-transform group-hover:translate-x-0.5 group-hover:text-yellow-400">
+                →
               </span>
             </Link>
           </li>
         ))}
       </ul>
-    </div>
+    </Page>
   )
 }

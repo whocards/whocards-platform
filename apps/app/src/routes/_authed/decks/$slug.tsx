@@ -1,7 +1,15 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
-import {createFileRoute, Link, redirect} from '@tanstack/react-router'
+import {createFileRoute, redirect} from '@tanstack/react-router'
 import {useState} from 'react'
 
+import {DECK_STATUS} from '~/components/deck-status'
+import {Empty, ErrorText, Page, PageHeader, SectionTitle} from '~/components/page'
+import {Badge} from '~/components/ui/badge'
+import {Button} from '~/components/ui/button'
+import {Card} from '~/components/ui/card'
+import {Input, Label, Select, Textarea} from '~/components/ui/field'
+import {Progress} from '~/components/ui/progress'
+import {cn} from '~/lib/cn'
 import {trpc} from '~/lib/trpc'
 import {roleAtLeast} from '~/server/auth/permissions'
 import {groupByAct, isDeckStatus, nextStatusOptions} from '~/server/trpc/routers/decks-logic'
@@ -21,11 +29,10 @@ export const Route = createFileRoute('/_authed/decks/$slug')({
   component: DeckDetail,
 })
 
-const STATUS_LABEL: Record<DeckStatus, string> = {
-  draft: 'Draft',
-  in_review: 'In review',
-  approved: 'Approved',
-  shipped: 'Shipped',
+const REVIEW_TONE: Partial<Record<string, 'good' | 'accent' | 'muted'>> = {
+  approved: 'good',
+  in_review: 'accent',
+  rejected: 'muted',
 }
 
 function DeckDetail() {
@@ -71,118 +78,114 @@ function DeckDetail() {
 
   if (deckMeta.isError) {
     return (
-      <div className="mx-auto max-w-3xl p-4 text-center md:p-6">
-        <p className="text-lg font-semibold">Couldn&apos;t load that deck.</p>
-        <p className="mt-1 text-sm text-gray-lighter">{deckMeta.error.message}</p>
-        <Link to="/decks" className="mt-3 inline-block text-yellow-400 underline">
-          ← Back to Decks
-        </Link>
-      </div>
+      <Page>
+        <PageHeader back={{to: '/decks', label: 'All decks'}} title="Couldn’t load that deck" />
+        <ErrorText>{deckMeta.error.message}</ErrorText>
+      </Page>
     )
   }
 
+  const total = questions.data?.length ?? 0
+  const status = deckMeta.data ? DECK_STATUS[deckMeta.data.status] : null
+
   return (
-    <div className="mx-auto max-w-3xl p-4 md:p-6">
-      <Link to="/decks" className="text-xs text-gray-lighter underline">
-        ← All decks
-      </Link>
-
-      <div className="mt-2 mb-6 flex flex-wrap items-start justify-between gap-4 md:mb-8">
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold md:text-2xl">{deckMeta.data?.title ?? 'Loading…'}</h1>
-          {deckMeta.data?.description ? (
-            <p className="mt-1 max-w-2xl text-sm text-gray-lighter">{deckMeta.data.description}</p>
-          ) : null}
-          <p className="mt-2 text-sm text-gray-lighter">
-            {approvedCount}/{questions.data?.length ?? 0} questions approved
-          </p>
-        </div>
-
-        <div className="flex shrink-0 flex-col items-stretch gap-2">
-          {deckMeta.data && canApprove ? (
-            <select
-              value={deckMeta.data.status}
-              onChange={(event) => {
-                // The <option> values are always nextStatusOptions(...) below, so this
-                // is only false if the DOM value is tampered with — bail rather than cast.
-                const {value} = event.target
-                if (isDeckStatus(value)) updateStatus.mutate(value)
-              }}
-              disabled={updateStatus.isPending}
-              className="min-h-11 rounded-full bg-gray-light px-4 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {nextStatusOptions(deckMeta.data.status).map((status) => (
-                <option key={status} value={status}>
-                  {STATUS_LABEL[status]}
-                </option>
-              ))}
-            </select>
-          ) : deckMeta.data ? (
-            <span className="flex min-h-11 items-center justify-center rounded-full bg-gray-light px-4 text-sm font-semibold">
-              {STATUS_LABEL[deckMeta.data.status]}
+    <Page>
+      <PageHeader
+        back={{to: '/decks', label: 'All decks'}}
+        eyebrow={status && !canApprove ? <Badge tone={status.tone}>{status.label}</Badge> : null}
+        title={deckMeta.data?.title ?? 'Loading…'}
+        description={deckMeta.data?.description}
+        actions={
+          canApprove ? (
+            <>
+              {deckMeta.data ? (
+                <Select
+                  aria-label="Deck status"
+                  value={deckMeta.data.status}
+                  onChange={(event) => {
+                    // The <option> values are always nextStatusOptions(...) below, so this
+                    // is only false if the DOM value is tampered with — bail rather than cast.
+                    const {value} = event.target
+                    if (isDeckStatus(value)) updateStatus.mutate(value)
+                  }}
+                  disabled={updateStatus.isPending}
+                  className="w-auto"
+                >
+                  {nextStatusOptions(deckMeta.data.status).map((option) => (
+                    <option key={option} value={option}>
+                      {DECK_STATUS[option].label}
+                    </option>
+                  ))}
+                </Select>
+              ) : null}
+              {deckMeta.data?.canEmitDiff ? (
+                <Button onClick={() => setShowDiff((v) => !v)}>
+                  {showDiff ? 'Hide diff' : 'Generate diff'}
+                </Button>
+              ) : null}
+              <Button
+                variant={showAddQuestion ? 'ghost' : 'primary'}
+                onClick={() => setShowAddQuestion((v) => !v)}
+              >
+                {showAddQuestion ? 'Cancel' : '+ Add question'}
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        {questions.data ? (
+          <div className="flex items-center gap-3">
+            <Progress
+              value={approvedCount}
+              max={total}
+              aria-label="Questions approved"
+              className="max-w-xs flex-1"
+            />
+            <span className="shrink-0 text-sm text-gray-lighter">
+              {`${approvedCount}/${total} questions approved`}
             </span>
-          ) : null}
-          {updateStatus.isError ? (
-            <p className="text-sm text-red">{updateStatus.error.message}</p>
-          ) : null}
+          </div>
+        ) : null}
+      </PageHeader>
 
-          {deckMeta.data?.canEmitDiff && canApprove ? (
-            <button
-              type="button"
-              onClick={() => setShowDiff((v) => !v)}
-              className="min-h-11 rounded-full bg-gray-light px-4 text-sm font-semibold"
-            >
-              {showDiff ? 'Hide' : 'Generate'} diff
-            </button>
-          ) : null}
-        </div>
-      </div>
+      {updateStatus.isError ? (
+        <ErrorText className="mb-4">{updateStatus.error.message}</ErrorText>
+      ) : null}
 
       {showDiff && diff.data ? (
-        <div className="mb-8 rounded-2xl bg-darker p-4">
-          <p className="mb-2 text-sm text-gray-lighter">
+        <Card className="mb-8">
+          <p className="mb-3 text-sm text-gray-lighter">
             Unified diff against packages/decks/src/decks/ai-at-work.questions.json — apply by hand
             (or paste into a PR); this app never writes to git directly.
           </p>
-          <pre className="max-h-96 overflow-auto text-xs whitespace-pre-wrap">
+          <pre className="max-h-96 overflow-auto rounded-xl bg-darkest/60 p-4 text-xs whitespace-pre-wrap">
             {diff.data.patch}
           </pre>
-        </div>
+        </Card>
       ) : null}
 
-      {canApprove ? (
-        <div className="mb-8">
-          <button
-            type="button"
-            onClick={() => setShowAddQuestion((v) => !v)}
-            className="flex min-h-11 items-center justify-center rounded-full bg-gray-light px-4 text-sm font-semibold"
-          >
-            {showAddQuestion ? 'Cancel' : '+ Add question'}
-          </button>
-          {showAddQuestion ? (
-            <AddQuestionForm
-              deckSlug={slug}
-              defaultActLabel={groups.at(-1)?.actLabel ?? ''}
-              onDone={() => {
-                setShowAddQuestion(false)
-                void queryClient.invalidateQueries({queryKey: ['questionReview.variants', slug]})
-              }}
-            />
-          ) : null}
-        </div>
+      {canApprove && showAddQuestion ? (
+        <AddQuestionForm
+          deckSlug={slug}
+          defaultActLabel={groups.at(-1)?.actLabel ?? ''}
+          onDone={() => {
+            setShowAddQuestion(false)
+            void queryClient.invalidateQueries({queryKey: ['questionReview.variants', slug]})
+          }}
+        />
       ) : null}
 
-      {questions.isLoading ? <p className="text-gray-lighter">Loading…</p> : null}
-      {questions.data && questions.data.length === 0 ? (
-        <p className="text-gray-lighter">No questions in this deck yet.</p>
-      ) : null}
+      {questions.isLoading ? <p className="text-gray-dark">Loading…</p> : null}
+      {questions.data?.length === 0 ? <Empty>No questions in this deck yet.</Empty> : null}
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-10">
         {groups.map((group) => (
           <section key={group.actLabel}>
-            <h2 className="mb-4 border-b border-gray-light/40 pb-2 text-sm font-semibold text-gray-lighter">
+            <SectionTitle
+              aside={<span className="shrink-0 text-sm text-gray-dark">{group.items.length}</span>}
+            >
               {group.actLabel}
-            </h2>
+            </SectionTitle>
             <div className="flex flex-col gap-4">
               {group.items.map((question) => (
                 <QuestionCard
@@ -198,7 +201,7 @@ function DeckDetail() {
           </section>
         ))}
       </div>
-    </div>
+    </Page>
   )
 }
 
@@ -223,47 +226,43 @@ function AddQuestionForm({
   })
 
   return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault()
-        if (text.trim() && actLabel.trim()) addQuestion.mutate()
-      }}
-      className="mt-3 flex flex-col gap-3 rounded-2xl bg-gray-light/30 p-4"
-    >
-      <label className="flex flex-col gap-1 text-sm text-gray-lighter">
-        Section (act)
-        <input
-          value={actLabel}
-          onChange={(event) => setActLabel(event.target.value)}
-          placeholder="e.g. Act 2 — Map the work"
-          required
-          className="min-h-11 rounded-xl bg-darker px-4 text-white placeholder:text-gray-dark"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm text-gray-lighter">
-        Question text
-        <textarea
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder="What do you want to ask?"
-          required
-          rows={3}
-          className="rounded-xl bg-darker p-4 text-white placeholder:text-gray-dark"
-        />
-      </label>
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={addQuestion.isPending || !text.trim() || !actLabel.trim()}
-          className="flex min-h-11 items-center justify-center rounded-full bg-yellow-400 px-4 font-bold text-darker disabled:opacity-60"
-        >
-          {addQuestion.isPending ? 'Adding…' : 'Add question'}
-        </button>
-        {addQuestion.isError ? (
-          <p className="text-sm text-red">{addQuestion.error.message}</p>
-        ) : null}
-      </div>
-    </form>
+    <Card className="mb-10 border-yellow-400/30">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (text.trim() && actLabel.trim()) addQuestion.mutate()
+        }}
+        className="flex flex-col gap-4"
+      >
+        <Label label="Section (act)">
+          <Input
+            value={actLabel}
+            onChange={(event) => setActLabel(event.target.value)}
+            placeholder="e.g. Act 2 — Map the work"
+            required
+          />
+        </Label>
+        <Label label="Question text">
+          <Textarea
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="What do you want to ask?"
+            required
+            rows={3}
+          />
+        </Label>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={addQuestion.isPending || !text.trim() || !actLabel.trim()}
+          >
+            {addQuestion.isPending ? 'Adding…' : 'Add question'}
+          </Button>
+          {addQuestion.isError ? <ErrorText>{addQuestion.error.message}</ErrorText> : null}
+        </div>
+      </form>
+    </Card>
   )
 }
 
@@ -387,78 +386,92 @@ function QuestionCard({
     },
   })
 
-  const statusColor =
-    question.review?.status === 'approved' ? 'text-yellow-400' : 'text-gray-lighter'
+  const reviewStatus = question.review?.status ?? 'draft'
 
   return (
-    <div className="rounded-2xl bg-gray-light/30 p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <span className={`text-xs font-semibold uppercase ${statusColor}`}>
-          {question.review?.status ?? 'draft'}
-        </span>
+    <Card className="p-4 sm:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Badge tone={REVIEW_TONE[reviewStatus] ?? 'neutral'} className="capitalize">
+          {reviewStatus.replace('_', ' ')}
+        </Badge>
       </div>
 
       <div className="flex flex-col gap-3">
-        {Object.entries(question.variants).map(([slug, text]) => (
-          <div
-            key={slug}
-            className={`flex flex-col gap-3 rounded-xl p-4 ${
-              question.review?.currentText === text ? 'bg-yellow-400/10' : 'bg-darker/40'
-            }`}
-          >
-            <div>
-              {slug !== 'current' ? <p className="mb-1 text-xs text-gray-dark">{slug}</p> : null}
-              <p className="text-base">{text}</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => vote.mutate(slug)}
-                className={`flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-sm font-semibold ${
-                  myVote === slug ? 'bg-yellow-400 text-darker' : 'bg-gray-light text-white'
-                }`}
-              >
-                Vote {question.voteTally[slug] ? `(${question.voteTally[slug]})` : ''}
-              </button>
-              {canApprove ? (
-                <button
-                  type="button"
-                  onClick={() => approve.mutate(text)}
-                  disabled={approve.isPending}
-                  className={`flex min-h-11 flex-1 items-center justify-center rounded-full px-4 text-sm font-semibold disabled:opacity-60 ${
-                    question.review?.currentText === text
-                      ? 'bg-yellow-400 text-darker'
-                      : 'bg-darker text-gray-lighter'
-                  }`}
+        {Object.entries(question.variants).map(([slug, text]) => {
+          const isCurrent = question.review?.currentText === text
+          return (
+            <div
+              key={slug}
+              className={cn(
+                'flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center',
+                isCurrent
+                  ? 'border-yellow-400/40 bg-yellow-400/[0.06]'
+                  : 'border-white/8 bg-darkest/40'
+              )}
+            >
+              <div className="min-w-0 flex-1">
+                {slug === 'current' ? null : (
+                  <p className="mb-1.5 text-xs font-semibold tracking-wide text-gray-dark uppercase">
+                    {slug}
+                  </p>
+                )}
+                <p className="text-base leading-relaxed text-pretty md:text-lg">{text}</p>
+              </div>
+              <div className="flex gap-2 sm:shrink-0">
+                <Button
+                  variant={myVote === slug ? 'selected' : 'secondary'}
+                  aria-pressed={myVote === slug}
+                  onClick={() => vote.mutate(slug)}
+                  className="flex-1 sm:w-28 sm:flex-none"
                 >
-                  {approve.isPending
-                    ? 'Approving…'
-                    : question.review?.currentText === text
-                      ? '✓ Approved'
-                      : 'Approve'}
-                </button>
-              ) : null}
+                  Vote {question.voteTally[slug] ? `(${question.voteTally[slug]})` : ''}
+                </Button>
+                {canApprove ? (
+                  <Button
+                    variant={isCurrent ? 'primary' : 'accent'}
+                    onClick={() => approve.mutate(text)}
+                    disabled={approve.isPending}
+                    className="flex-1 sm:w-32 sm:flex-none"
+                  >
+                    {approve.isPending ? 'Approving…' : isCurrent ? '✓ Approved' : 'Approve'}
+                  </Button>
+                ) : null}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="mt-3 flex min-h-11 items-center text-sm text-gray-lighter underline"
-      >
-        {expanded
-          ? 'Hide comments'
-          : `Comments${comments.data?.length ? ` (${comments.data.length})` : ''}`}
-      </button>
+      <div className="mt-3 flex flex-wrap gap-1 border-t border-white/8 pt-2">
+        <Button
+          variant="ghost"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+          className="px-3"
+        >
+          {expanded
+            ? 'Hide comments'
+            : `Comments${comments.data?.length ? ` (${comments.data.length})` : ''}`}
+        </Button>
+        {canApprove ? (
+          <Button
+            variant="ghost"
+            aria-expanded={agentExpanded}
+            onClick={() => setAgentExpanded((v) => !v)}
+            className="px-3"
+          >
+            {agentExpanded ? 'Hide agent' : 'Discuss with agent'}
+          </Button>
+        ) : null}
+      </div>
 
       {expanded ? (
-        <div className="mt-1 flex flex-col gap-2 border-t border-gray-light/40 pt-3">
+        <div className="mt-2 flex flex-col gap-3">
           {comments.data?.map((c) => (
-            <p key={c.id} className="text-sm">
-              <span className="text-gray-lighter">{c.authorEmail}:</span> {c.body}
-            </p>
+            <div key={c.id} className="rounded-xl bg-white/[0.04] px-3.5 py-2.5">
+              <p className="text-xs text-gray-dark">{c.authorEmail}</p>
+              <p className="text-sm">{c.body}</p>
+            </div>
           ))}
           <form
             onSubmit={(event) => {
@@ -467,76 +480,70 @@ function QuestionCard({
             }}
             className="flex gap-2"
           >
-            <input
+            <Input
+              aria-label="Comment"
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               placeholder="Add a comment…"
-              className="min-h-11 flex-1 rounded-full bg-darker px-4 text-sm text-white"
+              className="flex-1 text-sm"
             />
-            <button
-              type="submit"
-              disabled={addComment.isPending || !comment.trim()}
-              className="min-h-11 rounded-full bg-gray-light px-4 text-sm disabled:opacity-60"
-            >
+            <Button type="submit" disabled={addComment.isPending || !comment.trim()}>
               {addComment.isPending ? 'Sending…' : 'Send'}
-            </button>
+            </Button>
           </form>
         </div>
       ) : null}
 
-      {canApprove ? (
-        <>
-          <button
-            type="button"
-            onClick={() => setAgentExpanded((v) => !v)}
-            className="mt-3 flex min-h-11 items-center text-sm text-gray-lighter underline"
-          >
-            {agentExpanded ? 'Hide agent' : 'Discuss with agent'}
-          </button>
-          {agentExpanded ? (
-            <div className="mt-1 flex flex-col gap-2 border-t border-gray-light/40 pt-3">
-              {agentEnabled ? (
-                <>
-                  {agentMessages.data?.map((m) => (
-                    <p key={m.id} className="text-sm">
-                      <span className="text-gray-lighter">
-                        {m.role === 'user' ? 'You' : 'Agent'}:
-                      </span>{' '}
-                      {m.content}
-                    </p>
-                  ))}
-                  <form
-                    onSubmit={(event) => {
-                      event.preventDefault()
-                      if (agentDraft.trim()) sendToAgent.mutate()
-                    }}
-                    className="flex gap-2"
+      {canApprove && agentExpanded ? (
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-primary-dark/30 bg-primary-dark/[0.06] p-3">
+          {agentEnabled ? (
+            <>
+              {agentMessages.data?.map((m) => (
+                <div
+                  key={m.id}
+                  className={cn(
+                    'max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm',
+                    m.role === 'user' ? 'self-end bg-white/8' : 'self-start bg-darkest/60'
+                  )}
+                >
+                  <p
+                    className={cn(
+                      'text-xs font-semibold',
+                      m.role === 'user' ? 'text-gray-lighter' : 'text-accentOnDark'
+                    )}
                   >
-                    <input
-                      value={agentDraft}
-                      onChange={(event) => setAgentDraft(event.target.value)}
-                      placeholder="Ask the agent about this question…"
-                      className="min-h-11 flex-1 rounded-full bg-darker px-4 text-sm text-white"
-                    />
-                    <button
-                      type="submit"
-                      disabled={sendToAgent.isPending}
-                      className="min-h-11 rounded-full bg-gray-light px-4 text-sm disabled:opacity-60"
-                    >
-                      {sendToAgent.isPending ? 'Thinking…' : 'Send'}
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <p className="text-sm text-gray-lighter">
-                  Ask an admin to set <code className="text-xs">ANTHROPIC_API_KEY</code> to enable
-                  this.
-                </p>
-              )}
-            </div>
-          ) : null}
-        </>
+                    {m.role === 'user' ? 'You' : 'Agent'}
+                  </p>
+                  <p className="whitespace-pre-wrap">{m.content}</p>
+                </div>
+              ))}
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  if (agentDraft.trim()) sendToAgent.mutate()
+                }}
+                className="flex gap-2"
+              >
+                <Input
+                  aria-label="Message to agent"
+                  value={agentDraft}
+                  onChange={(event) => setAgentDraft(event.target.value)}
+                  placeholder="Ask the agent about this question…"
+                  className="flex-1 text-sm"
+                />
+                <Button type="submit" variant="accent" disabled={sendToAgent.isPending}>
+                  {sendToAgent.isPending ? 'Thinking…' : 'Send'}
+                </Button>
+              </form>
+            </>
+          ) : (
+            <p className="text-sm text-gray-lighter">
+              Ask an admin to set <code className="text-xs text-white">ANTHROPIC_API_KEY</code> to
+              enable this.
+            </p>
+          )}
+        </div>
       ) : null}
-    </div>
+    </Card>
   )
 }

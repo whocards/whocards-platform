@@ -1,5 +1,7 @@
 import {createFileRoute, Link, redirect} from '@tanstack/react-router'
 
+import {AuthScreen} from '~/components/auth-screen'
+import {buttonVariants} from '~/components/ui/button'
 import {getCurrentMember} from '~/server/auth/session'
 
 export const Route = createFileRoute('/')({
@@ -15,20 +17,20 @@ function Home() {
   const {member} = Route.useRouteContext()
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-      <h1 className="text-2xl font-bold">
-        WhoCards <span className="text-yellow-400">@</span> Work
-      </h1>
+    <AuthScreen>
       {member ? (
-        <p className="max-w-sm text-gray-lighter">
-          You&apos;re signed in as {member.user.email}, but not on the team yet — ask an admin to
-          invite you from Admin → People.
+        <p className="text-center text-gray-lighter">
+          You&apos;re signed in as <span className="text-white">{member.user.email}</span>, but not
+          on the team yet. Ask an admin to invite you from People.
         </p>
       ) : (
-        <Link to="/sign-in" className="rounded-full bg-yellow-400 px-5 py-3 font-bold text-darker">
+        <Link
+          to="/sign-in"
+          className={buttonVariants({variant: 'primary', size: 'lg', className: 'w-full'})}
+        >
           Sign in
         </Link>
       )}
-    </div>
+    </AuthScreen>
   )
 }
