@@ -20,27 +20,34 @@ import type {
 } from '@whocards/game'
 import {z} from 'zod'
 
+import {roleAtLeast} from '../../auth/permissions'
 import {createTRPCRouter, roleProcedure} from '../trpc'
 import {
   buildRecaps,
   GAMES_MIN_ROLE,
+  hostAccess,
   organizerOf,
   plannedRoundEnd,
   previewRecap,
   readRecapState,
   strandedByRemoval,
 } from './games-logic'
-import type {Recap, RecapState} from './games-logic'
+import type {GameHosts, Recap, RecapState} from './games-logic'
 
 export type WriteResult = 'ok' | 'conflict' | 'stale'
+
+/** A facilitator as hosts see them: name, else email. */
+export type HostUser = {id: string; label: string}
 
 export type GameSummary = {
   id: string
   code: string
   title: string
   organizer: string | null
-  /** The creating facilitator's name, else email; null if that account is gone. */
+  /** The creator's label; null if that account is gone. */
   createdBy: string | null
+  /** Co-facilitator labels. */
+  facilitators: string[]
   status: GameStatus
   createdAt: number
   players: number
@@ -51,11 +58,17 @@ export type GameSummary = {
 export type HostStore = {
   now: () => number
   random: () => number
-  /** Every facilitator hosts every game, so this lists them all, newest first. */
-  listGames: () => Promise<GameSummary[]>
+  /** Newest first; games `userId` created or co-facilitates, or every game when null. */
+  listGames: (userId: string | null) => Promise<GameSummary[]>
   createGame: (input: {title: string; organizer: string; createdBy: string}) => Promise<HostedGame>
-  /** Name, else email, of the facilitator who created the game. */
-  creatorOf: (gameId: string) => Promise<string | null>
+  /** The creator and co-facilitator ids; null when there is no such game. */
+  hostsOf: (gameId: string) => Promise<GameHosts | null>
+  /** Labels for these user ids, in the given order, skipping unknown ones. */
+  usersByIds: (ids: string[]) => Promise<HostUser[]>
+  /** Members of the organization at facilitator or above. */
+  facilitatorsIn: (organizationId: string) => Promise<HostUser[]>
+  /** Adds or removes one co-facilitator id atomically, leaving the rest of the list alone. */
+  setFacilitator: (input: {gameId: string; userId: string; on: boolean}) => Promise<void>
   /** Writes only while the game has not ended. */
   updateGame: (input: {gameId: string; title: string; organizer: string}) => Promise<WriteResult>
   /** Draft (lobby) to live; false if the game was no longer a draft. */
@@ -124,6 +137,9 @@ export type GameDetail = {
     title: string
     organizer: string | null
     createdBy: string | null
+    facilitators: HostUser[]
+    /** The caller is an admin or the creator, so may change `facilitators`. */
+    canManageHosts: boolean
     status: GameStatus
     recap: RecapState | null
   }
@@ -133,10 +149,12 @@ export type GameDetail = {
   counts: {players: number; pairs: number; turnsInProgress: number; responses: number}
 }
 
+type Hosting = Pick<GameDetail['game'], 'createdBy' | 'facilitators' | 'canManageHosts'>
+
 const detailOf = (
   snapshot: GameSnapshot,
   saved: Record<string, number>,
-  createdBy: string | null,
+  hosting: Hosting,
   now: number
 ): GameDetail => {
   const screen = screenView(snapshot, now)
@@ -152,7 +170,7 @@ const detailOf = (
       code: snapshot.game.code,
       title: snapshot.game.title,
       organizer: organizerOf(snapshot),
-      createdBy,
+      ...hosting,
       status: snapshot.game.status,
       recap: readRecapState(snapshot.game.settings),
     },
@@ -187,6 +205,12 @@ const conflictOr = (result: WriteResult, message: string) => {
   if (result !== 'ok') throw fail('CONFLICT', message)
 }
 
+const managing = (ctx: {canManageHosts: boolean}) => {
+  if (!ctx.canManageHosts) {
+    throw fail('FORBIDDEN', 'Only the creator or an admin can change the co-facilitators.')
+  }
+}
+
 export const createGamesRouter = ({
   store,
   sendRecaps,
@@ -198,19 +222,38 @@ export const createGamesRouter = ({
 }) => {
   const procedure = roleProcedure(GAMES_MIN_ROLE)
 
+  /** Every procedure on one game: callers who can't host it get NOT_FOUND, so its existence doesn't leak. */
+  const gameProcedure = procedure.use(async ({ctx, getRawInput, next}) => {
+    const parsed = gameIdSchema.safeParse(await getRawInput())
+    if (!parsed.success) throw fail('BAD_REQUEST', 'Missing game id.')
+    const hosts = await store.hostsOf(parsed.data.gameId)
+    const access = hosts && hostAccess(hosts, {id: ctx.user.id, role: ctx.membership.role})
+    if (!hosts || !access) throw fail('NOT_FOUND', 'No such game.')
+    return next({ctx: {...ctx, hosts, canManageHosts: access === 'manage'}})
+  })
+
   const load = async (gameId: string) => {
     const snapshot = await store.loadSnapshot(gameId)
     if (!snapshot) throw fail('NOT_FOUND', 'No such game.')
     return snapshot
   }
 
-  const detail = async (gameId: string) => {
-    const [snapshot, saved, createdBy] = await Promise.all([
+  const detail = async (gameId: string, ctx: {canManageHosts: boolean}) => {
+    const [snapshot, saved, hosts] = await Promise.all([
       load(gameId),
       store.savedResponses(gameId),
-      store.creatorOf(gameId),
+      store.hostsOf(gameId),
     ])
-    return detailOf(snapshot, saved, createdBy, store.now())
+    const users = await store.usersByIds([
+      ...(hosts?.createdBy ? [hosts.createdBy] : []),
+      ...(hosts?.facilitators ?? []),
+    ])
+    const hosting = {
+      createdBy: users.find((u) => u.id === hosts?.createdBy)?.label ?? null,
+      facilitators: users.filter((u) => hosts?.facilitators.includes(u.id)),
+      canManageHosts: ctx.canManageHosts,
+    }
+    return detailOf(snapshot, saved, hosting, store.now())
   }
 
   const loadEnded = async (gameId: string) => {
@@ -227,7 +270,9 @@ export const createGamesRouter = ({
   }
 
   return createTRPCRouter({
-    list: procedure.query(() => store.listGames()),
+    list: procedure.query(({ctx}) =>
+      store.listGames(roleAtLeast(ctx.membership.role, 'admin') ? null : ctx.user.id)
+    ),
 
     decks: procedure.query(() =>
       getAllDecks().map((d) => ({slug: d.slug, title: d.title, questions: d.questionIds.length}))
@@ -237,30 +282,53 @@ export const createGamesRouter = ({
       .input(gameDetailsSchema)
       .mutation(({ctx, input}) => store.createGame({...input, createdBy: ctx.user.id})),
 
-    detail: procedure.input(gameIdSchema).query(({input}) => detail(input.gameId)),
+    detail: gameProcedure.input(gameIdSchema).query(({ctx, input}) => detail(input.gameId, ctx)),
 
-    updateGame: procedure
+    /** Who can be added as a co-facilitator: org members at facilitator or above, minus current hosts. */
+    facilitatorOptions: gameProcedure.input(gameIdSchema).query(async ({ctx}) => {
+      managing(ctx)
+      const taken = new Set([ctx.hosts.createdBy, ...ctx.hosts.facilitators])
+      return (await store.facilitatorsIn(ctx.membership.organizationId)).filter(
+        (u) => !taken.has(u.id)
+      )
+    }),
+
+    setFacilitator: gameProcedure
+      .input(gameIdSchema.extend({userId: z.string().min(1), on: z.boolean()}))
+      .mutation(async ({ctx, input}) => {
+        managing(ctx)
+        if (input.on) {
+          const members = await store.facilitatorsIn(ctx.membership.organizationId)
+          if (!members.some((u) => u.id === input.userId)) {
+            throw fail('BAD_REQUEST', 'Only facilitators in this organization can co-host.')
+          }
+        }
+        if (input.userId !== ctx.hosts.createdBy) await store.setFacilitator(input)
+        return detail(input.gameId, ctx)
+      }),
+
+    updateGame: gameProcedure
       .input(gameIdSchema.extend(gameDetailsSchema.shape))
-      .mutation(async ({input}) => {
+      .mutation(async ({ctx, input}) => {
         await load(input.gameId)
         conflictOr(await store.updateGame(input), 'The game is over.')
-        return detail(input.gameId)
+        return detail(input.gameId, ctx)
       }),
 
     /** Opens joining. A second host pressing it too just sees the game live. */
-    goLive: procedure.input(gameIdSchema).mutation(async ({input}) => {
+    goLive: gameProcedure.input(gameIdSchema).mutation(async ({ctx, input}) => {
       const {status} = (await load(input.gameId)).game
       if (status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
       if (status === 'lobby' && !(await store.goLive(input.gameId))) {
         const after = await load(input.gameId)
         if (after.game.status !== 'live') throw fail('CONFLICT', 'The game ended meanwhile.')
       }
-      return detail(input.gameId)
+      return detail(input.gameId, ctx)
     }),
 
-    addRound: procedure
+    addRound: gameProcedure
       .input(gameIdSchema.extend({settings: roundInputSchema}))
-      .mutation(async ({input}) => {
+      .mutation(async ({ctx, input}) => {
         const snapshot = await load(input.gameId)
         if (snapshot.game.status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
         const n = Math.max(0, ...snapshot.rounds.map((r) => r.n)) + 1
@@ -268,12 +336,12 @@ export const createGamesRouter = ({
           await store.addRound({...input.settings, gameId: input.gameId, n}),
           'Someone else just added a round. Try again.'
         )
-        return detail(input.gameId)
+        return detail(input.gameId, ctx)
       }),
 
-    updateRound: procedure
+    updateRound: gameProcedure
       .input(roundIdSchema.extend({settings: roundInputSchema}))
-      .mutation(async ({input}) => {
+      .mutation(async ({ctx, input}) => {
         const snapshot = await load(input.gameId)
         const round = roundIn(snapshot, input.roundId)
         if (round.status === 'done') throw fail('BAD_REQUEST', 'That round is over.')
@@ -288,10 +356,10 @@ export const createGamesRouter = ({
           }),
           'The round changed meanwhile. Reload and try again.'
         )
-        return detail(input.gameId)
+        return detail(input.gameId, ctx)
       }),
 
-    startRound: procedure.input(roundIdSchema).mutation(async ({input}) => {
+    startRound: gameProcedure.input(roundIdSchema).mutation(async ({ctx, input}) => {
       const snapshot = await load(input.gameId)
       const round = roundIn(snapshot, input.roundId)
       if (snapshot.game.status === 'lobby') {
@@ -309,26 +377,26 @@ export const createGamesRouter = ({
       })
       if (result === 'conflict') throw fail('CONFLICT', START_REFUSALS.other_round_live)
       conflictOr(result, STALE)
-      return detail(input.gameId)
+      return detail(input.gameId, ctx)
     }),
 
-    endRound: procedure.input(roundIdSchema).mutation(async ({input}) => {
+    endRound: gameProcedure.input(roundIdSchema).mutation(async ({ctx, input}) => {
       await endLiveRound(await load(input.gameId), input.roundId)
-      return detail(input.gameId)
+      return detail(input.gameId, ctx)
     }),
 
     /** Ends the game only; the host previews the recap and sends it separately. */
-    endGame: procedure.input(gameIdSchema).mutation(async ({input}) => {
+    endGame: gameProcedure.input(gameIdSchema).mutation(async ({ctx, input}) => {
       const snapshot = await load(input.gameId)
-      if (snapshot.game.status === 'ended') return detail(input.gameId)
+      if (snapshot.game.status === 'ended') return detail(input.gameId, ctx)
       if (!canMoveGame(snapshot.game.status, 'ended')) {
         throw fail('BAD_REQUEST', 'This game cannot end from here.')
       }
       await store.endGame({gameId: input.gameId, endedAt: store.now()})
-      return detail(input.gameId)
+      return detail(input.gameId, ctx)
     }),
 
-    recapPreview: procedure.input(gameIdSchema).query(async ({input}) => {
+    recapPreview: gameProcedure.input(gameIdSchema).query(async ({input}) => {
       const [snapshot, saved] = await Promise.all([
         loadEnded(input.gameId),
         store.savedResponses(input.gameId),
@@ -347,7 +415,7 @@ export const createGamesRouter = ({
     }),
 
     /** Sends once per game: the conditional claim lets exactly one host through. */
-    sendRecaps: procedure.input(gameIdSchema).mutation(async ({input}) => {
+    sendRecaps: gameProcedure.input(gameIdSchema).mutation(async ({ctx, input}) => {
       const [snapshot, saved] = await Promise.all([
         loadEnded(input.gameId),
         store.savedResponses(input.gameId),
@@ -360,7 +428,7 @@ export const createGamesRouter = ({
       })
       if (recaps.length === 0) throw fail('BAD_REQUEST', 'Nobody asked for a recap.')
       const claim = {sentAt: store.now(), sent: 0, failed: 0, error: null, pending: true}
-      if (!(await store.claimRecap(input.gameId, claim))) return detail(input.gameId)
+      if (!(await store.claimRecap(input.gameId, claim))) return detail(input.gameId, ctx)
 
       const result = await sendRecaps(recaps).catch((error: unknown) => ({
         sent: 0,
@@ -368,12 +436,12 @@ export const createGamesRouter = ({
         error: error instanceof Error ? error.message : String(error),
       }))
       await store.saveRecapState(input.gameId, {...claim, ...result, pending: false})
-      return detail(input.gameId)
+      return detail(input.gameId, ctx)
     }),
 
-    removePlayer: procedure
+    removePlayer: gameProcedure
       .input(gameIdSchema.extend({playerId: z.string().uuid()}))
-      .mutation(async ({input}) => {
+      .mutation(async ({ctx, input}) => {
         const snapshot = await load(input.gameId)
         if (!snapshot.players.some((p) => p.id === input.playerId)) {
           throw fail('NOT_FOUND', 'No such player.')
@@ -383,7 +451,7 @@ export const createGamesRouter = ({
           playerId: input.playerId,
           release: strandedByRemoval(snapshot, input.playerId),
         })
-        return detail(input.gameId)
+        return detail(input.gameId, ctx)
       }),
   })
 }

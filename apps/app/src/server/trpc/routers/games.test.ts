@@ -15,7 +15,7 @@ const ids = () => {
 }
 
 type Mem = {
-  games: Array<HostedGame & {createdBy: string; createdAt: number}>
+  games: Array<HostedGame & {createdBy: string; createdAt: number; facilitators: string[]}>
   players: Player[]
   rounds: Round[]
   pairs: Pair[]
@@ -23,8 +23,18 @@ type Mem = {
   saved: Array<{playerId: string; gameId: string}>
 }
 
+// Org 'org': three facilitators, an admin, an owner and a plain member.
+const MEMBERS = [
+  {id: 'u-avi', label: 'Avi', role: 'facilitator'},
+  {id: 'u-tamas', label: 'Tamas', role: 'facilitator'},
+  {id: 'u-reka', label: 'Reka', role: 'facilitator'},
+  {id: 'u-boss', label: 'Boss', role: 'admin'},
+  {id: 'u-own', label: 'Own', role: 'owner'},
+  {id: 'u-mem', label: 'Mem', role: 'member'},
+] as const
+const labelOf = (id: string) => MEMBERS.find((m) => m.id === id)?.label ?? null
+
 /** The rules the Drizzle store enforces with conditional writes and unique indexes, in memory. */
-const USERS: Record<string, string> = {'u-avi': 'Avi', 'u-tamas': 'Tamas'}
 
 const memoryStore = (clock = {now: T0}) => {
   const id = ids()
@@ -46,18 +56,22 @@ const memoryStore = (clock = {now: T0}) => {
   const store: HostStore = {
     now: () => clock.now,
     random: () => 0,
-    listGames: async () =>
-      mem.games.toReversed().map((g): GameSummary => ({
-        id: g.id,
-        code: g.code,
-        title: g.title,
-        organizer: g.settings.organizer ?? null,
-        createdBy: USERS[g.createdBy] ?? null,
-        status: g.status,
-        createdAt: g.createdAt,
-        players: mem.players.filter((p) => p.gameId === g.id).length,
-        rounds: mem.rounds.filter((r) => r.gameId === g.id).length,
-      })),
+    listGames: async (userId) =>
+      mem.games
+        .filter((g) => userId === null || g.createdBy === userId || g.facilitators.includes(userId))
+        .toReversed()
+        .map((g): GameSummary => ({
+          id: g.id,
+          code: g.code,
+          title: g.title,
+          organizer: g.settings.organizer ?? null,
+          createdBy: labelOf(g.createdBy),
+          facilitators: g.facilitators.flatMap((f) => labelOf(f) ?? []),
+          status: g.status,
+          createdAt: g.createdAt,
+          players: mem.players.filter((p) => p.gameId === g.id).length,
+          rounds: mem.rounds.filter((r) => r.gameId === g.id).length,
+        })),
     createGame: async ({title, organizer, createdBy}) => {
       const row: Mem['games'][number] = {
         id: id(),
@@ -67,11 +81,31 @@ const memoryStore = (clock = {now: T0}) => {
         settings: {round: {}, organizer},
         createdBy,
         createdAt: clock.now,
+        facilitators: [],
       }
       mem.games.push(row)
       return row
     },
-    creatorOf: async (gameId) => USERS[game(gameId)?.createdBy ?? ''] ?? null,
+    hostsOf: async (gameId) => {
+      const g = game(gameId)
+      return g ? {createdBy: g.createdBy, facilitators: [...g.facilitators]} : null
+    },
+    usersByIds: async (userIds) =>
+      userIds.flatMap((u) => {
+        const label = labelOf(u)
+        return label ? [{id: u, label}] : []
+      }),
+    facilitatorsIn: async (organizationId) =>
+      organizationId === 'org'
+        ? MEMBERS.filter((m) => m.role !== 'member')
+            .map(({id: u, label}) => ({id: u, label}))
+            .toSorted((a, b) => a.label.localeCompare(b.label))
+        : [],
+    setFacilitator: async ({gameId, userId, on}) => {
+      const g = game(gameId)
+      if (!g) return
+      g.facilitators = [...g.facilitators.filter((f) => f !== userId), ...(on ? [userId] : [])]
+    },
     updateGame: async ({gameId, title, organizer}) => {
       const g = game(gameId)
       if (!g || g.status === 'ended') return 'stale'
@@ -248,6 +282,10 @@ describe('games router permissions', () => {
     await expect(c.endGame({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.recapPreview({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.sendRecaps({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
+    await expect(c.facilitatorOptions({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
+    await expect(c.setFacilitator({gameId, userId: 'u-x', on: true})).rejects.toMatchObject({
+      code: 'FORBIDDEN',
+    })
   })
 
   it('refuses a caller with no session', async () => {
@@ -261,22 +299,122 @@ describe('games router permissions', () => {
   })
 })
 
-describe('games router', () => {
-  it('stamps created_by from the session and lists every game for every facilitator', async () => {
-    const {caller, mem} = setup()
-    await caller('facilitator', 'u-avi').create({title: 'Mine', organizer: 'Acme'})
-    await caller('facilitator', 'u-tamas').create({title: 'Theirs', organizer: 'SDD Conf'})
+const twoGames = async () => {
+  const t = setup()
+  const {id: mine} = await t.caller('facilitator', 'u-avi').create({title: 'Mine', organizer: 'A'})
+  const {id: theirs} = await t.caller('facilitator', 'u-tamas').create({
+    title: 'Theirs',
+    organizer: 'B',
+  })
+  return {...t, mine, theirs}
+}
+
+describe('game access', () => {
+  it('stamps created_by and lists only the games a facilitator hosts', async () => {
+    const {caller, mem} = await twoGames()
     expect(mem.games.map((g) => g.createdBy)).toEqual(['u-avi', 'u-tamas'])
-    for (const user of ['u-avi', 'u-tamas']) {
-      const list = await caller('facilitator', user).list()
-      expect(list.map((g) => [g.title, g.organizer, g.createdBy])).toEqual([
-        ['Theirs', 'SDD Conf', 'Tamas'],
-        ['Mine', 'Acme', 'Avi'],
-      ])
-    }
+    const titles = async (role: Role, user: string) =>
+      (await caller(role, user).list()).map((g) => g.title)
+    expect(await titles('facilitator', 'u-avi')).toEqual(['Mine'])
+    expect(await titles('facilitator', 'u-reka')).toEqual([])
+    expect(await titles('admin', 'u-boss')).toEqual(['Theirs', 'Mine'])
+    expect(await titles('owner', 'u-own')).toEqual(['Theirs', 'Mine'])
   })
 
-  it('requires an organizer and lets any facilitator edit the details until the game ends', async () => {
+  it("hides someone else's game from a facilitator as NOT_FOUND, on reads and writes", async () => {
+    const {caller, theirs: gameId} = await twoGames()
+    const c = caller('facilitator', 'u-avi')
+    const roundId = '00000000-0000-4000-8000-000000000998'
+    const calls = [
+      c.detail({gameId}),
+      c.updateGame({gameId, ...GAME}),
+      c.goLive({gameId}),
+      c.addRound({gameId, settings: ROUND}),
+      c.updateRound({gameId, roundId, settings: ROUND}),
+      c.startRound({gameId, roundId}),
+      c.endRound({gameId, roundId}),
+      c.endGame({gameId}),
+      c.recapPreview({gameId}),
+      c.sendRecaps({gameId}),
+      c.removePlayer({gameId, playerId: roundId}),
+      c.facilitatorOptions({gameId}),
+      c.setFacilitator({gameId, userId: 'u-avi', on: true}),
+    ]
+    for (const call of calls) await expect(call).rejects.toMatchObject({code: 'NOT_FOUND'})
+    const missing = c.detail({gameId: '00000000-0000-4000-8000-000000000999'})
+    await expect(missing).rejects.toMatchObject({code: 'NOT_FOUND', message: 'No such game.'})
+  })
+
+  it('lets a co-facilitator see and run the game, but not change who hosts it', async () => {
+    const {caller, mine: gameId} = await twoGames()
+    const avi = caller('facilitator', 'u-avi')
+    expect((await avi.facilitatorOptions({gameId})).map((u) => u.id)).toEqual([
+      'u-boss',
+      'u-own',
+      'u-reka',
+      'u-tamas',
+    ])
+    const added = await avi.setFacilitator({gameId, userId: 'u-tamas', on: true})
+    expect(added.game.facilitators).toEqual([{id: 'u-tamas', label: 'Tamas'}])
+
+    const tamas = caller('facilitator', 'u-tamas')
+    const list = await tamas.list()
+    expect(list.map((g) => [g.title, g.createdBy, g.facilitators])).toEqual([
+      ['Theirs', 'Tamas', []],
+      ['Mine', 'Avi', ['Tamas']],
+    ])
+    const detail = await tamas.detail({gameId})
+    expect(detail.game).toMatchObject({createdBy: 'Avi', canManageHosts: false})
+    expect((await tamas.goLive({gameId})).game.status).toBe('live')
+    await tamas.addRound({gameId, settings: ROUND})
+
+    const forbidden = {code: 'FORBIDDEN'}
+    await expect(tamas.facilitatorOptions({gameId})).rejects.toMatchObject(forbidden)
+    await expect(tamas.setFacilitator({gameId, userId: 'u-reka', on: true})).rejects.toMatchObject(
+      forbidden
+    )
+    await expect(
+      tamas.setFacilitator({gameId, userId: 'u-tamas', on: false})
+    ).rejects.toMatchObject(forbidden)
+
+    await avi.setFacilitator({gameId, userId: 'u-tamas', on: false})
+    await expect(tamas.detail({gameId})).rejects.toMatchObject({code: 'NOT_FOUND'})
+  })
+
+  it('lets admins and owners run and manage any game', async () => {
+    const {caller, mine: gameId} = await twoGames()
+    for (const [role, user] of [
+      ['admin', 'u-boss'],
+      ['owner', 'u-own'],
+    ] as const) {
+      const c = caller(role, user)
+      expect((await c.detail({gameId})).game.canManageHosts).toBe(true)
+      await c.setFacilitator({gameId, userId: 'u-reka', on: true})
+      await c.addRound({gameId, settings: ROUND})
+    }
+    const done = await caller('owner', 'u-own').endGame({gameId})
+    expect(done.game).toMatchObject({
+      status: 'ended',
+      facilitators: [{id: 'u-reka', label: 'Reka'}],
+    })
+  })
+
+  it('only adds org facilitators, and treats the creator as already hosting', async () => {
+    const {caller, mine: gameId} = await twoGames()
+    const avi = caller('facilitator', 'u-avi')
+    for (const userId of ['u-mem', 'u-nobody']) {
+      await expect(avi.setFacilitator({gameId, userId, on: true})).rejects.toMatchObject({
+        code: 'BAD_REQUEST',
+      })
+    }
+    expect(
+      (await avi.setFacilitator({gameId, userId: 'u-avi', on: true})).game.facilitators
+    ).toEqual([])
+  })
+})
+
+describe('games router', () => {
+  it('requires an organizer and lets a host edit the details until the game ends', async () => {
     const {caller} = setup()
     await expect(caller().create({title: 'SDD', organizer: '  '})).rejects.toMatchObject({
       code: 'BAD_REQUEST',
@@ -286,7 +424,7 @@ describe('games router', () => {
     })
 
     const {id: gameId} = await caller('facilitator', 'u-avi').create(GAME)
-    const edited = await caller('facilitator', 'u-tamas').updateGame({
+    const edited = await caller('admin', 'u-boss').updateGame({
       gameId,
       title: ' SDD main room ',
       organizer: ' Acme ',
@@ -324,7 +462,7 @@ describe('games router', () => {
 
     const [a, b] = await Promise.all([
       caller('facilitator', 'u-avi').goLive({gameId}),
-      caller('facilitator', 'u-tamas').goLive({gameId}),
+      caller('admin', 'u-boss').goLive({gameId}),
     ])
     expect([a.game.status, b.game.status]).toEqual(['live', 'live'])
     expect((await c.startRound({gameId, roundId})).liveRoundId).toBe(roundId)
@@ -537,7 +675,7 @@ describe('recap preview and send', () => {
 
     const [first, second] = await Promise.all([
       caller('facilitator', 'u-avi').sendRecaps({gameId}),
-      caller('facilitator', 'u-tamas').sendRecaps({gameId}),
+      caller('admin', 'u-boss').sendRecaps({gameId}),
     ])
     expect(sendRecaps).toHaveBeenCalledTimes(1)
     const [recaps] = vi.mocked(sendRecaps).mock.calls[0]!

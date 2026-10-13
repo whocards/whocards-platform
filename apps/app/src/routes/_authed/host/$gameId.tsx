@@ -113,7 +113,7 @@ function HostGame() {
   return (
     <Page className="max-w-5xl">
       <PageHeader
-        back={{to: '/host', label: 'All workshops'}}
+        back={{to: '/host', label: 'Your workshops'}}
         eyebrow={<Badge tone={status.tone}>{status.label}</Badge>}
         title={game.title}
         description={[
@@ -191,6 +191,13 @@ function HostGame() {
         liveRoundId={liveRoundId}
         ended={ended}
         draft={draft}
+        pending={act.isPending}
+        run={(fn) => act.mutate(fn)}
+      />
+
+      <HostsPanel
+        gameId={gameId}
+        game={game}
         pending={act.isPending}
         run={(fn) => act.mutate(fn)}
       />
@@ -408,6 +415,87 @@ function RecapPanel({
             </Button>
             {send.isError ? <ErrorText>{send.error.message}</ErrorText> : null}
           </div>
+        ) : null}
+      </Card>
+    </section>
+  )
+}
+
+function HostsPanel({
+  gameId,
+  game,
+  pending,
+  run,
+}: Readonly<{
+  gameId: string
+  game: GameDetail['game']
+  pending: boolean
+  run: (fn: () => Promise<GameDetail>) => void
+}>) {
+  const options = useQuery({
+    queryKey: ['games.facilitatorOptions', gameId, game.facilitators.length],
+    queryFn: () => trpc.games.facilitatorOptions.query({gameId}),
+    enabled: game.canManageHosts,
+  })
+  const [picked, setPicked] = useState('')
+  const set = (userId: string, on: boolean) =>
+    run(() => trpc.games.setFacilitator.mutate({gameId, userId, on}))
+
+  return (
+    <section className="mb-12">
+      <SectionTitle>Hosts</SectionTitle>
+      <Card className="flex flex-col gap-3">
+        <p className="text-sm text-gray-lighter">
+          {`${game.createdBy ?? 'Unknown'} (creator). Co-facilitators can run everything here; only the creator or an admin changes this list.`}
+        </p>
+        {game.facilitators.length === 0 ? (
+          <p className="text-sm text-gray-dark">No co-facilitators yet.</p>
+        ) : null}
+        <ul className="flex flex-wrap gap-2">
+          {game.facilitators.map((f) => (
+            <li
+              key={f.id}
+              className="flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.035] py-1 pr-1 pl-3 text-sm"
+            >
+              {f.label}
+              {game.canManageHosts ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending}
+                  aria-label={`Remove ${f.label}`}
+                  onClick={() => set(f.id, false)}
+                  className="text-gray-dark hover:text-errorOnDark"
+                >
+                  ×
+                </Button>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        {game.canManageHosts && options.data && options.data.length > 0 ? (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault()
+              if (picked) set(picked, true)
+              setPicked('')
+            }}
+            className="flex flex-col gap-2 sm:flex-row sm:items-end"
+          >
+            <Label label="Add a co-facilitator" className="flex-1">
+              <Select value={picked} onChange={(event) => setPicked(event.target.value)}>
+                <option value="">Choose a facilitator…</option>
+                {options.data.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.label}
+                  </option>
+                ))}
+              </Select>
+            </Label>
+            <Button type="submit" disabled={pending || !picked}>
+              Add
+            </Button>
+          </form>
         ) : null}
       </Card>
     </section>

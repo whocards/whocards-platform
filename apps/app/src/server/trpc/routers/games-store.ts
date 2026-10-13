@@ -12,13 +12,14 @@ import {
   hostedGame,
 } from '@whocards/game/db'
 
-import {and, asc, count, desc, eq, inArray, isNull, ne, sql} from 'drizzle-orm'
+import {and, asc, count, desc, eq, inArray, isNull, ne, or, sql} from 'drizzle-orm'
 import type {SQL} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 
-import {appUser} from '~/server/db/schema'
-import type {HostStore, WriteResult} from './games'
-import {closingTimes} from './games-logic'
+import {ROLE_RANK} from '~/server/auth/permissions'
+import {appMember, appUser} from '~/server/db/schema'
+import type {HostStore, HostUser, WriteResult} from './games'
+import {closingTimes, readFacilitators} from './games-logic'
 
 const GAME_CODE_LENGTH = 5
 
@@ -49,7 +50,18 @@ const ms = (date: Date | null) => (date ? date.getTime() : null)
 const mergeSettings = (patch: Record<string, unknown>) =>
   sql`${hostedGame.settings} || ${JSON.stringify(patch)}::jsonb`
 
-const creatorLabel = sql<string | null>`coalesce(nullif(${appUser.name}, ''), ${appUser.email})`
+const userLabel = sql<string>`coalesce(nullif(${appUser.name}, ''), ${appUser.email})`
+
+const HOST_ROLES = ROLE_RANK.slice(ROLE_RANK.indexOf('facilitator'))
+
+const usersByIds = async (db: Db, ids: string[]): Promise<HostUser[]> => {
+  if (ids.length === 0) return []
+  const rows = await db
+    .select({id: appUser.id, label: userLabel})
+    .from(appUser)
+    .where(inArray(appUser.id, ids))
+  return ids.flatMap((id) => rows.filter((r) => r.id === id))
+}
 
 const toGame = (row: typeof hostedGame.$inferSelect): HostedGame => ({
   id: row.id,
@@ -129,7 +141,7 @@ export const createDrizzleHostStore = <
   now: Date.now,
   random: cryptoRandom,
 
-  listGames: async () => {
+  listGames: async (userId) => {
     const players = db
       .select({gameId: gamePlayer.gameId, n: count().as('players')})
       .from(gamePlayer)
@@ -143,7 +155,7 @@ export const createDrizzleHostStore = <
     const rows = await db
       .select({
         game: hostedGame,
-        createdBy: creatorLabel,
+        createdBy: userLabel,
         players: sql<number>`coalesce(${players.n}, 0)`.mapWith(Number),
         rounds: sql<number>`coalesce(${rounds.n}, 0)`.mapWith(Number),
       })
@@ -151,13 +163,26 @@ export const createDrizzleHostStore = <
       .leftJoin(players, eq(players.gameId, hostedGame.id))
       .leftJoin(rounds, eq(rounds.gameId, hostedGame.id))
       .leftJoin(appUser, eq(appUser.id, hostedGame.createdBy))
+      .where(
+        userId === null
+          ? undefined
+          : or(
+              eq(hostedGame.createdBy, userId),
+              sql`${hostedGame.settings} -> 'facilitators' @> ${JSON.stringify([userId])}::jsonb`
+            )
+      )
       .orderBy(desc(hostedGame.createdAt))
+    const users = await usersByIds(db, [
+      ...new Set(rows.flatMap((r) => readFacilitators(r.game.settings))),
+    ])
+    const labelOf = new Map(users.map((u) => [u.id, u.label]))
     return rows.map((r) => ({
       id: r.game.id,
       code: r.game.code,
       title: r.game.title,
       organizer: r.game.settings.organizer ?? null,
       createdBy: r.createdBy,
+      facilitators: readFacilitators(r.game.settings).flatMap((id) => labelOf.get(id) ?? []),
       status: r.game.status,
       createdAt: r.game.createdAt.getTime(),
       players: r.players,
@@ -186,13 +211,33 @@ export const createDrizzleHostStore = <
     throw new Error('Could not allocate a unique game code')
   },
 
-  creatorOf: async (gameId) => {
+  hostsOf: async (gameId) => {
     const [row] = await db
-      .select({label: creatorLabel})
+      .select({createdBy: hostedGame.createdBy, settings: hostedGame.settings})
       .from(hostedGame)
-      .innerJoin(appUser, eq(appUser.id, hostedGame.createdBy))
       .where(eq(hostedGame.id, gameId))
-    return row?.label ?? null
+    return row ? {createdBy: row.createdBy, facilitators: readFacilitators(row.settings)} : null
+  },
+
+  usersByIds: (ids) => usersByIds(db, ids),
+
+  facilitatorsIn: async (organizationId) => {
+    const rows = await db
+      .select({id: appUser.id, label: userLabel})
+      .from(appMember)
+      .innerJoin(appUser, eq(appUser.id, appMember.userId))
+      .where(and(eq(appMember.organizationId, organizationId), inArray(appMember.role, HOST_ROLES)))
+    return rows.toSorted((a, b) => a.label.localeCompare(b.label))
+  },
+
+  setFacilitator: async ({gameId, userId, on}) => {
+    // Remove-then-append in one statement, so concurrent edits never drop or duplicate an id.
+    const without = sql`coalesce(${hostedGame.settings} -> 'facilitators', '[]'::jsonb) - ${userId}::text`
+    const list = on ? sql`${without} || to_jsonb(${userId}::text)` : without
+    await db
+      .update(hostedGame)
+      .set({settings: sql`${hostedGame.settings} || jsonb_build_object('facilitators', ${list})`})
+      .where(eq(hostedGame.id, gameId))
   },
 
   updateGame: ({gameId, title, organizer}) =>

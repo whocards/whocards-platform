@@ -72,7 +72,7 @@ function HostGames() {
         {create.isError ? <ErrorText className="mt-3">{create.error.message}</ErrorText> : null}
       </Card>
 
-      <SectionTitle>All workshops</SectionTitle>
+      <SectionTitle>Your workshops</SectionTitle>
       {games.isLoading ? <p className="text-gray-dark">Loading…</p> : null}
       {games.isError ? <ErrorText>{games.error.message}</ErrorText> : null}
       {games.data?.length === 0 ? <Empty>No games yet. Create one above.</Empty> : null}
@@ -99,6 +99,7 @@ function HostGames() {
                     `${game.rounds} rounds`,
                     new Date(game.createdAt).toLocaleDateString(),
                     game.createdBy ? `created by ${game.createdBy}` : null,
+                    game.facilitators.length > 0 ? `with ${game.facilitators.join(', ')}` : null,
                   ]
                     .filter(Boolean)
                     .join(' · ')}

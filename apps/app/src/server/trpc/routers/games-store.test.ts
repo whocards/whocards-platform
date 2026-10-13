@@ -6,7 +6,7 @@ import {eq} from 'drizzle-orm'
 import {drizzle} from 'drizzle-orm/pglite'
 import {beforeAll, beforeEach, describe, expect, it} from 'vitest'
 
-import {appUser} from '~/server/db/schema'
+import {appMember, appOrganization, appUser} from '~/server/db/schema'
 import {createDrizzleHostStore} from './games-store'
 import {readRecapState} from './games-logic'
 
@@ -24,9 +24,30 @@ const recapOf = async () => {
 beforeAll(async () => {
   const statements = await generateMigration(
     generateDrizzleJson({}),
-    generateDrizzleJson({...gameSchema, appUser})
+    generateDrizzleJson({...gameSchema, appUser, appOrganization, appMember})
   )
   for (const statement of statements) await client.exec(statement)
+  const users = [
+    ['u-avi', 'Avi', 'facilitator'],
+    ['u-tamas', 'Tamas', 'facilitator'],
+    ['u-boss', '', 'admin'],
+    ['u-mem', 'Mem', 'member'],
+  ] as const
+  await db
+    .insert(appUser)
+    .values(users.map(([id, name]) => ({id, name, email: `${id}@example.com`})))
+  await db
+    .insert(appOrganization)
+    .values({id: 'org', name: 'WhoCards', slug: 'whocards', createdAt: new Date()})
+  await db.insert(appMember).values(
+    users.map(([id, , role]) => ({
+      id: `m-${id}`,
+      organizationId: 'org',
+      userId: id,
+      role,
+      createdAt: new Date(),
+    }))
+  )
 }, 60_000)
 
 beforeEach(async () => {
@@ -71,10 +92,48 @@ describe('drizzle host store conditional writes', () => {
     expect(await store.updateGame({gameId, title: 'x', organizer: 'y'})).toBe('stale')
   })
 
-  it('lists every game with its creator name', async () => {
-    await db.insert(appUser).values({id: 'u-avi', name: 'Avi', email: 'avi@example.com'})
-    const [game] = await store.listGames()
-    expect(game).toMatchObject({title: 'SDD', organizer: 'SDD Conf', createdBy: 'Avi'})
-    expect(await store.creatorOf(gameId)).toBe('Avi')
+  it('lists games by creator or co-facilitator, or all for admins, with host labels', async () => {
+    await store.createGame({title: 'Other', organizer: 'X', createdBy: 'u-tamas'})
+    const titles = async (userId: string | null) =>
+      (await store.listGames(userId)).map((g) => g.title).toSorted()
+    expect(await titles('u-avi')).toEqual(['SDD'])
+    expect(await titles('u-boss')).toEqual([])
+    expect(await titles(null)).toEqual(['Other', 'SDD'])
+
+    await store.setFacilitator({gameId, userId: 'u-tamas', on: true})
+    await store.setFacilitator({gameId, userId: 'u-boss', on: true})
+    expect(await titles('u-tamas')).toEqual(['Other', 'SDD'])
+    expect((await store.listGames('u-avi'))[0]).toMatchObject({
+      createdBy: 'Avi',
+      facilitators: ['Tamas', 'u-boss@example.com'],
+    })
+  })
+
+  it('adds and removes co-facilitators without duplicates or touching other settings', async () => {
+    await Promise.all([
+      store.setFacilitator({gameId, userId: 'u-tamas', on: true}),
+      store.setFacilitator({gameId, userId: 'u-boss', on: true}),
+      store.setFacilitator({gameId, userId: 'u-tamas', on: true}),
+    ])
+    const hosts = await store.hostsOf(gameId)
+    expect(hosts?.createdBy).toBe('u-avi')
+    expect(hosts?.facilitators.toSorted()).toEqual(['u-boss', 'u-tamas'])
+    await store.setFacilitator({gameId, userId: 'u-tamas', on: false})
+    expect((await store.hostsOf(gameId))?.facilitators).toEqual(['u-boss'])
+    expect((await store.loadSnapshot(gameId))?.game.settings).toMatchObject({organizer: 'SDD Conf'})
+    expect(await store.hostsOf('00000000-0000-4000-8000-000000000999')).toBeNull()
+  })
+
+  it('offers org members at facilitator or above, and labels users by name or email', async () => {
+    expect(await store.facilitatorsIn('org')).toEqual([
+      {id: 'u-avi', label: 'Avi'},
+      {id: 'u-tamas', label: 'Tamas'},
+      {id: 'u-boss', label: 'u-boss@example.com'},
+    ])
+    expect(await store.facilitatorsIn('elsewhere')).toEqual([])
+    expect(await store.usersByIds(['u-tamas', 'u-nobody', 'u-avi'])).toEqual([
+      {id: 'u-tamas', label: 'Tamas'},
+      {id: 'u-avi', label: 'Avi'},
+    ])
   })
 })

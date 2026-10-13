@@ -5,8 +5,30 @@ import type {GameRecapProps} from '@whocards/emails'
 import {z} from 'zod'
 
 import {eventLinks} from '../../../lib/event-links'
+import {roleAtLeast} from '../../auth/permissions'
+import type {AppRole} from '../../auth/permissions'
 
 export const GAMES_MIN_ROLE = 'facilitator' as const
+
+/** Co-facilitator user ids, kept under `hosted_game.settings.facilitators`. */
+export const readFacilitators = (settings: unknown): string[] => {
+  const parsed = z.object({facilitators: z.array(z.string())}).safeParse(settings)
+  return parsed.success ? parsed.data.facilitators : []
+}
+
+export type GameHosts = {createdBy: string | null; facilitators: string[]}
+
+/**
+ * What a caller may do with a game: admins and the creator run it and manage its
+ * co-facilitators, a co-facilitator only runs it, anyone else can't see it.
+ */
+export const hostAccess = (
+  hosts: GameHosts,
+  user: {id: string; role: AppRole}
+): 'manage' | 'run' | null => {
+  if (roleAtLeast(user.role, 'admin') || hosts.createdBy === user.id) return 'manage'
+  return hosts.facilitators.includes(user.id) ? 'run' : null
+}
 
 /** What the recap send recorded; kept under `hosted_game.settings.recap`, whose presence claims the one send. */
 export const recapStateSchema = z.object({
