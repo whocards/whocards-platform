@@ -1,19 +1,18 @@
 import {createEnv} from '@t3-oss/env-core'
 import {z} from 'zod'
 
-import {coreSchema, dbSchema} from './core'
+import {dbSchema} from './core'
 import {resendSchema} from './resend'
 
 /** apps/app (WhoCards @ Work, ADR-0008): server-only, read in the Nitro/Node runtime. */
 export const env = createEnv({
   server: {
-    ...coreSchema,
     ...dbSchema,
     ...resendSchema,
     // Signs better-auth session cookies/tokens: `openssl rand -hex 32`.
     BETTER_AUTH_SECRET: z.string().min(1),
-    // Dev/test origin only: production always signs in on https://app.whocards.cc (auth.tsx).
-    BETTER_AUTH_URL: z.url().default('http://localhost:3100'),
+    // Magic links point here, so production must set https://app.whocards.cc.
+    BETTER_AUTH_URL: z.url(),
     // The one account seeded as `owner` on first sign-in (see _authed.tsx).
     OWNER_EMAIL: z.email().default('avicharlop@gmail.com'),
     // Optional features: absence hides them, never crashes.

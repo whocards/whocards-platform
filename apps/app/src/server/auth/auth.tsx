@@ -30,12 +30,8 @@ const adapterSchema = {
   app_invitation: schema.appInvitation,
 }
 
-// Any other production origin fails sign-in from app.whocards.cc with 403 INVALID_CALLBACK_URL.
-const canonicalBaseURL =
-  env.NODE_ENV === 'production' ? 'https://app.whocards.cc' : env.BETTER_AUTH_URL
-
 export const auth = betterAuth({
-  baseURL: canonicalBaseURL,
+  baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
   trustedOrigins: ['https://app.whocards.cc', 'https://whocards-app.netlify.app'],
   database: drizzleAdapter(db, {
@@ -59,10 +55,8 @@ export const auth = betterAuth({
       disableSignUp: MAGIC_LINK_DISABLE_SIGNUP,
       expiresIn: 60 * 15,
       sendMagicLink: async ({email, url}) => {
-        // Dev/test verification path (plan requirement): read the link from the
-        // server log instead of an inbox. Real send still happens below so prod
-        // behaves identically to what we test tonight.
-        if (env.NODE_ENV !== 'production') {
+        // Build-time flag: Netlify's function runtime doesn't set NODE_ENV, so a runtime check leaks links to prod logs.
+        if (import.meta.env.DEV) {
           // oxlint-disable-next-line no-console -- deliberate dev-only sign-in log, not an error
           console.log(`[auth] magic link for ${email}: ${url}`)
         }
