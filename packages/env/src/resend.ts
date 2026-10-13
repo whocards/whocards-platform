@@ -8,7 +8,7 @@ export const resendSchema = {
   RESEND_FROM_EMAIL: z.string().default('WhoCards <hello@whocards.cc>'),
 }
 
-/** Consent sync (#120) and its webhook (#121): apps/website only. */
+/** Consent sync and its Resend webhook: apps/website only. */
 export const resendConsentSchema = {
   // Required: absent ids make consent sync a silent no-op, so consent drifts for good.
   RESEND_SEGMENT_NEWSLETTER_ID: z.string().min(1),

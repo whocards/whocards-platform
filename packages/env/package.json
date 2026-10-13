@@ -5,7 +5,6 @@
   "type": "module",
   "exports": {
     "./load": "./src/load.ts",
-    "./core": "./src/core.ts",
     "./db": "./src/db.ts",
     "./resend": "./src/resend.ts",
     "./netlify": "./src/netlify.ts",

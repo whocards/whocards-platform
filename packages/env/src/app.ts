@@ -26,8 +26,6 @@ export const env = createEnv({
   emptyStringAsUndefined: true,
 })
 
-/** True once both Google OAuth env vars are present — gates the Google button/provider. */
 export const googleAuthEnabled = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)
 
-/** True once ANTHROPIC_API_KEY is present — gates the discussion-agent feature. */
 export const agentEnabled = Boolean(env.ANTHROPIC_API_KEY)
