@@ -81,7 +81,7 @@ export type HostStore = {
   endRound: (input: {roundId: string; endedAt: number}) => Promise<WriteResult>
   /** Ends the live round, its open turns and the game atomically. */
   endGame: (input: {gameId: string; endedAt: number}) => Promise<void>
-  /** Stores `claim` only if the ended game has no recap state yet; true for the one caller that gets to send. */
+  /** Stores `claim` only if the ended game has no recap yet, or one that sent nothing; true for the one caller that gets to send. */
   claimRecap: (gameId: string, claim: RecapState) => Promise<boolean>
   saveRecapState: (gameId: string, recap: RecapState) => Promise<void>
   /** Deletes the player; `release` frees partners stranded in this round's pair so they can re-pair. */
@@ -242,18 +242,15 @@ export const createGamesRouter = ({
     updateGame: procedure
       .input(gameIdSchema.extend(gameDetailsSchema.shape))
       .mutation(async ({input}) => {
-        const snapshot = await load(input.gameId)
-        if (snapshot.game.status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
-        conflictOr(await store.updateGame(input), 'The game ended meanwhile.')
+        await load(input.gameId)
+        conflictOr(await store.updateGame(input), 'The game is over.')
         return detail(input.gameId)
       }),
 
     /** Opens joining. A second host pressing it too just sees the game live. */
     goLive: procedure.input(gameIdSchema).mutation(async ({input}) => {
       const {status} = (await load(input.gameId)).game
-      if (status !== 'live' && !canMoveGame(status, 'live')) {
-        throw fail('BAD_REQUEST', 'The game is over.')
-      }
+      if (status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
       if (status === 'lobby' && !(await store.goLive(input.gameId))) {
         const after = await load(input.gameId)
         if (after.game.status !== 'live') throw fail('CONFLICT', 'The game ended meanwhile.')

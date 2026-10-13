@@ -17,21 +17,29 @@ type JoinProps = {
 
 type Workshop = ScreenState['game']
 
+const DRAFT_POLL_MS = 5000
+
 const useWorkshop = (code: string, lookup: JoinProps['lookup']): Workshop | null => {
   const [found, setFound] = useState<Workshop | null>(null)
   const valid = readPairCode(code)
   useEffect(() => {
     let alive = true
-    if (valid) {
-      lookup(valid)
-        .then((screen) => {
-          if (alive) setFound(screen.game)
-        })
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    const check = async () => {
+      if (!valid) return
+      try {
+        const {game} = await lookup(valid)
+        if (!alive) return
+        setFound(game)
+        if (game.status === 'lobby') timeout = setTimeout(() => void check(), DRAFT_POLL_MS)
+      } catch {
         // No preview is fine; joining reports a bad code itself.
-        .catch(() => {})
+      }
     }
+    void check()
     return () => {
       alive = false
+      clearTimeout(timeout)
     }
   }, [valid, lookup])
   return found && found.code === valid ? found : null
@@ -49,7 +57,10 @@ export const Join = ({initialCode, onJoin, lookup}: JoinProps) => {
   const [failure, setFailure] = useState<GameError | null>(null)
   const copy = playerCopyFor(language)
   const workshop = useWorkshop(code, lookup)
-  const shown = failure ?? (workshop?.status === 'lobby' ? 'not_open' : null)
+  const draft = workshop?.status === 'lobby'
+  // A "not open" refusal goes stale once the game opens or the code changes.
+  const current = failure?.refusal === 'not_open' && !draft ? null : failure
+  const shown = current ?? (draft ? 'not_open' : null)
 
   const input = (records: boolean): JoinInput => ({
     code,
@@ -169,7 +180,7 @@ export const Join = ({initialCode, onJoin, lookup}: JoinProps) => {
         </label>
       )}
       <Privacy language={language} />
-      {failure && <Notice>{noticeText(language, failure)}</Notice>}
+      {shown && <Notice>{noticeText(language, shown)}</Notice>}
       <Button disabled={busy || !consentReady} onClick={() => void submit(transcript)}>
         {copy.consent.play}
       </Button>

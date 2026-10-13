@@ -14,8 +14,8 @@ import {
 
 import {and, asc, count, desc, eq, inArray, isNull, ne, sql} from 'drizzle-orm'
 import type {SQL} from 'drizzle-orm'
+import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 
-import type {db as appDb} from '~/server/db'
 import {appUser} from '~/server/db/schema'
 import type {HostStore, WriteResult} from './games'
 import {closingTimes} from './games-logic'
@@ -84,10 +84,10 @@ const toRound = (row: typeof gameRound.$inferSelect): Round => ({
   endsAt: ms(row.endsAt),
 })
 
-type Tx = Parameters<Parameters<typeof appDb.transaction>[0]>[0]
+type Db = PgDatabase<PgQueryResultHKT, Record<string, unknown>>
 
 /** Ends the live round matching `which` and closes its open turns; false if none was live. */
-const endLiveRound = async (tx: Tx, which: SQL, endedAt: number): Promise<boolean> => {
+const endLiveRound = async (tx: Db, which: SQL, endedAt: number): Promise<boolean> => {
   const [row] = await tx
     .update(gameRound)
     .set({status: 'done', endsAt: new Date(endedAt)})
@@ -109,7 +109,7 @@ const endLiveRound = async (tx: Tx, which: SQL, endedAt: number): Promise<boolea
   return true
 }
 
-const lockGame = async (tx: Tx, gameId: string) => {
+const lockGame = async (tx: Db, gameId: string) => {
   const [game] = await tx
     .select({status: hostedGame.status})
     .from(hostedGame)
@@ -119,7 +119,13 @@ const lockGame = async (tx: Tx, gameId: string) => {
 }
 
 /** Host-side writes over the game tables; mirrors apps/website's player port for reads. */
-export const createDrizzleHostStore = (db: typeof appDb): HostStore => ({
+/** `db` is any Postgres drizzle instance: postgres-js in the app, PGlite in tests. */
+export const createDrizzleHostStore = <
+  T extends PgQueryResultHKT,
+  S extends Record<string, unknown>,
+>(
+  db: PgDatabase<T, S>
+): HostStore => ({
   now: Date.now,
   random: cryptoRandom,
 
@@ -332,7 +338,11 @@ export const createDrizzleHostStore = (db: typeof appDb): HostStore => ({
         and(
           eq(hostedGame.id, gameId),
           eq(hostedGame.status, 'ended'),
-          sql`${hostedGame.settings} -> 'recap' is null`
+          // Unclaimed, or a finished send where nothing went out: retrying can't double-send.
+          sql`(${hostedGame.settings} -> 'recap' is null or (
+            coalesce((${hostedGame.settings} -> 'recap' ->> 'pending')::boolean, false) = false
+            and (${hostedGame.settings} -> 'recap' ->> 'sent')::int = 0
+          ))`
         )
       )
       .returning({id: hostedGame.id})

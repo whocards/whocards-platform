@@ -142,7 +142,8 @@ const memoryStore = (clock = {now: T0}) => {
     },
     claimRecap: async (gameId, claim) => {
       const g = game(gameId)
-      if (g?.status !== 'ended' || readRecapState(g.settings)) return false
+      const recap = g && readRecapState(g.settings)
+      if (g?.status !== 'ended' || (recap && (recap.pending || recap.sent > 0))) return false
       g.settings = Object.assign({}, g.settings, {recap: claim})
       return true
     },
@@ -242,6 +243,7 @@ describe('games router permissions', () => {
     await expect(c.list()).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.create(GAME)).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.detail({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
+    await expect(c.updateGame({gameId, ...GAME})).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.goLive({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.endGame({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.recapPreview({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
@@ -566,6 +568,22 @@ describe('recap preview and send', () => {
       error: 'resend down',
       pending: false,
     })
+  })
+
+  it('retries a send that delivered nothing, then never sends again', async () => {
+    let down = true
+    const send = vi.fn<SendRecaps>(async (r) => {
+      if (down) throw new Error('resend down')
+      return {sent: r.length, failed: 0, error: null}
+    })
+    const {c, gameId} = await played(send)
+    await c.endGame({gameId})
+    await c.sendRecaps({gameId})
+    down = false
+    const retried = await c.sendRecaps({gameId})
+    expect(retried.game.recap).toMatchObject({sent: 1, failed: 0, error: null, pending: false})
+    await c.sendRecaps({gameId})
+    expect(send).toHaveBeenCalledTimes(2)
   })
 })
 

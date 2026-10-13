@@ -1,5 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {createFileRoute, redirect} from '@tanstack/react-router'
+import {TRPCClientError} from '@trpc/client'
 import {qrPath} from '@whocards/game'
 import type {OddRule, Overtime} from '@whocards/game'
 import {useMemo, useState} from 'react'
@@ -49,6 +50,10 @@ const isOvertime = (v: string): v is Overtime => v === 'nudge' || v === 'hard'
 const clock = (ms: number | null) =>
   ms === null ? '' : new Date(ms).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
 
+// The server answers CONFLICT when another host moved the game on (a lost race or a stale write).
+const isConflict = (error: Error) =>
+  error instanceof TRPCClientError && error.data?.code === 'CONFLICT'
+
 const STATUS = {
   lobby: {label: 'Draft', tone: 'neutral'},
   live: {label: 'Live', tone: 'live'},
@@ -70,8 +75,9 @@ function HostGame() {
   const act = useMutation({
     mutationFn: (run: () => Promise<GameDetail>) => run(),
     onSuccess: (data) => queryClient.setQueryData(key, data),
-    // Another host may have moved the game on; show what is true now next to the error.
-    onError: () => queryClient.invalidateQueries({queryKey: key}),
+    onError: (error) => {
+      if (isConflict(error)) void queryClient.invalidateQueries({queryKey: key})
+    },
   })
   const [editingDetails, setEditingDetails] = useState(false)
 
@@ -138,7 +144,11 @@ function HostGame() {
       />
 
       {act.isError ? (
-        <ErrorText className="mb-4">{`${act.error.message} The page now shows the latest state.`}</ErrorText>
+        <ErrorText className="mb-4">
+          {isConflict(act.error)
+            ? `${act.error.message} The page now shows the latest state.`
+            : act.error.message}
+        </ErrorText>
       ) : null}
       {detail.isError ? (
         <ErrorText className="mb-4">{`Refresh failed: ${detail.error.message}`}</ErrorText>
@@ -338,8 +348,13 @@ function RecapPanel({
   const send = useMutation({
     mutationFn: () => trpc.games.sendRecaps.mutate({gameId}),
     onSuccess: (data) => queryClient.setQueryData(['games.detail', gameId], data),
-    onError: () => queryClient.invalidateQueries({queryKey: ['games.detail', gameId]}),
+    onError: (error) => {
+      if (isConflict(error))
+        void queryClient.invalidateQueries({queryKey: ['games.detail', gameId]})
+    },
   })
+  // A send that delivered nothing can go again; anything else is final.
+  const canSend = !recap || (!recap.pending && recap.sent === 0)
   const recipients = preview.data?.recipients ?? 0
   const plural = recipients === 1 ? 'player' : 'players'
 
@@ -375,7 +390,7 @@ function RecapPanel({
           </>
         ) : null}
         {status()}
-        {recap ? null : (
+        {canSend ? (
           <div className="flex flex-wrap items-center gap-3">
             <Button
               variant="primary"
@@ -387,11 +402,13 @@ function RecapPanel({
                 if (ok) send.mutate()
               }}
             >
-              {send.isPending ? 'Sending…' : `Send to ${recipients} ${plural}`}
+              {send.isPending
+                ? 'Sending…'
+                : `${recap ? 'Retry: send' : 'Send'} to ${recipients} ${plural}`}
             </Button>
             {send.isError ? <ErrorText>{send.error.message}</ErrorText> : null}
           </div>
-        )}
+        ) : null}
       </Card>
     </section>
   )
