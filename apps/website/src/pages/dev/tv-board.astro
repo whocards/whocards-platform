@@ -1,0 +1,41 @@
+---
+export const prerender = false
+
+import {TvBoard} from '~components/TvBoard'
+import {DEFAULT_DECK_SLUG, getDeck} from '~data/decks'
+import '~styles/base.css'
+
+// Dev-only "TV / shared-screen" spike (issue #213, docs/strategy/surface-tv.md
+// §6) — a big-screen Board view, purely presentational, next to a mock room
+// code. Never shipped to production: hard-gated here exactly like
+// dev/image-playground.astro (issue #177) — returns a 404 Response when
+// `import.meta.env.DEV` is false, so it can't exist in a production build.
+// Also excluded from the sitemap by astro.config.ts's existing `/dev` filter,
+// and has no nav link anywhere in the site.
+if (!import.meta.env.DEV) {
+  return new Response(null, {status: 404})
+}
+
+// One deck (the default library, same data path /play already uses) — this
+// spike is about the big-screen visual direction, not deck selection.
+const deck = getDeck(DEFAULT_DECK_SLUG)
+if (!deck) throw new Error(`default deck "${DEFAULT_DECK_SLUG}" is missing from the deck registry`)
+
+// Deliberately bypasses the shared marketing `Layout` (no Navigation/Footer):
+// the whole point of a "big screen" surface is that it is NOT a website page
+// with chrome around it — the real Board (surface-tv.md §4) never would be
+// either. A minimal standalone shell judges the actual 10-foot-readability
+// question honestly.
+---
+
+<html lang='en' class='bg-darkest'>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <meta name='robots' content='noindex' />
+    <title>TV Board (dev only)</title>
+  </head>
+  <body class='m-0 min-h-screen bg-darkest font-sans text-white'>
+    <TvBoard client:only='react' questions={deck.questions} languages={deck.languages} />
+  </body>
+</html>
