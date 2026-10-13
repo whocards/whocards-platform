@@ -62,15 +62,21 @@ describe('game.join / game.state', () => {
     expect(await caller.game.state()).toEqual(state)
   })
 
-  it('refuses unknown and ended games', async () => {
+  it('refuses unknown, draft and ended games', async () => {
     expect(
       await refusalOf(setup().as(null).game.join({code: 'ZZZZ', name: 'A', language: 'en'}))
     ).toBe('unknown_game')
-    const fake = createFakeGamePort({game: {...game, status: 'ended'}})
-    const caller = createCaller({recordAnswer: async () => {}, game: fake.port, playerToken: null})
-    expect(await refusalOf(caller.game.join({code: 'ABCD', name: 'A', language: 'en'}))).toBe(
-      'game_over'
-    )
+    const joinAs = (status: HostedGame['status']) => {
+      const fake = createFakeGamePort({game: {...game, status}})
+      const caller = createCaller({
+        recordAnswer: async () => {},
+        game: fake.port,
+        playerToken: null,
+      })
+      return refusalOf(caller.game.join({code: 'ABCD', name: 'A', language: 'en'}))
+    }
+    expect(await joinAs('lobby')).toBe('not_open')
+    expect(await joinAs('ended')).toBe('game_over')
   })
 
   it('rejects calls without a valid player token', async () => {
@@ -263,6 +269,19 @@ describe('game.screen', () => {
     await a.caller.game.round.turn({action: 'claim'})
     const screen = await as(null).game.screen({code: 'ABCD'})
     expect(screen.counts).toEqual({joined: 2, paired: 2, talking: 1, done: 0})
+  })
+
+  it('shows a draft game and its organizer before anyone can join', async () => {
+    const fake = createFakeGamePort({
+      game: {...game, status: 'lobby', settings: {round: {}, organizer: 'SDD Conf'}},
+    })
+    const caller = createCaller({recordAnswer: async () => {}, game: fake.port, playerToken: null})
+    expect((await caller.game.screen({code: 'ABCD'})).game).toEqual({
+      code: 'ABCD',
+      title: 'Workshop',
+      organizer: 'SDD Conf',
+      status: 'lobby',
+    })
   })
 })
 

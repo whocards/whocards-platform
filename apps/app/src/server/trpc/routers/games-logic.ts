@@ -1,19 +1,20 @@
 import {getDeck} from '@whocards/decks'
 import {deadlineOf, drawQuestion, finishedAtOf, metBefore, turnDeadline} from '@whocards/game'
-import type {GameSnapshot, Round, Turn} from '@whocards/game'
+import type {GameSnapshot, Player, Round, Turn} from '@whocards/game'
 import type {GameRecapProps} from '@whocards/emails'
 import {z} from 'zod'
 
-import {EVENT_TITLE, eventLinks} from '../../../lib/event-links'
+import {eventLinks} from '../../../lib/event-links'
 
 export const GAMES_MIN_ROLE = 'facilitator' as const
 
-/** What End game recorded about the recap send; kept under `hosted_game.settings.recap`. */
+/** What the recap send recorded; kept under `hosted_game.settings.recap`, whose presence claims the one send. */
 export const recapStateSchema = z.object({
   sentAt: z.number(),
   sent: z.number().int(),
   failed: z.number().int(),
   error: z.string().nullable(),
+  pending: z.boolean().default(false),
 })
 export type RecapState = z.infer<typeof recapStateSchema>
 
@@ -21,6 +22,9 @@ export const readRecapState = (settings: unknown): RecapState | null => {
   const recap = z.object({recap: recapStateSchema}).safeParse(settings)
   return recap.success ? recap.data.recap : null
 }
+
+export const organizerOf = (snapshot: GameSnapshot): string | null =>
+  snapshot.game.settings.organizer ?? null
 
 /** One turn each for a pair, back to back; a trio runs a turn longer. Shown as the round's planned end. */
 export const plannedRoundEnd = (round: Round, startedAt: number): number =>
@@ -70,18 +74,14 @@ const SEP = '\u0000'
 
 export type Recap = {to: string; props: GameRecapProps}
 
-/** One recap per player who asked for it and left an email; stats are counts only, never names. */
-export const buildRecaps = ({
-  snapshot,
-  savedByPlayer,
-  now,
-  random,
-}: {
+type RecapInput = {
   snapshot: GameSnapshot
   savedByPlayer: Readonly<Record<string, number>>
   now: number
   random: () => number
-}): Recap[] => {
+}
+
+const recapProps = ({snapshot, savedByPlayer, now, random}: RecapInput) => {
   const played = snapshot.rounds.filter((r) => r.startedAt !== null)
   const links = eventLinks(snapshot.game.code)
   const event = {
@@ -98,34 +98,47 @@ export const buildRecaps = ({
   })
   const candidates = decks.flatMap((d) => d.questionIds.map((id) => [d.slug, id].join(SEP)))
 
-  return snapshot.players.flatMap((player): Recap[] => {
-    if (!player.consentRecap || !player.email) return []
+  return (player: Pick<Player, 'id' | 'name' | 'language'>): GameRecapProps => {
     const mine = snapshot.turns.filter((t) => t.playerId === player.id)
     const drawn = new Set(
       mine.map((t) => [roundOfTurn(snapshot, t)?.deckSlug, t.questionId].join(SEP))
     )
     const [slug, id] = drawQuestion(candidates, drawn, random)?.split(SEP) ?? []
     const text = slug && id ? decks.find((d) => d.slug === slug)?.questions[id] : undefined
-
-    return [
-      {
-        to: player.email,
-        props: {
-          name: player.name,
-          eventTitle: EVENT_TITLE,
-          event,
-          you: {
-            peopleMet: metBefore(snapshot, player.id).size,
-            turns: mine.length,
-            minutes: minutes(mine.reduce((sum, t) => sum + spokenMs(snapshot, t, now), 0)),
-            savedAnswers: savedByPlayer[player.id] ?? 0,
-          },
-          question: text?.[player.language] ?? text?.en ?? null,
-          appUrl: links.app,
-          eventUrl: links.event,
-          myAnswersUrl: links.me,
-        },
+    return {
+      name: player.name,
+      eventTitle: snapshot.game.title,
+      organizer: organizerOf(snapshot),
+      event,
+      you: {
+        peopleMet: metBefore(snapshot, player.id).size,
+        turns: mine.length,
+        minutes: minutes(mine.reduce((sum, t) => sum + spokenMs(snapshot, t, now), 0)),
+        savedAnswers: savedByPlayer[player.id] ?? 0,
       },
-    ]
-  })
+      question: text?.[player.language] ?? text?.en ?? null,
+      appUrl: links.app,
+      eventUrl: links.event,
+      myAnswersUrl: links.me,
+    }
+  }
+}
+
+/** One recap per player who asked for it and left an email; stats are counts only, never names. */
+export const buildRecaps = (input: RecapInput): Recap[] => {
+  const propsFor = recapProps(input)
+  return input.snapshot.players.flatMap((player): Recap[] =>
+    player.consentRecap && player.email ? [{to: player.email, props: propsFor(player)}] : []
+  )
+}
+
+/** What the host sees before sending: the first real recap, else a sample player with the room's numbers. */
+export const previewRecap = (
+  input: RecapInput
+): {recipients: number; sample: boolean; props: GameRecapProps} => {
+  const recaps = buildRecaps(input)
+  const first = recaps[0]
+  if (first) return {recipients: recaps.length, sample: false, props: first.props}
+  const props = recapProps(input)({id: '', name: 'Sample player', language: 'en'})
+  return {recipients: 0, sample: true, props}
 }

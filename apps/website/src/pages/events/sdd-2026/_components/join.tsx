@@ -1,7 +1,7 @@
-import type {GameLanguage, JoinInput} from '@whocards/game'
+import type {GameLanguage, JoinInput, ScreenState} from '@whocards/game'
 import {gameLanguageSchema, joinInputSchema, playerCopyFor, readPairCode} from '@whocards/game'
 import type {GameError} from '@whocards/game/hooks'
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 
 import {cn} from '~utils/cn'
 
@@ -11,9 +11,33 @@ import {Button, inputClass, Notice, Screen} from './ui'
 type JoinProps = {
   initialCode: string
   onJoin: (input: JoinInput, records: boolean) => Promise<GameError | null>
+  /** The public projector view of a game code: its title, organizer and whether it's open. */
+  lookup: (code: string) => Promise<ScreenState>
 }
 
-export const Join = ({initialCode, onJoin}: JoinProps) => {
+type Workshop = ScreenState['game']
+
+const useWorkshop = (code: string, lookup: JoinProps['lookup']): Workshop | null => {
+  const [found, setFound] = useState<Workshop | null>(null)
+  const valid = readPairCode(code)
+  useEffect(() => {
+    let alive = true
+    if (valid) {
+      lookup(valid)
+        .then((screen) => {
+          if (alive) setFound(screen.game)
+        })
+        // No preview is fine; joining reports a bad code itself.
+        .catch(() => {})
+    }
+    return () => {
+      alive = false
+    }
+  }, [valid, lookup])
+  return found && found.code === valid ? found : null
+}
+
+export const Join = ({initialCode, onJoin, lookup}: JoinProps) => {
   const [step, setStep] = useState<'details' | 'consent'>('details')
   const [name, setName] = useState('')
   const [language, setLanguage] = useState<GameLanguage>('en')
@@ -24,6 +48,8 @@ export const Join = ({initialCode, onJoin}: JoinProps) => {
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<GameError | null>(null)
   const copy = playerCopyFor(language)
+  const workshop = useWorkshop(code, lookup)
+  const shown = failure ?? (workshop?.status === 'lobby' ? 'not_open' : null)
 
   const input = (records: boolean): JoinInput => ({
     code,
@@ -48,6 +74,7 @@ export const Join = ({initialCode, onJoin}: JoinProps) => {
   if (step === 'details')
     return (
       <Screen title={copy.join.title}>
+        {workshop && <WorkshopHeading workshop={workshop} hostedBy={copy.join.hostedBy} />}
         <form
           className='flex w-full flex-col gap-4'
           onSubmit={(event) => {
@@ -98,7 +125,7 @@ export const Join = ({initialCode, onJoin}: JoinProps) => {
               onChange={(event) => setCode(event.target.value)}
             />
           </label>
-          {failure && <Notice>{noticeText(language, failure)}</Notice>}
+          {shown && <Notice>{noticeText(language, shown)}</Notice>}
           <Button type='submit' disabled={!detailsReady}>
             {copy.join.next}
           </Button>
@@ -161,6 +188,17 @@ export const Join = ({initialCode, onJoin}: JoinProps) => {
     </Screen>
   )
 }
+
+const WorkshopHeading = ({workshop, hostedBy}: {workshop: Workshop; hostedBy: string}) => (
+  <div className='text-center'>
+    <p className='text-xl font-semibold'>{workshop.title}</p>
+    {workshop.organizer && (
+      <p className='text-mutedOnLight text-sm'>
+        {hostedBy} {workshop.organizer}
+      </p>
+    )}
+  </div>
+)
 
 const Privacy = ({language}: {language: GameLanguage}) => {
   const {privacy} = playerCopyFor(language)

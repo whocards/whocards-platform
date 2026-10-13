@@ -26,9 +26,14 @@ export const roundSettingsSchema = z.object({
 })
 export type RoundSettings = z.infer<typeof roundSettingsSchema>
 
+/** Who hosts a workshop: a conference or company name. */
+export const organizerSchema = z.string().trim().min(1).max(80)
+
 /** `hosted_game.settings`: defaults the host starts each new round from. */
 export const gameSettingsSchema = z.object({
   round: roundSettingsSchema.partial().default({}),
+  // Optional: games created before organizers existed have none.
+  organizer: organizerSchema.optional(),
 })
 export type GameSettings = z.infer<typeof gameSettingsSchema>
 
@@ -42,6 +47,7 @@ export const codeSchema = z
 
 export const refusalSchema = z.enum([
   'unknown_game',
+  'not_open',
   'game_over',
   'unknown_code',
   'round_not_live',
@@ -144,6 +150,7 @@ export const playerStateSchema = z.object({
     id: z.string(),
     code: z.string(),
     title: z.string(),
+    organizer: z.string().nullable(),
     status: gameStatusSchema,
   }),
   me: z.object({
@@ -170,7 +177,12 @@ export type JoinResult = z.infer<typeof joinResultSchema>
 
 export const screenStateSchema = z.object({
   serverNow: z.number(),
-  game: z.object({code: z.string(), title: z.string(), status: gameStatusSchema}),
+  game: z.object({
+    code: z.string(),
+    title: z.string(),
+    organizer: z.string().nullable(),
+    status: gameStatusSchema,
+  }),
   round: roundViewSchema.nullable(),
   counts: z.object({
     joined: z.number().int(),

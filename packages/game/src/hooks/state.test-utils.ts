@@ -27,7 +27,7 @@ export const turnView = (extra: Partial<TurnView> = {}): TurnView => ({
 
 export const playerState = (extra: Partial<PlayerState> = {}): PlayerState => ({
   serverNow: 0,
-  game: {id: 'g1', code: 'ABCD', title: 'Workshop', status: 'live'},
+  game: {id: 'g1', code: 'ABCD', title: 'Workshop', organizer: null, status: 'live'},
   me: {id: 'a', name: 'A', language: 'en', pairCode: 'CA'},
   round: roundView(),
   phase: 'unpaired',

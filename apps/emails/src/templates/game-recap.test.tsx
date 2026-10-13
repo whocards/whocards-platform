@@ -1,7 +1,7 @@
 import {render} from '@react-email/render'
 import {describe, expect, it} from 'vitest'
 
-import {GameRecapEmail, gameRecapText} from './game-recap'
+import {GameRecapEmail, gameRecapText, renderGameRecap} from './game-recap'
 
 const props = {...GameRecapEmail.PreviewProps}
 
@@ -17,6 +17,12 @@ describe('GameRecapEmail', () => {
     expect(html).toContain(props.appUrl)
     expect(html).toContain(props.eventUrl)
     expect(html).toContain(props.myAnswersUrl)
+    expect(html).toContain('Hosted by Spec-Driven Development Conf')
+  })
+
+  it('renders the same HTML for the host preview, and skips a missing organizer', async () => {
+    expect(await renderGameRecap(props)).toBe(await render(<GameRecapEmail {...props} />))
+    expect(await renderGameRecap({...props, organizer: null})).not.toContain('Hosted by')
   })
 
   it('drops the question card when there is no question left', async () => {
@@ -30,6 +36,7 @@ describe('GameRecapEmail', () => {
     expect(text).toContain('- 301 minutes spoken')
     expect(text).toContain(props.question)
     expect(text).toContain(props.myAnswersUrl)
+    expect(text).toMatch(/^Hosted by Spec-Driven Development Conf\n/)
     expect(gameRecapText({...props, you: {...props.you, peopleMet: 1}})).toContain(
       'You met 1 person.'
     )

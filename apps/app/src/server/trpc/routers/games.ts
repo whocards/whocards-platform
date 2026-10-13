@@ -4,10 +4,12 @@ import {
   canMoveGame,
   checkStartRound,
   currentRound,
+  organizerSchema,
   roundSettingsSchema,
   roundView,
   screenView,
 } from '@whocards/game'
+import type {GameRecapProps} from '@whocards/emails'
 import type {
   GameLanguage,
   GameSnapshot,
@@ -22,7 +24,9 @@ import {createTRPCRouter, roleProcedure} from '../trpc'
 import {
   buildRecaps,
   GAMES_MIN_ROLE,
+  organizerOf,
   plannedRoundEnd,
+  previewRecap,
   readRecapState,
   strandedByRemoval,
 } from './games-logic'
@@ -34,6 +38,9 @@ export type GameSummary = {
   id: string
   code: string
   title: string
+  organizer: string | null
+  /** The creating facilitator's name, else email; null if that account is gone. */
+  createdBy: string | null
   status: GameStatus
   createdAt: number
   players: number
@@ -44,8 +51,15 @@ export type GameSummary = {
 export type HostStore = {
   now: () => number
   random: () => number
-  listGames: (createdBy: string) => Promise<GameSummary[]>
-  createGame: (input: {title: string; createdBy: string}) => Promise<HostedGame>
+  /** Every facilitator hosts every game, so this lists them all, newest first. */
+  listGames: () => Promise<GameSummary[]>
+  createGame: (input: {title: string; organizer: string; createdBy: string}) => Promise<HostedGame>
+  /** Name, else email, of the facilitator who created the game. */
+  creatorOf: (gameId: string) => Promise<string | null>
+  /** Writes only while the game has not ended. */
+  updateGame: (input: {gameId: string; title: string; organizer: string}) => Promise<WriteResult>
+  /** Draft (lobby) to live; false if the game was no longer a draft. */
+  goLive: (gameId: string) => Promise<boolean>
   loadSnapshot: (gameId: string) => Promise<GameSnapshot | null>
   /** Saved, not deleted, answers per player id. */
   savedResponses: (gameId: string) => Promise<Record<string, number>>
@@ -56,7 +70,7 @@ export type HostStore = {
     whileStatus: 'pending' | 'live'
     settings: RoundSettings
   }) => Promise<WriteResult>
-  /** Moves a lobby game to live, then the pending round to live; 'conflict' when another round is live. */
+  /** Pending round to live in a live game; 'conflict' when another round is live, 'stale' when the game or round moved on. */
   startRound: (input: {
     gameId: string
     roundId: string
@@ -65,8 +79,10 @@ export type HostStore = {
   }) => Promise<WriteResult>
   /** Ends the live round and closes its open turns, in one transaction with any turn being claimed. */
   endRound: (input: {roundId: string; endedAt: number}) => Promise<WriteResult>
-  /** Ends the live round, its open turns and the game atomically; true only for the caller that moved the game to ended, which sends the recap. */
-  endGame: (input: {gameId: string; endedAt: number}) => Promise<boolean>
+  /** Ends the live round, its open turns and the game atomically. */
+  endGame: (input: {gameId: string; endedAt: number}) => Promise<void>
+  /** Stores `claim` only if the ended game has no recap state yet; true for the one caller that gets to send. */
+  claimRecap: (gameId: string, claim: RecapState) => Promise<boolean>
   saveRecapState: (gameId: string, recap: RecapState) => Promise<void>
   /** Deletes the player; `release` frees partners stranded in this round's pair so they can re-pair. */
   removePlayer: (input: {
@@ -76,7 +92,8 @@ export type HostStore = {
   }) => Promise<boolean>
 }
 
-export type SendRecaps = (recaps: Recap[]) => Promise<Omit<RecapState, 'sentAt'>>
+export type SendRecaps = (recaps: Recap[]) => Promise<Pick<RecapState, 'sent' | 'failed' | 'error'>>
+export type RenderRecap = (props: GameRecapProps) => Promise<string>
 
 const gameIdSchema = z.object({gameId: z.string().uuid()})
 const roundIdSchema = gameIdSchema.extend({roundId: z.string().uuid()})
@@ -92,9 +109,24 @@ const START_REFUSALS = {
   other_round_live: 'End the live round first.',
 } as const
 
+const STALE = 'Another host changed this game meanwhile. Check the page and try again.'
+
+const gameDetailsSchema = z.object({
+  title: z.string().trim().min(1).max(80),
+  organizer: organizerSchema,
+})
+
 export type GameDetail = {
   serverNow: number
-  game: {id: string; code: string; title: string; status: GameStatus; recap: RecapState | null}
+  game: {
+    id: string
+    code: string
+    title: string
+    organizer: string | null
+    createdBy: string | null
+    status: GameStatus
+    recap: RecapState | null
+  }
   players: Array<{id: string; name: string; language: GameLanguage; recap: boolean}>
   rounds: Array<RoundView & {pairs: number; turns: number}>
   liveRoundId: string | null
@@ -104,6 +136,7 @@ export type GameDetail = {
 const detailOf = (
   snapshot: GameSnapshot,
   saved: Record<string, number>,
+  createdBy: string | null,
   now: number
 ): GameDetail => {
   const screen = screenView(snapshot, now)
@@ -118,6 +151,8 @@ const detailOf = (
       id: snapshot.game.id,
       code: snapshot.game.code,
       title: snapshot.game.title,
+      organizer: organizerOf(snapshot),
+      createdBy,
       status: snapshot.game.status,
       recap: readRecapState(snapshot.game.settings),
     },
@@ -155,9 +190,11 @@ const conflictOr = (result: WriteResult, message: string) => {
 export const createGamesRouter = ({
   store,
   sendRecaps,
+  renderRecap,
 }: {
   store: HostStore
   sendRecaps: SendRecaps
+  renderRecap: RenderRecap
 }) => {
   const procedure = roleProcedure(GAMES_MIN_ROLE)
 
@@ -168,8 +205,18 @@ export const createGamesRouter = ({
   }
 
   const detail = async (gameId: string) => {
-    const [snapshot, saved] = await Promise.all([load(gameId), store.savedResponses(gameId)])
-    return detailOf(snapshot, saved, store.now())
+    const [snapshot, saved, createdBy] = await Promise.all([
+      load(gameId),
+      store.savedResponses(gameId),
+      store.creatorOf(gameId),
+    ])
+    return detailOf(snapshot, saved, createdBy, store.now())
+  }
+
+  const loadEnded = async (gameId: string) => {
+    const snapshot = await load(gameId)
+    if (snapshot.game.status !== 'ended') throw fail('BAD_REQUEST', 'End the game first.')
+    return snapshot
   }
 
   const endLiveRound = async (snapshot: GameSnapshot, roundId: string) => {
@@ -180,17 +227,39 @@ export const createGamesRouter = ({
   }
 
   return createTRPCRouter({
-    list: procedure.query(({ctx}) => store.listGames(ctx.user.id)),
+    list: procedure.query(() => store.listGames()),
 
     decks: procedure.query(() =>
       getAllDecks().map((d) => ({slug: d.slug, title: d.title, questions: d.questionIds.length}))
     ),
 
     create: procedure
-      .input(z.object({title: z.string().trim().min(1).max(80)}))
-      .mutation(({ctx, input}) => store.createGame({title: input.title, createdBy: ctx.user.id})),
+      .input(gameDetailsSchema)
+      .mutation(({ctx, input}) => store.createGame({...input, createdBy: ctx.user.id})),
 
     detail: procedure.input(gameIdSchema).query(({input}) => detail(input.gameId)),
+
+    updateGame: procedure
+      .input(gameIdSchema.extend(gameDetailsSchema.shape))
+      .mutation(async ({input}) => {
+        const snapshot = await load(input.gameId)
+        if (snapshot.game.status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
+        conflictOr(await store.updateGame(input), 'The game ended meanwhile.')
+        return detail(input.gameId)
+      }),
+
+    /** Opens joining. A second host pressing it too just sees the game live. */
+    goLive: procedure.input(gameIdSchema).mutation(async ({input}) => {
+      const {status} = (await load(input.gameId)).game
+      if (status !== 'live' && !canMoveGame(status, 'live')) {
+        throw fail('BAD_REQUEST', 'The game is over.')
+      }
+      if (status === 'lobby' && !(await store.goLive(input.gameId))) {
+        const after = await load(input.gameId)
+        if (after.game.status !== 'live') throw fail('CONFLICT', 'The game ended meanwhile.')
+      }
+      return detail(input.gameId)
+    }),
 
     addRound: procedure
       .input(gameIdSchema.extend({settings: roundInputSchema}))
@@ -228,12 +297,10 @@ export const createGamesRouter = ({
     startRound: procedure.input(roundIdSchema).mutation(async ({input}) => {
       const snapshot = await load(input.gameId)
       const round = roundIn(snapshot, input.roundId)
-      const {status} = snapshot.game
-      if (status !== 'live' && !canMoveGame(status, 'live')) {
-        throw fail('BAD_REQUEST', START_REFUSALS.game_not_live)
+      if (snapshot.game.status === 'lobby') {
+        throw fail('BAD_REQUEST', 'Go live first, so players can join.')
       }
-      // A lobby game goes live with its first round; check the round as if it already had.
-      const check = checkStartRound({...snapshot, game: {...snapshot.game, status: 'live'}}, round)
+      const check = checkStartRound(snapshot, round)
       if (!check.ok) throw fail('BAD_REQUEST', START_REFUSALS[check.reason])
 
       const now = store.now()
@@ -243,7 +310,8 @@ export const createGamesRouter = ({
         startedAt: now,
         endsAt: plannedRoundEnd(round, now),
       })
-      conflictOr(result, START_REFUSALS.other_round_live)
+      if (result === 'conflict') throw fail('CONFLICT', START_REFUSALS.other_round_live)
+      conflictOr(result, STALE)
       return detail(input.gameId)
     }),
 
@@ -252,32 +320,57 @@ export const createGamesRouter = ({
       return detail(input.gameId)
     }),
 
+    /** Ends the game only; the host previews the recap and sends it separately. */
     endGame: procedure.input(gameIdSchema).mutation(async ({input}) => {
       const snapshot = await load(input.gameId)
       if (snapshot.game.status === 'ended') return detail(input.gameId)
       if (!canMoveGame(snapshot.game.status, 'ended')) {
         throw fail('BAD_REQUEST', 'This game cannot end from here.')
       }
-      if (!(await store.endGame({gameId: input.gameId, endedAt: store.now()}))) {
-        return detail(input.gameId)
-      }
+      await store.endGame({gameId: input.gameId, endedAt: store.now()})
+      return detail(input.gameId)
+    }),
 
-      const [final, saved] = await Promise.all([
-        load(input.gameId),
+    recapPreview: procedure.input(gameIdSchema).query(async ({input}) => {
+      const [snapshot, saved] = await Promise.all([
+        loadEnded(input.gameId),
         store.savedResponses(input.gameId),
       ])
-      const recaps = buildRecaps({
-        snapshot: final,
+      const preview = previewRecap({
+        snapshot,
         savedByPlayer: saved,
         now: store.now(),
         random: store.random,
       })
+      return {
+        recipients: preview.recipients,
+        sample: preview.sample,
+        html: await renderRecap(preview.props),
+      }
+    }),
+
+    /** Sends once per game: the conditional claim lets exactly one host through. */
+    sendRecaps: procedure.input(gameIdSchema).mutation(async ({input}) => {
+      const [snapshot, saved] = await Promise.all([
+        loadEnded(input.gameId),
+        store.savedResponses(input.gameId),
+      ])
+      const recaps = buildRecaps({
+        snapshot,
+        savedByPlayer: saved,
+        now: store.now(),
+        random: store.random,
+      })
+      if (recaps.length === 0) throw fail('BAD_REQUEST', 'Nobody asked for a recap.')
+      const claim = {sentAt: store.now(), sent: 0, failed: 0, error: null, pending: true}
+      if (!(await store.claimRecap(input.gameId, claim))) return detail(input.gameId)
+
       const result = await sendRecaps(recaps).catch((error: unknown) => ({
         sent: 0,
         failed: recaps.length,
         error: error instanceof Error ? error.message : String(error),
       }))
-      await store.saveRecapState(input.gameId, {sentAt: store.now(), ...result})
+      await store.saveRecapState(input.gameId, {...claim, ...result, pending: false})
       return detail(input.gameId)
     }),
 

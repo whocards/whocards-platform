@@ -5,8 +5,8 @@ import {describe, expect, it, vi} from 'vitest'
 import type {TRPCContext} from '../context'
 import {createCallerFactory} from '../trpc'
 import {createGamesRouter} from './games'
-import type {GameSummary, HostStore, SendRecaps} from './games'
-import {buildRecaps, closingTimes, readRecapState} from './games-logic'
+import type {GameSummary, HostStore, RenderRecap, SendRecaps} from './games'
+import {buildRecaps, closingTimes, previewRecap, readRecapState} from './games-logic'
 
 const T0 = 1_760_000_000_000
 const ids = () => {
@@ -24,6 +24,8 @@ type Mem = {
 }
 
 /** The rules the Drizzle store enforces with conditional writes and unique indexes, in memory. */
+const USERS: Record<string, string> = {'u-avi': 'Avi', 'u-tamas': 'Tamas'}
+
 const memoryStore = (clock = {now: T0}) => {
   const id = ids()
   const mem: Mem = {games: [], players: [], rounds: [], pairs: [], turns: [], saved: []}
@@ -44,30 +46,43 @@ const memoryStore = (clock = {now: T0}) => {
   const store: HostStore = {
     now: () => clock.now,
     random: () => 0,
-    listGames: async (createdBy) =>
-      mem.games
-        .filter((g) => g.createdBy === createdBy)
-        .map((g): GameSummary => ({
-          id: g.id,
-          code: g.code,
-          title: g.title,
-          status: g.status,
-          createdAt: g.createdAt,
-          players: mem.players.filter((p) => p.gameId === g.id).length,
-          rounds: mem.rounds.filter((r) => r.gameId === g.id).length,
-        })),
-    createGame: async ({title, createdBy}) => {
-      const row = {
+    listGames: async () =>
+      mem.games.toReversed().map((g): GameSummary => ({
+        id: g.id,
+        code: g.code,
+        title: g.title,
+        organizer: g.settings.organizer ?? null,
+        createdBy: USERS[g.createdBy] ?? null,
+        status: g.status,
+        createdAt: g.createdAt,
+        players: mem.players.filter((p) => p.gameId === g.id).length,
+        rounds: mem.rounds.filter((r) => r.gameId === g.id).length,
+      })),
+    createGame: async ({title, organizer, createdBy}) => {
+      const row: Mem['games'][number] = {
         id: id(),
         code: `G${mem.games.length + 1}XYZ`,
         title,
-        status: 'lobby' as const,
-        settings: {round: {}},
+        status: 'lobby',
+        settings: {round: {}, organizer},
         createdBy,
         createdAt: clock.now,
       }
       mem.games.push(row)
       return row
+    },
+    creatorOf: async (gameId) => USERS[game(gameId)?.createdBy ?? ''] ?? null,
+    updateGame: async ({gameId, title, organizer}) => {
+      const g = game(gameId)
+      if (!g || g.status === 'ended') return 'stale'
+      Object.assign(g, {title, settings: {...g.settings, organizer}})
+      return 'ok'
+    },
+    goLive: async (gameId) => {
+      const g = game(gameId)
+      if (g?.status !== 'lobby') return false
+      g.status = 'live'
+      return true
     },
     loadSnapshot: async (gameId) => {
       const g = game(gameId)
@@ -110,9 +125,7 @@ const memoryStore = (clock = {now: T0}) => {
       return 'ok'
     },
     startRound: async ({gameId, roundId, startedAt, endsAt}) => {
-      const g = game(gameId)
-      if (g?.status === 'lobby') g.status = 'live'
-      if (g?.status !== 'live') return 'stale'
+      if (game(gameId)?.status !== 'live') return 'stale'
       if (mem.rounds.some((r) => r.gameId === gameId && r.status === 'live')) return 'conflict'
       const round = mem.rounds.find((r) => r.id === roundId)
       if (round?.status !== 'pending') return 'stale'
@@ -122,10 +135,15 @@ const memoryStore = (clock = {now: T0}) => {
     endRound: async ({roundId, endedAt}) => (endLive(roundId, endedAt) ? 'ok' : 'stale'),
     endGame: async ({gameId, endedAt}) => {
       const g = game(gameId)
-      if (!g || g.status === 'ended') return false
+      if (!g || g.status === 'ended') return
       const live = mem.rounds.find((r) => r.gameId === gameId && r.status === 'live')
       if (live) endLive(live.id, endedAt)
       g.status = 'ended'
+    },
+    claimRecap: async (gameId, claim) => {
+      const g = game(gameId)
+      if (g?.status !== 'ended' || readRecapState(g.settings)) return false
+      g.settings = Object.assign({}, g.settings, {recap: claim})
       return true
     },
     saveRecapState: async (gameId, recap) => {
@@ -188,6 +206,8 @@ const ctx = (role: Role | null, userId = 'u-avi'): TRPCContext => ({
   membership: role ? {organizationId: 'org', role} : null,
 })
 
+const renderRecap: RenderRecap = async (props) => `<p>${props.name} · ${props.organizer}</p>`
+
 const setup = (
   sendRecaps: SendRecaps = vi.fn<SendRecaps>(async (r) => ({
     sent: r.length,
@@ -196,13 +216,23 @@ const setup = (
   }))
 ) => {
   const fake = memoryStore()
-  const router = createGamesRouter({store: fake.store, sendRecaps})
+  const router = createGamesRouter({store: fake.store, sendRecaps, renderRecap})
   const caller = (role: Role | null = 'facilitator', userId?: string) =>
     createCallerFactory(router)(ctx(role, userId))
   return {...fake, caller, sendRecaps}
 }
 
 const ROUND = {deckSlug: 'library', turnSeconds: 60}
+const GAME = {title: 'SDD', organizer: 'SDD Conf'}
+
+/** A game created, opened for joining, with `rounds` rounds added. */
+const opened = async (c: ReturnType<ReturnType<typeof setup>['caller']>, rounds = 1) => {
+  const {id: gameId} = await c.create(GAME)
+  await c.goLive({gameId})
+  let detail = await c.detail({gameId})
+  for (let i = 0; i < rounds; i++) detail = await c.addRound({gameId, settings: ROUND})
+  return {gameId, roundIds: detail.rounds.map((r) => r.id)}
+}
 
 describe('games router permissions', () => {
   it.each(['member', 'reviewer'] as const)('refuses %s on every procedure', async (role) => {
@@ -210,9 +240,12 @@ describe('games router permissions', () => {
     const c = caller(role)
     const gameId = '00000000-0000-4000-8000-000000000999'
     await expect(c.list()).rejects.toMatchObject({code: 'FORBIDDEN'})
-    await expect(c.create({title: 'x'})).rejects.toMatchObject({code: 'FORBIDDEN'})
+    await expect(c.create(GAME)).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.detail({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
+    await expect(c.goLive({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.endGame({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
+    await expect(c.recapPreview({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
+    await expect(c.sendRecaps({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
   })
 
   it('refuses a caller with no session', async () => {
@@ -222,17 +255,80 @@ describe('games router permissions', () => {
 
   it.each(['facilitator', 'admin', 'owner'] as const)('lets %s host', async (role) => {
     const {caller} = setup()
-    await expect(caller(role).create({title: 'SDD'})).resolves.toMatchObject({status: 'lobby'})
+    await expect(caller(role).create(GAME)).resolves.toMatchObject({status: 'lobby'})
   })
 })
 
 describe('games router', () => {
-  it('stamps created_by from the session and lists only my games', async () => {
+  it('stamps created_by from the session and lists every game for every facilitator', async () => {
     const {caller, mem} = setup()
-    await caller('facilitator', 'u-avi').create({title: 'Mine'})
-    await caller('facilitator', 'u-tamas').create({title: 'Theirs'})
+    await caller('facilitator', 'u-avi').create({title: 'Mine', organizer: 'Acme'})
+    await caller('facilitator', 'u-tamas').create({title: 'Theirs', organizer: 'SDD Conf'})
     expect(mem.games.map((g) => g.createdBy)).toEqual(['u-avi', 'u-tamas'])
-    expect((await caller('facilitator', 'u-avi').list()).map((g) => g.title)).toEqual(['Mine'])
+    for (const user of ['u-avi', 'u-tamas']) {
+      const list = await caller('facilitator', user).list()
+      expect(list.map((g) => [g.title, g.organizer, g.createdBy])).toEqual([
+        ['Theirs', 'SDD Conf', 'Tamas'],
+        ['Mine', 'Acme', 'Avi'],
+      ])
+    }
+  })
+
+  it('requires an organizer and lets any facilitator edit the details until the game ends', async () => {
+    const {caller} = setup()
+    await expect(caller().create({title: 'SDD', organizer: '  '})).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+    })
+    await expect(caller().create({title: 'SDD', organizer: 'x'.repeat(81)})).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+    })
+
+    const {id: gameId} = await caller('facilitator', 'u-avi').create(GAME)
+    const edited = await caller('facilitator', 'u-tamas').updateGame({
+      gameId,
+      title: ' SDD main room ',
+      organizer: ' Acme ',
+    })
+    expect(edited.game).toMatchObject({
+      title: 'SDD main room',
+      organizer: 'Acme',
+      createdBy: 'Avi',
+      status: 'lobby',
+    })
+
+    await caller().endGame({gameId})
+    await expect(caller().updateGame({gameId, ...GAME})).rejects.toMatchObject({
+      message: 'The game is over.',
+    })
+  })
+
+  it('reads games made before organizers existed', async () => {
+    const {caller, mem} = setup()
+    const {id: gameId} = await caller().create(GAME)
+    mem.games[0]!.settings = {round: {}}
+    expect((await caller().detail({gameId})).game.organizer).toBeNull()
+    expect((await caller().list())[0]?.organizer).toBeNull()
+  })
+
+  it('keeps a draft closed: no rounds start until Go live, which is idempotent', async () => {
+    const {caller} = setup()
+    const c = caller()
+    const {id: gameId} = await c.create(GAME)
+    const {rounds} = await c.addRound({gameId, settings: ROUND})
+    const roundId = rounds[0]!.id
+    await expect(c.startRound({gameId, roundId})).rejects.toMatchObject({
+      message: 'Go live first, so players can join.',
+    })
+
+    const [a, b] = await Promise.all([
+      caller('facilitator', 'u-avi').goLive({gameId}),
+      caller('facilitator', 'u-tamas').goLive({gameId}),
+    ])
+    expect([a.game.status, b.game.status]).toEqual(['live', 'live'])
+    expect((await c.startRound({gameId, roundId})).liveRoundId).toBe(roundId)
+
+    await c.endGame({gameId})
+    await expect(c.goLive({gameId})).rejects.toMatchObject({message: 'The game is over.'})
   })
 
   it('offers every registered deck for rounds', async () => {
@@ -244,7 +340,7 @@ describe('games router', () => {
   it('numbers rounds, applies defaults and rejects unknown decks', async () => {
     const {caller} = setup()
     const c = caller()
-    const {id: gameId} = await c.create({title: 'SDD'})
+    const {id: gameId} = await c.create(GAME)
     await c.addRound({gameId, settings: ROUND})
     const detail = await c.addRound({
       gameId,
@@ -261,16 +357,13 @@ describe('games router', () => {
     })
   })
 
-  it('starts the first round by taking the game live, one live round at a time', async () => {
+  it('starts rounds in a live game, one live round at a time', async () => {
     const {caller, clock} = setup()
     const c = caller()
-    const {id: gameId} = await c.create({title: 'SDD'})
-    await c.addRound({gameId, settings: ROUND})
-    const {rounds} = await c.addRound({gameId, settings: ROUND})
-    const [r1, r2] = rounds.map((r) => r.id)
+    const {gameId, roundIds} = await opened(c, 2)
+    const [r1, r2] = roundIds
 
     const live = await c.startRound({gameId, roundId: r1!})
-    expect(live.game.status).toBe('live')
     expect(live.liveRoundId).toBe(r1)
     // Two back-to-back 60 s turns plus 30 s nudge each.
     expect(live.rounds[0]).toMatchObject({startedAt: clock.now, endsAt: clock.now + 180_000})
@@ -284,9 +377,8 @@ describe('games router', () => {
   it('lets settings change mid-round but never the deck', async () => {
     const {caller} = setup()
     const c = caller()
-    const {id: gameId} = await c.create({title: 'SDD'})
-    const {rounds} = await c.addRound({gameId, settings: ROUND})
-    const roundId = rounds[0]!.id
+    const {gameId, roundIds} = await opened(c)
+    const roundId = roundIds[0]!
     await c.updateRound({gameId, roundId, settings: {...ROUND, deckSlug: 'hajnalig'}})
     await c.startRound({gameId, roundId})
 
@@ -309,9 +401,8 @@ describe('games router', () => {
   it('ends a round by closing open turns at now or their deadline', async () => {
     const {caller, clock, mem, join, pair, turn} = setup()
     const c = caller()
-    const {id: gameId} = await c.create({title: 'SDD'})
-    const {rounds} = await c.addRound({gameId, settings: ROUND})
-    const roundId = rounds[0]!.id
+    const {gameId, roundIds} = await opened(c)
+    const roundId = roundIds[0]!
     await c.startRound({gameId, roundId})
     const [a, b, x, y] = ['Anna', 'Bela', 'Xena', 'Yuri'].map((n) => join(gameId, n))
     const fresh = turn(pair(roundId, [a!.id, b!.id]).id, a!.id, '1', clock.now, null)
@@ -329,9 +420,8 @@ describe('games router', () => {
   it('reports live counts without content', async () => {
     const {caller, clock, mem, join, pair, turn} = setup()
     const c = caller()
-    const {id: gameId} = await c.create({title: 'SDD'})
-    const {rounds} = await c.addRound({gameId, settings: ROUND})
-    const roundId = rounds[0]!.id
+    const {gameId, roundIds} = await opened(c)
+    const roundId = roundIds[0]!
     await c.startRound({gameId, roundId})
     const [a, b] = ['Anna', 'Bela'].map((n) => join(gameId, n))
     join(gameId, 'Cili', {email: 'cili@example.com', consentRecap: true})
@@ -346,9 +436,8 @@ describe('games router', () => {
   it('removes a player, frees the stranded partner and keeps their turn in the round', async () => {
     const {caller, clock, mem, join, pair, turn} = setup()
     const c = caller()
-    const {id: gameId} = await c.create({title: 'SDD'})
-    const {rounds} = await c.addRound({gameId, settings: ROUND})
-    const roundId = rounds[0]!.id
+    const {gameId, roundIds} = await opened(c)
+    const roundId = roundIds[0]!
     await c.startRound({gameId, roundId})
     const [a, b] = ['Anna', 'Bela'].map((n) => join(gameId, n))
     const p = pair(roundId, [a!.id, b!.id])
@@ -372,9 +461,8 @@ describe('games router', () => {
 const played = async (send?: SendRecaps) => {
   const t = setup(send)
   const c = t.caller()
-  const {id: gameId} = await c.create({title: 'SDD'})
-  const {rounds} = await c.addRound({gameId, settings: ROUND})
-  const roundId = rounds[0]!.id
+  const {gameId, roundIds} = await opened(c)
+  const roundId = roundIds[0]!
   await c.startRound({gameId, roundId})
   const anna = t.join(gameId, 'Anna', {email: 'anna@example.com', consentRecap: true})
   const bela = t.join(gameId, 'Bela', {email: 'bela@example.com', consentRecap: false})
@@ -387,35 +475,22 @@ const played = async (send?: SendRecaps) => {
 }
 
 describe('endGame', () => {
-  it('ends the live round, ends the game and mails only consenting players with an email', async () => {
+  it('ends the live round and the game without mailing anyone', async () => {
     const {c, gameId, sendRecaps, mem} = await played()
     const detail = await c.endGame({gameId})
 
     expect(detail.game.status).toBe('ended')
     expect(detail.rounds[0]?.status).toBe('done')
     expect(mem.turns.every((t) => t.finishedAt !== null)).toBe(true)
-    expect(sendRecaps).toHaveBeenCalledTimes(1)
-    const [recaps] = vi.mocked(sendRecaps).mock.calls[0]!
-    expect(recaps.map((r) => r.to)).toEqual(['anna@example.com'])
-    expect(recaps[0]?.props.you).toEqual({peopleMet: 1, turns: 1, minutes: 1, savedAnswers: 0})
-    expect(detail.game.recap).toEqual({sentAt: expect.any(Number), sent: 1, failed: 0, error: null})
+    expect(sendRecaps).not.toHaveBeenCalled()
+    expect(detail.game.recap).toBeNull()
+    expect((await c.endGame({gameId})).game.status).toBe('ended')
   })
 
-  it('is idempotent: pressing End twice sends once', async () => {
-    const {c, gameId, sendRecaps} = await played()
-    await c.endGame({gameId})
-    const again = await c.endGame({gameId})
-    expect(again.game.status).toBe('ended')
-    expect(sendRecaps).toHaveBeenCalledTimes(1)
-  })
-
-  it('records a failed send instead of losing the end', async () => {
-    const {c, gameId} = await played(async () => {
-      throw new Error('resend down')
-    })
-    const detail = await c.endGame({gameId})
-    expect(detail.game.status).toBe('ended')
-    expect(detail.game.recap).toMatchObject({sent: 0, failed: 1, error: 'resend down'})
+  it('ends a draft that never went live', async () => {
+    const {caller} = setup()
+    const {id: gameId} = await caller().create(GAME)
+    expect((await caller().endGame({gameId})).game.status).toBe('ended')
   })
 
   it('refuses to start rounds once the game is over', async () => {
@@ -426,6 +501,71 @@ describe('endGame', () => {
       message: 'The game is over.',
     })
     await expect(c.addRound({gameId, settings: ROUND})).rejects.toMatchObject({code: 'BAD_REQUEST'})
+  })
+})
+
+describe('recap preview and send', () => {
+  it('previews a real recipient once the game has ended', async () => {
+    const {c, gameId} = await played()
+    await expect(c.recapPreview({gameId})).rejects.toMatchObject({message: 'End the game first.'})
+    await c.endGame({gameId})
+    expect(await c.recapPreview({gameId})).toEqual({
+      recipients: 1,
+      sample: false,
+      html: '<p>Anna · SDD Conf</p>',
+    })
+  })
+
+  it('previews a sample when nobody asked for a recap, and has nothing to send', async () => {
+    const {caller, sendRecaps} = setup()
+    const c = caller()
+    const {id: gameId} = await c.create(GAME)
+    await c.endGame({gameId})
+    expect(await c.recapPreview({gameId})).toMatchObject({recipients: 0, sample: true})
+    await expect(c.sendRecaps({gameId})).rejects.toMatchObject({
+      message: 'Nobody asked for a recap.',
+    })
+    expect(sendRecaps).not.toHaveBeenCalled()
+  })
+
+  it('mails only consenting players with an email, once, even when two hosts press Send', async () => {
+    const {c, caller, gameId, sendRecaps} = await played()
+    await expect(c.sendRecaps({gameId})).rejects.toMatchObject({message: 'End the game first.'})
+    await c.endGame({gameId})
+
+    const [first, second] = await Promise.all([
+      caller('facilitator', 'u-avi').sendRecaps({gameId}),
+      caller('facilitator', 'u-tamas').sendRecaps({gameId}),
+    ])
+    expect(sendRecaps).toHaveBeenCalledTimes(1)
+    const [recaps] = vi.mocked(sendRecaps).mock.calls[0]!
+    expect(recaps.map((r) => r.to)).toEqual(['anna@example.com'])
+    expect(recaps[0]?.props).toMatchObject({
+      eventTitle: 'SDD',
+      organizer: 'SDD Conf',
+      you: {peopleMet: 1, turns: 1, minutes: 1, savedAnswers: 0},
+    })
+    const done = {sentAt: expect.any(Number), sent: 1, failed: 0, error: null, pending: false}
+    expect(first.game.recap).toEqual(done)
+    // The loser of the claim sees the send in flight, or done.
+    expect(second.game.recap).toMatchObject({sentAt: expect.any(Number)})
+    expect((await c.detail({gameId})).game.recap).toEqual(done)
+    await c.sendRecaps({gameId})
+    expect(sendRecaps).toHaveBeenCalledTimes(1)
+  })
+
+  it('records a failed send instead of losing it', async () => {
+    const {c, gameId} = await played(async () => {
+      throw new Error('resend down')
+    })
+    await c.endGame({gameId})
+    const detail = await c.sendRecaps({gameId})
+    expect(detail.game.recap).toMatchObject({
+      sent: 0,
+      failed: 1,
+      error: 'resend down',
+      pending: false,
+    })
   })
 })
 
@@ -506,6 +646,7 @@ describe('buildRecaps', () => {
       now: T0 + 3_600_000,
       random: () => 0,
     })
+    expect(anna?.props).toMatchObject({eventTitle: 'SDD', organizer: null})
     expect(anna?.props.event).toEqual({players: 3, rounds: 2, turns: 3, minutes: 4, languages: 2})
     // Open turn counts to its deadline: 90 s + 90 s.
     expect(anna?.props.you).toEqual({peopleMet: 2, turns: 2, minutes: 3, savedAnswers: 2})
@@ -519,15 +660,18 @@ describe('buildRecaps', () => {
     expect(anna?.props.question).toBe(deck.questions[firstUndrawn]?.hu)
   })
 
-  it('reads back a stored recap state and ignores anything else', () => {
+  it('previews the room for a sample player when nobody asked for a recap', () => {
+    const quiet = {...snapshot(), players: snapshot().players.map((p) => ({...p, email: null}))}
+    const preview = previewRecap({snapshot: quiet, savedByPlayer: {}, now: T0, random: () => 0})
+    expect(preview).toMatchObject({recipients: 0, sample: true, props: {name: 'Sample player'}})
+    expect(preview.props.event.players).toBe(3)
+    expect(preview.props.you).toEqual({peopleMet: 0, turns: 0, minutes: 0, savedAnswers: 0})
+  })
+
+  it('reads back a stored recap state, older ones as done, and ignores anything else', () => {
     expect(readRecapState({round: {}})).toBeNull()
     expect(
       readRecapState({round: {}, recap: {sentAt: 1, sent: 2, failed: 0, error: null}})
-    ).toEqual({
-      sentAt: 1,
-      sent: 2,
-      failed: 0,
-      error: null,
-    })
+    ).toEqual({sentAt: 1, sent: 2, failed: 0, error: null, pending: false})
   })
 })

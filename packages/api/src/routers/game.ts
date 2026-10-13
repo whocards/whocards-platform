@@ -153,6 +153,7 @@ export const gameRouter = createTRPCRouter({
     .mutation(async ({ctx, input}): Promise<JoinResult> => {
       const game = await ctx.game.findGameByCode(input.code)
       if (!game) throw refuse('unknown_game')
+      if (game.status === 'lobby') throw refuse('not_open')
       if (game.status === 'ended') throw refuse('game_over')
       const {player, token} = await ctx.game.createPlayer({
         gameId: game.id,

@@ -9,6 +9,7 @@ export type GameCopy = {
 const en: GameCopy = {
   refusals: {
     unknown_game: 'No game with that code',
+    not_open: "This workshop isn't open yet. Scan again when the host starts it",
     game_over: 'This game has ended',
     unknown_code: 'No player with that code',
     round_not_live: 'The round has not started',

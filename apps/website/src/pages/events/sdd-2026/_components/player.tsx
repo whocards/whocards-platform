@@ -65,9 +65,7 @@ const Game = ({session, state, tokens, code}: GameProps) => {
         return (
           <Screen>
             <p className='text-center text-2xl'>
-              {state.game.status === 'lobby'
-                ? copy.waiting.lobby
-                : copyFor(language).phases.waiting}
+              {state.round === null ? copy.waiting.firstRound : copyFor(language).phases.waiting}
             </p>
           </Screen>
         )
@@ -127,6 +125,7 @@ export const SddPlayer = () => {
     tokens.clear(code)
     setJoined(false)
   }, [tokens, code])
+  const lookup = useCallback((c: string) => createGameApi(c, tokens).screen(), [tokens])
   const session = useHostedGame({
     client: api.client,
     platform: browserPlatform,
@@ -146,7 +145,7 @@ export const SddPlayer = () => {
 
   const copy = playerCopyFor(session.state?.me.language ?? 'en')
   const content = () => {
-    if (!joined) return <Join initialCode={code} onJoin={join} />
+    if (!joined) return <Join initialCode={code} onJoin={join} lookup={lookup} />
     if (session.state)
       return <Game session={session} state={session.state} tokens={tokens} code={code} />
     if (session.loading)

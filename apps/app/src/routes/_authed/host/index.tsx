@@ -19,23 +19,24 @@ export const Route = createFileRoute('/_authed/host/')({
   component: HostGames,
 })
 
-const STATUS_LABEL = {lobby: 'Lobby', live: 'Live', ended: 'Ended'} as const
+const STATUS_LABEL = {lobby: 'Draft', live: 'Live', ended: 'Ended'} as const
 
 function HostGames() {
   const navigate = useNavigate()
   const games = useQuery({queryKey: ['games.list'], queryFn: () => trpc.games.list.query()})
   const [title, setTitle] = useState('')
+  const [organizer, setOrganizer] = useState('')
 
   const create = useMutation({
-    mutationFn: () => trpc.games.create.mutate({title}),
+    mutationFn: () => trpc.games.create.mutate({title, organizer}),
     onSuccess: (game) => navigate({to: '/host/$gameId', params: {gameId: game.id}}),
   })
 
   return (
     <Page>
       <PageHeader
-        title="Host a game"
-        description="Create a game, put its code on the projector, run the rounds."
+        title="Host a workshop"
+        description="Create a draft, set up the rounds, then go live and put the code on the projector."
       />
 
       <Card className="mb-10">
@@ -46,7 +47,7 @@ function HostGames() {
           }}
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
-          <Label label="New game" className="flex-1">
+          <Label label="Workshop name" className="flex-1">
             <Input
               required
               maxLength={80}
@@ -55,14 +56,23 @@ function HostGames() {
               placeholder="SDD 2026 · main room"
             />
           </Label>
+          <Label label="Hosted by" className="flex-1">
+            <Input
+              required
+              maxLength={80}
+              value={organizer}
+              onChange={(event) => setOrganizer(event.target.value)}
+              placeholder="Conference or company"
+            />
+          </Label>
           <Button type="submit" variant="primary" disabled={create.isPending}>
-            {create.isPending ? 'Creating…' : 'Create game'}
+            {create.isPending ? 'Creating…' : 'Create draft'}
           </Button>
         </form>
         {create.isError ? <ErrorText className="mt-3">{create.error.message}</ErrorText> : null}
       </Card>
 
-      <SectionTitle>Your games</SectionTitle>
+      <SectionTitle>All workshops</SectionTitle>
       {games.isLoading ? <p className="text-gray-dark">Loading…</p> : null}
       {games.isError ? <ErrorText>{games.error.message}</ErrorText> : null}
       {games.data?.length === 0 ? <Empty>No games yet. Create one above.</Empty> : null}
@@ -80,8 +90,18 @@ function HostGames() {
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{game.title}</p>
+                {game.organizer ? (
+                  <p className="truncate text-sm text-gray-lighter">{`Hosted by ${game.organizer}`}</p>
+                ) : null}
                 <p className="text-xs text-gray-dark">
-                  {`${game.players} players · ${game.rounds} rounds · ${new Date(game.createdAt).toLocaleDateString()}`}
+                  {[
+                    `${game.players} players`,
+                    `${game.rounds} rounds`,
+                    new Date(game.createdAt).toLocaleDateString(),
+                    game.createdBy ? `created by ${game.createdBy}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </p>
               </div>
               <Badge tone={game.status === 'live' ? 'live' : 'neutral'}>
