@@ -1,5 +1,15 @@
 import {getDeck} from '@whocards/decks'
-import {deadlineOf, drawQuestion, finishedAtOf, metBefore, turnDeadline} from '@whocards/game'
+import {
+  customQuestionsOf,
+  deadlineOf,
+  drawQuestion,
+  finishedAtOf,
+  metBefore,
+  questionText,
+  sourceRefs,
+  turnDeadline,
+  usedRefs,
+} from '@whocards/game'
 import type {GameSnapshot, Player, Round, Turn} from '@whocards/game'
 import type {GameRecapProps} from '@whocards/emails'
 import {z} from 'zod'
@@ -92,8 +102,6 @@ export const strandedByRemoval = (
   return rest.length < 2 ? {pairId: pair.id, playerIds: rest} : null
 }
 
-const SEP = '\u0000'
-
 export type Recap = {to: string; props: GameRecapProps}
 
 type RecapInput = {
@@ -114,19 +122,12 @@ const recapProps = ({snapshot, savedByPlayer, now, random}: RecapInput) => {
     languages: new Set(snapshot.players.map((p) => p.language)).size,
   }
 
-  const decks = [...new Set(played.map((r) => r.deckSlug))].flatMap((slug) => {
-    const deck = getDeck(slug)
-    return deck ? [deck] : []
-  })
-  const candidates = decks.flatMap((d) => d.questionIds.map((id) => [d.slug, id].join(SEP)))
+  const sources = {custom: customQuestionsOf(snapshot.game.settings), decks: getDeck}
+  const candidates = [...new Set(played.flatMap((r) => sourceRefs(r.deckSlug, sources)))]
 
   return (player: Pick<Player, 'id' | 'name' | 'language'>): GameRecapProps => {
     const mine = snapshot.turns.filter((t) => t.playerId === player.id)
-    const drawn = new Set(
-      mine.map((t) => [roundOfTurn(snapshot, t)?.deckSlug, t.questionId].join(SEP))
-    )
-    const [slug, id] = drawQuestion(candidates, drawn, random)?.split(SEP) ?? []
-    const text = slug && id ? decks.find((d) => d.slug === slug)?.questions[id] : undefined
+    const ref = drawQuestion(candidates, usedRefs(snapshot, player.id), random)
     return {
       name: player.name,
       eventTitle: snapshot.game.title,
@@ -138,7 +139,7 @@ const recapProps = ({snapshot, savedByPlayer, now, random}: RecapInput) => {
         minutes: minutes(mine.reduce((sum, t) => sum + spokenMs(snapshot, t, now), 0)),
         savedAnswers: savedByPlayer[player.id] ?? 0,
       },
-      question: text?.[player.language] ?? text?.en ?? null,
+      question: ref ? questionText(ref, player.language, sources) : null,
       appUrl: links.app,
       eventUrl: links.event,
       myAnswersUrl: links.me,

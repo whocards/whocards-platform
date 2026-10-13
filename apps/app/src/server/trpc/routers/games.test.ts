@@ -1,10 +1,18 @@
 import {getDeck} from '@whocards/decks'
-import type {GameSnapshot, HostedGame, Pair, Player, Round, Turn} from '@whocards/game'
+import type {
+  GameSnapshot,
+  HostedGame,
+  Pair,
+  Player,
+  QuestionPlan,
+  Round,
+  Turn,
+} from '@whocards/game'
 import {describe, expect, it, vi} from 'vitest'
 
 import type {TRPCContext} from '../context'
 import {createCallerFactory} from '../trpc'
-import {createGamesRouter} from './games'
+import {createGamesRouter, QUESTIONS_CONFLICT} from './games'
 import type {GameSummary, HostStore, RenderRecap, SendRecaps} from './games'
 import {buildRecaps, closingTimes, previewRecap, readRecapState} from './games-logic'
 
@@ -181,6 +189,10 @@ const memoryStore = (clock = {now: T0}) => {
       g.settings = Object.assign({}, g.settings, {recap: claim})
       return true
     },
+    saveQuestions: async (gameId, questions) => {
+      const g = game(gameId)
+      if (g) g.settings = {...g.settings, questions}
+    },
     saveRecapState: async (gameId, recap) => {
       const g = game(gameId)
       if (g) g.settings = Object.assign({}, g.settings, {recap})
@@ -257,7 +269,9 @@ const setup = (
   return {...fake, caller, sendRecaps}
 }
 
-const ROUND = {deckSlug: 'library', turnSeconds: 60}
+const random = (source: string): QuestionPlan => ({mode: 'random', source})
+const ROUND = {questionPlan: random('library'), turnSeconds: 60}
+const HAJNALIG = {...ROUND, questionPlan: random('hajnalig')}
 const GAME = {title: 'SDD', organizer: 'SDD Conf'}
 
 /** A game created, opened for joining, with `rounds` rounds added. */
@@ -337,6 +351,7 @@ describe('game access', () => {
       c.recapPreview({gameId}),
       c.sendRecaps({gameId}),
       c.removePlayer({gameId, playerId: roundId}),
+      c.saveQuestions({gameId, questions: [], baseIds: []}),
       c.facilitatorOptions({gameId}),
       c.setFacilitator({gameId, userId: 'u-avi', on: true}),
     ]
@@ -491,7 +506,7 @@ describe('games router', () => {
       [2, 'sitout', 'hard', 30],
     ])
     await expect(
-      c.addRound({gameId, settings: {...ROUND, deckSlug: 'nope'}})
+      c.addRound({gameId, settings: {...ROUND, questionPlan: random('nope')}})
     ).rejects.toMatchObject({
       code: 'BAD_REQUEST',
     })
@@ -514,28 +529,28 @@ describe('games router', () => {
     await expect(c.startRound({gameId, roundId: r1!})).rejects.toMatchObject({code: 'BAD_REQUEST'})
   })
 
-  it('lets settings change mid-round but never the deck', async () => {
+  it('lets settings change mid-round but never the questions', async () => {
     const {caller} = setup()
     const c = caller()
     const {gameId, roundIds} = await opened(c)
     const roundId = roundIds[0]!
-    await c.updateRound({gameId, roundId, settings: {...ROUND, deckSlug: 'hajnalig'}})
+    await c.updateRound({gameId, roundId, settings: HAJNALIG})
     await c.startRound({gameId, roundId})
 
     const after = await c.updateRound({
       gameId,
       roundId,
-      settings: {...ROUND, deckSlug: 'hajnalig', turnSeconds: 90},
+      settings: {...HAJNALIG, turnSeconds: 90},
     })
     expect(after.rounds[0]).toMatchObject({turnSeconds: 90, deckSlug: 'hajnalig'})
     await expect(c.updateRound({gameId, roundId, settings: ROUND})).rejects.toMatchObject({
-      message: 'The deck is fixed once a round starts.',
+      message: 'The questions are fixed once a round starts.',
     })
 
     await c.endRound({gameId, roundId})
-    await expect(
-      c.updateRound({gameId, roundId, settings: {...ROUND, deckSlug: 'hajnalig'}})
-    ).rejects.toMatchObject({message: 'That round is over.'})
+    await expect(c.updateRound({gameId, roundId, settings: HAJNALIG})).rejects.toMatchObject({
+      message: 'That round is over.',
+    })
   })
 
   it('ends a round by closing open turns at now or their deadline', async () => {
@@ -613,6 +628,139 @@ const played = async (send?: SendRecaps) => {
   t.clock.now += 100_000
   return {...t, c, gameId, roundId, anna, bela, cili}
 }
+
+const withGame = async () => {
+  const t = setup()
+  const c = t.caller()
+  const {gameId} = await opened(c, 0)
+  /** Saves as a host who just loaded the current list. */
+  const save = async (questions: Array<{id?: string; en: string; hu?: string}>) => {
+    const baseIds = (await c.detail({gameId})).questions.map((q) => q.id)
+    return c.saveQuestions({gameId, questions, baseIds})
+  }
+  return {...t, c, gameId, save}
+}
+
+describe('custom questions and round plans', () => {
+  it('hides the question list of a game the facilitator does not host', async () => {
+    const {caller, theirs: gameId} = await twoGames()
+    const call = caller('facilitator', 'u-avi').saveQuestions({
+      gameId,
+      questions: [{en: 'Mine now?'}],
+      baseIds: [],
+    })
+    await expect(call).rejects.toMatchObject({code: 'NOT_FOUND'})
+    expect((await caller('facilitator', 'u-tamas').detail({gameId})).questions).toEqual([])
+  })
+
+  it('adds, edits, reorders and removes questions under stable c: ids', async () => {
+    const {save} = await withGame()
+    const added = await save([{en: 'First?'}, {en: 'Second?', hu: 'Második?'}])
+    const [first, second] = added.questions
+    expect(first).toMatchObject({id: expect.stringMatching(/^c:[a-z0-9]+$/), en: 'First?'})
+    expect(first).not.toHaveProperty('hu')
+    expect(second).toMatchObject({en: 'Second?', hu: 'Második?', used: false})
+
+    const edited = await save([
+      {id: second!.id, en: 'Second, edited?'},
+      {id: first!.id, en: 'First?'},
+    ])
+    expect(edited.questions.map((q) => [q.id, q.en])).toEqual([
+      [second!.id, 'Second, edited?'],
+      [first!.id, 'First?'],
+    ])
+    expect((await save([])).questions).toEqual([])
+    await expect(save([{id: 'c:made0up', en: 'Sneaky?'}])).rejects.toMatchObject({
+      code: 'CONFLICT',
+    })
+  })
+
+  it('refuses a save made from a stale list, so two hosts never drop each other', async () => {
+    const {c, gameId, save} = await withGame()
+    const {questions} = await save([{en: 'Shared?'}])
+    const loaded = questions.map((q) => q.id)
+    await c.saveQuestions({gameId, questions: [...questions, {en: 'Host A?'}], baseIds: loaded})
+    await expect(
+      c.saveQuestions({gameId, questions: [...questions, {en: 'Host B?'}], baseIds: loaded})
+    ).rejects.toMatchObject({code: 'CONFLICT', message: QUESTIONS_CONFLICT})
+    expect((await c.detail({gameId})).questions.map((q) => q.en)).toEqual(['Shared?', 'Host A?'])
+  })
+
+  it('refuses to delete a question a round or a turn points at, but lets it be edited', async () => {
+    const {c, gameId, join, pair, turn, save} = await withGame()
+    const {questions} = await save([{en: 'A?'}, {en: 'B?'}])
+    const [a, b] = questions.map((q) => q.id)
+    const {rounds} = await c.addRound({
+      gameId,
+      settings: {...ROUND, questionPlan: {mode: 'same', question: a!}},
+    })
+    await expect(save([{id: b!, en: 'B?'}])).rejects.toMatchObject({
+      message: 'A question already used in a round cannot be deleted.',
+    })
+
+    await c.updateRound({gameId, roundId: rounds[0]!.id, settings: ROUND})
+    await c.startRound({gameId, roundId: rounds[0]!.id})
+    const [x, y] = [join(gameId, 'Xena'), join(gameId, 'Yuri')]
+    turn(pair(rounds[0]!.id, [x.id, y.id]).id, x.id, b!, T0, null)
+    const detail = await c.detail({gameId})
+    expect(detail.questions.map((q) => q.used)).toEqual([false, true])
+    await expect(save([{id: a!, en: 'A?'}])).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+    })
+    const edited = await save([{id: b!, en: 'B, better?'}])
+    expect(edited.questions).toEqual([{id: b, en: 'B, better?', used: true}])
+  })
+
+  it('stores same and per-turn picks from any deck or the custom list', async () => {
+    const {c, gameId, save} = await withGame()
+    const {questions} = await save([{en: 'Mine?'}])
+    const mine = questions[0]!.id
+    const hajnalig = getDeck('hajnalig')!
+    const ref = `hajnalig:${hajnalig.questionIds[0]}`
+    await c.addRound({gameId, settings: {...ROUND, questionPlan: {mode: 'same', question: mine}}})
+    const {rounds} = await c.addRound({
+      gameId,
+      settings: {...ROUND, questionPlan: {mode: 'per-turn', questions: [ref, mine]}},
+    })
+    expect(rounds.map((r) => [r.deckSlug, r.questionPlan.mode, r.picks])).toEqual([
+      ['custom', 'same', ['Mine?']],
+      ['hajnalig', 'per-turn', [hajnalig.questions[hajnalig.questionIds[0]!]?.en, 'Mine?']],
+    ])
+  })
+
+  it('rejects plans pointing at unknown decks or questions', async () => {
+    const {c, gameId} = await withGame()
+    const bad: QuestionPlan[] = [
+      {mode: 'same', question: 'c:gone0000'},
+      {mode: 'same', question: 'library:99999'},
+      {mode: 'per-turn', questions: ['library:1', 'nope:1']},
+      {mode: 'random', source: 'nope'},
+    ]
+    for (const questionPlan of bad) {
+      await expect(c.addRound({gameId, settings: {...ROUND, questionPlan}})).rejects.toMatchObject({
+        code: 'BAD_REQUEST',
+      })
+    }
+  })
+
+  it('lets a random-from-custom round wait for questions, but not start without one', async () => {
+    const {c, gameId, save} = await withGame()
+    const {rounds} = await c.addRound({
+      gameId,
+      settings: {...ROUND, questionPlan: random('custom')},
+    })
+    const roundId = rounds[0]!.id
+    expect(rounds[0]?.deckSlug).toBe('custom')
+    await expect(c.startRound({gameId, roundId})).rejects.toMatchObject({
+      message: 'Add a custom question before starting this round.',
+    })
+    await save([{en: 'Ready?'}])
+    expect((await c.startRound({gameId, roundId})).liveRoundId).toBe(roundId)
+    await expect(save([])).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+    })
+  })
+})
 
 describe('endGame', () => {
   it('ends the live round and the game without mailing anyone', async () => {
@@ -730,6 +878,7 @@ const round = (id: string, n: number, deckSlug: string): Round => ({
   gameId: 'g',
   n,
   deckSlug,
+  questionPlan: null,
   turnSeconds: 60,
   oddRule: 'trio',
   overtime: 'nudge',
@@ -822,6 +971,50 @@ describe('buildRecaps', () => {
     expect(preview).toMatchObject({recipients: 0, sample: true, props: {name: 'Sample player'}})
     expect(preview.props.event.players).toBe(3)
     expect(preview.props.you).toEqual({peopleMet: 0, turns: 0, minutes: 0, savedAnswers: 0})
+  })
+
+  it('takes home an undrawn custom question from a custom round', () => {
+    const base = snapshot()
+    const [anna] = buildRecaps({
+      snapshot: {
+        ...base,
+        game: {
+          ...base.game,
+          settings: {
+            round: {},
+            questions: [
+              {id: 'c:aaaa', en: 'A?', hu: 'Á?'},
+              {id: 'c:bbbb', en: 'B?', hu: 'B, magyarul?'},
+            ],
+          },
+        },
+        rounds: [{...round('r1', 1, 'custom'), questionPlan: random('custom')}],
+        pairs: [{id: 'p1', roundId: 'r1', playerIds: ['a', 'b']}],
+        turns: base.turns.slice(0, 1).map((t) => ({...t, questionId: 'c:aaaa'})),
+      },
+      savedByPlayer: {},
+      now: T0,
+      random: () => 0,
+    })
+    expect(anna?.props.question).toBe('B, magyarul?')
+  })
+
+  it('previews with a question from the custom list too', () => {
+    const base = snapshot()
+    const preview = previewRecap({
+      snapshot: {
+        ...base,
+        game: {...base.game, settings: {round: {}, questions: [{id: 'c:aaaa', en: 'A?'}]}},
+        players: [],
+        rounds: [{...round('r1', 1, 'custom'), questionPlan: random('custom')}],
+        pairs: [],
+        turns: [],
+      },
+      savedByPlayer: {},
+      now: T0,
+      random: () => 0,
+    })
+    expect(preview).toMatchObject({sample: true, props: {question: 'A?'}})
   })
 
   it('reads back a stored recap state, older ones as done, and ignores anything else', () => {

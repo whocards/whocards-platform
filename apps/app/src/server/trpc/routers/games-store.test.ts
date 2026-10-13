@@ -1,4 +1,5 @@
 import {PGlite} from '@electric-sql/pglite'
+import type {QuestionPlan} from '@whocards/game'
 import * as gameSchema from '@whocards/game/db'
 import {hostedGame} from '@whocards/game/db'
 import {generateDrizzleJson, generateMigration} from 'drizzle-kit/api'
@@ -80,6 +81,29 @@ describe('drizzle host store conditional writes', () => {
     expect(await recapOf()).toMatchObject({sentAt: 5, sent: 3, pending: false})
     const snapshot = await store.loadSnapshot(gameId)
     expect(snapshot?.game.settings).toMatchObject({round: {}, organizer: 'SDD Conf'})
+  })
+
+  it('saves custom questions and round plans without touching other settings', async () => {
+    await store.saveQuestions(gameId, [{id: 'c:aaaa', en: 'A?', hu: 'Á?'}])
+    const plan: QuestionPlan = {mode: 'per-turn', questions: ['c:aaaa', 'library:1']}
+    expect(
+      await store.addRound({
+        questionPlan: plan,
+        deckSlug: 'custom',
+        turnSeconds: 60,
+        oddRule: 'trio',
+        overtime: 'nudge',
+        overtimeSeconds: 30,
+        gameId,
+        n: 1,
+      })
+    ).toBe('ok')
+    const snapshot = await store.loadSnapshot(gameId)
+    expect(snapshot?.game.settings).toMatchObject({
+      organizer: 'SDD Conf',
+      questions: [{id: 'c:aaaa', en: 'A?', hu: 'Á?'}],
+    })
+    expect(snapshot?.rounds[0]).toMatchObject({deckSlug: 'custom', questionPlan: plan})
   })
 
   it('edits details only until the game ends', async () => {

@@ -4,6 +4,7 @@ import type {
   GameStatus,
   OddRule,
   Overtime,
+  QuestionPlan,
   RoundStatus,
 } from './schemas'
 
@@ -32,7 +33,10 @@ export type Round = {
   id: string
   gameId: string
   n: number
+  /** The random source, or the first fixed pick's source; resolves bare ids on pre-plan turns. */
   deckSlug: string
+  /** Null on rounds made before plans: random from `deckSlug`. */
+  questionPlan: QuestionPlan | null
   turnSeconds: number
   oddRule: OddRule
   overtime: Overtime
@@ -55,6 +59,7 @@ export type Turn = {
   /** Denormalised from the pair so a turn still resolves after its pair members leave. */
   roundId: string
   playerId: string
+  /** A question ref; turns from before question plans hold a bare id from the round's deck. */
   questionId: string
   startedAt: number
   finishedAt: number | null

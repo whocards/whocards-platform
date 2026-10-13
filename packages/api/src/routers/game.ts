@@ -5,19 +5,24 @@ import {
   checkFinish,
   checkPair,
   currentRound,
+  customQuestionsOf,
   deadlineOf,
   deleteResponseInputSchema,
-  drawQuestion,
   feedbackInputSchema,
   joinInputSchema,
   pairInputSchema,
   pairOf,
+  planOf,
   playerView,
+  questionForTurn,
+  questionText,
+  refOf,
   responseInputSchema,
   screenInputSchema,
   screenView,
   turnInputSchema,
   turnsOf,
+  usedRefs,
 } from '@whocards/game'
 import type {
   GameSnapshot,
@@ -25,6 +30,7 @@ import type {
   MyData,
   Player,
   PlayerState,
+  QuestionSources,
   ResolveQuestion,
   Round,
   ScreenState,
@@ -34,12 +40,14 @@ import type {GamePort} from '../game/port'
 import {refuse} from '../game/refusal'
 import {createTRPCRouter, playerProcedure, publicProcedure} from '../trpc'
 
-const questionResolver = (round: Round | null): ResolveQuestion => {
-  const deck = round ? getDeck(round.deckSlug) : undefined
-  return (id, language) => {
-    const text = deck?.questions[id]
-    return text?.[language] ?? text?.en ?? null
-  }
+const sourcesOf = (snapshot: GameSnapshot): QuestionSources => ({
+  custom: customQuestionsOf(snapshot.game.settings),
+  decks: getDeck,
+})
+
+const questionResolver = (snapshot: GameSnapshot, round: Round | null): ResolveQuestion => {
+  const sources = sourcesOf(snapshot)
+  return (id, language) => questionText(refOf(id, round?.deckSlug ?? ''), language, sources)
 }
 
 const load = async (port: GamePort, gameId: string): Promise<GameSnapshot> => {
@@ -49,7 +57,12 @@ const load = async (port: GamePort, gameId: string): Promise<GameSnapshot> => {
 }
 
 const stateOf = (snapshot: GameSnapshot, playerId: string, now: number): PlayerState => {
-  const state = playerView(snapshot, playerId, now, questionResolver(currentRound(snapshot)))
+  const state = playerView(
+    snapshot,
+    playerId,
+    now,
+    questionResolver(snapshot, currentRound(snapshot))
+  )
   if (!state) throw new TRPCError({code: 'UNAUTHORIZED', message: 'Join the game first'})
   return state
 }
@@ -108,11 +121,13 @@ const claim = async (port: GamePort, player: Player): Promise<void> => {
   if (!check.ok) throw refuse(check.reason)
   if (!check.start) return
 
-  const deck = getDeck(round.deckSlug)
-  const used = new Set(
-    snapshot.turns.filter((t) => t.playerId === player.id).map((t) => t.questionId)
-  )
-  const questionId = deck ? drawQuestion(deck.questionIds, used, port.random) : null
+  const questionId = questionForTurn({
+    plan: planOf(round),
+    turnIndex: turnsOf(snapshot, myPair.id).length,
+    used: usedRefs(snapshot, player.id),
+    random: port.random,
+    sources: sourcesOf(snapshot),
+  })
   if (!questionId) {
     throw new TRPCError({
       code: 'INTERNAL_SERVER_ERROR',

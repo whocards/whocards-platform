@@ -1,6 +1,6 @@
 import {TRPCError} from '@trpc/server'
 import {fetchRequestHandler} from '@trpc/server/adapters/fetch'
-import type {HostedGame, Round} from '@whocards/game'
+import type {GameLanguage, GameSettings, HostedGame, Round} from '@whocards/game'
 import {describe, expect, it} from 'vitest'
 import {z} from 'zod'
 
@@ -21,6 +21,7 @@ const liveRound: Round = {
   gameId: 'g1',
   n: 1,
   deckSlug: 'library',
+  questionPlan: null,
   turnSeconds: 60,
   oddRule: 'trio',
   overtime: 'nudge',
@@ -30,12 +31,12 @@ const liveRound: Round = {
   endsAt: null,
 }
 
-const setup = (rounds: Round[] = [liveRound]) => {
-  const fake = createFakeGamePort({game, rounds})
+const setup = (rounds: Round[] = [liveRound], settings: GameSettings = game.settings) => {
+  const fake = createFakeGamePort({game: {...game, settings}, rounds})
   const as = (playerToken: string | null) =>
     createCaller({recordAnswer: async () => {}, game: fake.port, playerToken})
-  const join = async (name: string) => {
-    const {token, state} = await as(null).game.join({code: 'abcd', name, language: 'en'})
+  const join = async (name: string, language: GameLanguage = 'en') => {
+    const {token, state} = await as(null).game.join({code: 'abcd', name, language})
     return {caller: as(token), state, token}
   }
   return {fake, as, join}
@@ -199,6 +200,56 @@ describe('game.round.turn', () => {
     }
     expect(await refusalOf(a.caller.game.round.turn({action: 'claim'}))).toBe('round_not_live')
     expect(fake.snapshot.turns).toEqual([])
+  })
+})
+
+describe('question plans', () => {
+  const settings: GameSettings = {
+    round: {},
+    questions: [
+      {id: 'c:aaaa', en: 'Custom A?', hu: 'Saját A?'},
+      {id: 'c:bbbb', en: 'Custom B?'},
+    ],
+  }
+
+  const trio = async (
+    plan: Round['questionPlan'],
+    languages: GameLanguage[] = ['en', 'en', 'en']
+  ) => {
+    const {join} = setup([{...liveRound, questionPlan: plan}], settings)
+    const [a, b, c] = await Promise.all(languages.map((l, i) => join(`P${i}`, l)))
+    if (!a || !b || !c) throw new Error('join failed')
+    await a.caller.game.round.pair({partnerCode: b.state.me.pairCode})
+    await c.caller.game.round.pair({partnerCode: a.state.me.pairCode})
+    const asked: Array<{id: string; text: string | null}> = []
+    for (const p of [b, c, a]) {
+      const turn = (await p.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
+      asked.push({id: turn?.questionId ?? '', text: turn?.questionText ?? null})
+      await p.caller.game.round.turn({action: 'finish'})
+    }
+    return asked
+  }
+
+  it('stores deck refs for a round made before plans', async () => {
+    const asked = await trio(null)
+    expect(asked.map((q) => q.id)).toEqual(['library:1', 'library:1', 'library:1'])
+    expect(asked[0]?.text).toEqual(expect.any(String))
+  })
+
+  it('draws each player their own question from the custom list', async () => {
+    const asked = await trio({mode: 'random', source: 'custom'})
+    expect(asked.map((q) => q.text)).toEqual(['Custom A?', 'Custom A?', 'Custom A?'])
+  })
+
+  it('asks everyone the same question, in their own language', async () => {
+    const asked = await trio({mode: 'same', question: 'c:aaaa'}, ['en', 'hu', 'en'])
+    expect(asked.map((q) => q.text)).toEqual(['Saját A?', 'Custom A?', 'Custom A?'])
+  })
+
+  it('asks turn 1 question A and turn 2 question B; a trio third turn gets A again', async () => {
+    const asked = await trio({mode: 'per-turn', questions: ['c:bbbb', 'library:2']})
+    expect(asked.map((q) => q.id)).toEqual(['c:bbbb', 'library:2', 'c:bbbb'])
+    expect(asked[1]?.text).toEqual(expect.any(String))
   })
 })
 

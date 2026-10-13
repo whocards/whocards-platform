@@ -87,6 +87,7 @@ const toRound = (row: typeof gameRound.$inferSelect): Round => ({
   gameId: row.gameId,
   n: row.n,
   deckSlug: row.deckSlug,
+  questionPlan: row.questionPlan,
   turnSeconds: row.turnSeconds,
   oddRule: row.oddRule,
   overtime: row.overtime,
@@ -398,6 +399,13 @@ export const createDrizzleHostStore = <
     await db
       .update(hostedGame)
       .set({settings: mergeSettings({recap})})
+      .where(eq(hostedGame.id, gameId))
+  },
+
+  saveQuestions: async (gameId, questions) => {
+    await db
+      .update(hostedGame)
+      .set({settings: mergeSettings({questions})})
       .where(eq(hostedGame.id, gameId))
   },
 

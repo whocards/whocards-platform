@@ -2,19 +2,35 @@ import {TRPCError} from '@trpc/server'
 import {getAllDecks, getDeck} from '@whocards/decks'
 import {
   canMoveGame,
+  checkPlan,
   checkStartRound,
   currentRound,
+  CUSTOM_ID_PREFIX,
+  CUSTOM_SOURCE,
+  customQuestionSchema,
+  customQuestionsOf,
+  deckRef,
+  fixedRefsOf,
   organizerSchema,
+  planDeckSlug,
+  planOf,
+  questionText,
   roundSettingsSchema,
   roundView,
+  samePlan,
   screenView,
+  turnRef,
 } from '@whocards/game'
 import type {GameRecapProps} from '@whocards/emails'
 import type {
+  CustomQuestion,
   GameLanguage,
   GameSnapshot,
   GameStatus,
   HostedGame,
+  PlanProblem,
+  QuestionPlan,
+  QuestionSources,
   RoundSettings,
   RoundView,
 } from '@whocards/game'
@@ -76,13 +92,15 @@ export type HostStore = {
   loadSnapshot: (gameId: string) => Promise<GameSnapshot | null>
   /** Saved, not deleted, answers per player id. */
   savedResponses: (gameId: string) => Promise<Record<string, number>>
-  addRound: (input: RoundSettings & {gameId: string; n: number}) => Promise<WriteResult>
+  addRound: (input: RoundRecord & {gameId: string; n: number}) => Promise<WriteResult>
   /** Writes only while the round is still in `whileStatus`. */
   updateRound: (input: {
     roundId: string
     whileStatus: 'pending' | 'live'
-    settings: RoundSettings
+    settings: RoundRecord
   }) => Promise<WriteResult>
+  /** Replaces `hosted_game.settings.questions`. */
+  saveQuestions: (gameId: string, questions: CustomQuestion[]) => Promise<void>
   /** Pending round to live in a live game; 'conflict' when another round is live, 'stale' when the game or round moved on. */
   startRound: (input: {
     gameId: string
@@ -105,16 +123,43 @@ export type HostStore = {
   }) => Promise<boolean>
 }
 
+/** Round settings as stored: the plan plus the `deck_slug` derived from it. */
+export type RoundRecord = RoundSettings & {deckSlug: string}
+
 export type SendRecaps = (recaps: Recap[]) => Promise<Pick<RecapState, 'sent' | 'failed' | 'error'>>
 export type RenderRecap = (props: GameRecapProps) => Promise<string>
 
 const gameIdSchema = z.object({gameId: z.string().uuid()})
 const roundIdSchema = gameIdSchema.extend({roundId: z.string().uuid()})
 
-const deckSlugSchema = z.string().refine((slug) => getDeck(slug) !== undefined, 'Unknown deck')
-const roundInputSchema = roundSettingsSchema.extend({deckSlug: deckSlugSchema})
+const questionsInputSchema = z
+  .array(customQuestionSchema.extend({id: customQuestionSchema.shape.id.optional()}))
+  .max(100)
 
 const fail = (code: TRPCError['code'], message: string) => new TRPCError({code, message})
+
+const PLAN_REFUSALS: Record<PlanProblem, string> = {
+  unknown_source: 'Unknown deck.',
+  unknown_question: 'That question no longer exists. Pick another.',
+  no_questions: 'Add a custom question before starting this round.',
+}
+
+export const QUESTIONS_CONFLICT = 'Another host changed the questions. Reload.'
+
+const newQuestionId = () =>
+  `${CUSTOM_ID_PREFIX}${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`
+
+const sourcesOf = (snapshot: GameSnapshot): QuestionSources => ({
+  custom: customQuestionsOf(snapshot.game.settings),
+  decks: getDeck,
+})
+
+/** Questions a turn or round points at; deleting one would orphan it. */
+const refsInUse = (snapshot: GameSnapshot): Set<string> =>
+  new Set([
+    ...snapshot.turns.map((t) => turnRef(snapshot, t)),
+    ...snapshot.rounds.flatMap((r) => fixedRefsOf(planOf(r))),
+  ])
 
 const START_REFUSALS = {
   game_not_live: 'The game is over.',
@@ -143,8 +188,12 @@ export type GameDetail = {
     status: GameStatus
     recap: RecapState | null
   }
+  questions: Array<CustomQuestion & {used: boolean}>
   players: Array<{id: string; name: string; language: GameLanguage; recap: boolean}>
-  rounds: Array<RoundView & {pairs: number; turns: number}>
+  /** `picks` is the English text of a same/per-turn round's fixed questions. */
+  rounds: Array<
+    RoundView & {pairs: number; turns: number; questionPlan: QuestionPlan; picks: string[]}
+  >
   liveRoundId: string | null
   counts: {players: number; pairs: number; turnsInProgress: number; responses: number}
 }
@@ -159,6 +208,8 @@ const detailOf = (
 ): GameDetail => {
   const screen = screenView(snapshot, now)
   const round = currentRound(snapshot)
+  const sources = sourcesOf(snapshot)
+  const used = refsInUse(snapshot)
   const pairsByRound = new Map<string, number>()
   for (const pair of snapshot.pairs) {
     pairsByRound.set(pair.roundId, (pairsByRound.get(pair.roundId) ?? 0) + 1)
@@ -174,6 +225,7 @@ const detailOf = (
       status: snapshot.game.status,
       recap: readRecapState(snapshot.game.settings),
     },
+    questions: sources.custom.map((q) => ({...q, used: used.has(q.id)})),
     players: snapshot.players.map((p) => ({
       id: p.id,
       name: p.name,
@@ -184,6 +236,8 @@ const detailOf = (
       ...roundView(r),
       pairs: pairsByRound.get(r.id) ?? 0,
       turns: snapshot.turns.filter((t) => t.roundId === r.id).length,
+      questionPlan: planOf(r),
+      picks: fixedRefsOf(planOf(r)).map((ref) => questionText(ref, 'en', sources) ?? '?'),
     })),
     liveRoundId: round?.status === 'live' ? round.id : null,
     counts: {
@@ -199,6 +253,13 @@ const roundIn = (snapshot: GameSnapshot, roundId: string) => {
   const round = snapshot.rounds.find((r) => r.id === roundId)
   if (!round) throw fail('NOT_FOUND', 'No such round.')
   return round
+}
+
+/** Rejects plans pointing at unknown decks or questions; an empty custom list waits for start. */
+const roundRecord = (snapshot: GameSnapshot, settings: RoundSettings): RoundRecord => {
+  const problem = checkPlan(settings.questionPlan, sourcesOf(snapshot))
+  if (problem && problem !== 'no_questions') throw fail('BAD_REQUEST', PLAN_REFUSALS[problem])
+  return {...settings, deckSlug: planDeckSlug(settings.questionPlan)}
 }
 
 const conflictOr = (result: WriteResult, message: string) => {
@@ -275,7 +336,14 @@ export const createGamesRouter = ({
     ),
 
     decks: procedure.query(() =>
-      getAllDecks().map((d) => ({slug: d.slug, title: d.title, questions: d.questionIds.length}))
+      getAllDecks().map((d) => ({
+        slug: d.slug,
+        title: d.title,
+        questions: d.questionIds.map((id) => ({
+          ref: deckRef(d.slug, id),
+          en: d.questions[id]?.en ?? '',
+        })),
+      }))
     ),
 
     create: procedure
@@ -327,34 +395,78 @@ export const createGamesRouter = ({
     }),
 
     addRound: gameProcedure
-      .input(gameIdSchema.extend({settings: roundInputSchema}))
+      .input(gameIdSchema.extend({settings: roundSettingsSchema}))
       .mutation(async ({ctx, input}) => {
         const snapshot = await load(input.gameId)
         if (snapshot.game.status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
         const n = Math.max(0, ...snapshot.rounds.map((r) => r.n)) + 1
         conflictOr(
-          await store.addRound({...input.settings, gameId: input.gameId, n}),
+          await store.addRound({...roundRecord(snapshot, input.settings), gameId: input.gameId, n}),
           'Someone else just added a round. Try again.'
         )
         return detail(input.gameId, ctx)
       }),
 
     updateRound: gameProcedure
-      .input(roundIdSchema.extend({settings: roundInputSchema}))
+      .input(roundIdSchema.extend({settings: roundSettingsSchema}))
       .mutation(async ({ctx, input}) => {
         const snapshot = await load(input.gameId)
         const round = roundIn(snapshot, input.roundId)
         if (round.status === 'done') throw fail('BAD_REQUEST', 'That round is over.')
-        if (round.status === 'live' && input.settings.deckSlug !== round.deckSlug) {
-          throw fail('BAD_REQUEST', 'The deck is fixed once a round starts.')
+        if (round.status === 'live' && !samePlan(planOf(round), input.settings.questionPlan)) {
+          throw fail('BAD_REQUEST', 'The questions are fixed once a round starts.')
         }
         conflictOr(
           await store.updateRound({
             roundId: round.id,
             whileStatus: round.status,
-            settings: input.settings,
+            settings: roundRecord(snapshot, input.settings),
           }),
           'The round changed meanwhile. Reload and try again.'
+        )
+        return detail(input.gameId, ctx)
+      }),
+
+    /** Replaces the game's custom question list; ids stay put so turns keep their text. */
+    saveQuestions: gameProcedure
+      .input(
+        gameIdSchema.extend({
+          questions: questionsInputSchema,
+          /** Ids in the order the editor loaded them; any other stored list means a lost update. */
+          baseIds: z.array(z.string()).max(100),
+        })
+      )
+      .mutation(async ({ctx, input}) => {
+        const snapshot = await load(input.gameId)
+        if (snapshot.game.status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
+        const stored = customQuestionsOf(snapshot.game.settings).map((q) => q.id)
+        const before = new Set(stored)
+        const ids = input.questions.flatMap((q) => (q.id ? [q.id] : []))
+        if (
+          stored.join('\n') !== input.baseIds.join('\n') ||
+          ids.some((id) => !before.has(id)) ||
+          new Set(ids).size !== ids.length
+        ) {
+          throw fail('CONFLICT', QUESTIONS_CONFLICT)
+        }
+        const used = refsInUse(snapshot)
+        if (stored.some((id) => used.has(id) && !ids.includes(id))) {
+          throw fail('BAD_REQUEST', 'A question already used in a round cannot be deleted.')
+        }
+        const liveCustom = snapshot.rounds.some((r) => {
+          const plan = planOf(r)
+          return r.status === 'live' && plan.mode === 'random' && plan.source === CUSTOM_SOURCE
+        })
+        if (liveCustom && input.questions.length === 0) {
+          throw fail('BAD_REQUEST', 'The live round draws from these questions; keep at least one.')
+        }
+        await store.saveQuestions(
+          input.gameId,
+          input.questions.map((q) => ({
+            id: q.id ?? newQuestionId(),
+            en: q.en,
+            ...(q.hu ? {hu: q.hu} : {}),
+          }))
         )
         return detail(input.gameId, ctx)
       }),
@@ -367,6 +479,8 @@ export const createGamesRouter = ({
       }
       const check = checkStartRound(snapshot, round)
       if (!check.ok) throw fail('BAD_REQUEST', START_REFUSALS[check.reason])
+      const problem = checkPlan(planOf(round), sourcesOf(snapshot))
+      if (problem) throw fail('BAD_REQUEST', PLAN_REFUSALS[problem])
 
       const now = store.now()
       const result = await store.startRound({

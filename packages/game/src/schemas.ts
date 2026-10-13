@@ -17,8 +17,35 @@ export type OddRule = z.infer<typeof oddRuleSchema>
 export const overtimeSchema = z.enum(['nudge', 'hard'])
 export type Overtime = z.infer<typeof overtimeSchema>
 
+/** Source key for a game's own questions, alongside the deck slugs. */
+export const CUSTOM_SOURCE = 'custom'
+/** Custom question ids carry this prefix so they never read as a deck ref. */
+export const CUSTOM_ID_PREFIX = 'c:'
+
+export const customQuestionSchema = z.object({
+  id: z.string().regex(/^c:[a-z0-9]{4,32}$/),
+  en: z.string().trim().min(1).max(400),
+  hu: z.string().trim().max(400).optional(),
+})
+export type CustomQuestion = z.infer<typeof customQuestionSchema>
+
+/** A custom question id (`c:<id>`) or a deck question (`<deckSlug>:<id>`). */
+export const questionRefSchema = z.string().regex(/^[a-z0-9-]+:[^:]+$/)
+export type QuestionRef = z.infer<typeof questionRefSchema>
+
+/** How a round hands out questions; `source` is a deck slug or CUSTOM_SOURCE. */
+export const questionPlanSchema = z.discriminatedUnion('mode', [
+  z.object({mode: z.literal('random'), source: z.string().min(1)}),
+  z.object({mode: z.literal('same'), question: questionRefSchema}),
+  z.object({
+    mode: z.literal('per-turn'),
+    questions: z.tuple([questionRefSchema, questionRefSchema]),
+  }),
+])
+export type QuestionPlan = z.infer<typeof questionPlanSchema>
+
 export const roundSettingsSchema = z.object({
-  deckSlug: z.string().min(1),
+  questionPlan: questionPlanSchema,
   turnSeconds: z.number().int().min(10).max(1800),
   oddRule: oddRuleSchema.default('trio'),
   overtime: overtimeSchema.default('nudge'),
@@ -34,6 +61,7 @@ export const gameSettingsSchema = z.object({
   round: roundSettingsSchema.partial().default({}),
   // Optional: games created before organizers existed have none.
   organizer: organizerSchema.optional(),
+  questions: z.array(customQuestionSchema).max(100).optional(),
 })
 export type GameSettings = z.infer<typeof gameSettingsSchema>
 

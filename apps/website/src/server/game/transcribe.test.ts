@@ -40,6 +40,7 @@ const snapshot = (
       gameId: 'g1',
       n: 1,
       deckSlug: 'library',
+      questionPlan: null,
       turnSeconds: 60,
       oddRule: 'trio',
       overtime: 'nudge',

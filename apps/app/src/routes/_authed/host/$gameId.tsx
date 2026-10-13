@@ -1,8 +1,8 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {createFileRoute, redirect} from '@tanstack/react-router'
 import {TRPCClientError} from '@trpc/client'
-import {qrPath} from '@whocards/game'
-import type {OddRule, Overtime} from '@whocards/game'
+import {CUSTOM_SOURCE, qrPath, sourceOf} from '@whocards/game'
+import type {OddRule, Overtime, QuestionPlan} from '@whocards/game'
 import {useMemo, useState} from 'react'
 
 import {Empty, ErrorText, Page, PageHeader, SectionTitle} from '~/components/page'
@@ -28,16 +28,18 @@ export const Route = createFileRoute('/_authed/host/$gameId')({
 const LIVE_REFRESH_MS = 4000
 
 type RoundRow = GameDetail['rounds'][number]
+type CustomRow = GameDetail['questions'][number]
 type RoundSettings = {
-  deckSlug: string
+  questionPlan: QuestionPlan
   turnSeconds: number
   oddRule: OddRule
   overtime: Overtime
   overtimeSeconds: number
 }
+type Mode = QuestionPlan['mode']
 
 const settingsOf = (r: RoundSettings): RoundSettings => ({
-  deckSlug: r.deckSlug,
+  questionPlan: r.questionPlan,
   turnSeconds: r.turnSeconds,
   oddRule: r.oddRule,
   overtime: r.overtime,
@@ -46,6 +48,20 @@ const settingsOf = (r: RoundSettings): RoundSettings => ({
 
 const isOddRule = (v: string): v is OddRule => v === 'trio' || v === 'sitout'
 const isOvertime = (v: string): v is Overtime => v === 'nudge' || v === 'hard'
+const isMode = (v: string): v is Mode => v === 'random' || v === 'same' || v === 'per-turn'
+
+const MODES: Record<Mode, {label: string; option: string}> = {
+  random: {label: 'Random', option: 'Random: each player draws their own'},
+  same: {label: 'Same question', option: 'Same question for everyone'},
+  'per-turn': {label: 'Question per turn', option: 'One question per turn (1st and 2nd speaker)'},
+}
+
+const planSummary = (round: RoundRow, deckTitle: (slug: string) => string): string => {
+  const plan = round.questionPlan
+  if (plan.mode === 'random') return `From ${deckTitle(plan.source)}`
+  const [a, b] = round.picks.map((t) => `“${t}”`)
+  return plan.mode === 'same' ? `Everyone: ${a}` : `Turn 1: ${a} · Turn 2: ${b}`
+}
 
 const clock = (ms: number | null) =>
   ms === null ? '' : new Date(ms).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
@@ -185,9 +201,17 @@ function HostGame() {
         </div>
       </div>
 
+      <QuestionsPanel
+        gameId={gameId}
+        questions={detail.data.questions}
+        ended={ended}
+        onSaved={(data) => queryClient.setQueryData(key, data)}
+      />
+
       <RoundsPanel
         gameId={gameId}
         rounds={rounds}
+        custom={detail.data.questions}
         liveRoundId={liveRoundId}
         ended={ended}
         draft={draft}
@@ -508,9 +532,196 @@ const ROUND_STATUS = {
   done: {label: 'Done', tone: 'muted'},
 } as const
 
+function QuestionsPanel({
+  gameId,
+  questions,
+  ended,
+  onSaved,
+}: Readonly<{
+  gameId: string
+  questions: CustomRow[]
+  ended: boolean
+  onSaved: (detail: GameDetail) => void
+}>) {
+  const [editing, setEditing] = useState(false)
+  const save = useMutation({
+    mutationFn: (input: {questions: QuestionInput[]; baseIds: string[]}) =>
+      trpc.games.saveQuestions.mutate({gameId, ...input}),
+    onSuccess: (data) => {
+      onSaved(data)
+      setEditing(false)
+    },
+  })
+
+  return (
+    <section className="mb-12">
+      <SectionTitle
+        aside={
+          ended || editing ? null : (
+            <Button
+              size="sm"
+              onClick={() => {
+                save.reset()
+                setEditing(true)
+              }}
+            >
+              Edit questions
+            </Button>
+          )
+        }
+      >
+        Custom questions
+      </SectionTitle>
+      {editing ? (
+        <QuestionsEditor
+          initial={questions}
+          pending={save.isPending}
+          error={save.error?.message ?? null}
+          onCancel={() => setEditing(false)}
+          onSave={(next) => save.mutate({questions: next, baseIds: questions.map((q) => q.id)})}
+        />
+      ) : (
+        <>
+          {questions.length === 0 ? (
+            <Empty>No custom questions yet. Rounds can use them alongside the decks.</Empty>
+          ) : null}
+          <ol className="flex list-decimal flex-col gap-2 pl-6 marker:text-gray-dark">
+            {questions.map((q) => (
+              <li key={q.id}>
+                <p>{q.en}</p>
+                {q.hu ? <p className="text-sm text-gray-lighter">{q.hu}</p> : null}
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+    </section>
+  )
+}
+
+type QuestionInput = {id?: string; en: string; hu?: string}
+type DraftQuestion = {key: string; id?: string; en: string; hu: string; used: boolean}
+
+function QuestionsEditor({
+  initial,
+  pending,
+  error,
+  onCancel,
+  onSave,
+}: Readonly<{
+  initial: CustomRow[]
+  pending: boolean
+  error: string | null
+  onCancel: () => void
+  onSave: (questions: QuestionInput[]) => void
+}>) {
+  const [invalid, setInvalid] = useState(false)
+  const [draft, setDraft] = useState<DraftQuestion[]>(() =>
+    initial.map((q) => ({key: q.id, id: q.id, en: q.en, hu: q.hu ?? '', used: q.used}))
+  )
+  const [added, setAdded] = useState(0)
+  const patch = (key: string, change: Partial<DraftQuestion>) =>
+    setDraft((rows) => rows.map((r) => (r.key === key ? {...r, ...change} : r)))
+  const move = (from: number, to: number) =>
+    setDraft((rows) => {
+      const next = [...rows]
+      const [row] = next.splice(from, 1)
+      if (row) next.splice(to, 0, row)
+      return next
+    })
+
+  return (
+    <Card className="border-yellow-400/30">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          const rows = draft.map((r) => ({id: r.id, en: r.en.trim(), hu: r.hu.trim()}))
+          const missing = rows.some((r) => r.en === '')
+          setInvalid(missing)
+          if (missing) return
+          onSave(
+            rows.map((r) => ({...(r.id ? {id: r.id} : {}), en: r.en, ...(r.hu ? {hu: r.hu} : {})}))
+          )
+        }}
+        className="flex flex-col gap-4"
+      >
+        {draft.map((row, i) => (
+          <div key={row.key} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <Input
+              required
+              maxLength={400}
+              placeholder="English (required)"
+              aria-label={`Question ${i + 1} in English`}
+              value={row.en}
+              onChange={(event) => patch(row.key, {en: event.target.value})}
+            />
+            <Input
+              maxLength={400}
+              placeholder="Magyarul (optional, falls back to English)"
+              aria-label={`Question ${i + 1} in Hungarian`}
+              value={row.hu}
+              onChange={(event) => patch(row.key, {hu: event.target.value})}
+            />
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Move question ${i + 1} up`}
+                disabled={i === 0}
+                onClick={() => move(i, i - 1)}
+              >
+                ↑
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Move question ${i + 1} down`}
+                disabled={i === draft.length - 1}
+                onClick={() => move(i, i + 1)}
+              >
+                ↓
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={row.used}
+                title={row.used ? 'Used in a round. Edit it instead.' : undefined}
+                onClick={() => setDraft((rows) => rows.filter((r) => r.key !== row.key))}
+                className="text-gray-dark hover:text-errorOnDark"
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
+        ))}
+        {invalid ? <ErrorText>Every question needs English text.</ErrorText> : null}
+        {error ? <ErrorText>{error}</ErrorText> : null}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              setAdded((n) => n + 1)
+              setDraft((rows) => [...rows, {key: `new-${added}`, en: '', hu: '', used: false}])
+            }}
+          >
+            + Add question
+          </Button>
+          <Button type="submit" variant="primary" size="sm" disabled={pending}>
+            Save questions
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+    </Card>
+  )
+}
+
 function RoundsPanel({
   gameId,
   rounds,
+  custom,
   liveRoundId,
   ended,
   draft,
@@ -519,6 +730,7 @@ function RoundsPanel({
 }: Readonly<{
   gameId: string
   rounds: RoundRow[]
+  custom: CustomRow[]
   liveRoundId: string | null
   ended: boolean
   draft: boolean
@@ -527,6 +739,11 @@ function RoundsPanel({
 }>) {
   const [editing, setEditing] = useState<string | null>(null)
   const last = rounds.at(-1)
+  const decks = useDecks()
+  const deckTitle = (slug: string) =>
+    slug === CUSTOM_SOURCE
+      ? 'custom questions'
+      : (decks.data?.find((d) => d.slug === slug)?.title ?? slug)
 
   return (
     <section className="mb-12">
@@ -551,7 +768,8 @@ function RoundsPanel({
             <li key={round.id}>
               <RoundEditor
                 initial={settingsOf(round)}
-                deckLocked={round.status === 'live'}
+                custom={custom}
+                questionsLocked={round.status === 'live'}
                 pending={pending}
                 onCancel={() => setEditing(null)}
                 onSave={(settings) => {
@@ -582,7 +800,7 @@ function RoundsPanel({
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <p className="font-semibold">{round.deckSlug}</p>
+                    <p className="font-semibold">{MODES[round.questionPlan.mode].label}</p>
                     <Badge tone={ROUND_STATUS[round.status].tone}>
                       {ROUND_STATUS[round.status].label}
                     </Badge>
@@ -590,6 +808,9 @@ function RoundsPanel({
                       <span className="text-xs text-gray-lighter">{`ends ${clock(round.endsAt)}`}</span>
                     ) : null}
                   </div>
+                  <p className="mb-1 line-clamp-2 text-sm text-gray-lighter">
+                    {planSummary(round, deckTitle)}
+                  </p>
                   <p className="text-xs text-gray-dark">
                     {`${round.turnSeconds}s turns · odd one out: ${round.oddRule} · overtime: ${round.overtime}${round.overtime === 'nudge' ? ` ${round.overtimeSeconds}s` : ''}`}
                     {round.status === 'pending'
@@ -639,7 +860,8 @@ function RoundsPanel({
         <div className="mt-3">
           <RoundEditor
             initial={last ? settingsOf(last) : null}
-            deckLocked={false}
+            custom={custom}
+            questionsLocked={false}
             pending={pending}
             onCancel={() => setEditing(null)}
             onSave={(settings) => {
@@ -653,57 +875,173 @@ function RoundsPanel({
   )
 }
 
+const useDecks = () =>
+  useQuery({
+    queryKey: ['games.decks'],
+    queryFn: () => trpc.games.decks.query(),
+    staleTime: Infinity,
+  })
+
+function QuestionPicker({
+  label,
+  value,
+  custom,
+  disabled,
+  onChange,
+}: Readonly<{
+  label: string
+  value: string
+  custom: CustomRow[]
+  disabled: boolean
+  onChange: (ref: string) => void
+}>) {
+  const decks = useDecks()
+  const [source, setSource] = useState(() =>
+    value ? sourceOf(value) : custom.length > 0 ? CUSTOM_SOURCE : ''
+  )
+  const from = source || decks.data?.[0]?.slug || ''
+  const options =
+    from === CUSTOM_SOURCE
+      ? custom.map((q) => ({ref: q.id, en: q.en}))
+      : (decks.data?.find((d) => d.slug === from)?.questions ?? [])
+
+  return (
+    <div className="grid gap-2 sm:col-span-2 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
+      <Label label={`${label}: from`}>
+        <Select
+          value={from}
+          disabled={disabled}
+          onChange={(event) => {
+            setSource(event.target.value)
+            onChange('')
+          }}
+        >
+          <option value={CUSTOM_SOURCE}>{`Custom questions (${custom.length})`}</option>
+          {decks.data?.map((d) => (
+            <option key={d.slug} value={d.slug}>
+              {d.title}
+            </option>
+          ))}
+        </Select>
+      </Label>
+      <Label label={`${label}: question`}>
+        <Select
+          required
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+        >
+          <option value="" disabled>
+            {options.length === 0 ? 'No questions here yet' : 'Pick a question…'}
+          </option>
+          {options.map((o) => (
+            <option key={o.ref} value={o.ref}>
+              {o.en}
+            </option>
+          ))}
+        </Select>
+      </Label>
+    </div>
+  )
+}
+
 function RoundEditor({
   initial,
-  deckLocked,
+  custom,
+  questionsLocked,
   pending,
   onCancel,
   onSave,
 }: Readonly<{
   initial: RoundSettings | null
-  deckLocked: boolean
+  custom: CustomRow[]
+  questionsLocked: boolean
   pending: boolean
   onCancel: () => void
   onSave: (settings: RoundSettings) => void
 }>) {
-  const decks = useQuery({
-    queryKey: ['games.decks'],
-    queryFn: () => trpc.games.decks.query(),
-    staleTime: Infinity,
-  })
-  const [deckSlug, setDeckSlug] = useState(initial?.deckSlug ?? '')
+  const decks = useDecks()
+  const plan = initial?.questionPlan
+  const [mode, setMode] = useState<Mode>(plan?.mode ?? 'random')
+  const [source, setSource] = useState(plan?.mode === 'random' ? plan.source : '')
+  const [first, setFirst] = useState(
+    plan?.mode === 'same' ? plan.question : plan?.mode === 'per-turn' ? plan.questions[0] : ''
+  )
+  const [second, setSecond] = useState(plan?.mode === 'per-turn' ? plan.questions[1] : '')
   const [turnSeconds, setTurnSeconds] = useState(initial?.turnSeconds ?? 60)
   const [oddRule, setOddRule] = useState<OddRule>(initial?.oddRule ?? 'trio')
   const [overtime, setOvertime] = useState<Overtime>(initial?.overtime ?? 'nudge')
   const [overtimeSeconds, setOvertimeSeconds] = useState(initial?.overtimeSeconds ?? 30)
-  const slug = deckSlug || decks.data?.[0]?.slug || ''
+  const randomSource = source || decks.data?.[0]?.slug || ''
+
+  const questionPlan = ((): QuestionPlan | null => {
+    if (mode === 'random') return randomSource ? {mode, source: randomSource} : null
+    if (mode === 'same') return first ? {mode, question: first} : null
+    return first && second ? {mode, questions: [first, second]} : null
+  })()
 
   return (
     <Card className="border-yellow-400/30">
       <form
         onSubmit={(event) => {
           event.preventDefault()
-          onSave({deckSlug: slug, turnSeconds, oddRule, overtime, overtimeSeconds})
+          if (questionPlan) onSave({questionPlan, turnSeconds, oddRule, overtime, overtimeSeconds})
         }}
         className="grid gap-4 sm:grid-cols-2"
       >
         <Label
-          label="Deck"
-          hint={deckLocked ? 'The deck is fixed once a round starts.' : undefined}
+          label="Questions"
+          hint={questionsLocked ? 'Questions are fixed once a round starts.' : undefined}
           className="sm:col-span-2"
         >
           <Select
-            value={slug}
-            disabled={deckLocked}
-            onChange={(event) => setDeckSlug(event.target.value)}
+            value={mode}
+            disabled={questionsLocked}
+            onChange={(event) => {
+              const {value} = event.target
+              if (isMode(value)) setMode(value)
+            }}
           >
-            {decks.data?.map((d) => (
-              <option key={d.slug} value={d.slug}>
-                {`${d.title} (${d.questions} questions)`}
+            {Object.entries(MODES).map(([value, m]) => (
+              <option key={value} value={value}>
+                {m.option}
               </option>
             ))}
           </Select>
         </Label>
+        {mode === 'random' ? (
+          <Label label="Draw from" className="sm:col-span-2">
+            <Select
+              value={randomSource}
+              disabled={questionsLocked}
+              onChange={(event) => setSource(event.target.value)}
+            >
+              <option value={CUSTOM_SOURCE}>{`Custom questions (${custom.length})`}</option>
+              {decks.data?.map((d) => (
+                <option key={d.slug} value={d.slug}>
+                  {`${d.title} (${d.questions.length} questions)`}
+                </option>
+              ))}
+            </Select>
+          </Label>
+        ) : (
+          <QuestionPicker
+            label={mode === 'same' ? 'Everyone' : 'Turn 1'}
+            value={first}
+            custom={custom}
+            disabled={questionsLocked}
+            onChange={setFirst}
+          />
+        )}
+        {mode === 'per-turn' ? (
+          <QuestionPicker
+            label="Turn 2"
+            value={second}
+            custom={custom}
+            disabled={questionsLocked}
+            onChange={setSecond}
+          />
+        ) : null}
         <Label label="Seconds per turn">
           <Input
             type="number"
@@ -751,7 +1089,7 @@ function RoundEditor({
           </Label>
         ) : null}
         <div className="flex gap-2 sm:col-span-2">
-          <Button type="submit" variant="primary" disabled={pending || !slug}>
+          <Button type="submit" variant="primary" disabled={pending || !questionPlan}>
             Save round
           </Button>
           <Button variant="ghost" onClick={onCancel}>
