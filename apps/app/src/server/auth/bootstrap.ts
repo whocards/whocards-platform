@@ -2,7 +2,7 @@ import {and, eq} from 'drizzle-orm'
 
 import {db} from '../db'
 import {appMember, appOrganization} from '../db/schema'
-import {env} from '../env'
+import {env} from '@whocards/env/app'
 
 /** The single implicit organization every member belongs to tonight (no multi-org
  *  UI yet — that's the future Tier 2 "WhoCards for Teams" build this app founds). */

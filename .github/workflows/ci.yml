@@ -111,7 +111,7 @@ jobs:
       - name: Turbo remote cache
         uses: rharkor/caching-for-turbo@v2.5.1
 
-      # The website env schema (apps/website/src/env.ts) fails the build without
+      # The website env schema (packages/env/src/website.ts) fails the build without
       # these. Placeholders are enough: nothing in the e2e suites sends email or
       # touches the database, and the Turnstile keys are Cloudflare's public
       # always-pass test keys.

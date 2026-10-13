@@ -1,7 +1,7 @@
 import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 
-import {env} from '~/server/env'
+import {env} from '@whocards/env/app'
 import * as schema from './schema'
 
 /**

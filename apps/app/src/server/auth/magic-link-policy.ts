@@ -12,6 +12,6 @@
  * Kept as its own tiny dependency-free constant (rather than an inline
  * literal in auth.tsx) so the policy is regression-tested without pulling in
  * auth.tsx's db/env dependency chain — same pure/impure split as
- * decks-logic.ts, question-review-logic.ts, and env-logic.ts.
+ * decks-logic.ts and question-review-logic.ts.
  */
 export const MAGIC_LINK_DISABLE_SIGNUP = true

@@ -245,9 +245,6 @@ importers:
       '@better-auth/drizzle-adapter':
         specifier: ^1.7.7
         version: 1.7.7(@better-auth/core@1.7.7(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.1.8(zod@4.6.5))(jose@6.2.12)(kysely@0.29.5)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(drizzle-orm@0.45.4(@electric-sql/pglite@0.5.8)(@opentelemetry/api@1.9.1)(@prisma/client@5.22.0)(@types/pg@8.20.0)(better-sqlite3@12.11.1)(kysely@0.29.5)(pg@8.23.1)(postgres@3.4.9))
-      '@t3-oss/env-core':
-        specifier: 'catalog:'
-        version: 0.13.11(typescript@7.0.2)(zod@4.6.5)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.104.1(react@19.2.3)
@@ -269,6 +266,9 @@ importers:
       '@whocards/emails':
         specifier: workspace:*
         version: link:../emails
+      '@whocards/env':
+        specifier: workspace:*
+        version: link:../../packages/env
       '@whocards/game':
         specifier: workspace:*
         version: link:../../packages/game
@@ -375,6 +375,9 @@ importers:
       '@whocards/app-store':
         specifier: workspace:*
         version: link:../../packages/app-store
+      '@whocards/env':
+        specifier: workspace:*
+        version: link:../../packages/env
       '@whocards/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -632,9 +635,6 @@ importers:
       '@resvg/resvg-js':
         specifier: ^2.6.2
         version: 2.6.2
-      '@t3-oss/env-core':
-        specifier: 'catalog:'
-        version: 0.13.11(typescript@5.9.3)(zod@4.6.5)
       '@tailwindcss/typography':
         specifier: ^0.5.20
         version: 0.5.20(tailwindcss@4.3.3)
@@ -665,6 +665,9 @@ importers:
       '@whocards/emails':
         specifier: workspace:*
         version: link:../emails
+      '@whocards/env':
+        specifier: workspace:*
+        version: link:../../packages/env
       '@whocards/game':
         specifier: workspace:*
         version: link:../../packages/game
@@ -774,9 +777,6 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.2
-      dotenv:
-        specifier: ^17.4.2
-        version: 17.4.2
       drizzle-kit:
         specifier: ^0.31.11
         version: 0.31.11
@@ -853,6 +853,28 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@26.4.1)(jsdom@20.0.3(supports-color@8.1.1))(vite@8.3.4(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
+
+  packages/env:
+    dependencies:
+      '@t3-oss/env-core':
+        specifier: 'catalog:'
+        version: 0.13.11(typescript@7.0.2)(zod@4.6.5)
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.2
+      '@whocards/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(jsdom@20.0.3(supports-color@8.1.1))(vite@8.3.4(@types/node@24.13.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
 
   packages/game:
     dependencies:
@@ -18088,11 +18110,6 @@ snapshots:
   '@sveltejs/acorn-typescript@1.0.13(acorn@8.18.0)':
     dependencies:
       acorn: 8.18.0
-
-  '@t3-oss/env-core@0.13.11(typescript@5.9.3)(zod@4.6.5)':
-    optionalDependencies:
-      typescript: 5.9.3
-      zod: 4.6.5
 
   '@t3-oss/env-core@0.13.11(typescript@7.0.2)(zod@4.6.5)':
     optionalDependencies:

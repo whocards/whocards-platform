@@ -5,7 +5,7 @@ import {MagicLinkEmail, magicLinkSubject, magicLinkText} from '@whocards/emails'
 import {sendEmail} from '@whocards/emails/resend'
 
 import {db, schema} from '../db'
-import {env} from '../env'
+import {env} from '@whocards/env/app'
 import {MAGIC_LINK_DISABLE_SIGNUP} from './magic-link-policy'
 import {roles} from './permissions'
 
@@ -30,13 +30,7 @@ const adapterSchema = {
   app_invitation: schema.appInvitation,
 }
 
-// The Netlify site's BETTER_AUTH_URL is still the old *.netlify.app subdomain,
-// but the app is served at app.whocards.cc. baseURL builds the magic-link email
-// URL and validates the browser's callbackURL/cookie origin — so in production
-// it MUST be the canonical domain, or the browser sign-in from app.whocards.cc
-// is rejected as an untrusted origin (403 INVALID_CALLBACK_URL) and "Couldn't
-// send that link" appears. trustedOrigins additionally keeps the raw
-// *.netlify.app host working (and localhost in dev).
+// Any other production origin fails sign-in from app.whocards.cc with 403 INVALID_CALLBACK_URL.
 const canonicalBaseURL =
   env.NODE_ENV === 'production' ? 'https://app.whocards.cc' : env.BETTER_AUTH_URL
 

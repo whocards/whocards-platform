@@ -1,5 +1,5 @@
 import {z} from 'zod'
-import {env} from '../env'
+import {env} from '@whocards/env/app'
 
 // Mirrors the raw-fetch pattern from the dev-only Question Lab
 // (apps/website/src/server/question-lab/, feat/ai-at-work-question-lab, not yet
@@ -23,7 +23,7 @@ export type AgentMessage = {role: 'user' | 'assistant'; content: string}
  * Sends the conversation so far (plus the question under discussion) to
  * Claude and returns the assistant's reply text. Throws if ANTHROPIC_API_KEY
  * is absent — callers must check `agentEnabled` first and degrade gracefully
- * (see server/env.ts) rather than let this throw reach a user-facing crash.
+ * (see @whocards/env/app) rather than let this throw reach a user-facing crash.
  */
 export async function askAgent(
   questionText: string,

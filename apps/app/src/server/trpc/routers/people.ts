@@ -6,7 +6,7 @@ import {ensureDefaultOrganization} from '../../auth/bootstrap'
 import {canAssignRole, ROLE_RANK} from '../../auth/permissions'
 import {db} from '../../db'
 import {appMember, appUser} from '../../db/schema'
-import {env} from '../../env'
+import {env} from '@whocards/env/app'
 import {createTRPCRouter, roleProcedure} from '../trpc'
 
 const roleSchema = z.enum(ROLE_RANK)

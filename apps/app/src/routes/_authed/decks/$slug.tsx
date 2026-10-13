@@ -54,7 +54,7 @@ function DeckDetail() {
   })
   // Slice 5 (stretch): only facilitator+ can reach this procedure at all, and
   // it degrades to `{enabled: false}` (never a crash) when ANTHROPIC_API_KEY
-  // is absent — see server/env.ts / server/agent/anthropic.ts.
+  // is absent — see @whocards/env/app / server/agent/anthropic.ts.
   const agentStatus = useQuery({
     queryKey: ['discussionAgent.status'],
     queryFn: () => trpc.discussionAgent.status.query(),

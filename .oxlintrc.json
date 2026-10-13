@@ -34,7 +34,10 @@
     "no-underscore-dangle": ["warn", {"allow": ["_attempts", "_u", "__dirname"]}],
     "import/no-default-export": "error",
     "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
-    "import/no-unassigned-import": ["error", {"allow": ["**/*.css", "server-only"]}]
+    "import/no-unassigned-import": [
+      "error",
+      {"allow": ["**/*.css", "server-only", "@whocards/env/load"]}
+    ]
   },
   "overrides": [
     {
@@ -57,7 +60,7 @@
       }
     },
     {
-      "files": ["**/env.ts", "**/env.node.ts", "**/env.test.ts"],
+      "files": ["**/env.ts", "**/env.node.ts", "**/env.test.ts", "packages/env/src/**"],
       "rules": {
         "node/no-process-env": "off"
       }

@@ -8,7 +8,7 @@ import {Button} from '~/components/ui/button'
 import {Input} from '~/components/ui/field'
 import {authClient} from '~/lib/auth-client'
 import {getCurrentMember} from '~/server/auth/session'
-import {googleAuthEnabled} from '~/server/env'
+import {googleAuthEnabled} from '@whocards/env/app'
 
 const getAuthProviders = createServerFn({method: 'GET'}).handler(async () => ({
   googleEnabled: googleAuthEnabled,

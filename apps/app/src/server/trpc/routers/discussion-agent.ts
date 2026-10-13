@@ -6,7 +6,7 @@ import {askAgent} from '../../agent/anthropic'
 import type {AgentMessage} from '../../agent/anthropic'
 import {db} from '../../db'
 import {agentMessage} from '../../db/schema'
-import {agentEnabled} from '../../env'
+import {agentEnabled} from '@whocards/env/app'
 import {createTRPCRouter, roleProcedure} from '../trpc'
 
 /** agent_message.role is a plain text column (no DB-level enum); this app only ever

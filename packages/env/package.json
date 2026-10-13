@@ -1,0 +1,29 @@
+{
+  "name": "@whocards/env",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./load": "./src/load.ts",
+    "./core": "./src/core.ts",
+    "./db": "./src/db.ts",
+    "./resend": "./src/resend.ts",
+    "./netlify": "./src/netlify.ts",
+    "./app": "./src/app.ts",
+    "./website": "./src/website.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@t3-oss/env-core": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@whocards/typescript-config": "workspace:*",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

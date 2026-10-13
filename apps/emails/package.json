@@ -21,6 +21,7 @@
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.0",
     "@whocards/app-store": "workspace:*",
+    "@whocards/env": "workspace:*",
     "@whocards/tokens": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",

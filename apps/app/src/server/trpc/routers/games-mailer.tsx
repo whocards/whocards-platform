@@ -1,7 +1,7 @@
 import {GameRecapEmail, gameRecapSubject, gameRecapText} from '@whocards/emails'
 import {sendEmailBatch} from '@whocards/emails/resend'
 
-import {env} from '../../env'
+import {env} from '@whocards/env/app'
 import type {SendRecaps} from './games'
 
 export const sendRecapsWithResend: SendRecaps = async (recaps) => {

@@ -1,71 +1,26 @@
-import {createEnv} from '@t3-oss/env-core'
-import {z} from 'zod'
+import {createWebsiteEnv} from '@whocards/env/website'
 
-const optionalUrl = z.preprocess(
-  (value) => (value === '' ? undefined : value),
-  z.string().url().optional()
-)
-
-export const env = createEnv({
-  server: {
-    NODE_ENV: z.enum(['development', 'test', 'production']).optional(),
-    CONTEXT: z.string().optional(),
-    DB_URL: z.string(),
-    CONTACTS_SHEET_URL: z.string(),
-    // Resend API key for all transactional email (AI Check-In lead magnet, app
-    // launch subscribe, contact form). Required: without it prod silently stops
-    // sending email, so the build must fail loudly instead (see 2026-07-02 webhook
-    // outage — missing Resend env vars shipped to prod unnoticed).
-    RESEND_API_KEY: z.string().min(1),
-    // Must be a Resend-verified sender. Defaults to the WhoCards domain — verify
-    // whocards.cc in Resend (or override this env) before it can email real users.
-    RESEND_FROM_EMAIL: z.string().default('WhoCards <hello@whocards.cc>'),
-    // Resend Segment (Audience) ids for syncing email_consent rows (#120).
-    // Required: when absent, consent sync is a silent no-op and the webhook drops
-    // segment-scoped unsubscribes — permanent consent drift, not a graceful degrade.
-    RESEND_SEGMENT_NEWSLETTER_ID: z.string().min(1),
-    RESEND_SEGMENT_APP_WAITLIST_ID: z.string().min(1),
-    // Android Closed Test links used by /android-testers and tester lifecycle emails.
-    ANDROID_TESTER_SIGNUP_URL: optionalUrl,
-    ANDROID_TESTER_GROUP_URL: optionalUrl,
-    ANDROID_TESTER_OPT_IN_URL: optionalUrl,
-    ANDROID_TESTER_FEEDBACK_URL: optionalUrl,
-    // Svix signing secret for verifying Resend webhook deliveries (#121).
-    // Required: when unset every delivery 500s until Resend disables the endpoint
-    // entirely (happened 2026-07-02), losing unsubscribe events. Must match the
-    // signing_secret from GET https://api.resend.com/webhooks/{id}.
-    RESEND_WEBHOOK_SECRET: z.string().startsWith('whsec_'),
-    // Cloudflare Turnstile — server-side secret protecting the /contact and
-    // /request-cards forms. Required: the build fails without it (incl. dev) so bot
-    // protection can never be silently dropped by a missing env var.
-    TURNSTILE_SECRET_KEY: z.string().min(1),
-    // Workshop game transcription; optional so dev/preview fall back to a fake transcriber.
-    OPENAI_API_KEY: z.preprocess(
-      (value) => (value === '' ? undefined : value),
-      z.string().optional()
-    ),
-  },
-  clientPrefix: 'PUBLIC_',
-  client: {
-    PUBLIC_POSTHOG_KEY: z.string().optional(),
-    PUBLIC_POSTHOG_HOST: z.string().url().optional().default('https://who.whocards.cc'),
-    PUBLIC_POSTHOG_UI_HOST: z.string().url().optional().default('https://eu.posthog.com'),
-    // iOS and Android launch on separate timelines: iOS is approved and public,
-    // Android trails by Google's mandatory 12-tester / 14-day Closed Test. Each
-    // store has its own switch so /app can offer a real download for one platform
-    // while routing the other into the closed test.
-    //
-    // Set to "true" once the iOS App Store listing is live (default true — iOS is
-    // approved and the public download surface today).
-    PUBLIC_APP_IOS_LAUNCHED: z.stringbool().default(true),
-    // Set to "true" once the Google Play listing is public (default false — Android
-    // is still in Closed Testing; until then /app sends Android visitors to the
-    // /android-testers funnel instead of a Play badge).
-    PUBLIC_APP_ANDROID_LAUNCHED: z.stringbool().default(false),
-    // Cloudflare Turnstile — client-side site key for the form widgets. Required
-    // (build fails without it) so the widget always renders. Use Cloudflare's
-    // always-passing test keys for local dev.
-    PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1),
-  },
-  runtimeEnv: import.meta.env,
+// Astro inlines only the private vars this file names, so every var is read explicitly.
+export const env = createWebsiteEnv({
+  NODE_ENV: import.meta.env.NODE_ENV,
+  CONTEXT: import.meta.env.CONTEXT,
+  DB_URL: import.meta.env.DB_URL,
+  CONTACTS_SHEET_URL: import.meta.env.CONTACTS_SHEET_URL,
+  RESEND_API_KEY: import.meta.env.RESEND_API_KEY,
+  RESEND_FROM_EMAIL: import.meta.env.RESEND_FROM_EMAIL,
+  RESEND_SEGMENT_NEWSLETTER_ID: import.meta.env.RESEND_SEGMENT_NEWSLETTER_ID,
+  RESEND_SEGMENT_APP_WAITLIST_ID: import.meta.env.RESEND_SEGMENT_APP_WAITLIST_ID,
+  RESEND_WEBHOOK_SECRET: import.meta.env.RESEND_WEBHOOK_SECRET,
+  ANDROID_TESTER_SIGNUP_URL: import.meta.env.ANDROID_TESTER_SIGNUP_URL,
+  ANDROID_TESTER_GROUP_URL: import.meta.env.ANDROID_TESTER_GROUP_URL,
+  ANDROID_TESTER_OPT_IN_URL: import.meta.env.ANDROID_TESTER_OPT_IN_URL,
+  ANDROID_TESTER_FEEDBACK_URL: import.meta.env.ANDROID_TESTER_FEEDBACK_URL,
+  TURNSTILE_SECRET_KEY: import.meta.env.TURNSTILE_SECRET_KEY,
+  OPENAI_API_KEY: import.meta.env.OPENAI_API_KEY,
+  PUBLIC_POSTHOG_KEY: import.meta.env.PUBLIC_POSTHOG_KEY,
+  PUBLIC_POSTHOG_HOST: import.meta.env.PUBLIC_POSTHOG_HOST,
+  PUBLIC_POSTHOG_UI_HOST: import.meta.env.PUBLIC_POSTHOG_UI_HOST,
+  PUBLIC_APP_IOS_LAUNCHED: import.meta.env.PUBLIC_APP_IOS_LAUNCHED,
+  PUBLIC_APP_ANDROID_LAUNCHED: import.meta.env.PUBLIC_APP_ANDROID_LAUNCHED,
+  PUBLIC_TURNSTILE_SITE_KEY: import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
 })

@@ -1,6 +1,7 @@
 import type {Config} from 'drizzle-kit'
 
-import {env} from './src/server/env'
+import '@whocards/env/load'
+import {dbEnv} from '@whocards/env/db'
 
 const config: Config = {
   schema: './src/server/db/schema.ts',
@@ -8,7 +9,7 @@ const config: Config = {
   dialect: 'postgresql',
   verbose: true,
   dbCredentials: {
-    url: env.DB_URL,
+    url: dbEnv.DB_URL,
   },
 }
 
