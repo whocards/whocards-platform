@@ -1,8 +1,7 @@
 import {createEnv} from '@t3-oss/env-core'
 import {z} from 'zod'
 
-import {coreSchema} from './core'
-import {dbSchema} from './db'
+import {coreSchema, dbSchema} from './core'
 import {resendConsentSchema, resendSchema} from './resend'
 
 type RuntimeEnv = Record<string, string | boolean | number | undefined>

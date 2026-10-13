@@ -5,7 +5,7 @@ export const resendSchema = {
   // Required: without it prod silently stops sending email (2026-07-02 outage).
   RESEND_API_KEY: z.string().min(1),
   // Must be a Resend-verified sender.
-  RESEND_FROM_EMAIL: z.string().default('WhoCards <hello@whocards.cc>'),
+  RESEND_FROM_EMAIL: z.string().min(1).default('WhoCards <hello@whocards.cc>'),
 }
 
 /** Consent sync and its Resend webhook: apps/website only. */

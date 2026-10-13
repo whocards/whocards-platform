@@ -26,4 +26,10 @@ describe('readTestEmailEnv', () => {
       readTestEmailEnv({...validEnv, EMAIL_TEST_RECIPIENT: 'one@example.com,two@example.com'})
     ).toThrow(/Invalid email address/)
   })
+
+  it('rejects a blank sender', () => {
+    expect(() => readTestEmailEnv({...validEnv, RESEND_FROM_EMAIL: ''})).toThrow(
+      /RESEND_FROM_EMAIL/
+    )
+  })
 })

@@ -1,8 +1,7 @@
 import {createEnv} from '@t3-oss/env-core'
 import {z} from 'zod'
 
-import {coreSchema} from './core'
-import {dbSchema} from './db'
+import {coreSchema, dbSchema} from './core'
 import {resendSchema} from './resend'
 
 /** apps/app (WhoCards @ Work, ADR-0008): server-only, read in the Nitro/Node runtime. */
