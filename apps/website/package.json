@@ -83,7 +83,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@astrojs/node": "^11.1.7",
-    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite": "^0.5.9",
     "@iconify/tools": "^5.0.14",
     "@netlify/functions": "^2.3.0",
     "@playwright/test": "^1.64.0",

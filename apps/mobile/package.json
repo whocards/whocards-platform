@@ -65,7 +65,7 @@
     "react-native-safe-area-context": "~5.9.1",
     "react-native-screens": "4.27.0",
     "react-native-web": "~0.21.4",
-    "react-native-worklets": "0.12.1",
+    "react-native-worklets": "0.12.2",
     "zod": "catalog:"
   },
   "//lightningcss": "A peer dependency of react-native-css, not something this app imports — it is listed (and pinned) only so the peer resolves. The exact version is in lockstep with the '@expo/metro-config>lightningcss' override in pnpm-workspace.yaml; that comment carries the reason for the pin and the condition for removing both. Bump the two together or not at all.",
