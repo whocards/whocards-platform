@@ -306,6 +306,33 @@ describe('game.round.response / game.me', () => {
     expect((await a.caller.game.me.get()).responses).toMatchObject([{transcript: 'Kept'}])
   })
 
+  it('keeps a turn in the mode it was claimed in and refuses answers on a None turn', async () => {
+    const {a, b, fake} = await pairedUp()
+    fake.snapshot.game.settings.answerModes = [{mode: 'none', at: 0}]
+    const turn = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
+    expect(turn?.answerMode).toBe('none')
+
+    fake.advance(1000)
+    fake.snapshot.game.settings.answerModes.push({mode: 'type', at: fake.port.now()})
+    expect((await a.caller.game.state()).pair?.activeTurn?.answerMode).toBe('none')
+    const answer = {turnId: turn?.id ?? '', language: 'en', durationMs: 0, consent: true} as const
+    expect(await refusalOf(a.caller.game.round.response({...answer, transcript: 'Nope'}))).toBe(
+      'wrong_answer_mode'
+    )
+
+    await a.caller.game.round.turn({action: 'finish'})
+    fake.advance(1000)
+    const next = (await b.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
+    expect(next?.answerMode).toBe('type')
+    const saved = await b.caller.game.round.response({
+      ...answer,
+      turnId: next?.id ?? '',
+      transcript: 'Typed',
+    })
+    expect(saved.phase).toBe('pair_done')
+    expect((await a.caller.game.me.get()).responses).toEqual([])
+  })
+
   it('takes feedback and returns fresh state', async () => {
     const {a, fake} = await pairedUp()
     const state = await a.caller.game.feedback({rating: 5, text: 'Loved it'})

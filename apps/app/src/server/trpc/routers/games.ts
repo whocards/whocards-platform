@@ -1,9 +1,11 @@
 import {TRPCError} from '@trpc/server'
 import {getAllDecks, getDeck} from '@whocards/decks'
 import {
+  answerModeSchema,
   canMoveGame,
   checkPlan,
   checkStartRound,
+  currentAnswerMode,
   currentRound,
   CUSTOM_ID_PREFIX,
   CUSTOM_SOURCE,
@@ -23,6 +25,7 @@ import {
 } from '@whocards/game'
 import type {GameRecapProps} from '@whocards/emails'
 import type {
+  AnswerMode,
   CustomQuestion,
   GameLanguage,
   GameSnapshot,
@@ -99,6 +102,8 @@ export type HostStore = {
     whileStatus: 'pending' | 'live'
     settings: RoundRecord
   }) => Promise<WriteResult>
+  /** Appends to `hosted_game.settings.answerModes` while the game has not ended. */
+  setAnswerMode: (input: {gameId: string; mode: AnswerMode; at: number}) => Promise<WriteResult>
   /** Replaces `hosted_game.settings.questions`. */
   saveQuestions: (gameId: string, questions: CustomQuestion[]) => Promise<void>
   /** Pending round to live in a live game; 'conflict' when another round is live, 'stale' when the game or round moved on. */
@@ -186,6 +191,8 @@ export type GameDetail = {
     /** The caller is an admin or the creator, so may change `facilitators`. */
     canManageHosts: boolean
     status: GameStatus
+    /** How the next claimed turn is answered. */
+    answerMode: AnswerMode
     recap: RecapState | null
   }
   questions: Array<CustomQuestion & {used: boolean}>
@@ -223,6 +230,7 @@ const detailOf = (
       organizer: organizerOf(snapshot),
       ...hosting,
       status: snapshot.game.status,
+      answerMode: currentAnswerMode(snapshot.game.settings),
       recap: readRecapState(snapshot.game.settings),
     },
     questions: sources.custom.map((q) => ({...q, used: used.has(q.id)})),
@@ -424,6 +432,18 @@ export const createGamesRouter = ({
           }),
           'The round changed meanwhile. Reload and try again.'
         )
+        return detail(input.gameId, ctx)
+      }),
+
+    /** Applies from the next claimed turn; a turn in progress keeps the mode it started in. */
+    setAnswerMode: gameProcedure
+      .input(gameIdSchema.extend({mode: answerModeSchema}))
+      .mutation(async ({ctx, input}) => {
+        const snapshot = await load(input.gameId)
+        if (snapshot.game.status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
+        if (currentAnswerMode(snapshot.game.settings) !== input.mode) {
+          conflictOr(await store.setAnswerMode({...input, at: store.now()}), 'The game is over.')
+        }
         return detail(input.gameId, ctx)
       }),
 

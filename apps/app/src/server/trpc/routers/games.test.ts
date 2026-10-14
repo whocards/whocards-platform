@@ -120,6 +120,12 @@ const memoryStore = (clock = {now: T0}) => {
       Object.assign(g, {title, settings: {...g.settings, organizer}})
       return 'ok'
     },
+    setAnswerMode: async ({gameId, mode, at}) => {
+      const g = game(gameId)
+      if (!g || g.status === 'ended') return 'stale'
+      g.settings = {...g.settings, answerModes: [...(g.settings.answerModes ?? []), {mode, at}]}
+      return 'ok'
+    },
     goLive: async (gameId) => {
       const g = game(gameId)
       if (g?.status !== 'lobby') return false
@@ -354,6 +360,7 @@ describe('game access', () => {
       c.saveQuestions({gameId, questions: [], baseIds: []}),
       c.facilitatorOptions({gameId}),
       c.setFacilitator({gameId, userId: 'u-avi', on: true}),
+      c.setAnswerMode({gameId, mode: 'type'}),
     ]
     for (const call of calls) await expect(call).rejects.toMatchObject({code: 'NOT_FOUND'})
     const missing = c.detail({gameId: '00000000-0000-4000-8000-000000000999'})
@@ -762,6 +769,30 @@ describe('custom questions and round plans', () => {
   })
 })
 
+describe('answer mode', () => {
+  it('defaults to Voice, is set on a draft, switches live, and freezes once ended', async () => {
+    const {caller} = setup()
+    const c = caller()
+    const {id: gameId} = await c.create(GAME)
+    expect((await c.detail({gameId})).game.answerMode).toBe('voice')
+    expect((await c.setAnswerMode({gameId, mode: 'none'})).game.answerMode).toBe('none')
+    await c.goLive({gameId})
+    expect((await c.setAnswerMode({gameId, mode: 'type'})).game.answerMode).toBe('type')
+    await c.endGame({gameId})
+    await expect(c.setAnswerMode({gameId, mode: 'voice'})).rejects.toMatchObject({
+      message: 'The game is over.',
+    })
+  })
+
+  it('logs each switch with its time, so open turns keep the mode they were claimed in', async () => {
+    const {c, gameId, mem, clock} = await played()
+    await c.setAnswerMode({gameId, mode: 'type'})
+    await c.setAnswerMode({gameId, mode: 'type'})
+    const settings = mem.games.find((g) => g.id === gameId)?.settings
+    expect(settings?.answerModes).toEqual([{mode: 'type', at: clock.now}])
+  })
+})
+
 describe('endGame', () => {
   it('ends the live round and the game without mailing anyone', async () => {
     const {c, gameId, sendRecaps, mem} = await played()
@@ -963,6 +994,19 @@ describe('buildRecaps', () => {
     const deck = getDeck('hajnalig')!
     const firstUndrawn = deck.questionIds.find((id) => id !== '1' && id !== '3')!
     expect(anna?.props.question).toBe(deck.questions[firstUndrawn]?.hu)
+  })
+
+  it('still recaps a player who saved nothing, listing the questions they answered', () => {
+    const recaps = buildRecaps({snapshot: snapshot(), savedByPlayer: {}, now: T0, random: () => 0})
+    const deck = getDeck('hajnalig')!
+    expect(recaps.map((r) => r.to)).toEqual(['a@example.com', 'b@example.com', 'c@example.com'])
+    expect(recaps[0]?.props.asked).toEqual([deck.questions['1']?.hu, deck.questions['3']?.hu])
+    expect(recaps[1]?.props).toMatchObject({
+      asked: [deck.questions['2']?.en],
+      you: {savedAnswers: 0},
+      myAnswersUrl: 'https://whocards.cc/events/sdd-2026/me?code=K7QM2',
+    })
+    expect(recaps[2]?.props.asked).toEqual([])
   })
 
   it('previews the room for a sample player when nobody asked for a recap', () => {

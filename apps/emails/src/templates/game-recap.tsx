@@ -21,6 +21,8 @@ export type GameRecapProps = Readonly<{
     languages: number
   }>
   you: Readonly<{peopleMet: number; turns: number; minutes: number; savedAnswers: number}>
+  /** The questions the player answered, oldest first; there even when nothing was saved. */
+  asked: readonly string[]
   /** A question from the round decks the player didn't draw; null when the deck ran dry. */
   question: string | null
   appUrl: string
@@ -64,6 +66,7 @@ export function GameRecapEmail({
   organizer,
   event,
   you,
+  asked,
   question,
   appUrl,
   eventUrl,
@@ -84,6 +87,17 @@ export function GameRecapEmail({
 
       <Text style={sectionLabel}>YOUR GAME</Text>
       <StatRow stats={yourStats(you)} />
+
+      {asked.length > 0 && (
+        <>
+          <Text style={sectionLabel}>YOUR QUESTIONS</Text>
+          {asked.map((q, i) => (
+            <Text key={`${i}:${q}`} style={askedText}>
+              {q}
+            </Text>
+          ))}
+        </>
+      )}
 
       {question && (
         <Section style={questionCard}>
@@ -125,11 +139,14 @@ export function gameRecapText({
   organizer,
   event,
   you,
+  asked,
   question,
   appUrl,
   eventUrl,
   myAnswersUrl,
 }: GameRecapProps) {
+  const questions =
+    asked.length > 0 ? `\nYOUR QUESTIONS\n${asked.map((q) => `- ${q}`).join('\n')}\n` : ''
   const take = question
     ? `\nA QUESTION TO TAKE HOME\n\n${question}\nOne you didn't draw. Try it on someone this week.\n`
     : ''
@@ -144,7 +161,7 @@ ${statLines(eventStats(event))}
 YOUR GAME
 You met ${plural(you.peopleMet, 'person', 'people')}.
 ${statLines(yourStats(you))}
-${take}
+${questions}${take}
 See my answers: ${myAnswersUrl}
 Get the WhoCards app: ${appUrl}
 About the event: ${eventUrl}
@@ -206,6 +223,7 @@ const statLabel = {
   lineHeight: '16px',
   margin: '4px 0 0',
 }
+const askedText = {...paragraph, margin: '0 0 10px'}
 const questionCard = {
   backgroundColor: emailBrand.colors.background,
   border: `1px solid ${emailBrand.colors.cardMuted}`,
@@ -250,6 +268,7 @@ GameRecapEmail.PreviewProps = {
   organizer: 'Spec-Driven Development Conf',
   event: {players: 42, rounds: 4, turns: 268, minutes: 301, languages: 2},
   you: {peopleMet: 4, turns: 8, minutes: 9, savedAnswers: 6},
+  asked: ['What would you do with a free year?', 'Who taught you to be brave?'],
   question: 'What is something you changed your mind about this year?',
   appUrl: 'https://whocards.cc/app',
   eventUrl: 'https://whocards.cc/events/sdd-2026',

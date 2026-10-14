@@ -1,6 +1,7 @@
 import type {GamePort} from '@whocards/api'
 import {logError} from '@whocards/observability'
 import {
+  answerModeAt,
   MAX_AUDIO_BYTES,
   transcribeFieldsSchema,
   transcriptSchema,
@@ -93,7 +94,10 @@ export const handleTranscribe = async (request: Request, deps: TranscribeDeps) =
   if (!player) return fail(401, 'Join the game first')
   const snapshot = await deps.game.loadSnapshot(player.gameId)
   const turn = snapshot && uploadableTurn(snapshot, player.id, deps.game.now())
-  if (!turn) return fail(409, 'No turn to transcribe')
+  if (!snapshot || !turn) return fail(409, 'No turn to transcribe')
+  if (answerModeAt(snapshot.game.settings, turn.startedAt) !== 'voice') {
+    return fail(409, 'This turn takes no recording')
+  }
   if (!(await deps.game.claimTranscription(turn.id))) return fail(409, 'Turn already transcribed')
 
   try {

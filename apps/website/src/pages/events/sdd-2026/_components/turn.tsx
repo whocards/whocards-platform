@@ -45,6 +45,21 @@ const Clock = ({timer, language}: {timer: TimerView; language: PlayerState['me']
   )
 }
 
+const CopyLink = ({code, language}: {code: string; language: PlayerState['me']['language']}) => {
+  const copy = playerCopyFor(language)
+  const [copied, setCopied] = useState(false)
+  const copyLink = () =>
+    void navigator.clipboard
+      .writeText(`${location.origin}/events/sdd-2026?code=${code}`)
+      .then(() => setCopied(true))
+      .catch(() => setCopied(false))
+  return (
+    <Button className='bg-primary-dark text-white' onClick={copyLink}>
+      {copied ? copy.turn.linkCopied : copy.turn.copyLink}
+    </Button>
+  )
+}
+
 export const Turn = ({state, timer, turn}: TurnProps) => {
   const {me, pair} = state
   const copy = playerCopyFor(me.language)
@@ -56,12 +71,26 @@ export const Turn = ({state, timer, turn}: TurnProps) => {
   const partnerAnswering = active !== null && mine === null
 
   const myCard = () => {
+    if (mine && turn.micBlocked)
+      return (
+        <Card label={copy.turn.me}>
+          <Question turn={mine} />
+          <Clock timer={timer} language={me.language} />
+          <p className='text-primary-light text-xl font-semibold'>{copy.turn.micBlocked}</p>
+          <p>{copy.turn.micBlockedHint}</p>
+          <CopyLink code={state.game.code} language={me.language} />
+          <Button className='bg-primary-light text-darkest' onClick={() => void turn.finish()}>
+            {rules.actions.finish}
+          </Button>
+        </Card>
+      )
+    const voice = mine?.answerMode === 'voice'
     if (mine)
       return (
         <Card label={copy.turn.me}>
           <Question turn={mine} />
           <Clock timer={timer} language={me.language} />
-          {turn.canRecord && turn.stage === 'idle' && (
+          {voice && turn.canRecord && turn.stage === 'idle' && (
             <Button className='bg-primary-dark text-white' onClick={() => void turn.record()}>
               {copy.turn.record}
             </Button>
@@ -72,7 +101,7 @@ export const Turn = ({state, timer, turn}: TurnProps) => {
               {copy.turn.recording}
             </span>
           )}
-          {!turn.canRecord && <span className='text-gray-dark'>{copy.turn.justTalk}</span>}
+          {voice && !turn.canRecord && <span className='text-gray-dark'>{copy.turn.justTalk}</span>}
           <Button
             className='bg-primary-light text-darkest'
             disabled={!['idle', 'starting', 'recording'].includes(turn.stage)}
@@ -135,12 +164,14 @@ export const Turn = ({state, timer, turn}: TurnProps) => {
 }
 
 type ReviewProps = {
-  language: PlayerState['me']['language']
+  state: PlayerState
+  timer: TimerView
   turn: TurnControls
   draft: Draft | null
 }
 
-export const Review = ({language, turn, draft}: ReviewProps) => {
+export const Review = ({state, timer, turn, draft}: ReviewProps) => {
+  const {language} = state.me
   const copy = playerCopyFor(language)
   const rules = copyFor(language)
   const [text, setText] = useState(draft?.text ?? '')
@@ -153,28 +184,47 @@ export const Review = ({language, turn, draft}: ReviewProps) => {
       </Screen>
     )
 
+  const skip = (
+    <Button variant='ghost' disabled={turn.stage !== 'review'} onClick={turn.discard}>
+      {rules.actions.skip}
+    </Button>
+  )
+
+  if (draft.kind === 'failed')
+    return (
+      <Screen title={copy.review.title}>
+        <p className='text-center text-xl'>{copy.review.failed}</p>
+        <Button disabled={turn.stage !== 'review'} onClick={() => void turn.retryTranscribe()}>
+          {copy.review.retry}
+        </Button>
+        {skip}
+      </Screen>
+    )
+
+  const typed = draft.kind === 'typed'
+  const asked = typed ? state.pair?.turns.find((t) => t.id === draft.turnId) : undefined
   return (
     <Screen title={copy.review.title}>
-      <p className='text-mutedOnLight'>{copy.review.hint}</p>
+      {asked && (
+        <Card label={copy.turn.me}>
+          <Question turn={asked} />
+          <Clock timer={timer} language={language} />
+        </Card>
+      )}
+      <p className='text-mutedOnLight'>{typed ? copy.review.typeHint : copy.review.hint}</p>
       <textarea
         className='textarea bg-white text-darkest border-darkest/20 min-h-48 w-full rounded-2xl text-lg'
+        aria-label={typed ? copy.review.typeHint : copy.review.title}
         value={text}
         onChange={(event) => setText(event.target.value)}
       />
-      {turn.notice === 'transcribe_failed' && (
-        <Button variant='ghost' onClick={() => void turn.retryTranscribe()}>
-          {copy.review.retry}
-        </Button>
-      )}
       <Button
         disabled={turn.stage !== 'review' || text.trim() === ''}
         onClick={() => void turn.save(text)}
       >
         {turn.stage === 'saving' ? copy.review.saving : rules.actions.save}
       </Button>
-      <Button variant='ghost' disabled={turn.stage !== 'review'} onClick={turn.discard}>
-        {rules.actions.skip}
-      </Button>
+      {skip}
     </Screen>
   )
 }

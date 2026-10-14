@@ -23,6 +23,7 @@ const en: GameCopy = {
     no_open_turn: "You're not answering right now",
     not_your_turn: 'Not your turn',
     not_found: 'Not found',
+    wrong_answer_mode: "This turn doesn't take that kind of answer",
   },
   phases: {
     waiting: 'Waiting for the next round',

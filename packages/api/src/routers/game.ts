@@ -1,6 +1,7 @@
 import {TRPCError} from '@trpc/server'
 import {getDeck} from '@whocards/decks'
 import {
+  answerModeAt,
   checkClaim,
   checkFinish,
   checkPair,
@@ -209,6 +210,9 @@ export const gameRouter = createTRPCRouter({
       const turn = snapshot.turns.find((t) => t.id === input.turnId)
       const round = turn && snapshot.rounds.find((r) => r.id === turn.roundId)
       if (!turn || !round || turn.playerId !== ctx.player.id) throw refuse('not_found')
+      if (answerModeAt(snapshot.game.settings, turn.startedAt) === 'none') {
+        throw refuse('wrong_answer_mode')
+      }
 
       if (turn.finishedAt === null) {
         const finishedAt = Math.min(ctx.game.now(), deadlineOf(round, turn))

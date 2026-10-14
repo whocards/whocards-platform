@@ -7,7 +7,7 @@ import {useCallback, useMemo, useState} from 'react'
 import {ErrorBoundary} from '~components/ErrorBoundary'
 import {browserPlatform, createGameApi} from '~lib/game/client'
 import {formatClock} from '~lib/game/format'
-import {canRecord, createWebRecorder} from '~lib/game/recorder'
+import {createWebRecorder} from '~lib/game/recorder'
 import type {TokenStore} from '~lib/game/token-store'
 import {createTokenStore} from '~lib/game/token-store'
 import {createWebTranscriber} from '~lib/game/transcriber'
@@ -32,7 +32,7 @@ const Game = ({session, state, tokens, code}: GameProps) => {
   const copy = playerCopyFor(language)
   const [devices] = useState(() => ({recorder: createWebRecorder(), wakeLock: createWakeLock()}))
   const transcriber = useMemo(() => createWebTranscriber(() => tokens.get(code)), [tokens, code])
-  const records = useMemo(() => tokens.records(code) && canRecord(), [tokens, code])
+  const records = useMemo(() => tokens.records(code), [tokens, code])
 
   const timer = useRoundTimer({
     round: state.round,
@@ -53,8 +53,9 @@ const Game = ({session, state, tokens, code}: GameProps) => {
     if (reviewing)
       return (
         <Review
-          key={`${turn.draft?.turnId}:${turn.draft?.text}`}
-          language={language}
+          key={`${turn.draft?.turnId}:${turn.draft?.kind}:${turn.draft?.text}`}
+          state={state}
+          timer={timer}
           turn={turn}
           draft={turn.draft}
         />

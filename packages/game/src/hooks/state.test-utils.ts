@@ -19,6 +19,7 @@ export const turnView = (extra: Partial<TurnView> = {}): TurnView => ({
   playerId: 'a',
   questionId: 'q1',
   questionText: 'What surprised you this week?',
+  answerMode: 'voice',
   startedAt: 0,
   finishedAt: null,
   deadline: 90_000,

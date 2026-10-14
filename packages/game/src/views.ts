@@ -1,5 +1,6 @@
 import type {GameSnapshot, Round, Turn} from './model'
 import type {GameLanguage, PlayerState, RoundView, ScreenState, TurnView} from './schemas'
+import {answerModeAt} from './rules/answer-mode'
 import {pairOf} from './rules/pairing'
 import {currentRound} from './rules/status'
 import {deadlineOf, finishedAtOf, openTurnOf, phaseOf, turnsOf} from './rules/turns'
@@ -20,6 +21,7 @@ export const roundView = (round: Round): RoundView => ({
 })
 
 const turnView = (
+  snapshot: GameSnapshot,
   round: Round,
   turn: Turn,
   now: number,
@@ -30,6 +32,7 @@ const turnView = (
   playerId: turn.playerId,
   questionId: turn.questionId,
   questionText: resolve(turn.questionId, language),
+  answerMode: answerModeAt(snapshot.game.settings, turn.startedAt),
   startedAt: turn.startedAt,
   finishedAt: finishedAtOf(round, turn, now),
   deadline: deadlineOf(round, turn),
@@ -50,7 +53,7 @@ export const playerView = (
   let pairView: PlayerState['pair'] = null
   if (round && pair) {
     const turns = turnsOf(snapshot, pair.id).map((t) =>
-      turnView(round, t, now, me.language, resolve)
+      turnView(snapshot, round, t, now, me.language, resolve)
     )
     const open = openTurnOf(round, turnsOf(snapshot, pair.id), now)
     pairView = {

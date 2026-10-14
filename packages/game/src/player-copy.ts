@@ -1,7 +1,7 @@
 import type {GameLanguage} from './schemas'
 
 /** Problems on the player's own device, as opposed to server refusals. */
-export type DeviceNotice = 'keep_screen_on' | 'mic_unavailable' | 'transcribe_failed' | 'network'
+export type DeviceNotice = 'keep_screen_on' | 'network'
 
 export type PlayerCopy = {
   join: {
@@ -44,8 +44,20 @@ export type PlayerCopy = {
     overtime: string
     answered: string
     notYet: string
+    micBlocked: string
+    micBlockedHint: string
+    copyLink: string
+    linkCopied: string
   }
-  review: {title: string; hint: string; transcribing: string; retry: string; saving: string}
+  review: {
+    title: string
+    hint: string
+    typeHint: string
+    transcribing: string
+    failed: string
+    retry: string
+    saving: string
+  }
   feedback: {title: string; rating: string; text: string; send: string; thanks: string}
   notices: Record<DeviceNotice, string>
   mine: {
@@ -119,11 +131,18 @@ const en: PlayerCopy = {
     overtime: "Time's up. Wrap up",
     answered: 'Answered',
     notYet: 'Not yet',
+    micBlocked: 'Mic blocked. Open in Safari/Chrome',
+    micBlockedHint:
+      "This browser won't let the game use your mic, so this answer can't be saved. Talk anyway, then tap Done.",
+    copyLink: 'Copy link',
+    linkCopied: 'Link copied',
   },
   review: {
     title: 'Your answer',
     hint: 'Fix anything before you save',
+    typeHint: 'Type your answer',
     transcribing: 'Turning speech into text',
+    failed: "Couldn't turn your answer into text",
     retry: 'Try again',
     saving: 'Saving',
   },
@@ -136,8 +155,6 @@ const en: PlayerCopy = {
   },
   notices: {
     keep_screen_on: 'Keep your screen on',
-    mic_unavailable: 'No microphone. Just talk this turn',
-    transcribe_failed: "Couldn't turn it into text. Try again or type it",
     network: 'Connection trouble. Try again',
   },
   mine: {

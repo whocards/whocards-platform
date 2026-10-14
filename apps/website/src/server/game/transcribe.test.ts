@@ -120,6 +120,17 @@ describe('handleTranscribe', () => {
     }
   })
 
+  it('rejects a turn claimed in Type or None mode, even after a switch back to Voice', async () => {
+    const state = snapshot('live', 'live')
+    state.game.settings.answerModes = [
+      {mode: 'type', at: 0},
+      {mode: 'voice', at: myTurn.startedAt + 1},
+    ]
+    const d = deps({}, state)
+    expect((await handleTranscribe(post(valid), d)).status).toBe(409)
+    expect(d.transcriber).not.toHaveBeenCalled()
+  })
+
   it('rejects oversized uploads before reading them', async () => {
     const request = new Request('http://localhost/api/game/transcribe', {
       method: 'POST',

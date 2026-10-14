@@ -27,7 +27,7 @@ type Session = {
   startedAt: number
 }
 
-export const canRecord = (): boolean =>
+const canRecord = (): boolean =>
   typeof MediaRecorder !== 'undefined' && 'getUserMedia' in (navigator.mediaDevices ?? {})
 
 export const createWebRecorder = (): Recorder<Blob> => {
@@ -36,6 +36,7 @@ export const createWebRecorder = (): Recorder<Blob> => {
   return {
     async start() {
       if (session) return
+      if (!canRecord()) throw new Error('This browser cannot record')
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {echoCancellation: true, noiseSuppression: true},
       })

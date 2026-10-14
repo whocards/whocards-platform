@@ -1,8 +1,8 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {createFileRoute, redirect} from '@tanstack/react-router'
 import {TRPCClientError} from '@trpc/client'
-import {CUSTOM_SOURCE, qrPath, sourceOf} from '@whocards/game'
-import type {OddRule, Overtime, QuestionPlan} from '@whocards/game'
+import {answerModeSchema, CUSTOM_SOURCE, qrPath, sourceOf} from '@whocards/game'
+import type {AnswerMode, OddRule, Overtime, QuestionPlan} from '@whocards/game'
 import {useMemo, useState} from 'react'
 
 import {Empty, ErrorText, Page, PageHeader, SectionTitle} from '~/components/page'
@@ -189,7 +189,16 @@ function HostGame() {
           </p>
         </Card>
       ) : null}
-      {ended ? <RecapPanel gameId={gameId} recap={game.recap} /> : null}
+      {ended ? (
+        <RecapPanel gameId={gameId} recap={game.recap} />
+      ) : (
+        <AnswerModePanel
+          mode={game.answerMode}
+          live={!draft}
+          pending={act.isPending}
+          onChange={(mode) => act.mutate(() => trpc.games.setAnswerMode.mutate({gameId, mode}))}
+        />
+      )}
 
       <div className="mb-12 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
         <JoinPanel code={game.code} />
@@ -362,6 +371,51 @@ function DetailsEditor({
           </Button>
         </div>
       </form>
+    </Card>
+  )
+}
+
+const ANSWER_MODES: Record<AnswerMode, {label: string; hint: string}> = {
+  voice: {label: 'Voice', hint: 'Players record, read the transcript, and save it.'},
+  type: {label: 'Type', hint: 'No mic. Players type their answer.'},
+  none: {label: 'None', hint: 'Nothing captured. Phones only pace turns.'},
+}
+
+function AnswerModePanel({
+  mode,
+  live,
+  pending,
+  onChange,
+}: Readonly<{
+  mode: AnswerMode
+  live: boolean
+  pending: boolean
+  onChange: (mode: AnswerMode) => void
+}>) {
+  return (
+    <Card className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="font-semibold">How players answer</p>
+        <p className="text-sm text-gray-lighter">
+          {`${ANSWER_MODES[mode].hint}${live ? ' A switch applies from the next turn.' : ''}`}
+        </p>
+      </div>
+      <fieldset aria-label="Answer mode" className="flex gap-1">
+        {answerModeSchema.options.map((m) => (
+          <Button
+            key={m}
+            size="sm"
+            variant={m === mode ? 'selected' : 'secondary'}
+            aria-pressed={m === mode}
+            disabled={pending}
+            onClick={() => {
+              if (m !== mode) onChange(m)
+            }}
+          >
+            {ANSWER_MODES[m].label}
+          </Button>
+        ))}
+      </fieldset>
     </Card>
   )
 }

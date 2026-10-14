@@ -8,6 +8,7 @@ import {
   questionText,
   sourceRefs,
   turnDeadline,
+  turnRef,
   usedRefs,
 } from '@whocards/game'
 import type {GameSnapshot, Player, Round, Turn} from '@whocards/game'
@@ -126,7 +127,9 @@ const recapProps = ({snapshot, savedByPlayer, now, random}: RecapInput) => {
   const candidates = [...new Set(played.flatMap((r) => sourceRefs(r.deckSlug, sources)))]
 
   return (player: Pick<Player, 'id' | 'name' | 'language'>): GameRecapProps => {
-    const mine = snapshot.turns.filter((t) => t.playerId === player.id)
+    const mine = snapshot.turns
+      .filter((t) => t.playerId === player.id)
+      .toSorted((a, b) => a.startedAt - b.startedAt)
     const ref = drawQuestion(candidates, usedRefs(snapshot, player.id), random)
     return {
       name: player.name,
@@ -139,6 +142,9 @@ const recapProps = ({snapshot, savedByPlayer, now, random}: RecapInput) => {
         minutes: minutes(mine.reduce((sum, t) => sum + spokenMs(snapshot, t, now), 0)),
         savedAnswers: savedByPlayer[player.id] ?? 0,
       },
+      asked: mine.flatMap(
+        (t) => questionText(turnRef(snapshot, t), player.language, sources) ?? []
+      ),
       question: ref ? questionText(ref, player.language, sources) : null,
       appUrl: links.app,
       eventUrl: links.event,
