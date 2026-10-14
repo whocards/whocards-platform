@@ -44,4 +44,11 @@ describe('screenView', () => {
     expect(view.counts).toEqual({joined: 4, paired: 4, talking: 1, done: 2})
     expect(screenView(snapshot({rounds: [round({status: 'pending'})]}), 0).round).toBeNull()
   })
+
+  it('shows the organizer, or null for games made before organizers existed', () => {
+    expect(screenView(s, 0).game.organizer).toBeNull()
+    const hosted = {...s, game: {...s.game, settings: {round: {}, organizer: 'SDD Conf'}}}
+    expect(screenView(hosted, 0).game.organizer).toBe('SDD Conf')
+    expect(playerView(hosted, 'a', 0)?.game.organizer).toBe('SDD Conf')
+  })
 })

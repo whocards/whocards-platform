@@ -69,6 +69,7 @@ export const playerView = (
       id: snapshot.game.id,
       code: snapshot.game.code,
       title: snapshot.game.title,
+      organizer: snapshot.game.settings.organizer ?? null,
       status: snapshot.game.status,
     },
     me: {id: me.id, name: me.name, language: me.language, pairCode: me.pairCode},
@@ -94,7 +95,12 @@ export const screenView = (snapshot: GameSnapshot, now: number): ScreenState => 
   }
   return {
     serverNow: now,
-    game: {code: snapshot.game.code, title: snapshot.game.title, status: snapshot.game.status},
+    game: {
+      code: snapshot.game.code,
+      title: snapshot.game.title,
+      organizer: snapshot.game.settings.organizer ?? null,
+      status: snapshot.game.status,
+    },
     round: round ? roundView(round) : null,
     counts: {
       joined: snapshot.players.length,

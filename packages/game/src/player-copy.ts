@@ -12,6 +12,7 @@ export type PlayerCopy = {
     languages: Record<GameLanguage, string>
     code: string
     next: string
+    hostedBy: string
   }
   consent: {
     title: string
@@ -24,7 +25,7 @@ export type PlayerCopy = {
     back: string
   }
   privacy: {title: string; lines: string[]}
-  waiting: {lobby: string; loading: string; retry: string}
+  waiting: {firstRound: string; loading: string; retry: string}
   pairing: {
     myCode: string
     scan: string
@@ -59,7 +60,8 @@ export type PlayerCopy = {
   screen: {
     joinAt: string
     round: string
-    lobby: string
+    draft: string
+    starting: string
     ended: string
     noCode: string
     counts: {joined: string; paired: string; talking: string; done: string}
@@ -75,6 +77,7 @@ const en: PlayerCopy = {
     languages: {en: 'English', hu: 'Magyar'},
     code: 'Game code',
     next: 'Next',
+    hostedBy: 'Hosted by',
   },
   consent: {
     title: 'Before you play',
@@ -97,7 +100,7 @@ const en: PlayerCopy = {
       'Questions or deletion requests: hello@whocards.cc',
     ],
   },
-  waiting: {lobby: "You're in. The host starts soon", loading: 'Loading', retry: 'Try again'},
+  waiting: {firstRound: "You're in. The host starts soon", loading: 'Loading', retry: 'Try again'},
   pairing: {
     myCode: 'Your code',
     scan: 'Scan their code',
@@ -149,7 +152,8 @@ const en: PlayerCopy = {
   screen: {
     joinAt: 'Scan to join',
     round: 'Round',
-    lobby: 'Starting soon',
+    draft: 'Not open yet',
+    starting: 'Starting soon',
     ended: 'Thanks for playing',
     noCode: 'Add ?code=GAMECODE to the address',
     counts: {joined: 'joined', paired: 'paired', talking: 'talking', done: 'done'},

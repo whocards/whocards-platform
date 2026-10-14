@@ -49,20 +49,36 @@ const Board = ({code}: {code: string}) => {
   }, [])
 
   const round = screen?.round ?? null
-  const status = screen?.game.status ?? 'lobby'
+  const status = screen?.game.status
+  const open = status === 'live'
 
   return (
     <div className='grid min-h-screen w-full grid-cols-1 items-center gap-12 p-12 lg:grid-cols-2'>
       <div className='flex flex-col items-center gap-6'>
-        <span className='text-4xl'>{copy.screen.joinAt}</span>
-        <QrCode value={joinUrl} className='w-[min(60vh,40vw)]' />
-        <span className='font-mono text-8xl font-semibold tracking-[0.3em]'>{code}</span>
+        {status === 'lobby' ? (
+          <span className='text-6xl'>{copy.screen.draft}</span>
+        ) : (
+          <>
+            <span className='text-4xl'>{copy.screen.joinAt}</span>
+            <QrCode value={joinUrl} className='w-[min(60vh,40vw)]' />
+            <span className='font-mono text-8xl font-semibold tracking-[0.3em]'>{code}</span>
+          </>
+        )}
       </div>
       <div className='flex flex-col items-center gap-8 text-center'>
-        {screen && <h1 className='font-title text-5xl'>{screen.game.title}</h1>}
+        {screen && (
+          <div className='flex flex-col items-center gap-3'>
+            <h1 className='font-title text-5xl'>{screen.game.title}</h1>
+            {screen.game.organizer && (
+              <p className='text-mutedOnLight text-3xl'>
+                {copy.join.hostedBy} {screen.game.organizer}
+              </p>
+            )}
+          </div>
+        )}
         {status === 'ended' && <p className='text-6xl'>{copy.screen.ended}</p>}
-        {status !== 'ended' && !round && <p className='text-6xl'>{copy.screen.lobby}</p>}
-        {status !== 'ended' && round && (
+        {open && !round && <p className='text-6xl'>{copy.screen.starting}</p>}
+        {open && round && (
           <>
             <span className='text-5xl'>
               {copy.screen.round} {round.n}

@@ -1,3 +1,5 @@
+import {renderGameRecap} from '@whocards/emails'
+
 import {db} from '../db'
 import {decksRouter} from './routers/decks'
 import {discussionAgentRouter} from './routers/discussion-agent'
@@ -16,6 +18,7 @@ export const appRouter = createTRPCRouter({
   games: createGamesRouter({
     store: createDrizzleHostStore(db),
     sendRecaps: sendRecapsWithResend,
+    renderRecap: renderGameRecap,
   }),
 })
 

@@ -20,6 +20,7 @@ import type {
   GameStatus,
   OddRule,
   Overtime,
+  QuestionPlan,
   RoundStatus,
 } from '../schemas'
 
@@ -71,6 +72,7 @@ export const gameRound = pgTable(
       .references(() => hostedGame.id, {onDelete: 'cascade'}),
     n: integer('n').notNull(),
     deckSlug: text('deck_slug').notNull(),
+    questionPlan: jsonb('question_plan').$type<QuestionPlan>(),
     turnSeconds: integer('turn_seconds').notNull(),
     oddRule: text('odd_rule').$type<OddRule>().notNull().default('trio'),
     overtime: text('overtime').$type<Overtime>().notNull().default('nudge'),

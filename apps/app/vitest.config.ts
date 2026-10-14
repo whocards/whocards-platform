@@ -1,3 +1,5 @@
+import {fileURLToPath} from 'node:url'
+
 import {defineConfig} from 'vitest/config'
 
 // Deliberately separate from vite.config.ts: unit tests exercise pure logic and
@@ -6,6 +8,7 @@ import {defineConfig} from 'vitest/config'
 // Vite plugin chain — pulling that in here just slowed test startup/teardown
 // and produced noisy (harmless) module-resolution warnings.
 export default defineConfig({
+  resolve: {alias: {'~': fileURLToPath(new URL('./src', import.meta.url))}},
   test: {
     environment: 'node',
   },

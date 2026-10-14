@@ -69,6 +69,7 @@ const toRound = (row: typeof gameRound.$inferSelect): Round => ({
   gameId: row.gameId,
   n: row.n,
   deckSlug: row.deckSlug,
+  questionPlan: row.questionPlan,
   turnSeconds: row.turnSeconds,
   oddRule: row.oddRule,
   overtime: row.overtime,

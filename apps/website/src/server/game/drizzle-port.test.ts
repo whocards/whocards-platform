@@ -101,6 +101,22 @@ describe('drizzle game port', () => {
     expect(screen.counts).toEqual({joined: 2, paired: 2, talking: 1, done: 0})
   })
 
+  it('reads the round question plan and custom questions from the database', async () => {
+    await db
+      .update(hostedGame)
+      .set({settings: {round: {}, questions: [{id: 'c:aaaa', en: 'Custom?', hu: 'Saját?'}]}})
+      .where(eq(hostedGame.id, gameId))
+    await db
+      .update(gameRound)
+      .set({deckSlug: 'custom', questionPlan: {mode: 'same', question: 'c:aaaa'}})
+      .where(eq(gameRound.id, roundId))
+    const a = await join('Ann')
+    const {token} = await as(null).game.join({code: 'work', name: 'Bo', language: 'hu'})
+    await a.caller.game.round.pair({partnerCode: (await as(token).game.state()).me.pairCode})
+    const turn = (await as(token).game.round.turn({action: 'claim'})).pair?.activeTurn
+    expect(turn).toMatchObject({questionId: 'c:aaaa', questionText: 'Saját?'})
+  })
+
   it('lets the database settle races the rules could not see', async () => {
     const [a, b, c] = await Promise.all([join('Ann'), join('Bo'), join('Cy')])
     const ids = [a.state.me.id, b.state.me.id, c.state.me.id] as const

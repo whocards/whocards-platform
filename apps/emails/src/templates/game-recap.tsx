@@ -1,4 +1,5 @@
 import {Column, Heading, Hr, Link, Row, Section, Text} from '@react-email/components'
+import {render} from '@react-email/render'
 
 import {emailBrand} from '../brand'
 import {BrandButton, EmailShell} from '../components'
@@ -10,6 +11,8 @@ export const gameRecapPreview =
 export type GameRecapProps = Readonly<{
   name: string
   eventTitle: string
+  /** The conference or company hosting the workshop; null for games made before it was asked. */
+  organizer: string | null
   event: Readonly<{
     players: number
     rounds: number
@@ -58,6 +61,7 @@ function StatRow({stats}: Readonly<{stats: [string, string][]}>) {
 export function GameRecapEmail({
   name,
   eventTitle,
+  organizer,
   event,
   you,
   question,
@@ -68,6 +72,7 @@ export function GameRecapEmail({
   return (
     <EmailShell preview={gameRecapPreview}>
       <Text style={eyebrow}>{eventTitle.toUpperCase()}</Text>
+      {organizer && <Text style={hostedBy}>{`Hosted by ${organizer}`}</Text>}
       <Heading style={heading}>{`Thanks for playing, ${name}.`}</Heading>
       <Text style={paragraph}>
         You traded small talk for real questions with a room full of strangers. That takes a bit of
@@ -117,6 +122,7 @@ const statLines = (rows: [string, string][]) => rows.map(([v, l]) => `- ${v} ${l
 export function gameRecapText({
   name,
   eventTitle,
+  organizer,
   event,
   you,
   question,
@@ -127,7 +133,8 @@ export function gameRecapText({
   const take = question
     ? `\nA QUESTION TO TAKE HOME\n\n${question}\nOne you didn't draw. Try it on someone this week.\n`
     : ''
-  return `${eventTitle}: thanks for playing, ${name}.
+  const host = organizer ? `Hosted by ${organizer}\n\n` : ''
+  return `${host}${eventTitle}: thanks for playing, ${name}.
 
 You traded small talk for real questions with a room full of strangers. That takes a bit of nerve. Thank you for bringing it.
 
@@ -155,6 +162,12 @@ const eyebrow = {
   fontWeight: 700,
   letterSpacing: '1.5px',
   margin: 0,
+}
+const hostedBy = {
+  color: emailBrand.colors.inkMuted,
+  fontSize: '14px',
+  lineHeight: '20px',
+  margin: '4px 0 0',
 }
 const heading = {
   color: emailBrand.colors.ink,
@@ -234,6 +247,7 @@ const rule = {borderColor: emailBrand.colors.cardMuted, margin: '30px 0'}
 GameRecapEmail.PreviewProps = {
   name: 'Réka',
   eventTitle: 'SDD 2026',
+  organizer: 'Spec-Driven Development Conf',
   event: {players: 42, rounds: 4, turns: 268, minutes: 301, languages: 2},
   you: {peopleMet: 4, turns: 8, minutes: 9, savedAnswers: 6},
   question: 'What is something you changed your mind about this year?',
@@ -241,6 +255,10 @@ GameRecapEmail.PreviewProps = {
   eventUrl: 'https://whocards.cc/events/sdd-2026',
   myAnswersUrl: 'https://whocards.cc/events/sdd-2026/me?code=K7QM2',
 } satisfies GameRecapProps
+
+/** The recap as the HTML a player receives, for the host's preview. */
+export const renderGameRecap = (props: GameRecapProps): Promise<string> =>
+  render(<GameRecapEmail {...props} />)
 
 // oxlint-disable-next-line import/no-default-export -- required by React Email template discovery
 export default GameRecapEmail
