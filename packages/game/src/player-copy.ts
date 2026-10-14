@@ -101,14 +101,15 @@ const en: PlayerCopy = {
     decline: 'Play without recording',
     back: 'Back',
   },
-  // TODO(#317): final joint-controller wording from Avi and Tamas before the event.
   privacy: {
     title: 'Your data',
     lines: [
-      'Avi Charlop and Tamas / Unloop run this game together and are joint controllers of your data.',
+      'WhoCards is responsible for your data.',
+      'The workshop host sees only who joined, not your answers.',
       'If you record, OpenAI turns your audio into text for us. The audio is not kept.',
       'An answer is stored only when you tap Save. Delete it any time in My answers.',
       'Your email is used only for the recap.',
+      'Answers and recap emails are deleted 90 days after the workshop.',
       'Questions or deletion requests: hello@whocards.cc',
     ],
   },

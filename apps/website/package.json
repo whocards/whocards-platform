@@ -20,7 +20,8 @@
     "db:migrate": "pnpm with-env drizzle-kit migrate",
     "db:push": "pnpm with-env drizzle-kit push",
     "db:studio": "pnpm with-env drizzle-kit studio",
-    "reconcile:resend": "pnpm with-env tsx scripts/reconcile-resend.ts"
+    "reconcile:resend": "pnpm with-env tsx scripts/reconcile-resend.ts",
+    "game:retention": "pnpm with-env tsx scripts/game-retention.ts"
   },
   "dependencies": {
     "@whocards/api": "workspace:*",
@@ -93,6 +94,7 @@
     "prettier": "^3.9.10",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
+    "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "vitest": "catalog:"
   }

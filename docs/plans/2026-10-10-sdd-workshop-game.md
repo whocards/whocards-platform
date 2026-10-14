@@ -20,7 +20,7 @@ Event **Thu 2026-10-15**. **Go/no-go Wed 2026-10-14** rehearsal: not rehearsed o
 | T6  | Player UI: join + phone check, pair (show/scan/type code), card + turn lock, timer, decline flow                                                          | P0       | T4, T5     |
 | T7  | Host UI: rounds, deck + timer per round, start/end, live counts, join QR                                                                                  | P0       | T4, T5     |
 | T8  | Recorder + screen wake lock, on-device STT + cleanup, review screen, share choices, API fallback                                                          | P0       | T1, T6     |
-| T9  | Privacy notice (joint controllers), consent copy, My answers (view, download, delete)                                                                     | P0       | T2         |
+| T9  | Privacy notice (single controller), consent copy, My answers (view, download, delete)                                                                     | P0       | T2         |
 | T10 | Rehearsal: 6–10 phones, iOS + Android, noisy room, throttled Wi-Fi, power-saving on                                                                       | P0       | T6–T9      |
 | T11 | Paper fallback kit: printed cards, reflection slip                                                                                                        | P0       | —          |
 | T15 | Recap email that night: stats, template, random question, host preview + send                                                                             | P0       | T4, T7, T9 |
@@ -132,7 +132,6 @@ flowchart TB
 | Not rehearsed by 2026-10-14 (five days)               | H / H       | Paper fallback T11 always ready; cut list above                   |
 | iOS kills backgrounded tab                            | H / M       | Screen wake lock while recording; audio to IndexedDB; resume      |
 | On-device STT slow on older phones                    | M / M       | Transcribe between turns; API fallback with a yes                 |
-| Joint controllers without written arrangement         | M / M       | Short Art. 26 note: who answers requests; notice names both       |
 | Engine overfit to this event                          | M / M       | Own package, pure logic, event config is data                     |
 | Two permission prompts eat round time                 | H / L       | 30 s phone check at join; typed code fallback                     |
 | Odd headcount / nobody new left                       | certain / L | Trio (facilitator setting); relax no-repeat after timeout         |
@@ -144,7 +143,7 @@ flowchart TB
 2. **Live updates:** no long polling. Answers from phone, timer on phone, state on every call, waiting screens refresh.
 3. **Host auth:** secret link now; facilitator accounts later.
 4. **Where:** website now. Rules, API, hooks in packages → cheap move to `apps/app` / mobile. TanStack Start move is its own track, doesn't block this.
-5. **Controller:** Avi + Tamas / Unloop, joint.
+5. **Controller:** WhoCards, sole controller. Host sees who joined, never answers.
 6. **Date:** Thu 2026-10-15. Headcount unknown, plan for 60.
 7. **Odd headcount:** trio, facilitator setting.
 8. **Timer end:** soft nudge + 30 s, facilitator setting.
@@ -258,11 +257,11 @@ Data access: My answers on device (view, edit, download .txt/.json, delete); mag
 
 ### GDPR checklist
 
-- Joint controllers (Avi + Tamas / Unloop): short Art. 26 arrangement on who answers requests; notice names both.
+- Single controller (WhoCards); notice names it, hello@whocards.cc answers requests. Host is not a recipient (sees counts only).
 - Plain-words privacy notice under the event, linked from join and every consent prompt.
 - Art. 9 explicit consent (work/wellbeing answers may reveal health or beliefs); per answer, revocable.
 - Processors + regions: Netlify, Supabase (region?), Resend, STT API vendor if used, Anthropic for report; name US transfer basis.
-- Retention: audio deleted after transcription; transcripts 30 days after report; game + pairing data with the game.
+- Retention: audio deleted after transcription; answers + recap emails 90 days after the workshop (`pnpm --filter website game:retention`); game + pairing data with the game.
 - Third parties: names replaced before upload; report never quotes identifiable lines.
 - One-page DPIA-lite kept with this plan.
 - No transcripts on projector or live to facilitators.
