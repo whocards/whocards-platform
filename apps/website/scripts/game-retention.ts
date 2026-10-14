@@ -1,7 +1,5 @@
 #!/usr/bin/env tsx
 // Deletes game answers and player emails 90 days after the workshop (#317). Dry-run unless --apply.
-//   pnpm --filter website game:retention
-//   pnpm --filter website game:retention -- --apply
 
 import {dbEnv} from '@whocards/env/db'
 import {drizzle} from 'drizzle-orm/postgres-js'
