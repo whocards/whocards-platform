@@ -23,12 +23,14 @@ export type GamePort = {
   createPair: (input: {roundId: string; playerIds: [string, string]}) => Promise<WriteResult>
   /** Takes the pair's lowest free slot; a slot freed by a removed player is reused. */
   addToPair: (input: {pairId: string; roundId: string; playerId: string}) => Promise<WriteResult>
-  /** Closes `expire` (still-open, timed-out turns) then opens the new turn, atomically; conflict once the round is no longer live. */
+  /**
+   * Closes `expire` (still-open, timed-out turns) then opens the new turn, atomically; conflict once the round is no longer live.
+   * Stamps the start with the database clock, the same clock that stamps answer-mode switches.
+   */
   startTurn: (input: {
     pairId: string
     playerId: string
     questionId: string
-    startedAt: number
     expire: Array<{turnId: string; finishedAt: number}>
   }) => Promise<WriteResult>
   /** No-op if the turn is already finished. */

@@ -30,7 +30,7 @@ export type Draft = {
 
 export type TurnOptions<TAudio> = {
   session: GameSession
-  /** Null on the decline path: the player talks, nothing is recorded. */
+  /** Null on the decline path: the player talks, nothing is recorded or typed. */
   recorder: Recorder<TAudio> | null
   wakeLock: WakeLock | null
   transcriber: Transcriber<TAudio> | null
@@ -242,16 +242,16 @@ export const useTurn = <TAudio>({
   const openTurn = myOpenTurn(session.state)
   const openTurnId = openTurn?.id ?? null
 
-  // Type mode goes straight from the claim to a blank answer.
+  // Type mode goes straight from the claim to a blank answer, unless the player opted out of saving.
   useEffect(() => {
     if (openTurn?.answerMode !== 'type' || typedTurn.current === openTurn.id) return undefined
-    if (stage !== 'idle') return undefined
+    if (!recorder || stage !== 'idle') return undefined
     return after(0, () => {
       typedTurn.current = openTurn.id
       setDraft({turnId: openTurn.id, text: '', durationMs: 0, kind: 'typed'})
       go('review')
     })
-  }, [openTurn?.answerMode, openTurn?.id, stage, go])
+  }, [openTurn?.answerMode, openTurn?.id, recorder, stage, go])
 
   const autoFinished = useRef<string | null>(null)
   useEffect(() => {

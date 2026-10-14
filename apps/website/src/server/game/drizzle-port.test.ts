@@ -10,7 +10,7 @@ import {createDrizzleGamePort, hashToken} from './drizzle-port'
 
 const client = new PGlite()
 const db = drizzle(client)
-let clock = Date.UTC(2026, 9, 10, 9)
+let clock = Date.now()
 const port = createDrizzleGamePort(db, {now: () => clock, random: () => 0.5})
 const as = (playerToken: string | null) =>
   createCaller({recordAnswer: async () => {}, game: port, playerToken})
@@ -29,7 +29,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await client.exec('TRUNCATE hosted_game CASCADE')
-  clock = Date.UTC(2026, 9, 10, 9)
+  clock = Date.now()
   const [game] = await db
     .insert(hostedGame)
     .values({code: 'WORK', title: 'Workshop', status: 'live'})
@@ -50,7 +50,12 @@ beforeEach(async () => {
 })
 
 const join = async (name: string) => {
-  const {token, state} = await as(null).game.join({code: 'work', name, language: 'en'})
+  const {token, state} = await as(null).game.join({
+    code: 'work',
+    name,
+    language: 'en',
+    consentTranscript: true,
+  })
   return {token, state, caller: as(token)}
 }
 
@@ -128,7 +133,7 @@ describe('drizzle game port', () => {
     const pairId = snapshot?.pairs[0]?.id ?? ''
     expect(snapshot?.pairs[0]?.playerIds).toEqual([ids[0], ids[1]])
 
-    const turn = {pairId, questionId: '1', startedAt: clock, expire: []}
+    const turn = {pairId, questionId: '1', expire: []}
     expect(await port.startTurn({...turn, playerId: ids[0]})).toBe('ok')
     expect(await port.startTurn({...turn, playerId: ids[1]})).toBe('conflict')
 
@@ -166,7 +171,7 @@ describe('drizzle game port', () => {
     const playerIds = [a.state.me.id, b.state.me.id] as [string, string]
     await port.createPair({roundId, playerIds})
     const pairId = (await port.loadSnapshot(gameId))?.pairs[0]?.id ?? ''
-    const turn = {pairId, questionId: '1', startedAt: clock, expire: []}
+    const turn = {pairId, questionId: '1', expire: []}
     expect(await port.startTurn({...turn, playerId: playerIds[0]})).toBe('ok')
 
     await db.delete(gamePairPlayer)
@@ -183,7 +188,6 @@ describe('drizzle game port', () => {
       pairId,
       playerId: a.state.me.id,
       questionId: '1',
-      startedAt: clock,
       expire: [],
     })
     const turnId = (await port.loadSnapshot(gameId))?.turns[0]?.id ?? ''

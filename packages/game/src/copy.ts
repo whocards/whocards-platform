@@ -24,6 +24,7 @@ const en: GameCopy = {
     not_your_turn: 'Not your turn',
     not_found: 'Not found',
     wrong_answer_mode: "This turn doesn't take that kind of answer",
+    no_consent: 'You chose to play without saving answers',
   },
   phases: {
     waiting: 'Waiting for the next round',

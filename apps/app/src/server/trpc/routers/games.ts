@@ -102,8 +102,8 @@ export type HostStore = {
     whileStatus: 'pending' | 'live'
     settings: RoundRecord
   }) => Promise<WriteResult>
-  /** Appends to `hosted_game.settings.answerModes` while the game has not ended. */
-  setAnswerMode: (input: {gameId: string; mode: AnswerMode; at: number}) => Promise<WriteResult>
+  /** Appends to `hosted_game.settings.answerModes` while the game has not ended, stamped by the database clock. */
+  setAnswerMode: (input: {gameId: string; mode: AnswerMode}) => Promise<WriteResult>
   /** Replaces `hosted_game.settings.questions`. */
   saveQuestions: (gameId: string, questions: CustomQuestion[]) => Promise<void>
   /** Pending round to live in a live game; 'conflict' when another round is live, 'stale' when the game or round moved on. */
@@ -442,7 +442,7 @@ export const createGamesRouter = ({
         const snapshot = await load(input.gameId)
         if (snapshot.game.status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
         if (currentAnswerMode(snapshot.game.settings) !== input.mode) {
-          conflictOr(await store.setAnswerMode({...input, at: store.now()}), 'The game is over.')
+          conflictOr(await store.setAnswerMode(input), 'The game is over.')
         }
         return detail(input.gameId, ctx)
       }),

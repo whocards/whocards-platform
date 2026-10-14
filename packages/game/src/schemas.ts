@@ -57,9 +57,8 @@ export type RoundSettings = z.infer<typeof roundSettingsSchema>
 export const answerModeSchema = z.enum(['voice', 'type', 'none'])
 export type AnswerMode = z.infer<typeof answerModeSchema>
 
-/** Every host switch, oldest first; a turn answers in the mode in force when it was claimed. */
+/** Every host switch, oldest first, stamped by the database clock like turn starts. */
 export const answerModeLogSchema = z.array(z.object({mode: answerModeSchema, at: z.number()}))
-export type AnswerModeLog = z.infer<typeof answerModeLogSchema>
 
 /** Who hosts a workshop: a conference or company name. */
 export const organizerSchema = z.string().trim().min(1).max(80)
@@ -99,6 +98,7 @@ export const refusalSchema = z.enum([
   'not_your_turn',
   'not_found',
   'wrong_answer_mode',
+  'no_consent',
 ])
 export type Refusal = z.infer<typeof refusalSchema>
 

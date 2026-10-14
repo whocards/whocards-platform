@@ -222,7 +222,7 @@ export const createDrizzleGamePort = <
               .set({finishedAt: new Date(e.finishedAt)})
               .where(and(eq(gameTurn.id, e.turnId), isNull(gameTurn.finishedAt)))
           }
-          await tx.insert(gameTurn).values({...turn, startedAt: new Date(turn.startedAt)})
+          await tx.insert(gameTurn).values({...turn, startedAt: sql`now()`})
         })
       ),
 

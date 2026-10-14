@@ -1,9 +1,10 @@
 import {PGlite} from '@electric-sql/pglite'
+import {answerModeAt} from '@whocards/game'
 import type {QuestionPlan} from '@whocards/game'
 import * as gameSchema from '@whocards/game/db'
 import {hostedGame} from '@whocards/game/db'
 import {generateDrizzleJson, generateMigration} from 'drizzle-kit/api'
-import {eq} from 'drizzle-orm'
+import {eq, sql} from 'drizzle-orm'
 import {drizzle} from 'drizzle-orm/pglite'
 import {beforeAll, beforeEach, describe, expect, it} from 'vitest'
 
@@ -104,6 +105,29 @@ describe('drizzle host store conditional writes', () => {
       questions: [{id: 'c:aaaa', en: 'A?', hu: 'Á?'}],
     })
     expect(snapshot?.rounds[0]).toMatchObject({deckSlug: 'custom', questionPlan: plan})
+  })
+
+  it('stamps answer-mode switches with the database clock, which also stamps turn starts', async () => {
+    const dbNow = async () => {
+      const result = await db.execute<{ms: string}>(
+        sql`select floor(extract(epoch from now()) * 1000)::bigint as ms`
+      )
+      return Number(result.rows[0]?.ms)
+    }
+    const before = await dbNow()
+    expect(await store.setAnswerMode({gameId, mode: 'type'})).toBe('ok')
+    const after = await dbNow()
+    const [row] = await db.select().from(hostedGame).where(eq(hostedGame.id, gameId))
+    const at = row?.settings.answerModes?.[0]?.at ?? 0
+    expect(row?.settings.answerModes).toEqual([{mode: 'type', at}])
+    expect(at).toBeGreaterThanOrEqual(before)
+    expect(at).toBeLessThanOrEqual(after)
+    // A turn claimed at the very instant of the switch keeps the old mode.
+    expect(answerModeAt(row?.settings ?? {round: {}}, at)).toBe('voice')
+    expect(row?.settings.organizer).toBe('SDD Conf')
+
+    await db.update(hostedGame).set({status: 'ended'}).where(eq(hostedGame.id, gameId))
+    expect(await store.setAnswerMode({gameId, mode: 'none'})).toBe('stale')
   })
 
   it('edits details only until the game ends', async () => {

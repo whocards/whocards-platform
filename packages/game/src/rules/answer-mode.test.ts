@@ -17,8 +17,9 @@ describe('answer mode', () => {
       ],
     }
     expect(answerModeAt(settings, 5)).toBe('voice')
-    expect(answerModeAt(settings, 10)).toBe('type')
-    expect(answerModeAt(settings, 19)).toBe('type')
+    expect(answerModeAt(settings, 10)).toBe('voice')
+    expect(answerModeAt(settings, 11)).toBe('type')
+    expect(answerModeAt(settings, 20)).toBe('type')
     expect(answerModeAt(settings, 25)).toBe('none')
     expect(currentAnswerMode(settings)).toBe('none')
   })

@@ -35,8 +35,13 @@ const setup = (rounds: Round[] = [liveRound], settings: GameSettings = game.sett
   const fake = createFakeGamePort({game: {...game, settings}, rounds})
   const as = (playerToken: string | null) =>
     createCaller({recordAnswer: async () => {}, game: fake.port, playerToken})
-  const join = async (name: string, language: GameLanguage = 'en') => {
-    const {token, state} = await as(null).game.join({code: 'abcd', name, language})
+  const join = async (name: string, language: GameLanguage = 'en', consentTranscript = true) => {
+    const {token, state} = await as(null).game.join({
+      code: 'abcd',
+      name,
+      language,
+      consentTranscript,
+    })
     return {caller: as(token), state, token}
   }
   return {fake, as, join}
@@ -330,6 +335,32 @@ describe('game.round.response / game.me', () => {
       transcript: 'Typed',
     })
     expect(saved.phase).toBe('pair_done')
+    expect((await a.caller.game.me.get()).responses).toEqual([])
+  })
+
+  it('keeps a claim in the old mode when the switch is stamped at the same instant', async () => {
+    const {a, fake} = await pairedUp()
+    fake.snapshot.game.settings.answerModes = [{mode: 'none', at: fake.port.now()}]
+    const turn = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
+    expect(turn?.startedAt).toBe(fake.port.now())
+    expect(turn?.answerMode).toBe('voice')
+  })
+
+  it('refuses any saved answer from a player who chose to play without saving', async () => {
+    const ctx = setup([liveRound], {round: {}, answerModes: [{mode: 'type', at: 0}]})
+    const a = await ctx.join('Ann', 'en', false)
+    const b = await ctx.join('Bo')
+    await a.caller.game.round.pair({partnerCode: b.state.me.pairCode})
+    const turn = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
+    expect(turn?.answerMode).toBe('type')
+    const save = a.caller.game.round.response({
+      turnId: turn?.id ?? '',
+      language: 'en',
+      transcript: 'Typed anyway',
+      durationMs: 0,
+      consent: true,
+    })
+    expect(await refusalOf(save)).toBe('no_consent')
     expect((await a.caller.game.me.get()).responses).toEqual([])
   })
 

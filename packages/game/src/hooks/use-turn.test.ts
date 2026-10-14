@@ -192,6 +192,20 @@ describe('useTurn', () => {
     await hook.unmount()
   })
 
+  it('never opens a text box on a Type turn for a player who opted out', async () => {
+    const {client, hook} = await setup({clock: null, recording: false})
+    client.state.mockResolvedValue(speakingState({answerMode: 'type'}))
+    await flush(4000)
+    await flush()
+    expect(hook.current.turn.stage).toBe('idle')
+    expect(hook.current.turn.draft).toBeNull()
+    await flush(() => hook.current.turn.save('sneaky'))
+    expect(client.response).not.toHaveBeenCalled()
+    await flush(() => hook.current.turn.finish())
+    expect(client.turn).toHaveBeenCalledWith('finish')
+    await hook.unmount()
+  })
+
   it('captures nothing on a None turn: no mic, Done just finishes', async () => {
     const {client, recorder, transcriber, hook} = await setup()
     client.state.mockResolvedValue(speakingState({answerMode: 'none'}))

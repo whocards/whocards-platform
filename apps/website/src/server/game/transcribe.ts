@@ -92,6 +92,7 @@ export const handleTranscribe = async (request: Request, deps: TranscribeDeps) =
 
   const player = await deps.game.findPlayerByToken(fields.data.token)
   if (!player) return fail(401, 'Join the game first')
+  if (!player.consentTranscript) return fail(403, 'You chose to play without saving answers')
   const snapshot = await deps.game.loadSnapshot(player.gameId)
   const turn = snapshot && uploadableTurn(snapshot, player.id, deps.game.now())
   if (!snapshot || !turn) return fail(409, 'No turn to transcribe')

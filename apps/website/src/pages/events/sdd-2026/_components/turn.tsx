@@ -5,6 +5,7 @@ import type {ReactNode} from 'react'
 import {useState} from 'react'
 
 import {formatClock} from '~lib/game/format'
+import {joinPath} from '~lib/game/links'
 import {cn} from '~utils/cn'
 
 import {Button, Screen} from './ui'
@@ -47,16 +48,28 @@ const Clock = ({timer, language}: {timer: TimerView; language: PlayerState['me']
 
 const CopyLink = ({code, language}: {code: string; language: PlayerState['me']['language']}) => {
   const copy = playerCopyFor(language)
-  const [copied, setCopied] = useState(false)
-  const copyLink = () =>
-    void navigator.clipboard
-      .writeText(`${location.origin}/events/sdd-2026?code=${code}`)
-      .then(() => setCopied(true))
-      .catch(() => setCopied(false))
+  const [copied, setCopied] = useState<'yes' | 'failed' | null>(null)
+  const url = `${location.origin}${joinPath(code)}`
+  const copyLink = async () => {
+    try {
+      // In-app browsers often have no clipboard at all, so this can throw before any promise exists.
+      await navigator.clipboard.writeText(url)
+      setCopied('yes')
+    } catch {
+      setCopied('failed')
+    }
+  }
   return (
-    <Button className='bg-primary-dark text-white' onClick={copyLink}>
-      {copied ? copy.turn.linkCopied : copy.turn.copyLink}
-    </Button>
+    <>
+      <Button className='bg-primary-dark text-white' onClick={() => void copyLink()}>
+        {copied === 'yes' ? copy.turn.linkCopied : copy.turn.copyLink}
+      </Button>
+      {copied === 'failed' && (
+        <p className='bg-white text-darkest select-all break-all rounded-2xl p-3 font-mono text-sm'>
+          {url}
+        </p>
+      )}
+    </>
   )
 }
 

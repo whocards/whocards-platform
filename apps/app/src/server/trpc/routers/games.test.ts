@@ -120,7 +120,8 @@ const memoryStore = (clock = {now: T0}) => {
       Object.assign(g, {title, settings: {...g.settings, organizer}})
       return 'ok'
     },
-    setAnswerMode: async ({gameId, mode, at}) => {
+    setAnswerMode: async ({gameId, mode}) => {
+      const at = clock.now
       const g = game(gameId)
       if (!g || g.status === 'ended') return 'stale'
       g.settings = {...g.settings, answerModes: [...(g.settings.answerModes ?? []), {mode, at}]}

@@ -66,7 +66,7 @@ export const createFakeGamePort = (seed: {game: HostedGame; rounds?: Round[]}) =
       pair.playerIds.push(playerId)
       return 'ok'
     },
-    startTurn: async ({pairId, playerId, questionId, startedAt, expire}) => {
+    startTurn: async ({pairId, playerId, questionId, expire}) => {
       const roundId = snapshot.pairs.find((p) => p.id === pairId)?.roundId
       const round = snapshot.rounds.find((r) => r.id === roundId)
       if (!roundId || round?.status !== 'live') return 'conflict'
@@ -82,7 +82,7 @@ export const createFakeGamePort = (seed: {game: HostedGame; rounds?: Round[]}) =
         roundId,
         playerId,
         questionId,
-        startedAt,
+        startedAt: clock,
         finishedAt: null,
       })
       return 'ok'

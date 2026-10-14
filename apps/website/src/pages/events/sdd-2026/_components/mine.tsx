@@ -4,6 +4,7 @@ import {useEffect, useMemo, useState} from 'react'
 
 import {createGameApi} from '~lib/game/client'
 import {formatClock} from '~lib/game/format'
+import {joinPath} from '~lib/game/links'
 import {createTokenStore} from '~lib/game/token-store'
 
 import {buttonClass, Notice, Screen} from './ui'
@@ -19,7 +20,7 @@ export const SddMine = () => {
   const [failed, setFailed] = useState(false)
   const [armed, setArmed] = useState<string | null>(null)
   const copy = playerCopyFor(data?.player.language ?? 'en')
-  const gameLink = code ? `/events/sdd-2026?code=${code}` : '/events/sdd-2026'
+  const gameLink = joinPath(code)
 
   useEffect(() => {
     if (!api || !joined) return undefined

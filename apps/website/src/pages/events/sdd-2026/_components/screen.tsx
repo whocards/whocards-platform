@@ -5,6 +5,7 @@ import {useEffect, useMemo, useState} from 'react'
 
 import {createGameApi} from '~lib/game/client'
 import {formatClock} from '~lib/game/format'
+import {joinPath} from '~lib/game/links'
 import {createTokenStore} from '~lib/game/token-store'
 import {createWakeLock} from '~lib/game/wake-lock'
 
@@ -18,7 +19,7 @@ const Board = ({code}: {code: string}) => {
   const [screen, setScreen] = useState<ScreenState | null>(null)
   const [offsetMs, setOffsetMs] = useState(0)
   const timer = useRoundTimer({round: screen?.round ?? null, turn: null, offsetMs})
-  const joinUrl = `${location.origin}/events/sdd-2026?code=${code}`
+  const joinUrl = `${location.origin}${joinPath(code)}`
 
   useEffect(() => {
     let alive = true
