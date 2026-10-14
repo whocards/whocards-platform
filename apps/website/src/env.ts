@@ -2,7 +2,6 @@ import {createWebsiteEnv} from '@whocards/env/website'
 
 // Astro inlines only the private vars this file names, so every var is read explicitly.
 export const env = createWebsiteEnv({
-  NODE_ENV: import.meta.env.NODE_ENV,
   CONTEXT: import.meta.env.CONTEXT,
   DB_URL: import.meta.env.DB_URL,
   CONTACTS_SHEET_URL: import.meta.env.CONTACTS_SHEET_URL,

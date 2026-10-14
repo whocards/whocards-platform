@@ -1,7 +1,7 @@
 import {createEnv} from '@t3-oss/env-core'
 import {z} from 'zod'
 
-import {coreSchema, dbSchema} from './core'
+import {dbSchema} from './core'
 import {resendConsentSchema, resendSchema} from './resend'
 
 type RuntimeEnv = Record<string, string | boolean | number | undefined>
@@ -10,7 +10,6 @@ type RuntimeEnv = Record<string, string | boolean | number | undefined>
 export function createWebsiteEnv(runtimeEnv: RuntimeEnv) {
   return createEnv({
     server: {
-      ...coreSchema,
       ...dbSchema,
       ...resendSchema,
       ...resendConsentSchema,
