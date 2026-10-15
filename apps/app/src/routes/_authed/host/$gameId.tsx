@@ -89,7 +89,8 @@ function HostGame() {
     queryFn: () => trpc.games.detail.query({gameId}),
     refetchInterval: (query) => {
       const game = query.state.data?.game
-      return game?.status === 'ended' && !game.recap?.pending ? false : LIVE_REFRESH_MS
+      const sending = game?.recap?.pending || game?.revisit?.pending
+      return game?.status === 'ended' && !sending ? false : LIVE_REFRESH_MS
     },
   })
   const act = useMutation({
@@ -213,7 +214,22 @@ function HostGame() {
         </Card>
       ) : null}
       {ended ? (
-        <RecapPanel gameId={gameId} recap={game.recap} />
+        <>
+          <MailPanel
+            gameId={gameId}
+            state={game.recap}
+            copy={RECAP_COPY}
+            preview={() => trpc.games.recapPreview.query({gameId})}
+            send={() => trpc.games.sendRecaps.mutate({gameId})}
+          />
+          <MailPanel
+            gameId={gameId}
+            state={game.revisit}
+            copy={REVISIT_COPY}
+            preview={() => trpc.games.revisitPreview.query({gameId})}
+            send={() => trpc.games.sendRevisits.mutate({gameId})}
+          />
+        </>
       ) : (
         <AnswerModePanel
           mode={game.answerMode}
@@ -547,18 +563,59 @@ function AnswerModePanel({
   )
 }
 
-function RecapPanel({
+type MailCopy = {
+  key: string
+  title: string
+  intro?: string
+  sample: string
+  real: string
+  confirm: (recipients: string) => string
+  status: string
+}
+
+const RECAP_COPY: MailCopy = {
+  key: 'recap',
+  title: 'Recap email',
+  sample: 'Nobody asked for a recap, so this preview uses a sample player.',
+  real: "Preview of one player's email. Each player gets their own numbers and question.",
+  confirm: (to) => `Send the recap to ${to}? It goes out once and can't be recalled.`,
+  status: 'Recap emails',
+}
+
+const REVISIT_COPY: MailCopy = {
+  key: 'revisit',
+  title: 'Revisit email',
+  intro:
+    'Optional, for later: the questions each player answered, with a nudge to sit with them again. No answers in it. Goes to players who asked for the recap.',
+  sample: 'Nobody would get this yet, so the preview uses a sample with the room’s questions.',
+  real: "Preview of one player's email. Each player gets the questions they answered.",
+  confirm: (to) => `Send the revisit email to ${to}? It goes out once and can't be recalled.`,
+  status: 'Revisit emails',
+}
+
+type MailPreview = {recipients: number; sample: boolean; html: string}
+
+function MailPanel({
   gameId,
-  recap,
-}: Readonly<{gameId: string; recap: GameDetail['game']['recap']}>) {
+  state,
+  copy,
+  preview: fetchPreview,
+  send: sendNow,
+}: Readonly<{
+  gameId: string
+  state: GameDetail['game']['recap']
+  copy: MailCopy
+  preview: () => Promise<MailPreview>
+  send: () => Promise<GameDetail>
+}>) {
   const queryClient = useQueryClient()
   const preview = useQuery({
-    queryKey: ['games.recapPreview', gameId],
-    queryFn: () => trpc.games.recapPreview.query({gameId}),
+    queryKey: ['games.mailPreview', copy.key, gameId],
+    queryFn: fetchPreview,
     staleTime: Infinity,
   })
   const send = useMutation({
-    mutationFn: () => trpc.games.sendRecaps.mutate({gameId}),
+    mutationFn: sendNow,
     onSuccess: async (data) => {
       await queryClient.cancelQueries({queryKey: ['games.detail', gameId]})
       queryClient.setQueryData(['games.detail', gameId], data)
@@ -569,24 +626,25 @@ function RecapPanel({
     },
   })
   // A send that delivered nothing can go again; anything else is final.
-  const canSend = !recap || (!recap.pending && recap.sent === 0)
+  const canSend = !state || (!state.pending && state.sent === 0)
   const recipients = preview.data?.recipients ?? 0
   const plural = recipients === 1 ? 'player' : 'players'
 
   const status = () => {
-    if (!recap) return null
-    if (recap.pending) return <p className="text-sm text-gray-lighter">Sending…</p>
+    if (!state) return null
+    if (state.pending) return <p className="text-sm text-gray-lighter">Sending…</p>
     return (
-      <p className={cn('text-sm', recap.failed > 0 ? 'text-errorOnDark' : 'text-gray-lighter')}>
-        {`Recap emails: ${recap.sent} sent, ${recap.failed} failed${recap.error ? ` (${recap.error})` : ''}.`}
+      <p className={cn('text-sm', state.failed > 0 ? 'text-errorOnDark' : 'text-gray-lighter')}>
+        {`${copy.status}: ${state.sent} sent, ${state.failed} failed${state.error ? ` (${state.error})` : ''}.`}
       </p>
     )
   }
 
   return (
     <section className="mb-12">
-      <SectionTitle>Recap email</SectionTitle>
+      <SectionTitle>{copy.title}</SectionTitle>
       <Card className="flex flex-col gap-4">
+        {copy.intro ? <p className="text-sm text-gray-lighter">{copy.intro}</p> : null}
         {preview.isLoading ? (
           <div
             aria-busy
@@ -599,12 +657,10 @@ function RecapPanel({
         {preview.data ? (
           <>
             <p className="text-sm text-gray-lighter">
-              {preview.data.sample
-                ? 'Nobody asked for a recap, so this preview uses a sample player.'
-                : `Preview of one player's email. Each player gets their own numbers and question.`}
+              {preview.data.sample ? copy.sample : copy.real}
             </p>
             <iframe
-              title="Recap email preview"
+              title={`${copy.title} preview`}
               sandbox=""
               srcDoc={preview.data.html}
               className="h-[36rem] w-full rounded-2xl bg-white"
@@ -619,15 +675,13 @@ function RecapPanel({
               disabled={!preview.data || recipients === 0}
               pending={send.isPending}
               onClick={() => {
-                const ok = window.confirm(
-                  `Send the recap to ${recipients} ${plural}? It goes out once and can't be recalled.`
-                )
+                const ok = window.confirm(copy.confirm(`${recipients} ${plural}`))
                 if (ok && !send.isPending) send.mutate()
               }}
             >
               {send.isPending
                 ? 'Sending…'
-                : `${recap ? 'Retry: send' : 'Send'}${preview.data ? ` to ${recipients} ${plural}` : ''}`}
+                : `${state ? 'Retry: send' : 'Send'}${preview.data ? ` to ${recipients} ${plural}` : ''}`}
             </Button>
             {send.isError ? <ErrorText>{send.error.message}</ErrorText> : null}
           </div>

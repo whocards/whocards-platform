@@ -24,7 +24,7 @@ import {
   standbyIds,
   turnRef,
 } from '@whocards/game'
-import type {GameRecapProps} from '@whocards/emails'
+import type {GameRecapProps, GameRevisitProps} from '@whocards/emails'
 import type {
   AnswerMode,
   CustomQuestion,
@@ -44,15 +44,17 @@ import {roleAtLeast} from '../../auth/permissions'
 import {createTRPCRouter, roleProcedure} from '../trpc'
 import {
   buildRecaps,
+  buildRevisits,
   GAMES_MIN_ROLE,
   hostAccess,
   organizerOf,
   plannedRoundEnd,
   previewRecap,
-  readRecapState,
+  previewRevisit,
+  readSendState,
   strandedByRemoval,
 } from './games-logic'
-import type {GameHosts, Recap, RecapState} from './games-logic'
+import type {GameHosts, Mailing, Recap, Revisit, SendState} from './games-logic'
 
 export type WriteResult = 'ok' | 'conflict' | 'stale'
 
@@ -120,9 +122,9 @@ export type HostStore = {
   endRound: (input: {roundId: string; endedAt: number}) => Promise<WriteResult>
   /** Ends the live round, its open turns and the game atomically. */
   endGame: (input: {gameId: string; endedAt: number}) => Promise<void>
-  /** Stores `claim` only if the ended game has no recap yet, or one that sent nothing; true for the one caller that gets to send. */
-  claimRecap: (gameId: string, claim: RecapState) => Promise<boolean>
-  saveRecapState: (gameId: string, recap: RecapState) => Promise<void>
+  /** Stores `claim` only if the ended game has no such send yet, or one that sent nothing; true for the one caller that gets to send. */
+  claimSend: (gameId: string, mailing: Mailing, claim: SendState) => Promise<boolean>
+  saveSendState: (gameId: string, mailing: Mailing, state: SendState) => Promise<void>
   /** Deletes the player; `release` frees partners stranded in this round's pair so they can re-pair. */
   removePlayer: (input: {
     gameId: string
@@ -134,8 +136,11 @@ export type HostStore = {
 /** Round settings as stored: the plan plus the `deck_slug` derived from it. */
 export type RoundRecord = RoundSettings & {deckSlug: string}
 
-export type SendRecaps = (recaps: Recap[]) => Promise<Pick<RecapState, 'sent' | 'failed' | 'error'>>
+export type SendResult = Pick<SendState, 'sent' | 'failed' | 'error'>
+export type SendRecaps = (recaps: Recap[]) => Promise<SendResult>
 export type RenderRecap = (props: GameRecapProps) => Promise<string>
+export type SendRevisits = (revisits: Revisit[]) => Promise<SendResult>
+export type RenderRevisit = (props: GameRevisitProps) => Promise<string>
 
 const gameIdSchema = z.object({gameId: z.string().uuid()})
 const roundIdSchema = gameIdSchema.extend({roundId: z.string().uuid()})
@@ -196,7 +201,9 @@ export type GameDetail = {
     status: GameStatus
     /** How the next claimed turn is answered. */
     answerMode: AnswerMode
-    recap: RecapState | null
+    recap: SendState | null
+    /** The optional "revisit your questions" email, sent after the recap. */
+    revisit: SendState | null
     /** Secret for the facilitator standby join link; null until a host asks for one. */
     standbyKey: string | null
   }
@@ -243,7 +250,8 @@ const detailOf = (
       ...hosting,
       status: snapshot.game.status,
       answerMode: currentAnswerMode(snapshot.game.settings),
-      recap: readRecapState(snapshot.game.settings),
+      recap: readSendState(snapshot.game.settings, 'recap'),
+      revisit: readSendState(snapshot.game.settings, 'revisit'),
       standbyKey: snapshot.game.settings.standbyKey ?? null,
     },
     questions: sources.custom.map((q) => ({...q, used: used.has(q.id)})),
@@ -298,10 +306,14 @@ export const createGamesRouter = ({
   store,
   sendRecaps,
   renderRecap,
+  sendRevisits,
+  renderRevisit,
 }: {
   store: HostStore
   sendRecaps: SendRecaps
   renderRecap: RenderRecap
+  sendRevisits: SendRevisits
+  renderRevisit: RenderRevisit
 }) => {
   const procedure = roleProcedure(GAMES_MIN_ROLE)
 
@@ -343,6 +355,23 @@ export const createGamesRouter = ({
     const snapshot = await load(gameId)
     if (snapshot.game.status !== 'ended') throw fail('BAD_REQUEST', 'End the game first.')
     return snapshot
+  }
+
+  /** Sends once per game and mailing: the conditional claim lets exactly one host through. */
+  const sendOnce = async <T>(
+    gameId: string,
+    mailing: Mailing,
+    emails: T[],
+    send: (emails: T[]) => Promise<SendResult>
+  ) => {
+    const claim = {sentAt: store.now(), sent: 0, failed: 0, error: null, pending: true}
+    if (!(await store.claimSend(gameId, mailing, claim))) return
+    const result = await send(emails).catch((error: unknown) => ({
+      sent: 0,
+      failed: emails.length,
+      error: error instanceof Error ? error.message : String(error),
+    }))
+    await store.saveSendState(gameId, mailing, {...claim, ...result, pending: false})
   }
 
   const endLiveRound = async (snapshot: GameSnapshot, roundId: string) => {
@@ -572,7 +601,6 @@ export const createGamesRouter = ({
       }
     }),
 
-    /** Sends once per game: the conditional claim lets exactly one host through. */
     sendRecaps: gameProcedure.input(gameIdSchema).mutation(async ({ctx, input}) => {
       const [snapshot, saved] = await Promise.all([
         loadEnded(input.gameId),
@@ -585,15 +613,23 @@ export const createGamesRouter = ({
         random: store.random,
       })
       if (recaps.length === 0) throw fail('BAD_REQUEST', 'Nobody asked for a recap.')
-      const claim = {sentAt: store.now(), sent: 0, failed: 0, error: null, pending: true}
-      if (!(await store.claimRecap(input.gameId, claim))) return detail(input.gameId, ctx)
+      await sendOnce(input.gameId, 'recap', recaps, sendRecaps)
+      return detail(input.gameId, ctx)
+    }),
 
-      const result = await sendRecaps(recaps).catch((error: unknown) => ({
-        sent: 0,
-        failed: recaps.length,
-        error: error instanceof Error ? error.message : String(error),
-      }))
-      await store.saveRecapState(input.gameId, {...claim, ...result, pending: false})
+    revisitPreview: gameProcedure.input(gameIdSchema).query(async ({input}) => {
+      const preview = previewRevisit(await loadEnded(input.gameId))
+      return {
+        recipients: preview.recipients,
+        sample: preview.sample,
+        html: await renderRevisit(preview.props),
+      }
+    }),
+
+    sendRevisits: gameProcedure.input(gameIdSchema).mutation(async ({ctx, input}) => {
+      const revisits = buildRevisits(await loadEnded(input.gameId))
+      if (revisits.length === 0) throw fail('BAD_REQUEST', 'Nobody to send it to.')
+      await sendOnce(input.gameId, 'revisit', revisits, sendRevisits)
       return detail(input.gameId, ctx)
     }),
 
