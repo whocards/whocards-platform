@@ -2,7 +2,7 @@ import type {APIRoute} from 'astro'
 import {env} from '~env'
 import {db} from '~server/db'
 import {createDrizzleGamePort} from '~server/game/drizzle-port'
-import {createOpenAiTranscriber, fakeTranscriber, handleTranscribe} from '~server/game/transcribe'
+import {createOpenAiTranscriber, fakeTranscriber, handleAnswerUpload} from '~server/game/transcribe'
 
 export const prerender = false
 
@@ -15,4 +15,4 @@ const transcriber = env.OPENAI_API_KEY
     ? null
     : fakeTranscriber
 
-export const POST: APIRoute = ({request}) => handleTranscribe(request, {game, transcriber})
+export const POST: APIRoute = ({request}) => handleAnswerUpload(request, {game, transcriber})

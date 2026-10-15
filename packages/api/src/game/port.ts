@@ -44,7 +44,7 @@ export type GamePort = {
   }) => Promise<WriteResult>
   /** No-op if the turn is already finished. */
   finishTurn: (input: {turnId: string; finishedAt: number}) => Promise<void>
-  /** False if the turn already has a transcription in flight or done. */
+  /** False while another transcription of the turn is in flight, or once one produced its answer. */
   claimTranscription: (turnId: string) => Promise<boolean>
   /** Frees the claim after a failed transcription so the player can retry. */
   releaseTranscription: (turnId: string) => Promise<void>
@@ -60,6 +60,12 @@ export type GamePort = {
   }) => Promise<void>
   /** Live (not deleted) responses, oldest first. */
   listResponses: (playerId: string) => Promise<ResponseRecord[]>
+  /** Replaces the transcript; false if it isn't this player's live response. */
+  editResponse: (input: {
+    responseId: string
+    playerId: string
+    transcript: string
+  }) => Promise<boolean>
   /** Soft-deletes and wipes the transcript; false if it isn't this player's live response. */
   deleteResponse: (input: {responseId: string; playerId: string}) => Promise<boolean>
   /** One feedback per player; sending again replaces it. */

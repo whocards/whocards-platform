@@ -412,6 +412,36 @@ describe('game.round.response / game.me', () => {
     expect(await refusalOf(a.caller.game.me.deleteResponse({responseId}))).toBe('not_found')
   })
 
+  it('edits only my own live transcript, with the same rules as saving', async () => {
+    const {a, b} = await pairedUp()
+    const turn = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
+    await a.caller.game.round.response({
+      turnId: turn?.id ?? '',
+      language: 'en',
+      transcript: 'First take',
+      durationMs: 1000,
+      consent: true,
+    })
+    const responseId = (await a.caller.game.me.get()).responses[0]?.id ?? ''
+
+    const edited = await a.caller.game.me.editResponse({responseId, transcript: '  Better take '})
+    expect(edited.responses).toMatchObject([{id: responseId, transcript: 'Better take'}])
+    expect(
+      await refusalOf(b.caller.game.me.editResponse({responseId, transcript: 'Mine now'}))
+    ).toBe('not_found')
+    await expect(a.caller.game.me.editResponse({responseId, transcript: '   '})).rejects.toThrow(
+      /too_small/
+    )
+    await expect(
+      a.caller.game.me.editResponse({responseId, transcript: 'x'.repeat(20_001)})
+    ).rejects.toThrow(/too_big/)
+
+    await a.caller.game.me.deleteResponse({responseId})
+    expect(await refusalOf(a.caller.game.me.editResponse({responseId, transcript: 'Back'}))).toBe(
+      'not_found'
+    )
+  })
+
   it('still saves my turn after the host removed my partner and released me', async () => {
     const {a, fake} = await pairedUp()
     const turn = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn

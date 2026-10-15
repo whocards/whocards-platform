@@ -10,6 +10,7 @@ export const createCaller = createCallerFactory(appRouter)
 export {appRouter}
 export type {Context} from './trpc'
 export type {GamePort, WriteResult} from './game/port'
+export {saveAnswer} from './game/answer'
 export {cacheControlFor} from './cache'
 export type {AppRouter}
 

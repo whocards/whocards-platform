@@ -24,21 +24,8 @@ export const turnsOf = (snapshot: GameSnapshot, pairId: string): Turn[] =>
 export const openTurnOf = (round: Round, turns: Turn[], now: number): Turn | null =>
   turns.find((t) => finishedAtOf(round, t, now) === null) ?? null
 
-/** How long after a turn ends its recording may still be uploaded for transcription. */
-export const UPLOAD_GRACE_MS = 2 * 60_000
-
-/** The player's newest turn, if still running or ended within the grace window. */
-export const uploadableTurn = (
-  snapshot: GameSnapshot,
-  playerId: string,
-  now: number
-): Turn | null =>
-  snapshot.turns.findLast((t) => {
-    const round = snapshot.rounds.find((r) => r.id === t.roundId)
-    if (t.playerId !== playerId || !round) return false
-    const end = finishedAtOf(round, t, now)
-    return end === null || now - end <= UPLOAD_GRACE_MS
-  }) ?? null
+/** A transcription claim older than this died with its request, so a retry may take it over. */
+export const TRANSCRIPTION_CLAIM_TTL_MS = 2 * 60_000
 
 export type ClaimCheck =
   | {ok: true; start: boolean; expire: Array<{turnId: string; finishedAt: number}>}

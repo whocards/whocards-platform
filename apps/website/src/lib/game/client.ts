@@ -37,6 +37,8 @@ export const createGameApi = (code: string, tokens: TokenStore) => {
     client,
     me: () => trpc.game.me.get.query(),
     deleteResponse: (responseId: string) => trpc.game.me.deleteResponse.mutate({responseId}),
+    editResponse: (responseId: string, transcript: string) =>
+      trpc.game.me.editResponse.mutate({responseId, transcript}),
     screen: () => trpc.game.screen.query({code}),
     candidates: (partner: string) => trpc.game.round.candidates.query({partner}),
   }

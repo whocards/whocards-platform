@@ -148,11 +148,15 @@ export type PairCandidate = z.infer<typeof pairCandidateSchema>
 
 export const turnInputSchema = z.object({action: z.enum(['claim', 'finish'])})
 
+export const MAX_TRANSCRIPT_CHARS = 20_000
+const transcriptTextSchema = z.string().trim().min(1).max(MAX_TRANSCRIPT_CHARS)
+const durationMsSchema = z.number().int().min(0).max(3_600_000)
+
 export const responseInputSchema = z.object({
   turnId: z.string().min(1),
   language: gameLanguageSchema,
-  transcript: z.string().trim().min(1).max(20_000),
-  durationMs: z.number().int().min(0).max(3_600_000),
+  transcript: transcriptTextSchema,
+  durationMs: durationMsSchema,
   // Saving is the player's explicit yes; the client must say so.
   consent: z.literal(true),
 })
@@ -173,10 +177,21 @@ export const voteInputSchema = z.object({
 
 export const deleteResponseInputSchema = z.object({responseId: z.string().min(1)})
 
-export const transcribeFieldsSchema = z.object({
-  token: z.string().min(1),
-  language: gameLanguageSchema,
+export const editResponseInputSchema = z.object({
+  responseId: z.string().min(1),
+  transcript: transcriptTextSchema,
 })
+
+/** Multipart text fields of a recorded-answer upload, beside the `audio` file. */
+export const answerUploadFieldsSchema = z.object({
+  token: z.string().min(1),
+  turnId: z.string().min(1),
+  durationMs: z.coerce.number().pipe(durationMsSchema),
+})
+
+/** What the answer upload returns; `saved: false` means the take had no words in it. */
+export const answerUploadResultSchema = z.object({saved: z.boolean()})
+export type AnswerUploadResult = z.infer<typeof answerUploadResultSchema>
 
 // ---------- outputs (timestamps are epoch ms) ----------
 

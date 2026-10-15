@@ -114,7 +114,15 @@ describe('drizzle game port', () => {
     const mine = await a.caller.game.me.get()
     expect(mine.responses).toMatchObject([{transcript: 'First answer', durationMs: 20_000}])
     const responseId = mine.responses[0]?.id ?? ''
+    await expect(
+      b.caller.game.me.editResponse({responseId, transcript: 'Hijacked'})
+    ).rejects.toThrow('Not found')
+    const edited = await a.caller.game.me.editResponse({responseId, transcript: ' Fixed answer '})
+    expect(edited.responses).toMatchObject([{id: responseId, transcript: 'Fixed answer'}])
     expect((await a.caller.game.me.deleteResponse({responseId})).responses).toEqual([])
+    await expect(a.caller.game.me.editResponse({responseId, transcript: 'Back'})).rejects.toThrow(
+      'Not found'
+    )
     await expect(a.caller.game.me.deleteResponse({responseId: 'not-a-uuid'})).rejects.toThrow(
       'Not found'
     )
@@ -199,7 +207,7 @@ describe('drizzle game port', () => {
     await db.update(gameRound).set({status: 'done'}).where(eq(gameRound.id, roundId))
     expect(await port.startTurn({...turn, playerId: playerIds[1]})).toBe('conflict')
   })
-  it('lets one transcription claim a turn until it is released', async () => {
+  it('lets one transcription claim a turn until released, or until a dead claim goes stale', async () => {
     const [a, b] = await Promise.all([join('Ann'), join('Bo')])
     await port.createPair({roundId, playerIds: [a.state.me.id, b.state.me.id]})
     const pairId = (await port.loadSnapshot(gameId))?.pairs[0]?.id ?? ''
@@ -218,6 +226,22 @@ describe('drizzle game port', () => {
     expect(claims.filter(Boolean)).toHaveLength(1)
     await port.releaseTranscription(turnId)
     expect(await port.claimTranscription(turnId)).toBe(true)
+
+    const age = () =>
+      client.exec(
+        `UPDATE game_turn SET transcribed_at = now() - interval '3 minutes' WHERE id = '${turnId}'`
+      )
+    await age()
+    expect(await port.claimTranscription(turnId)).toBe(true)
+    await port.saveResponse({
+      turnId,
+      playerId: a.state.me.id,
+      language: 'en',
+      transcript: 'Done',
+      durationMs: 1000,
+    })
+    await age()
+    expect(await port.claimTranscription(turnId)).toBe(false)
   })
 
   it('stores and clears a question vote, and the database rejects anything but ±1', async () => {

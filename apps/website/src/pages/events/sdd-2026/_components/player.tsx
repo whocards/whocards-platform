@@ -1,5 +1,6 @@
 import type {JoinInput, PairCandidate, PlayerState} from '@whocards/game'
 import {copyFor, playerCopyFor, readPairCode} from '@whocards/game'
+import type {AnswerSink} from '@whocards/game'
 import type {GameSession} from '@whocards/game/hooks'
 import {useHostedGame, useRoundTimer, useTurn} from '@whocards/game/hooks'
 import {useCallback, useMemo, useState} from 'react'
@@ -10,15 +11,15 @@ import {formatClock} from '~lib/game/format'
 import {createWebRecorder} from '~lib/game/recorder'
 import type {TokenStore} from '~lib/game/token-store'
 import {createTokenStore} from '~lib/game/token-store'
-import {createWebTranscriber} from '~lib/game/transcriber'
+import {useAnswerQueue} from '~lib/game/use-answer-queue'
 import {createWakeLock} from '~lib/game/wake-lock'
 
 import {Feedback} from './feedback'
 import {Join} from './join'
 import {noticeText} from './notices'
 import {Pairing} from './pairing'
-import {Review, Turn} from './turn'
-import {Button, Loading, Notice, Screen} from './ui'
+import {Turn, TypedAnswer} from './turn'
+import {Button, Loading, Notice, Screen, Spinner} from './ui'
 
 type GameProps = {
   session: GameSession
@@ -32,8 +33,18 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
   const {language} = state.me
   const copy = playerCopyFor(language)
   const [devices] = useState(() => ({recorder: createWebRecorder(), wakeLock: createWakeLock()}))
-  const transcriber = useMemo(() => createWebTranscriber(() => tokens.get(code)), [tokens, code])
   const records = useMemo(() => tokens.records(code), [tokens, code])
+  const pending = useAnswerQueue(tokens, code)
+  const {queue} = pending
+  const answers = useMemo<AnswerSink<Blob>>(
+    () => ({
+      add: (turnId, recording) =>
+        queue.add({turnId, code, audio: recording.audio, durationMs: recording.durationMs}),
+    }),
+    [queue, code]
+  )
+  const saving = pending.items.filter((a) => !a.failed).length
+  const unsaved = pending.items.length - saving
 
   const timer = useRoundTimer({
     round: state.round,
@@ -44,17 +55,15 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
     session,
     recorder: records ? devices.recorder : null,
     wakeLock: devices.wakeLock,
-    transcriber: records ? transcriber : null,
+    answers: records ? answers : null,
     clock: timer.turn,
   })
 
-  const reviewing =
-    turn.stage === 'transcribing' || turn.stage === 'review' || turn.stage === 'saving'
   const body = () => {
-    if (reviewing)
+    if (turn.draft && (turn.stage === 'typing' || turn.stage === 'saving'))
       return (
-        <Review
-          key={`${turn.draft?.turnId}:${turn.draft?.kind}:${turn.draft?.text}`}
+        <TypedAnswer
+          key={turn.draft.turnId}
           state={state}
           timer={timer}
           turn={turn}
@@ -96,6 +105,7 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
     }
   }
 
+  const mine = `/events/sdd-2026/me?code=${code}`
   const partners = state.pair?.partners.map((p) => p.name).join(', ')
   return (
     <div className='flex w-full flex-col gap-3'>
@@ -112,6 +122,22 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
           </span>
         )}
       </header>
+      {(saving > 0 || unsaved > 0) && (
+        <a href={mine} className='text-gray-lighter flex items-center gap-2 text-sm'>
+          {saving > 0 ? (
+            <>
+              <Spinner className='size-3.5 border' />
+              {saving === 1
+                ? copy.answers.savingOne
+                : copy.answers.savingMany.replace('{n}', String(saving))}
+            </>
+          ) : (
+            <span className='text-yellow-300 underline underline-offset-4'>
+              {copy.answers.failed}
+            </span>
+          )}
+        </a>
+      )}
       {partners && (
         <p className='text-gray-dark text-sm'>
           {copy.pairing.partner} <span className='text-white'>{partners}</span>
@@ -122,7 +148,7 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
       )}
       {body()}
       <a
-        href={`/events/sdd-2026/me?code=${code}`}
+        href={mine}
         className='text-gray-lighter mx-auto py-4 underline underline-offset-4 hover:text-white'
       >
         {copy.mine.link}

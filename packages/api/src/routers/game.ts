@@ -7,8 +7,8 @@ import {
   checkPair,
   currentRound,
   customQuestionsOf,
-  deadlineOf,
   deleteResponseInputSchema,
+  editResponseInputSchema,
   feedbackInputSchema,
   finishedAtOf,
   joinInputSchema,
@@ -45,6 +45,7 @@ import type {
   ScreenState,
 } from '@whocards/game'
 
+import {saveAnswer} from '../game/answer'
 import type {GamePort} from '../game/port'
 import {refuse} from '../game/refusal'
 import {createTRPCRouter, playerProcedure, publicProcedure} from '../trpc'
@@ -262,12 +263,7 @@ export const gameRouter = createTRPCRouter({
         throw refuse('wrong_answer_mode')
       }
 
-      if (turn.finishedAt === null) {
-        const finishedAt = Math.min(ctx.game.now(), deadlineOf(round, turn))
-        await ctx.game.finishTurn({turnId: turn.id, finishedAt})
-      }
-      await ctx.game.saveResponse({
-        turnId: turn.id,
+      await saveAnswer(ctx.game, round, turn, {
         playerId: ctx.player.id,
         language: input.language,
         transcript: input.transcript,
@@ -302,6 +298,16 @@ export const gameRouter = createTRPCRouter({
 
   me: createTRPCRouter({
     get: playerProcedure.query(({ctx}) => myData(ctx.game, ctx.player)),
+
+    editResponse: playerProcedure.input(editResponseInputSchema).mutation(async ({ctx, input}) => {
+      const edited = await ctx.game.editResponse({
+        responseId: input.responseId,
+        playerId: ctx.player.id,
+        transcript: input.transcript,
+      })
+      if (!edited) throw refuse('not_found')
+      return myData(ctx.game, ctx.player)
+    }),
 
     deleteResponse: playerProcedure
       .input(deleteResponseInputSchema)

@@ -9,7 +9,7 @@ import {joinPath} from '~lib/game/links'
 import {cn} from '~utils/cn'
 
 import {QuestionVote} from './question-vote'
-import {Button, Loading, Screen, Spinner, textareaClass} from './ui'
+import {Button, Screen, Spinner, textareaClass} from './ui'
 
 type TurnProps = {
   state: PlayerState
@@ -212,68 +212,44 @@ export const Turn = ({state, timer, turn, act}: TurnProps) => {
   )
 }
 
-type ReviewProps = {
+type TypedAnswerProps = {
   state: PlayerState
   timer: TimerView
   turn: TurnControls
-  draft: Draft | null
+  draft: Draft
 }
 
-export const Review = ({state, timer, turn, draft}: ReviewProps) => {
+export const TypedAnswer = ({state, timer, turn, draft}: TypedAnswerProps) => {
   const {language} = state.me
   const copy = playerCopyFor(language)
   const rules = copyFor(language)
-  const [text, setText] = useState(draft?.text ?? '')
-
-  if (turn.stage === 'transcribing' || !draft)
-    return (
-      <Screen title={copy.review.title}>
-        <Loading label={copy.review.transcribing} className='py-12' />
-      </Screen>
-    )
-
-  const skip = (
-    <Button variant='ghost' disabled={turn.stage !== 'review'} onClick={turn.discard}>
-      {rules.actions.skip}
-    </Button>
-  )
-
-  if (draft.kind === 'failed')
-    return (
-      <Screen title={copy.review.title}>
-        <p className='text-center text-xl'>{copy.review.failed}</p>
-        <Button disabled={turn.stage !== 'review'} onClick={() => void turn.retryTranscribe()}>
-          {copy.review.retry}
-        </Button>
-        {skip}
-      </Screen>
-    )
-
-  const typed = draft.kind === 'typed'
-  const asked = typed ? state.pair?.turns.find((t) => t.id === draft.turnId) : undefined
+  const [text, setText] = useState('')
+  const asked = state.pair?.turns.find((t) => t.id === draft.turnId)
   return (
-    <Screen title={copy.review.title}>
+    <Screen title={copy.typing.title}>
       {asked && (
         <Card label={copy.turn.me}>
           <Question turn={asked} language={language} />
           <Clock timer={timer} language={language} />
         </Card>
       )}
-      <p className='text-gray-dark'>{typed ? copy.review.typeHint : copy.review.hint}</p>
+      <p className='text-gray-dark'>{copy.typing.hint}</p>
       <textarea
         className={cn(textareaClass, 'min-h-48')}
-        aria-label={typed ? copy.review.typeHint : copy.review.title}
+        aria-label={copy.typing.hint}
         value={text}
         onChange={(event) => setText(event.target.value)}
       />
       <Button
         pending={turn.stage === 'saving'}
-        disabled={turn.stage !== 'review' || text.trim() === ''}
+        disabled={turn.stage !== 'typing' || text.trim() === ''}
         onClick={() => void turn.save(text)}
       >
-        {turn.stage === 'saving' ? copy.review.saving : rules.actions.save}
+        {turn.stage === 'saving' ? copy.typing.saving : rules.actions.save}
       </Button>
-      {skip}
+      <Button variant='ghost' disabled={turn.stage !== 'typing'} onClick={turn.discard}>
+        {rules.actions.skip}
+      </Button>
     </Screen>
   )
 }

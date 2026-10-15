@@ -1,13 +1,14 @@
 import type {GamePort} from '@whocards/api'
+import {saveAnswer} from '@whocards/api'
 import {logError} from '@whocards/observability'
 import {
   answerModeAt,
+  answerUploadFieldsSchema,
   MAX_AUDIO_BYTES,
-  transcribeFieldsSchema,
+  MAX_TRANSCRIPT_CHARS,
   transcriptSchema,
-  uploadableTurn,
 } from '@whocards/game'
-import type {GameLanguage, Transcript} from '@whocards/game'
+import type {AnswerUploadResult, GameLanguage, Transcript} from '@whocards/game'
 import {z} from 'zod'
 
 export const TRANSCRIBE_MODEL = 'gpt-4o-mini-transcribe'
@@ -19,10 +20,17 @@ const MAX_BODY_BYTES = MAX_AUDIO_BYTES + 1024 * 1024
 /** Server-side speech-to-text; the audio is passed through and never stored. */
 export type ServerTranscriber = (audio: Blob, language: GameLanguage) => Promise<Transcript>
 
-export type TranscribeDeps = {
+export type AnswerUploadDeps = {
   game: Pick<
     GamePort,
-    'now' | 'findPlayerByToken' | 'loadSnapshot' | 'claimTranscription' | 'releaseTranscription'
+    | 'now'
+    | 'findPlayerByToken'
+    | 'loadSnapshot'
+    | 'claimTranscription'
+    | 'releaseTranscription'
+    | 'listResponses'
+    | 'finishTurn'
+    | 'saveResponse'
   >
   transcriber: ServerTranscriber | null
 }
@@ -31,6 +39,8 @@ const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json'}})
 
 const fail = (status: number, error: string) => json({error}, status)
+
+const done = (result: AnswerUploadResult) => json(result, 200)
 
 const extensionFor = (mimeType: string) => {
   const subtype = mimeType.split(';')[0]?.split('/')[1] ?? ''
@@ -67,8 +77,8 @@ export const fakeTranscriber: ServerTranscriber = async (audio, language) => ({
   model: 'fake',
 })
 
-/** POST multipart `audio` + `token` + `language` → Transcript JSON. */
-export const handleTranscribe = async (request: Request, deps: TranscribeDeps) => {
+/** POST multipart `audio` + `token` + `turnId` + `durationMs`: transcribes and saves my turn's answer, once. */
+export const handleAnswerUpload = async (request: Request, deps: AnswerUploadDeps) => {
   if (Number(request.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) {
     return fail(413, 'Recording is too long')
   }
@@ -80,13 +90,14 @@ export const handleTranscribe = async (request: Request, deps: TranscribeDeps) =
   } catch {
     return fail(400, 'Expected multipart form data')
   }
-  const fields = transcribeFieldsSchema.safeParse({
+  const fields = answerUploadFieldsSchema.safeParse({
     token: form.get('token'),
-    language: form.get('language'),
+    turnId: form.get('turnId'),
+    durationMs: form.get('durationMs'),
   })
   const audio = form.get('audio')
   if (!fields.success || !(audio instanceof Blob) || audio.size === 0) {
-    return fail(400, 'Send audio, token and language')
+    return fail(400, 'Send audio, token, turnId and durationMs')
   }
   if (audio.size > MAX_AUDIO_BYTES) return fail(413, 'Recording is too long')
 
@@ -94,18 +105,39 @@ export const handleTranscribe = async (request: Request, deps: TranscribeDeps) =
   if (!player) return fail(401, 'Join the game first')
   if (!player.consentTranscript) return fail(403, 'You chose to play without saving answers')
   const snapshot = await deps.game.loadSnapshot(player.gameId)
-  const turn = snapshot && uploadableTurn(snapshot, player.id, deps.game.now())
-  if (!snapshot || !turn) return fail(409, 'No turn to transcribe')
+  const turn = snapshot?.turns.find((t) => t.id === fields.data.turnId && t.playerId === player.id)
+  const round = turn && snapshot?.rounds.find((r) => r.id === turn.roundId)
+  if (!snapshot || !turn || !round) return fail(404, 'No such turn')
   if (answerModeAt(snapshot.game.settings, turn.startedAt) !== 'voice') {
-    return fail(409, 'This turn takes no recording')
+    return fail(422, 'This turn takes no recording')
   }
-  if (!(await deps.game.claimTranscription(turn.id))) return fail(409, 'Turn already transcribed')
+  // A retry after a lost reply lands here instead of transcribing twice.
+  const answered = (await deps.game.listResponses(player.id)).some((r) => r.turnId === turn.id)
+  if (answered) return done({saved: true})
+  if (!(await deps.game.claimTranscription(turn.id))) return fail(409, 'Already being transcribed')
 
+  let text: string
   try {
-    return json(transcriptSchema.parse(await deps.transcriber(audio, fields.data.language)), 200)
+    const transcript = transcriptSchema.parse(await deps.transcriber(audio, player.language))
+    text = transcript.text.trim().slice(0, MAX_TRANSCRIPT_CHARS)
   } catch (error) {
-    logError('game/transcribe: transcriber failed', error)
+    logError('game/answer: transcriber failed', error)
     await deps.game.releaseTranscription(turn.id)
     return fail(502, 'Transcription failed, try again')
   }
+  if (text === '') return done({saved: false})
+
+  try {
+    await saveAnswer(deps.game, round, turn, {
+      playerId: player.id,
+      language: player.language,
+      transcript: text,
+      durationMs: fields.data.durationMs,
+    })
+  } catch (error) {
+    logError('game/answer: saving the answer failed', error)
+    await deps.game.releaseTranscription(turn.id)
+    return fail(500, 'Saving failed, try again')
+  }
+  return done({saved: true})
 }

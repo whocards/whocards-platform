@@ -145,7 +145,7 @@ export const gameTurn = pgTable(
     questionId: text('question_id').notNull(),
     startedAt: timestamp('started_at', {withTimezone: true}).notNull(),
     finishedAt: timestamp('finished_at', {withTimezone: true}),
-    // Set while a transcription is in flight or done; cleared if it fails, so one success per turn.
+    // Set while a transcription is in flight or done; cleared on failure, taken over once stale.
     transcribedAt: timestamp('transcribed_at', {withTimezone: true}),
     questionVote: smallint('question_vote').$type<QuestionVote>(),
   },

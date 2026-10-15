@@ -1,8 +1,14 @@
-import {UPLOAD_GRACE_MS} from '@whocards/game'
-import type {GameSnapshot, GameStatus, Player, RoundStatus, Turn} from '@whocards/game'
+import type {
+  GameSnapshot,
+  GameStatus,
+  Player,
+  ResponseRecord,
+  RoundStatus,
+  Turn,
+} from '@whocards/game'
 import {describe, expect, it, vi} from 'vitest'
-import {createOpenAiTranscriber, fakeTranscriber, handleTranscribe} from './transcribe'
-import type {ServerTranscriber, TranscribeDeps} from './transcribe'
+import {createOpenAiTranscriber, fakeTranscriber, handleAnswerUpload} from './transcribe'
+import type {AnswerUploadDeps, ServerTranscriber} from './transcribe'
 
 const player: Player = {
   id: 'p1',
@@ -55,68 +61,90 @@ const snapshot = (
   turns,
 })
 
-const deps = (overrides: Partial<TranscribeDeps> = {}, state = snapshot('live', 'live')) => {
+type Game = AnswerUploadDeps['game']
+
+const deps = (
+  overrides: Pick<Partial<AnswerUploadDeps>, 'transcriber'> = {},
+  state = snapshot('live', 'live')
+) => {
   const claimed = new Set<string>()
-  return {
-    game: {
-      now: () => NOW,
-      findPlayerByToken: async (token: string) => (token === 'good' ? player : null),
-      loadSnapshot: async () => state,
-      claimTranscription: async (turnId: string) => !claimed.has(turnId) && !!claimed.add(turnId),
-      releaseTranscription: async (turnId: string) => void claimed.delete(turnId),
-    },
-    transcriber: vi.fn<ServerTranscriber>(fakeTranscriber),
-    ...overrides,
-  }
+  const responses: ResponseRecord[] = []
+  const game = {
+    now: () => NOW,
+    findPlayerByToken: async (token: string) => (token === 'good' ? player : null),
+    loadSnapshot: async () => state,
+    claimTranscription: vi.fn<Game['claimTranscription']>(
+      async (turnId) => !claimed.has(turnId) && !!claimed.add(turnId)
+    ),
+    releaseTranscription: async (turnId: string) => void claimed.delete(turnId),
+    listResponses: async () => responses,
+    finishTurn: vi.fn<Game['finishTurn']>(async () => undefined),
+    saveResponse: vi.fn<Game['saveResponse']>(async (input) => {
+      responses.push({...input, id: `res-${input.turnId}`, questionId: '1', createdAt: NOW})
+    }),
+  } satisfies Game
+  return {game, transcriber: vi.fn<ServerTranscriber>(fakeTranscriber), responses, ...overrides}
 }
 
-const post = (fields: {audio?: Blob; token?: string; language?: string}) => {
+const post = (fields: {audio?: Blob; token?: string; turnId?: string; durationMs?: string}) => {
   const form = new FormData()
   if (fields.audio) form.set('audio', fields.audio, 'answer.webm')
-  if (fields.token) form.set('token', fields.token)
-  if (fields.language) form.set('language', fields.language)
-  return new Request('http://localhost/api/game/transcribe', {method: 'POST', body: form})
+  for (const key of ['token', 'turnId', 'durationMs'] as const) {
+    const value = fields[key]
+    if (value !== undefined) form.set(key, value)
+  }
+  return new Request('http://localhost/api/game/answer', {method: 'POST', body: form})
 }
 
 const audio = new Blob([new Uint8Array(512)], {type: 'audio/webm'})
-const valid = {audio, token: 'good', language: 'hu'}
+const valid = {audio, token: 'good', turnId: 't1', durationMs: '12345'}
 
-describe('handleTranscribe', () => {
-  it('returns the transcript for a player with a running turn', async () => {
+describe('handleAnswerUpload', () => {
+  it("transcribes in the player's language and saves it as the turn's answer, finishing the turn", async () => {
     const d = deps()
-    const res = await handleTranscribe(post(valid), d)
+    const res = await handleAnswerUpload(post(valid), d)
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({
-      text: '[fake hu transcript of 512 bytes]',
-      language: 'hu',
-      model: 'fake',
+    expect(await res.json()).toEqual({saved: true})
+    expect(d.transcriber).toHaveBeenCalledWith(expect.any(Blob), 'en')
+    expect(d.game.finishTurn).toHaveBeenCalledWith({turnId: 't1', finishedAt: NOW})
+    expect(d.game.saveResponse).toHaveBeenCalledWith({
+      turnId: 't1',
+      playerId: 'p1',
+      language: 'en',
+      transcript: '[fake en transcript of 512 bytes]',
+      durationMs: 12_345,
     })
-    expect(d.transcriber).toHaveBeenCalledOnce()
   })
 
   it('rejects missing fields and empty audio', async () => {
-    expect((await handleTranscribe(post({...valid, audio: undefined}), deps())).status).toBe(400)
-    expect((await handleTranscribe(post({...valid, language: 'de'}), deps())).status).toBe(400)
-    expect((await handleTranscribe(post({...valid, audio: new Blob([])}), deps())).status).toBe(400)
-  })
-
-  it('rejects an unknown token', async () => {
-    expect((await handleTranscribe(post({...valid, token: 'bad'}), deps())).status).toBe(401)
-  })
-
-  it('accepts a late upload after the host ended the round or game', async () => {
-    const finished = [{...myTurn, finishedAt: NOW - UPLOAD_GRACE_MS}]
-    for (const state of [snapshot('live', 'done', finished), snapshot('ended', 'done', finished)]) {
-      expect((await handleTranscribe(post(valid), deps({}, state))).status).toBe(200)
+    for (const bad of [
+      {...valid, audio: undefined},
+      {...valid, turnId: undefined},
+      {...valid, durationMs: '-1'},
+      {...valid, audio: new Blob([])},
+    ]) {
+      expect((await handleAnswerUpload(post(bad), deps())).status).toBe(400)
     }
   })
 
-  it('rejects a player with no turn of their own, or one that ended too long ago', async () => {
-    const stale = [{...myTurn, finishedAt: NOW - UPLOAD_GRACE_MS - 1}]
-    const partners = [{...myTurn, playerId: 'p2'}]
-    for (const turns of [[], stale, partners]) {
+  it('rejects an unknown token', async () => {
+    expect((await handleAnswerUpload(post({...valid, token: 'bad'}), deps())).status).toBe(401)
+  })
+
+  it('saves a late upload after the host ended the round or game, without reopening the turn', async () => {
+    const finished = [{...myTurn, finishedAt: NOW - 3_600_000}]
+    for (const state of [snapshot('live', 'done', finished), snapshot('ended', 'done', finished)]) {
+      const d = deps({}, state)
+      expect((await handleAnswerUpload(post(valid), d)).status).toBe(200)
+      expect(d.game.finishTurn).not.toHaveBeenCalled()
+      expect(d.responses).toHaveLength(1)
+    }
+  })
+
+  it("rejects a turn that isn't mine or doesn't exist", async () => {
+    for (const turns of [[], [{...myTurn, playerId: 'p2'}]]) {
       const d = deps({}, snapshot('live', 'live', turns))
-      expect((await handleTranscribe(post(valid), d)).status).toBe(409)
+      expect((await handleAnswerUpload(post(valid), d)).status).toBe(404)
       expect(d.transcriber).not.toHaveBeenCalled()
     }
   })
@@ -124,7 +152,7 @@ describe('handleTranscribe', () => {
   it('rejects a player who chose to play without saving answers', async () => {
     const d = deps()
     d.game.findPlayerByToken = async () => ({...player, consentTranscript: false})
-    expect((await handleTranscribe(post(valid), d)).status).toBe(403)
+    expect((await handleAnswerUpload(post(valid), d)).status).toBe(403)
     expect(d.transcriber).not.toHaveBeenCalled()
   })
 
@@ -135,37 +163,62 @@ describe('handleTranscribe', () => {
       {mode: 'voice', at: myTurn.startedAt + 1},
     ]
     const d = deps({}, state)
-    expect((await handleTranscribe(post(valid), d)).status).toBe(409)
+    expect((await handleAnswerUpload(post(valid), d)).status).toBe(422)
     expect(d.transcriber).not.toHaveBeenCalled()
   })
 
   it('rejects oversized uploads before reading them', async () => {
-    const request = new Request('http://localhost/api/game/transcribe', {
+    const request = new Request('http://localhost/api/game/answer', {
       method: 'POST',
       headers: {'content-length': String(30 * 1024 * 1024)},
       body: 'x',
     })
-    expect((await handleTranscribe(request, deps())).status).toBe(413)
+    expect((await handleAnswerUpload(request, deps())).status).toBe(413)
   })
 
   it('answers 503 when transcription is not configured', async () => {
-    expect((await handleTranscribe(post(valid), deps({transcriber: null}))).status).toBe(503)
+    expect((await handleAnswerUpload(post(valid), deps({transcriber: null}))).status).toBe(503)
   })
 
-  it('refuses a second transcription of the same turn', async () => {
+  it('answers a repeat upload of a saved turn with success, transcribing only once', async () => {
     const d = deps()
-    expect((await handleTranscribe(post(valid), d)).status).toBe(200)
-    expect((await handleTranscribe(post(valid), d)).status).toBe(409)
+    expect((await handleAnswerUpload(post(valid), d)).status).toBe(200)
+    const again = await handleAnswerUpload(post(valid), d)
+    expect(again.status).toBe(200)
+    expect(await again.json()).toEqual({saved: true})
     expect(d.transcriber).toHaveBeenCalledOnce()
+    expect(d.responses).toHaveLength(1)
   })
 
-  it('answers 502 when the transcriber fails, and lets the player retry', async () => {
+  it('answers 409 while another upload of the turn is in flight', async () => {
+    const d = deps()
+    d.game.claimTranscription.mockResolvedValueOnce(false)
+    expect((await handleAnswerUpload(post(valid), d)).status).toBe(409)
+    expect(d.transcriber).not.toHaveBeenCalled()
+  })
+
+  it('answers 502 when the transcriber fails, and lets the retry through', async () => {
     const transcriber = vi
       .fn<ServerTranscriber>(fakeTranscriber)
       .mockRejectedValueOnce(new Error('upstream down'))
     const d = deps({transcriber})
-    expect((await handleTranscribe(post(valid), d)).status).toBe(502)
-    expect((await handleTranscribe(post(valid), d)).status).toBe(200)
+    expect((await handleAnswerUpload(post(valid), d)).status).toBe(502)
+    expect((await handleAnswerUpload(post(valid), d)).status).toBe(200)
+  })
+
+  it('releases the claim when saving fails, so the retry can transcribe again', async () => {
+    const d = deps()
+    d.game.saveResponse.mockRejectedValueOnce(new Error('db down'))
+    expect((await handleAnswerUpload(post(valid), d)).status).toBe(500)
+    expect((await handleAnswerUpload(post(valid), d)).status).toBe(200)
+    expect(d.responses).toHaveLength(1)
+  })
+
+  it('saves nothing for a silent take', async () => {
+    const d = deps({transcriber: async () => ({text: '  ', language: 'en', model: 'fake'})})
+    const res = await handleAnswerUpload(post(valid), d)
+    expect(await res.json()).toEqual({saved: false})
+    expect(d.responses).toEqual([])
   })
 })
 

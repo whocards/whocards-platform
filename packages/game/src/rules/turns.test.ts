@@ -1,13 +1,6 @@
 import {describe, expect, it} from 'vitest'
 import {pair, round, snapshot, turn} from '../fixtures.test-utils'
-import {
-  UPLOAD_GRACE_MS,
-  checkClaim,
-  checkFinish,
-  drawQuestion,
-  phaseOf,
-  uploadableTurn,
-} from './turns'
+import {checkClaim, checkFinish, drawQuestion, phaseOf} from './turns'
 
 const p = pair('p1', ['a', 'b'])
 
@@ -112,46 +105,5 @@ describe('drawQuestion', () => {
     expect(drawQuestion(['q1', 'q2', 'q3'], new Set(['q1', 'q2']), () => 0.99)).toBe('q3')
     expect(drawQuestion(['q1', 'q2'], new Set(['q1', 'q2']), () => 0.5)).toBe('q2')
     expect(drawQuestion([], new Set(), () => 0)).toBeNull()
-  })
-})
-
-describe('uploadableTurn', () => {
-  const s = snapshot({
-    rounds: [round({id: 'r0', status: 'done'}), round()],
-    turns: [
-      turn({id: 'old', pairId: 'p0', roundId: 'r0', playerId: 'a', finishedAt: 0}),
-      turn({id: 'mine', pairId: 'p1', playerId: 'a', startedAt: 200_000}),
-      turn({id: 'theirs', pairId: 'p1', playerId: 'b', startedAt: 200_000}),
-    ],
-  })
-
-  it("finds my running turn, never a partner's or a long-finished one", () => {
-    expect(uploadableTurn(s, 'a', 210_000)?.id).toBe('mine')
-    expect(uploadableTurn(s, 'c', 210_000)).toBeNull()
-  })
-
-  it('keeps a finished turn uploadable for the grace window after it ends', () => {
-    const done = snapshot({
-      turns: [turn({id: 'mine', pairId: 'p1', playerId: 'a', finishedAt: 5000})],
-    })
-    expect(uploadableTurn(done, 'a', 5000 + UPLOAD_GRACE_MS)?.id).toBe('mine')
-    expect(uploadableTurn(done, 'a', 5001 + UPLOAD_GRACE_MS)).toBeNull()
-  })
-
-  it('picks my newest turn while the previous one is still in its grace window', () => {
-    const back2back = snapshot({
-      rounds: [round({id: 'r0', status: 'done'}), round()],
-      turns: [
-        turn({id: 'prev', pairId: 'p0', roundId: 'r0', playerId: 'a', finishedAt: 190_000}),
-        turn({id: 'mine', pairId: 'p1', playerId: 'a', startedAt: 200_000}),
-      ],
-    })
-    expect(uploadableTurn(back2back, 'a', 210_000)?.id).toBe('mine')
-  })
-
-  it('counts a turn nobody closed as ended at its deadline', () => {
-    // 60 s turn plus 30 s nudge.
-    expect(uploadableTurn(s, 'a', 290_000 + UPLOAD_GRACE_MS)?.id).toBe('mine')
-    expect(uploadableTurn(s, 'a', 290_001 + UPLOAD_GRACE_MS)).toBeNull()
   })
 })

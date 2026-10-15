@@ -4,7 +4,6 @@ import {formatClock} from './format'
 import {pickMimeType} from './recorder'
 import {frameSize} from './scanner'
 import {createTokenStore} from './token-store'
-import {createWebTranscriber} from './transcriber'
 import type {WakeLockHost} from './wake-lock'
 import {createWakeLock} from './wake-lock'
 
@@ -72,39 +71,6 @@ describe('createWakeLock', () => {
     const refused = createWakeLock(fakeHost(() => Promise.reject(new Error('NotAllowed'))).host)
     expect(await refused.acquire()).toBe(false)
     expect(await createWakeLock(fakeHost(null).host).acquire()).toBe(false)
-  })
-})
-
-describe('createWebTranscriber', () => {
-  const recording = {
-    audio: new Blob(['x'], {type: 'audio/webm'}),
-    mimeType: 'audio/webm',
-    durationMs: 1,
-  }
-
-  it('posts the audio with the token and parses the transcript', async () => {
-    const fetcher = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(Response.json({text: 'hi', language: 'en', model: 'fake'}))
-    const transcriber = createWebTranscriber(() => 'tok', fetcher)
-
-    expect(await transcriber.transcribe(recording, 'en')).toEqual({
-      text: 'hi',
-      language: 'en',
-      model: 'fake',
-    })
-    const body = fetcher.mock.calls[0]?.[1]?.body
-    expect(body).toBeInstanceOf(FormData)
-    expect(body instanceof FormData && body.get('token')).toBe('tok')
-  })
-
-  it('surfaces the server message on failure', async () => {
-    const fetcher = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(Response.json({error: 'No live round'}, {status: 409}))
-    await expect(
-      createWebTranscriber(() => 'tok', fetcher).transcribe(recording, 'en')
-    ).rejects.toThrow('No live round')
   })
 })
 

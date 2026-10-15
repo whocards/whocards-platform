@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
-import type {Recorder, Transcriber, WakeLock} from '../adapters'
+import type {AnswerSink, Recorder, WakeLock} from '../adapters'
 import type {TurnClock} from '../rules/timer'
 import type {GameClient, GamePlatform} from './client'
 import {flush, renderHook} from './render-hook.test-utils'
@@ -32,25 +32,21 @@ const setup = async (props: Props = {clock: null, recording: true}) => {
     acquire: vi.fn<WakeLock['acquire']>().mockResolvedValue(true),
     release: vi.fn<WakeLock['release']>().mockResolvedValue(undefined),
   }
-  const transcriber = {
-    transcribe: vi
-      .fn<Transcriber<string>['transcribe']>()
-      .mockResolvedValue({text: 'hello', language: 'en', model: 'fake'}),
-  }
+  const answers = {add: vi.fn<AnswerSink<string>['add']>()}
   const useBoth = ({clock, recording}: Props) => {
     const session = useHostedGame({client, platform, joined: true})
     const turn = useTurn({
       session,
       recorder: recording ? recorder : null,
       wakeLock,
-      transcriber: recording ? transcriber : null,
+      answers: recording ? answers : null,
       clock,
     })
     return {session, turn}
   }
   const hook = await renderHook(useBoth, props)
   await flush()
-  return {client, recorder, wakeLock, transcriber, hook}
+  return {client, recorder, wakeLock, answers, hook}
 }
 
 const over: TurnClock = {phase: 'over', remainingMs: 0, untilDeadlineMs: 0}
@@ -72,8 +68,8 @@ describe('useTurn', () => {
     await hook.unmount()
   })
 
-  it('records, finishes, transcribes, and saves with explicit consent', async () => {
-    const {client, recorder, wakeLock, transcriber, hook} = await setup()
+  it('records, finishes, and hands the take to the background queue without stopping', async () => {
+    const {client, recorder, wakeLock, answers, hook} = await setup()
     await flush(() => hook.current.turn.record())
     expect(recorder.start).toHaveBeenCalledOnce()
     expect(wakeLock.acquire).toHaveBeenCalledOnce()
@@ -81,26 +77,25 @@ describe('useTurn', () => {
 
     await flush(() => hook.current.turn.finish())
     expect(wakeLock.release).toHaveBeenCalledOnce()
+    expect(answers.add).toHaveBeenCalledExactlyOnceWith('t1', take)
+    expect(answers.add.mock.invocationCallOrder[0]).toBeLessThan(
+      client.turn.mock.invocationCallOrder[0] ?? 0
+    )
     expect(client.turn).toHaveBeenCalledWith('finish')
-    expect(transcriber.transcribe).toHaveBeenCalledWith(take, 'en')
-    expect(hook.current.turn.stage).toBe('review')
-    expect(hook.current.turn.draft).toEqual({
-      turnId: 't1',
-      text: 'hello',
-      durationMs: 12_345.6,
-      kind: 'transcript',
-    })
-
-    await flush(() => hook.current.turn.save('hello, edited'))
-    expect(client.response).toHaveBeenCalledWith({
-      turnId: 't1',
-      language: 'en',
-      transcript: 'hello, edited',
-      durationMs: 12_346,
-      consent: true,
-    })
+    expect(client.response).not.toHaveBeenCalled()
     expect(hook.current.turn.stage).toBe('idle')
     expect(hook.current.turn.draft).toBeNull()
+    await hook.unmount()
+  })
+
+  it('still queues the take when the finish call fails', async () => {
+    const {client, answers, hook} = await setup()
+    client.turn.mockRejectedValueOnce(new Error('offline'))
+    await flush(() => hook.current.turn.record())
+    await flush(() => hook.current.turn.finish())
+    expect(answers.add).toHaveBeenCalledOnce()
+    expect(hook.current.turn.notice).toBe('network')
+    expect(hook.current.turn.stage).toBe('idle')
     await hook.unmount()
   })
 
@@ -114,7 +109,7 @@ describe('useTurn', () => {
   })
 
   it('marks the turn mic-blocked when the mic is refused, and still lets it finish', async () => {
-    const {client, recorder, transcriber, hook} = await setup()
+    const {client, recorder, answers, hook} = await setup()
     recorder.start.mockRejectedValueOnce(new Error('NotAllowedError'))
     await flush(() => hook.current.turn.record())
     expect(hook.current.turn.stage).toBe('idle')
@@ -123,36 +118,8 @@ describe('useTurn', () => {
 
     await flush(() => hook.current.turn.finish())
     expect(client.turn).toHaveBeenCalledWith('finish')
-    expect(transcriber.transcribe).not.toHaveBeenCalled()
+    expect(answers.add).not.toHaveBeenCalled()
     expect(hook.current.turn.micBlocked).toBe(false)
-    await hook.unmount()
-  })
-
-  it('offers only retry or skip when transcription fails', async () => {
-    const {client, transcriber, hook} = await setup()
-    transcriber.transcribe.mockRejectedValueOnce(new Error('502'))
-    await flush(() => hook.current.turn.record())
-    await flush(() => hook.current.turn.finish())
-    expect(hook.current.turn.stage).toBe('review')
-    expect(hook.current.turn.draft).toMatchObject({kind: 'failed', text: ''})
-
-    await flush(() => hook.current.turn.save('typed over a failure'))
-    expect(client.response).not.toHaveBeenCalled()
-
-    await flush(() => hook.current.turn.retryTranscribe())
-    expect(hook.current.turn.draft).toMatchObject({kind: 'transcript', text: 'hello'})
-    await hook.unmount()
-  })
-
-  it('skips a failed transcription without saving', async () => {
-    const {client, transcriber, hook} = await setup()
-    transcriber.transcribe.mockRejectedValueOnce(new Error('502'))
-    await flush(() => hook.current.turn.record())
-    await flush(() => hook.current.turn.finish())
-    await flush(() => hook.current.turn.discard())
-    expect(client.response).not.toHaveBeenCalled()
-    expect(hook.current.turn.stage).toBe('idle')
-    expect(hook.current.turn.draft).toBeNull()
     await hook.unmount()
   })
 
@@ -161,8 +128,8 @@ describe('useTurn', () => {
     client.state.mockResolvedValue(speakingState({answerMode: 'type'}))
     await flush(4000)
     await flush()
-    expect(hook.current.turn.stage).toBe('review')
-    expect(hook.current.turn.draft).toEqual({turnId: 't1', text: '', durationMs: 0, kind: 'typed'})
+    expect(hook.current.turn.stage).toBe('typing')
+    expect(hook.current.turn.draft).toEqual({turnId: 't1'})
 
     await flush(() => hook.current.turn.record())
     expect(recorder.start).not.toHaveBeenCalled()
@@ -208,7 +175,7 @@ describe('useTurn', () => {
   })
 
   it('captures nothing on a None turn: no mic, Done just finishes', async () => {
-    const {client, recorder, transcriber, hook} = await setup()
+    const {client, recorder, answers, hook} = await setup()
     client.state.mockResolvedValue(speakingState({answerMode: 'none'}))
     await flush(4000)
     await flush()
@@ -217,43 +184,32 @@ describe('useTurn', () => {
     expect(recorder.start).not.toHaveBeenCalled()
     await flush(() => hook.current.turn.finish())
     expect(client.turn).toHaveBeenCalledWith('finish')
-    expect(transcriber.transcribe).not.toHaveBeenCalled()
+    expect(answers.add).not.toHaveBeenCalled()
     expect(client.response).not.toHaveBeenCalled()
     expect(hook.current.turn.stage).toBe('idle')
-    await hook.unmount()
-  })
-
-  it('discards without sending and resyncs', async () => {
-    const {client, hook} = await setup()
-    await flush(() => hook.current.turn.record())
-    await flush(() => hook.current.turn.finish())
-    const reads = client.state.mock.calls.length
-    await flush(() => hook.current.turn.discard())
-    expect(client.response).not.toHaveBeenCalled()
-    expect(hook.current.turn.stage).toBe('idle')
-    expect(client.state.mock.calls.length).toBe(reads + 1)
     await hook.unmount()
   })
 
   it('finishes by itself when the timer runs out mid-recording', async () => {
-    const {client, recorder, hook} = await setup()
+    const {client, recorder, answers, hook} = await setup()
     await flush(() => hook.current.turn.record())
     await hook.rerender({clock: over, recording: true})
     await flush()
     expect(recorder.stop).toHaveBeenCalledOnce()
     expect(client.turn).toHaveBeenCalledWith('finish')
-    expect(hook.current.turn.stage).toBe('review')
+    expect(answers.add).toHaveBeenCalledWith('t1', take)
+    expect(hook.current.turn.stage).toBe('idle')
     await hook.unmount()
   })
 
   it('just finishes the turn on the decline path', async () => {
-    const {client, transcriber, hook} = await setup({clock: null, recording: false})
+    const {client, answers, hook} = await setup({clock: null, recording: false})
     expect(hook.current.turn.canRecord).toBe(false)
     await flush(() => hook.current.turn.record())
     expect(hook.current.turn.stage).toBe('idle')
     await flush(() => hook.current.turn.finish())
     expect(client.turn).toHaveBeenCalledWith('finish')
-    expect(transcriber.transcribe).not.toHaveBeenCalled()
+    expect(answers.add).not.toHaveBeenCalled()
     expect(hook.current.turn.stage).toBe('idle')
     await hook.unmount()
   })
@@ -309,7 +265,7 @@ describe('useTurn', () => {
   })
 
   it('drops a mic that answers after the turn already closed', async () => {
-    const {client, recorder, transcriber, hook} = await setup()
+    const {client, recorder, answers, hook} = await setup()
     const mic = deferred<undefined>()
     recorder.start.mockReturnValueOnce(mic.promise)
     await flush(() => void hook.current.turn.record())
@@ -317,7 +273,7 @@ describe('useTurn', () => {
     await flush(4000)
     await flush(() => mic.resolve(undefined))
     expect(recorder.cancel).toHaveBeenCalledOnce()
-    expect(transcriber.transcribe).not.toHaveBeenCalled()
+    expect(answers.add).not.toHaveBeenCalled()
     expect(hook.current.turn.stage).toBe('idle')
     await hook.unmount()
   })
@@ -334,15 +290,15 @@ describe('useTurn', () => {
     expect(wakeLock.acquire).not.toHaveBeenCalled()
   })
 
-  it('keeps the take for review when the host ends the round mid-recording', async () => {
-    const {client, recorder, hook} = await setup()
+  it('keeps the take when the host ends the round mid-recording', async () => {
+    const {client, recorder, answers, hook} = await setup()
     await flush(() => hook.current.turn.record())
     client.state.mockResolvedValue(playerState({round: null, phase: 'waiting'}))
     await flush(4000)
     await flush()
     expect(recorder.stop).toHaveBeenCalledOnce()
-    expect(hook.current.turn.stage).toBe('review')
-    expect(hook.current.turn.draft?.turnId).toBe('t1')
+    expect(answers.add).toHaveBeenCalledWith('t1', take)
+    expect(hook.current.turn.stage).toBe('idle')
     await hook.unmount()
   })
 

@@ -58,20 +58,24 @@ export type PlayerCopy = {
     physical: string
     physicalPartner: string
   }
-  review: {
-    title: string
-    hint: string
-    typeHint: string
-    transcribing: string
-    failed: string
-    retry: string
-    saving: string
-  }
+  typing: {title: string; hint: string; saving: string}
   feedback: {title: string; rating: string; text: string; send: string; thanks: string}
   notices: Record<DeviceNotice, string>
+  answers: {
+    savingOne: string
+    /** `{n}` is how many answers are still on their way. */
+    savingMany: string
+    failed: string
+  }
   mine: {
     title: string
     empty: string
+    processing: string
+    failed: string
+    retry: string
+    edit: string
+    save: string
+    cancel: string
     delete: string
     confirmDelete: string
     notJoined: string
@@ -107,8 +111,9 @@ const en: PlayerCopy = {
   },
   consent: {
     title: 'Before you play',
-    transcript: 'Record my answers so I can save the text',
-    transcriptHint: 'You read every answer before it is saved. Audio is not kept.',
+    transcript: 'Record my answers and save them as text',
+    transcriptHint:
+      'Your answers are turned into text and saved automatically. Edit or delete them any time in My answers. Audio is not kept.',
     typed: 'Let me save my typed answers',
     typedHint: 'Nothing is kept until you tap Save.',
     recap: 'Email me a recap, and my questions to revisit later',
@@ -123,7 +128,7 @@ const en: PlayerCopy = {
       'WhoCards is responsible for your data.',
       'The workshop host sees only who joined, not your answers.',
       'If you record, OpenAI turns your audio into text for us. The audio is not kept.',
-      'An answer is stored only when you tap Save. Delete it any time in My answers.',
+      'Recorded answers are saved as text automatically; typed answers when you tap Save. Edit or delete them any time in My answers.',
       'Your email is used only for the recap and one follow-up with your questions.',
       'Answers and recap emails are deleted 90 days after the workshop.',
       'Questions or deletion requests: hello@whocards.cc',
@@ -160,15 +165,7 @@ const en: PlayerCopy = {
     physical: 'Draw a card from the deck and read it out',
     physicalPartner: 'They draw a card from the deck',
   },
-  review: {
-    title: 'Your answer',
-    hint: 'Fix anything before you save',
-    typeHint: 'Type your answer',
-    transcribing: 'Turning speech into text',
-    failed: "Couldn't turn your answer into text",
-    retry: 'Try again',
-    saving: 'Saving',
-  },
+  typing: {title: 'Your answer', hint: 'Type your answer', saving: 'Saving'},
   feedback: {
     title: 'How was it?',
     rating: 'Rate the game',
@@ -180,9 +177,20 @@ const en: PlayerCopy = {
     keep_screen_on: 'Keep your screen on',
     network: 'Connection trouble. Try again',
   },
+  answers: {
+    savingOne: 'Saving your answer',
+    savingMany: 'Saving {n} answers',
+    failed: "An answer couldn't be saved",
+  },
   mine: {
     title: 'My answers',
     empty: 'No saved answers yet',
+    processing: 'Turning your answer into text',
+    failed: "Couldn't save this answer",
+    retry: 'Try again',
+    edit: 'Edit',
+    save: 'Save',
+    cancel: 'Cancel',
     delete: 'Delete',
     confirmDelete: 'Tap again to delete',
     notJoined: 'Join a game first',

@@ -562,7 +562,10 @@ function DetailsEditor({
 }
 
 const ANSWER_MODES: Record<AnswerMode, {label: string; hint: string}> = {
-  voice: {label: 'Voice', hint: 'Players record, read the transcript, and save it.'},
+  voice: {
+    label: 'Voice',
+    hint: 'Players record; answers turn into text and save in the background.',
+  },
   type: {label: 'Type', hint: 'No mic. Players type their answer.'},
   none: {label: 'None', hint: 'Nothing captured. Phones only pace turns.'},
 }
