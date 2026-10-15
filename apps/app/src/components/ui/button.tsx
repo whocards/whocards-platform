@@ -29,14 +29,38 @@ export const buttonVariants = cva(
 
 type ButtonVariants = VariantProps<typeof buttonVariants>
 
+export function Spinner({className}: Readonly<{className?: string}>) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none',
+        className
+      )}
+    />
+  )
+}
+
 export function Button({
   className,
   variant,
   size,
   type = 'button',
+  pending = false,
+  disabled,
+  children,
   ...props
-}: React.ComponentProps<'button'> & ButtonVariants) {
+}: React.ComponentProps<'button'> & ButtonVariants & {pending?: boolean}) {
   return (
-    <button type={type} className={cn(buttonVariants({variant, size}), className)} {...props} />
+    <button
+      type={type}
+      disabled={disabled || pending}
+      aria-busy={pending || undefined}
+      className={cn(buttonVariants({variant, size}), className)}
+      {...props}
+    >
+      {pending ? <Spinner /> : null}
+      {children}
+    </button>
   )
 }
