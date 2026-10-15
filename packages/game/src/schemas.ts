@@ -70,6 +70,10 @@ export const gameSettingsSchema = z.object({
   organizer: organizerSchema.optional(),
   questions: z.array(customQuestionSchema).max(100).optional(),
   answerModes: answerModeLogSchema.optional(),
+  // Secret in the host's facilitator link; joining with it puts the player on standby.
+  standbyKey: z.string().min(16).optional(),
+  /** Player ids of facilitators on standby for the odd player out. */
+  standby: z.array(z.string()).optional(),
 })
 export type GameSettings = z.infer<typeof gameSettingsSchema>
 
@@ -99,6 +103,10 @@ export const refusalSchema = z.enum([
   'not_found',
   'wrong_answer_mode',
   'no_consent',
+  'standby_partner',
+  'standby_key',
+  'unknown_name',
+  'ambiguous_name',
 ])
 export type Refusal = z.infer<typeof refusalSchema>
 
@@ -111,12 +119,24 @@ export const joinInputSchema = z.object({
   email: z.string().trim().email().optional(),
   consentTranscript: z.boolean().default(false),
   consentRecap: z.boolean().default(false),
+  standbyKey: z.string().trim().min(1).max(64).optional(),
 })
 export type JoinInput = z.input<typeof joinInputSchema>
 
 export const screenInputSchema = z.object({code: codeSchema})
 
-export const pairInputSchema = z.object({partnerCode: codeSchema})
+/** A scanned code, a pick from the name list, or typed text that is a pair code or a name. */
+export const pairInputSchema = z.union([
+  z.object({partnerCode: codeSchema}),
+  z.object({partnerId: z.string().min(1)}),
+  z.object({partner: z.string().trim().min(1).max(40)}),
+])
+export type PairInput = z.input<typeof pairInputSchema>
+
+export const pairCandidatesInputSchema = z.object({partner: z.string().trim().min(1).max(40)})
+
+export const pairCandidateSchema = z.object({id: z.string(), name: z.string()})
+export type PairCandidate = z.infer<typeof pairCandidateSchema>
 
 export const turnInputSchema = z.object({action: z.enum(['claim', 'finish'])})
 
@@ -174,6 +194,8 @@ export type TurnView = z.infer<typeof turnViewSchema>
 export const playerPhaseSchema = z.enum([
   'waiting', // no live round
   'unpaired',
+  'find_facilitator', // odd one out while a facilitator is on standby
+  'standby', // facilitator waiting for an odd one out
   'sitting_out',
   'ready', // paired, my turn available
   'speaking',

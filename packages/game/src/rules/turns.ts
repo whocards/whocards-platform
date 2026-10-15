@@ -1,6 +1,6 @@
 import type {GameSnapshot, Pair, Round, Turn} from '../model'
 import type {PlayerPhase, Refusal} from '../schemas'
-import {pairOf, unpairedIds} from './pairing'
+import {freeStandbyIds, pairOf, standbyIds, unpairedIds} from './pairing'
 import {turnDeadline} from './timer'
 
 export const deadlineOf = (round: Round, turn: Pick<Turn, 'startedAt'>): number =>
@@ -96,8 +96,10 @@ export const phaseOf = (
   if (!round || round.status !== 'live') return 'waiting'
   const pair = pairOf(snapshot, round.id, meId)
   if (!pair) {
-    const others = unpairedIds(snapshot, round.id).filter((id) => id !== meId)
-    return round.oddRule === 'sitout' && others.length === 0 ? 'sitting_out' : 'unpaired'
+    if (standbyIds(snapshot).has(meId)) return 'standby'
+    if (unpairedIds(snapshot, round.id).some((id) => id !== meId)) return 'unpaired'
+    if (freeStandbyIds(snapshot, round.id).length > 0) return 'find_facilitator'
+    return round.oddRule === 'sitout' ? 'sitting_out' : 'unpaired'
   }
   const turns = turnsOf(snapshot, pair.id)
   const open = openTurnOf(round, turns, now)

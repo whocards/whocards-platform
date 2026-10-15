@@ -11,12 +11,15 @@ import {
   deleteResponseInputSchema,
   feedbackInputSchema,
   joinInputSchema,
+  matchName,
+  pairCandidatesInputSchema,
   pairInputSchema,
   pairOf,
   planOf,
   playerView,
   questionForTurn,
   questionText,
+  readPairCode,
   refOf,
   responseInputSchema,
   screenInputSchema,
@@ -29,6 +32,8 @@ import type {
   GameSnapshot,
   JoinResult,
   MyData,
+  PairCandidate,
+  PairInput,
   Player,
   PlayerState,
   QuestionSources,
@@ -89,11 +94,36 @@ const myData = async (port: GamePort, player: Player): Promise<MyData> => ({
   responses: await port.listResponses(player.id),
 })
 
-const pair = async (port: GamePort, player: Player, partnerCode: string): Promise<void> => {
+/** A typed string that is some player's pair code wins over a name match. */
+const partnerOf = (snapshot: GameSnapshot, round: Round, me: Player, input: PairInput): Player => {
+  if ('partnerCode' in input) {
+    const partner = snapshot.players.find((p) => p.pairCode === input.partnerCode)
+    if (!partner) throw refuse('unknown_code')
+    return partner
+  }
+  if ('partnerId' in input) {
+    const partner = snapshot.players.find((p) => p.id === input.partnerId)
+    if (!partner) throw refuse('unknown_code')
+    return partner
+  }
+  const code = readPairCode(input.partner)
+  const byCode = code ? snapshot.players.find((p) => p.pairCode === code) : undefined
+  if (byCode) return byCode
+
+  const {matches, eligible} = matchName(snapshot, round, me.id, input.partner)
+  const [only] = eligible
+  if (only && eligible.length === 1) return only
+  if (eligible.length > 1) throw refuse('ambiguous_name')
+  const [first] = matches
+  if (!first) throw refuse('unknown_name')
+  // Every match is refused: let the rules say why.
+  return first
+}
+
+const pair = async (port: GamePort, player: Player, input: PairInput): Promise<void> => {
   const snapshot = await load(port, player.gameId)
   const round = liveRound(snapshot)
-  const partner = snapshot.players.find((p) => p.pairCode === partnerCode)
-  if (!partner) throw refuse('unknown_code')
+  const partner = partnerOf(snapshot, round, player, input)
 
   const check = checkPair(snapshot, round, player.id, partner.id)
   if (!check.ok) throw refuse(check.reason)
@@ -170,6 +200,8 @@ export const gameRouter = createTRPCRouter({
       if (!game) throw refuse('unknown_game')
       if (game.status === 'lobby') throw refuse('not_open')
       if (game.status === 'ended') throw refuse('game_over')
+      const standby = input.standbyKey !== undefined
+      if (standby && input.standbyKey !== game.settings.standbyKey) throw refuse('standby_key')
       const {player, token} = await ctx.game.createPlayer({
         gameId: game.id,
         name: input.name,
@@ -178,6 +210,7 @@ export const gameRouter = createTRPCRouter({
         consentTranscript: input.consentTranscript,
         consentRecap: input.consentRecap,
       })
+      if (standby) await ctx.game.addStandby({gameId: game.id, playerId: player.id})
       return {token, state: await freshState(ctx.game, player)}
     }),
 
@@ -194,9 +227,21 @@ export const gameRouter = createTRPCRouter({
 
   round: createTRPCRouter({
     pair: playerProcedure.input(pairInputSchema).mutation(async ({ctx, input}) => {
-      await pair(ctx.game, ctx.player, input.partnerCode)
+      await pair(ctx.game, ctx.player, input)
       return freshState(ctx.game, ctx.player)
     }),
+
+    /** Players with this name I could pair with now; names only, for the pick list after `ambiguous_name`. */
+    candidates: playerProcedure
+      .input(pairCandidatesInputSchema)
+      .query(async ({ctx, input}): Promise<PairCandidate[]> => {
+        const snapshot = await load(ctx.game, ctx.player.gameId)
+        const round = liveRound(snapshot)
+        return matchName(snapshot, round, ctx.player.id, input.partner).eligible.map((p) => ({
+          id: p.id,
+          name: p.name,
+        }))
+      }),
 
     turn: playerProcedure.input(turnInputSchema).mutation(async ({ctx, input}) => {
       await (input.action === 'claim' ? claim : finish)(ctx.game, ctx.player)

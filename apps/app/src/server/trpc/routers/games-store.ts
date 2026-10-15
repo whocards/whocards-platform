@@ -416,6 +416,14 @@ export const createDrizzleHostStore = <
       if (rows.length === 0) throw new StaleWrite()
     }),
 
+  ensureStandbyKey: async (gameId, key) => {
+    const kept = sql`coalesce(${hostedGame.settings} -> 'standbyKey', to_jsonb(${key}::text))`
+    await db
+      .update(hostedGame)
+      .set({settings: sql`${hostedGame.settings} || jsonb_build_object('standbyKey', ${kept})`})
+      .where(eq(hostedGame.id, gameId))
+  },
+
   saveQuestions: async (gameId, questions) => {
     await db
       .update(hostedGame)

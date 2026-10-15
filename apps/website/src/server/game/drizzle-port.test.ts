@@ -68,6 +68,25 @@ describe('drizzle game port', () => {
     expect(state.me.pairCode).toMatch(/^[A-Z2-9]{4}$/)
   })
 
+  it('appends standby players to settings without touching the rest', async () => {
+    const standbyKey = 'standby-secret-0123456789'
+    await db
+      .update(hostedGame)
+      .set({settings: {round: {}, organizer: 'SDD Conf', standbyKey}})
+      .where(eq(hostedGame.id, gameId))
+    const joinStandby = (name: string) =>
+      as(null).game.join({code: 'work', name, language: 'en', standbyKey})
+    const [f, g] = [await joinStandby('Fac'), await joinStandby('Gab')]
+    const [row] = await db.select().from(hostedGame).where(eq(hostedGame.id, gameId))
+    expect(row?.settings).toEqual({
+      round: {},
+      organizer: 'SDD Conf',
+      standbyKey,
+      standby: [f.state.me.id, g.state.me.id],
+    })
+    expect(g.state.phase).toBe('standby')
+  })
+
   it('runs a pair through a round end to end', async () => {
     const a = await join('Ann')
     const b = await join('Bo')

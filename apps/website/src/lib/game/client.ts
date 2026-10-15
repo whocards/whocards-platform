@@ -26,7 +26,7 @@ export const createGameApi = (code: string, tokens: TokenStore) => {
       return state
     },
     state: () => trpc.game.state.query(),
-    pair: (partnerCode) => trpc.game.round.pair.mutate({partnerCode}),
+    pair: (input) => trpc.game.round.pair.mutate(input),
     turn: (action) => trpc.game.round.turn.mutate({action}),
     response: (input) => trpc.game.round.response.mutate(input),
     feedback: (input) => trpc.game.feedback.mutate(input),
@@ -37,6 +37,7 @@ export const createGameApi = (code: string, tokens: TokenStore) => {
     me: () => trpc.game.me.get.query(),
     deleteResponse: (responseId: string) => trpc.game.me.deleteResponse.mutate({responseId}),
     screen: () => trpc.game.screen.query({code}),
+    candidates: (partner: string) => trpc.game.round.candidates.query({partner}),
   }
 }
 

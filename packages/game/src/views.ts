@@ -8,7 +8,7 @@ import type {
   TurnView,
 } from './schemas'
 import {answerModeAt, currentAnswerMode} from './rules/answer-mode'
-import {pairOf} from './rules/pairing'
+import {pairOf, standbyIds} from './rules/pairing'
 import {currentRound} from './rules/status'
 import {deadlineOf, finishedAtOf, openTurnOf, phaseOf, turnsOf} from './rules/turns'
 
@@ -92,6 +92,8 @@ export const playerView = (
 /** The big screen: counts only, no names or answers. */
 export const screenView = (snapshot: GameSnapshot, now: number): ScreenState => {
   const round = currentRound(snapshot)
+  const standby = standbyIds(snapshot)
+  const regulars = (ids: string[]) => ids.filter((id) => !standby.has(id)).length
   const pairs = round ? snapshot.pairs.filter((p) => p.roundId === round.id) : []
   let talking = 0
   let done = 0
@@ -101,7 +103,7 @@ export const screenView = (snapshot: GameSnapshot, now: number): ScreenState => 
     const spoke = new Set(
       turns.filter((t) => round && finishedAtOf(round, t, now) !== null).map((t) => t.playerId)
     )
-    if (pair.playerIds.every((id) => spoke.has(id))) done += pair.playerIds.length
+    if (pair.playerIds.every((id) => spoke.has(id))) done += regulars(pair.playerIds)
   }
   return {
     serverNow: now,
@@ -114,8 +116,8 @@ export const screenView = (snapshot: GameSnapshot, now: number): ScreenState => 
     },
     round: round ? roundView(round) : null,
     counts: {
-      joined: snapshot.players.length,
-      paired: pairs.reduce((sum, p) => sum + p.playerIds.length, 0),
+      joined: regulars(snapshot.players.map((p) => p.id)),
+      paired: pairs.reduce((sum, p) => sum + regulars(p.playerIds), 0),
       talking,
       done,
     },
