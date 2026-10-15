@@ -88,6 +88,7 @@ export const createFakeGamePort = (seed: {game: HostedGame; rounds?: Round[]}) =
         questionId,
         startedAt: clock,
         finishedAt: null,
+        questionVote: null,
       })
       return 'ok'
     },
@@ -102,6 +103,10 @@ export const createFakeGamePort = (seed: {game: HostedGame; rounds?: Round[]}) =
     },
     releaseTranscription: async (turnId) => {
       transcribed.delete(turnId)
+    },
+    voteQuestion: async ({turnId, vote}) => {
+      const turn = snapshot.turns.find((t) => t.id === turnId)
+      if (turn) turn.questionVote = vote
     },
     saveResponse: async (input) => {
       const turn = snapshot.turns.find((t) => t.id === input.turnId)

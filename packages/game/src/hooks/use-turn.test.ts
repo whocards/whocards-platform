@@ -21,6 +21,7 @@ const setup = async (props: Props = {clock: null, recording: true}) => {
     turn: vi.fn<GameClient['turn']>().mockResolvedValue(playerState({phase: 'answered'})),
     response: vi.fn<GameClient['response']>().mockResolvedValue(playerState({phase: 'answered'})),
     feedback: vi.fn<GameClient['feedback']>(),
+    vote: vi.fn<GameClient['vote']>(),
   }
   const recorder = {
     start: vi.fn<Recorder<string>['start']>().mockResolvedValue(undefined),

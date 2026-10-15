@@ -250,7 +250,16 @@ const memoryStore = (clock = {now: T0}) => {
     finishedAt: number | null
   ) => {
     const roundId = mem.pairs.find((p) => p.id === pairId)?.roundId ?? ''
-    const t: Turn = {id: id(), pairId, roundId, playerId, questionId, startedAt, finishedAt}
+    const t: Turn = {
+      id: id(),
+      pairId,
+      roundId,
+      playerId,
+      questionId,
+      startedAt,
+      finishedAt,
+      questionVote: null,
+    }
     mem.turns.push(t)
     return t
   }
@@ -979,6 +988,7 @@ const snapshot = (): GameSnapshot => {
         questionId: '1',
         startedAt: T0,
         finishedAt: T0 + 90_000,
+        questionVote: null,
       },
       {
         id: 't2',
@@ -988,6 +998,7 @@ const snapshot = (): GameSnapshot => {
         questionId: '2',
         startedAt: T0,
         finishedAt: T0 + 30_000,
+        questionVote: null,
       },
       {
         id: 't3',
@@ -997,6 +1008,7 @@ const snapshot = (): GameSnapshot => {
         questionId: '3',
         startedAt: T0,
         finishedAt: null,
+        questionVote: null,
       },
     ],
   }

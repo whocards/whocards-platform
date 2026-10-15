@@ -21,6 +21,7 @@ import type {
   OddRule,
   Overtime,
   QuestionPlan,
+  QuestionVote,
   RoundStatus,
 } from '../schemas'
 
@@ -146,6 +147,7 @@ export const gameTurn = pgTable(
     finishedAt: timestamp('finished_at', {withTimezone: true}),
     // Set while a transcription is in flight or done; cleared if it fails, so one success per turn.
     transcribedAt: timestamp('transcribed_at', {withTimezone: true}),
+    questionVote: smallint('question_vote').$type<QuestionVote>(),
   },
   (t) => [
     // The turn lock: a second claim while one is open fails here.
@@ -154,6 +156,7 @@ export const gameTurn = pgTable(
       .where(sql`${t.finishedAt} is null`),
     unique('game_turn_pair_player_unique').on(t.pairId, t.playerId),
     index('game_turn_player_id_idx').on(t.playerId),
+    check('game_turn_question_vote_check', sql`${t.questionVote} in (-1, 1)`),
   ]
 )
 

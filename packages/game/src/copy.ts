@@ -29,6 +29,7 @@ const en: GameCopy = {
     standby_key: 'This facilitator link is not valid. Ask the host for a new one',
     unknown_name: 'No player with that code or name',
     ambiguous_name: 'More than one player has that name. Pick one',
+    still_answering: 'Finish your answer first',
   },
   phases: {
     waiting: 'Waiting for the next round',

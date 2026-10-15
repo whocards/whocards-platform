@@ -10,6 +10,7 @@ import {
   deadlineOf,
   deleteResponseInputSchema,
   feedbackInputSchema,
+  finishedAtOf,
   joinInputSchema,
   matchName,
   pairCandidatesInputSchema,
@@ -27,6 +28,7 @@ import {
   turnInputSchema,
   turnsOf,
   usedRefs,
+  voteInputSchema,
 } from '@whocards/game'
 import type {
   GameSnapshot,
@@ -270,6 +272,18 @@ export const gameRouter = createTRPCRouter({
         transcript: input.transcript,
         durationMs: input.durationMs,
       })
+      return freshState(ctx.game, ctx.player)
+    }),
+
+    /** Thumbs up or down on my own finished turn's question; null clears it. */
+    vote: playerProcedure.input(voteInputSchema).mutation(async ({ctx, input}) => {
+      const snapshot = await load(ctx.game, ctx.player.gameId)
+      const turn = snapshot.turns.find((t) => t.id === input.turnId)
+      const round = turn && snapshot.rounds.find((r) => r.id === turn.roundId)
+      if (!turn || !round) throw refuse('not_found')
+      if (turn.playerId !== ctx.player.id) throw refuse('not_your_turn')
+      if (finishedAtOf(round, turn, ctx.game.now()) === null) throw refuse('still_answering')
+      await ctx.game.voteQuestion({turnId: turn.id, vote: input.vote})
       return freshState(ctx.game, ctx.player)
     }),
   }),

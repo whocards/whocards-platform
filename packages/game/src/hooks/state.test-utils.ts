@@ -23,6 +23,7 @@ export const turnView = (extra: Partial<TurnView> = {}): TurnView => ({
   startedAt: 0,
   finishedAt: null,
   deadline: 90_000,
+  questionVote: null,
   ...extra,
 })
 

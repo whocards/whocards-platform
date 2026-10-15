@@ -5,6 +5,7 @@ import type {
   JoinInput,
   PairInput,
   PlayerState,
+  QuestionVote,
   responseInputSchema,
 } from '../schemas'
 
@@ -19,6 +20,7 @@ export type GameClient = {
   turn: (action: 'claim' | 'finish') => Promise<PlayerState>
   response: (input: ResponseInput) => Promise<PlayerState>
   feedback: (input: FeedbackInput) => Promise<PlayerState>
+  vote: (turnId: string, vote: QuestionVote | null) => Promise<PlayerState>
 }
 
 /** App lifecycle: web maps it to `visibilitychange`, native to `AppState`. */

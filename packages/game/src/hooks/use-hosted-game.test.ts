@@ -14,6 +14,7 @@ const makeClient = () => ({
   turn: vi.fn<GameClient['turn']>(),
   response: vi.fn<GameClient['response']>(),
   feedback: vi.fn<GameClient['feedback']>(),
+  vote: vi.fn<GameClient['vote']>(),
 })
 
 const makePlatform = () => {

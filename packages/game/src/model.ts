@@ -5,6 +5,7 @@ import type {
   OddRule,
   Overtime,
   QuestionPlan,
+  QuestionVote,
   RoundStatus,
 } from './schemas'
 
@@ -63,6 +64,7 @@ export type Turn = {
   questionId: string
   startedAt: number
   finishedAt: number | null
+  questionVote: QuestionVote | null
 }
 
 /** Everything about one game the rules need, minus response content. */

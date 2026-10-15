@@ -92,7 +92,7 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
           </Screen>
         )
       default:
-        return <Turn state={state} timer={timer} turn={turn} />
+        return <Turn state={state} timer={timer} turn={turn} act={session.act} />
     }
   }
 

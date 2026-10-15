@@ -1,6 +1,6 @@
 import {TRPCError} from '@trpc/server'
 import {fetchRequestHandler} from '@trpc/server/adapters/fetch'
-import type {GameLanguage, GameSettings, HostedGame, Round} from '@whocards/game'
+import type {GameLanguage, GameSettings, HostedGame, PlayerState, Round} from '@whocards/game'
 import {describe, expect, it} from 'vitest'
 import {z} from 'zod'
 
@@ -455,6 +455,44 @@ describe('game.round.response / game.me', () => {
     const state = await a.caller.game.feedback({rating: 5, text: 'Loved it'})
     expect(state.me.id).toBe(a.state.me.id)
     expect(fake.feedback.get(a.state.me.id)).toEqual({rating: 5, text: 'Loved it'})
+  })
+})
+
+const myTurn = (state: PlayerState, playerId: string) =>
+  state.pair?.turns.find((t) => t.playerId === playerId)
+
+describe('game.round.vote', () => {
+  it('lets me vote on my own finished question, change it, and clear it', async () => {
+    const {a, b} = await pairedUp()
+    const turnId = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn?.id ?? ''
+    expect(await refusalOf(a.caller.game.round.vote({turnId, vote: 1}))).toBe('still_answering')
+
+    await a.caller.game.round.turn({action: 'finish'})
+    const up = await a.caller.game.round.vote({turnId, vote: 1})
+    expect(myTurn(up, a.state.me.id)?.questionVote).toBe(1)
+    const down = await a.caller.game.round.vote({turnId, vote: -1})
+    expect(myTurn(down, a.state.me.id)?.questionVote).toBe(-1)
+    expect(myTurn(await b.caller.game.state(), a.state.me.id)?.questionVote).toBeNull()
+
+    const cleared = await a.caller.game.round.vote({turnId, vote: null})
+    expect(myTurn(cleared, a.state.me.id)?.questionVote).toBeNull()
+  })
+
+  it("refuses someone else's turn and an unknown turn", async () => {
+    const {a, b} = await pairedUp()
+    const turnId = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn?.id ?? ''
+    await a.caller.game.round.turn({action: 'finish'})
+    expect(await refusalOf(b.caller.game.round.vote({turnId, vote: 1}))).toBe('not_your_turn')
+    expect(await refusalOf(a.caller.game.round.vote({turnId: 'nope', vote: 1}))).toBe('not_found')
+  })
+
+  it('takes a vote on a timed-out turn in None mode', async () => {
+    const {a, fake} = await pairedUp()
+    fake.snapshot.game.settings.answerModes = [{mode: 'none', at: 0}]
+    const turnId = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn?.id ?? ''
+    fake.advance(90_000)
+    const state = await a.caller.game.round.vote({turnId, vote: 1})
+    expect(myTurn(state, a.state.me.id)).toMatchObject({answerMode: 'none', questionVote: 1})
   })
 })
 

@@ -1,4 +1,11 @@
-import type {GameLanguage, GameSnapshot, HostedGame, Player, ResponseRecord} from '@whocards/game'
+import type {
+  GameLanguage,
+  GameSnapshot,
+  HostedGame,
+  Player,
+  QuestionVote,
+  ResponseRecord,
+} from '@whocards/game'
 
 /** A write the database refused on a uniqueness rule, i.e. someone else got there first. */
 export type WriteResult = 'ok' | 'conflict'
@@ -41,6 +48,8 @@ export type GamePort = {
   claimTranscription: (turnId: string) => Promise<boolean>
   /** Frees the claim after a failed transcription so the player can retry. */
   releaseTranscription: (turnId: string) => Promise<void>
+  /** Null clears the vote. */
+  voteQuestion: (input: {turnId: string; vote: QuestionVote | null}) => Promise<void>
   /** One response per turn; saving again replaces it. */
   saveResponse: (input: {
     turnId: string
