@@ -74,6 +74,7 @@ const memoryStore = (clock = {now: T0}) => {
           title: g.title,
           organizer: g.settings.organizer ?? null,
           createdBy: labelOf(g.createdBy),
+          createdById: g.createdBy,
           facilitators: g.facilitators.flatMap((f) => labelOf(f) ?? []),
           status: g.status,
           createdAt: g.createdAt,
@@ -93,6 +94,42 @@ const memoryStore = (clock = {now: T0}) => {
       }
       mem.games.push(row)
       return row
+    },
+    copyGame: async ({title, createdBy, settings, facilitators, rounds}) => {
+      const row: Mem['games'][number] = {
+        id: id(),
+        code: `G${mem.games.length + 1}XYZ`,
+        title,
+        status: 'lobby',
+        settings,
+        createdBy,
+        createdAt: clock.now,
+        facilitators,
+      }
+      mem.games.push(row)
+      for (const r of rounds) {
+        mem.rounds.push({
+          ...r,
+          id: id(),
+          gameId: row.id,
+          status: 'pending',
+          startedAt: null,
+          endsAt: null,
+        })
+      }
+      return row
+    },
+    deleteGame: async (gameId) => {
+      const g = game(gameId)
+      if (!g || g.status === 'live') return false
+      const roundIds = new Set(mem.rounds.filter((r) => r.gameId === gameId).map((r) => r.id))
+      mem.games = mem.games.filter((x) => x.id !== gameId)
+      mem.players = mem.players.filter((p) => p.gameId !== gameId)
+      mem.rounds = mem.rounds.filter((r) => r.gameId !== gameId)
+      mem.pairs = mem.pairs.filter((p) => !roundIds.has(p.roundId))
+      mem.turns = mem.turns.filter((t) => !roundIds.has(t.roundId))
+      mem.saved = mem.saved.filter((x) => x.gameId !== gameId)
+      return true
     },
     hostsOf: async (gameId) => {
       const g = game(gameId)
@@ -317,6 +354,8 @@ describe('games router permissions', () => {
     await expect(c.recapPreview({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.sendRecaps({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.facilitatorOptions({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
+    await expect(c.copyGame({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
+    await expect(c.deleteGame({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
     await expect(c.setFacilitator({gameId, userId: 'u-x', on: true})).rejects.toMatchObject({
       code: 'FORBIDDEN',
     })
@@ -375,6 +414,8 @@ describe('game access', () => {
       c.facilitatorOptions({gameId}),
       c.setFacilitator({gameId, userId: 'u-avi', on: true}),
       c.setAnswerMode({gameId, mode: 'type'}),
+      c.copyGame({gameId}),
+      c.deleteGame({gameId}),
     ]
     for (const call of calls) await expect(call).rejects.toMatchObject({code: 'NOT_FOUND'})
     const missing = c.detail({gameId: '00000000-0000-4000-8000-000000000999'})
@@ -1106,5 +1147,113 @@ describe('buildRecaps', () => {
     expect(
       readRecapState({round: {}, recap: {sentAt: 1, sent: 2, failed: 0, error: null}})
     ).toEqual({sentAt: 1, sent: 2, failed: 0, error: null, pending: false})
+  })
+})
+
+describe('copy and delete a game', () => {
+  it('copies the workshop design into a fresh draft, never the play', async () => {
+    const t = await played()
+    const {c, gameId, mem} = t
+    await c.saveQuestions({gameId, questions: [{en: 'Ours?', hu: 'Mienk?'}], baseIds: []})
+    await c.addRound({
+      gameId,
+      settings: {
+        questionPlan: {mode: 'same', question: 'library:1'},
+        turnSeconds: 90,
+        oddRule: 'sitout',
+        overtime: 'hard',
+        overtimeSeconds: 15,
+      },
+    })
+    await c.setAnswerMode({gameId, mode: 'type'})
+    await c.setAnswerMode({gameId, mode: 'none'})
+    await c.enableStandby({gameId})
+    await c.setFacilitator({gameId, userId: 'u-tamas', on: true})
+    await c.endGame({gameId})
+    await c.sendRecaps({gameId})
+
+    const copy = await c.copyGame({gameId})
+    expect(copy).toMatchObject({title: 'SDD (copy)', status: 'lobby'})
+    expect(copy.code).not.toBe(mem.games[0]?.code)
+    expect(copy.settings).toEqual({
+      round: {},
+      organizer: 'SDD Conf',
+      questions: [expect.objectContaining({en: 'Ours?', hu: 'Mienk?'})],
+      answerModes: [{mode: 'none', at: 0}],
+    })
+
+    const detail = await c.detail({gameId: copy.id})
+    expect(detail.players).toEqual([])
+    expect(detail.counts).toEqual({players: 0, pairs: 0, turnsInProgress: 0, responses: 0})
+    expect(detail.game).toMatchObject({
+      createdBy: 'Avi',
+      facilitators: [{id: 'u-tamas', label: 'Tamas'}],
+      answerMode: 'none',
+      recap: null,
+      standbyKey: null,
+    })
+    expect(detail.rounds.map((r) => [r.n, r.status, r.startedAt, r.pairs, r.turns])).toEqual([
+      [1, 'pending', null, 0, 0],
+      [2, 'pending', null, 0, 0],
+    ])
+    expect(detail.rounds[1]).toMatchObject({
+      questionPlan: {mode: 'same', question: 'library:1'},
+      turnSeconds: 90,
+      oddRule: 'sitout',
+      overtime: 'hard',
+      overtimeSeconds: 15,
+    })
+    // The original is untouched.
+    expect((await c.detail({gameId})).players).toHaveLength(3)
+  })
+
+  it('lets a co-facilitator copy, keeping the creator on as co-host, but not delete', async () => {
+    const {caller, mine: gameId} = await twoGames()
+    await caller('facilitator', 'u-avi').setFacilitator({gameId, userId: 'u-tamas', on: true})
+    const tamas = caller('facilitator', 'u-tamas')
+    const copy = await tamas.copyGame({gameId})
+    const detail = await tamas.detail({gameId: copy.id})
+    expect(detail.game).toMatchObject({
+      title: 'Mine (copy)',
+      canManageHosts: true,
+      facilitators: [{id: 'u-avi', label: 'Avi'}],
+    })
+    await expect(tamas.deleteGame({gameId})).rejects.toMatchObject({code: 'FORBIDDEN'})
+    const list = await tamas.list()
+    expect(list.map((g) => [g.title, g.canManage])).toEqual([
+      ['Mine (copy)', true],
+      ['Theirs', true],
+      ['Mine', false],
+    ])
+  })
+
+  it('caps the copied title at the editable length', async () => {
+    const {caller} = setup()
+    const c = caller()
+    const {id: gameId} = await c.create({title: 'x'.repeat(80), organizer: 'A'})
+    const copy = await c.copyGame({gameId})
+    expect(copy.title).toHaveLength(80)
+    expect(copy.title.endsWith(' (copy)')).toBe(true)
+  })
+
+  it('refuses to delete a live game, then deletes it and everything under it once ended', async () => {
+    const {c, gameId, mem} = await played()
+    await expect(c.deleteGame({gameId})).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      message: 'End the game first.',
+    })
+    await c.endGame({gameId})
+    expect(await c.deleteGame({gameId})).toEqual({deleted: true})
+    expect(mem).toMatchObject({games: [], players: [], rounds: [], pairs: [], turns: []})
+    await expect(c.detail({gameId})).rejects.toMatchObject({code: 'NOT_FOUND'})
+  })
+
+  it('deletes a draft, and lets admins delete anyone’s game', async () => {
+    const {caller, mine, theirs} = await twoGames()
+    expect(await caller('facilitator', 'u-avi').deleteGame({gameId: mine})).toEqual({
+      deleted: true,
+    })
+    expect(await caller('admin', 'u-boss').deleteGame({gameId: theirs})).toEqual({deleted: true})
+    expect(await caller('owner', 'u-own').list()).toEqual([])
   })
 })

@@ -44,6 +44,7 @@ import {roleAtLeast} from '../../auth/permissions'
 import {createTRPCRouter, roleProcedure} from '../trpc'
 import {
   buildRecaps,
+  copyOf,
   GAMES_MIN_ROLE,
   hostAccess,
   organizerOf,
@@ -52,7 +53,7 @@ import {
   readRecapState,
   strandedByRemoval,
 } from './games-logic'
-import type {GameHosts, Recap, RecapState} from './games-logic'
+import type {GameCopy, GameHosts, Recap, RecapState} from './games-logic'
 
 export type WriteResult = 'ok' | 'conflict' | 'stale'
 
@@ -66,6 +67,7 @@ export type GameSummary = {
   organizer: string | null
   /** The creator's label; null if that account is gone. */
   createdBy: string | null
+  createdById: string | null
   /** Co-facilitator labels. */
   facilitators: string[]
   status: GameStatus
@@ -81,6 +83,10 @@ export type HostStore = {
   /** Newest first; games `userId` created or co-facilitates, or every game when null. */
   listGames: (userId: string | null) => Promise<GameSummary[]>
   createGame: (input: {title: string; organizer: string; createdBy: string}) => Promise<HostedGame>
+  /** Inserts a draft game and its pending rounds atomically. */
+  copyGame: (input: GameCopy & {createdBy: string}) => Promise<HostedGame>
+  /** Deletes a game that is not live, with everything under it; false if it was live or gone. */
+  deleteGame: (gameId: string) => Promise<boolean>
   /** The creator and co-facilitator ids; null when there is no such game. */
   hostsOf: (gameId: string) => Promise<GameHosts | null>
   /** Labels for these user ids, in the given order, skipping unknown ones. */
@@ -288,10 +294,11 @@ const conflictOr = (result: WriteResult, message: string) => {
   if (result !== 'ok') throw fail('CONFLICT', message)
 }
 
-const managing = (ctx: {canManageHosts: boolean}) => {
-  if (!ctx.canManageHosts) {
-    throw fail('FORBIDDEN', 'Only the creator or an admin can change the co-facilitators.')
-  }
+const managing = (
+  ctx: {canManageHosts: boolean},
+  message = 'Only the creator or an admin can change the co-facilitators.'
+) => {
+  if (!ctx.canManageHosts) throw fail('FORBIDDEN', message)
 }
 
 export const createGamesRouter = ({
@@ -353,9 +360,15 @@ export const createGamesRouter = ({
   }
 
   return createTRPCRouter({
-    list: procedure.query(({ctx}) =>
-      store.listGames(roleAtLeast(ctx.membership.role, 'admin') ? null : ctx.user.id)
-    ),
+    /** `canManage`: the caller may delete the game, as with changing its co-facilitators. */
+    list: procedure.query(async ({ctx}) => {
+      const user = {id: ctx.user.id, role: ctx.membership.role}
+      const games = await store.listGames(roleAtLeast(user.role, 'admin') ? null : user.id)
+      return games.map((g) => ({
+        ...g,
+        canManage: hostAccess({createdBy: g.createdById, facilitators: []}, user) === 'manage',
+      }))
+    }),
 
     decks: procedure.query(() =>
       getAllDecks().map((d) => ({
@@ -595,6 +608,22 @@ export const createGamesRouter = ({
       }))
       await store.saveRecapState(input.gameId, {...claim, ...result, pending: false})
       return detail(input.gameId, ctx)
+    }),
+
+    /** Any host may copy, in any status; the copy is theirs. */
+    copyGame: gameProcedure.input(gameIdSchema).mutation(async ({ctx, input}) => {
+      const snapshot = await load(input.gameId)
+      return store.copyGame({...copyOf(snapshot, ctx.hosts, ctx.user.id), createdBy: ctx.user.id})
+    }),
+
+    deleteGame: gameProcedure.input(gameIdSchema).mutation(async ({ctx, input}) => {
+      managing(ctx, 'Only the creator or an admin can delete this game.')
+      const {status} = (await load(input.gameId)).game
+      if (status === 'live') throw fail('BAD_REQUEST', 'End the game first.')
+      if (!(await store.deleteGame(input.gameId))) {
+        throw fail('CONFLICT', 'The game went live meanwhile. End it first.')
+      }
+      return {deleted: true}
     }),
 
     removePlayer: gameProcedure

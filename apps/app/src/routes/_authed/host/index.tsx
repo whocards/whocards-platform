@@ -1,4 +1,4 @@
-import {useMutation, useQuery} from '@tanstack/react-query'
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {createFileRoute, Link, redirect, useNavigate} from '@tanstack/react-router'
 import {useState} from 'react'
 
@@ -7,6 +7,7 @@ import {Badge} from '~/components/ui/badge'
 import {Button} from '~/components/ui/button'
 import {Card} from '~/components/ui/card'
 import {Input, Label} from '~/components/ui/field'
+import {confirmCopyGame, confirmDeleteGame, LIVE_DELETE_HINT} from '~/lib/game-actions'
 import {trpc} from '~/lib/trpc'
 import {roleAtLeast} from '~/server/auth/permissions'
 
@@ -23,6 +24,7 @@ const STATUS_LABEL = {lobby: 'Draft', live: 'Live', ended: 'Ended'} as const
 
 function HostGames() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const games = useQuery({queryKey: ['games.list'], queryFn: () => trpc.games.list.query()})
   const [title, setTitle] = useState('')
   const [organizer, setOrganizer] = useState('')
@@ -31,6 +33,21 @@ function HostGames() {
     mutationFn: () => trpc.games.create.mutate({title, organizer}),
     onSuccess: (game) => navigate({to: '/host/$gameId', params: {gameId: game.id}}),
   })
+
+  const rowAction = useMutation({
+    mutationFn: async ({kind, gameId}: {kind: 'copy' | 'delete'; gameId: string}) => {
+      if (kind === 'delete') {
+        await trpc.games.deleteGame.mutate({gameId})
+        await queryClient.invalidateQueries({queryKey: ['games.list']})
+        return
+      }
+      const copy = await trpc.games.copyGame.mutate({gameId})
+      await navigate({to: '/host/$gameId', params: {gameId: copy.id}})
+    },
+  })
+  const busy = rowAction.isPending ? rowAction.variables : null
+  const pressed = (kind: 'copy' | 'delete', gameId: string) =>
+    busy?.kind === kind && busy.gameId === gameId
 
   return (
     <Page>
@@ -85,14 +102,15 @@ function HostGames() {
       ) : null}
       {games.isError ? <ErrorText>{games.error.message}</ErrorText> : null}
       {games.data?.length === 0 ? <Empty>No games yet. Create one above.</Empty> : null}
+      {rowAction.isError ? <ErrorText className="mb-3">{rowAction.error.message}</ErrorText> : null}
 
       <ul className="flex flex-col gap-3">
         {games.data?.map((game) => (
-          <li key={game.id}>
+          <li key={game.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Link
               to="/host/$gameId"
               params={{gameId: game.id}}
-              className="group flex items-center gap-4 rounded-2.5xl border border-white/8 bg-white/[0.035] px-5 py-4 transition-colors hover:border-yellow-400/40 hover:bg-white/[0.06]"
+              className="group flex min-w-0 flex-1 items-center gap-4 rounded-2.5xl border border-white/8 bg-white/[0.035] px-5 py-4 transition-colors hover:border-yellow-400/40 hover:bg-white/[0.06]"
             >
               <span className="font-title text-2xl font-bold tracking-widest text-yellow-400">
                 {game.code}
@@ -121,6 +139,42 @@ function HostGames() {
                 →
               </span>
             </Link>
+            <div className="flex items-center justify-end gap-1 sm:flex-col sm:items-stretch">
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Copy ${game.title}`}
+                disabled={rowAction.isPending}
+                pending={pressed('copy', game.id)}
+                onClick={() => {
+                  if (confirmCopyGame(game.title)) rowAction.mutate({kind: 'copy', gameId: game.id})
+                }}
+              >
+                {pressed('copy', game.id) ? 'Copying…' : 'Copy'}
+              </Button>
+              {game.canManage && game.status !== 'live' ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hover:text-errorOnDark"
+                  aria-label={`Delete ${game.title}`}
+                  disabled={rowAction.isPending}
+                  pending={pressed('delete', game.id)}
+                  onClick={() => {
+                    if (confirmDeleteGame(game.title)) {
+                      rowAction.mutate({kind: 'delete', gameId: game.id})
+                    }
+                  }}
+                >
+                  {pressed('delete', game.id) ? 'Deleting…' : 'Delete'}
+                </Button>
+              ) : null}
+              {game.canManage && game.status === 'live' ? (
+                <span className="px-3 text-xs text-gray-dark" title={LIVE_DELETE_HINT}>
+                  End to delete
+                </span>
+              ) : null}
+            </div>
           </li>
         ))}
       </ul>
