@@ -607,6 +607,7 @@ describe('games router', () => {
 
     const detail = await c.detail({gameId})
     expect(detail.counts).toEqual({players: 3, pairs: 1, turnsInProgress: 1, responses: 1})
+    expect(detail.room).toEqual({joined: 3, paired: 2, talking: 1, done: 0})
     expect(JSON.stringify(detail)).not.toContain('@')
   })
 

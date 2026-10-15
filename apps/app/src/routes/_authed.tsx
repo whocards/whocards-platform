@@ -1,4 +1,4 @@
-import {createFileRoute, Link, Outlet, redirect} from '@tanstack/react-router'
+import {createFileRoute, Link, Outlet, redirect, useMatches} from '@tanstack/react-router'
 import {useState} from 'react'
 
 import {Logo} from '~/components/logo'
@@ -8,6 +8,14 @@ import {authClient} from '~/lib/auth-client'
 import {roleAtLeast} from '~/server/auth/permissions'
 import {getCurrentMember} from '~/server/auth/session'
 import type {CurrentMember} from '~/server/auth/session'
+
+declare module '@tanstack/react-router' {
+  // oxlint-disable-next-line typescript/consistent-type-definitions -- module augmentation only merges into an interface
+  interface StaticDataRouteOption {
+    /** Full-screen page: no app header. */
+    bare?: boolean
+  }
+}
 
 export const Route = createFileRoute('/_authed')({
   beforeLoad: async (): Promise<CurrentMember> => {
@@ -31,9 +39,12 @@ const navActive = {
 function AuthedLayout() {
   const {user, membership} = Route.useRouteContext()
   const [menuOpen, setMenuOpen] = useState(false)
+  const bare = useMatches({select: (matches) => matches.some((m) => m.staticData.bare)})
   const isAdmin = membership ? roleAtLeast(membership.role, 'admin') : false
   const isHost = membership ? roleAtLeast(membership.role, 'facilitator') : false
   const close = () => setMenuOpen(false)
+
+  if (bare && membership) return <Outlet />
 
   const links = (
     <>
