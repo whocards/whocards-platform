@@ -237,8 +237,9 @@ function HostGame() {
         <StandbyPanel
           code={game.code}
           standbyKey={game.standbyKey}
-          pending={act.isPending}
-          onEnable={() => act.mutate(() => trpc.games.enableStandby.mutate({gameId}))}
+          pending={busy === 'standby'}
+          disabled={busy !== null}
+          onEnable={() => run('standby', () => trpc.games.enableStandby.mutate({gameId}))}
         />
       )}
 
@@ -387,8 +388,15 @@ function StandbyPanel({
   code,
   standbyKey,
   pending,
+  disabled,
   onEnable,
-}: Readonly<{code: string; standbyKey: string | null; pending: boolean; onEnable: () => void}>) {
+}: Readonly<{
+  code: string
+  standbyKey: string | null
+  pending: boolean
+  disabled: boolean
+  onEnable: () => void
+}>) {
   const link = standbyKey
     ? `${eventLinks(code).join}&standby=${encodeURIComponent(standbyKey)}`
     : null
@@ -422,8 +430,14 @@ function StandbyPanel({
             Join as facilitator (standby) ↗
           </a>
         ) : (
-          <Button size="sm" className="mt-2 self-start" disabled={pending} onClick={onEnable}>
-            Create standby link
+          <Button
+            size="sm"
+            className="mt-2 self-start"
+            pending={pending}
+            disabled={disabled}
+            onClick={onEnable}
+          >
+            {pending ? 'Creating…' : 'Create standby link'}
           </Button>
         )}
       </div>
