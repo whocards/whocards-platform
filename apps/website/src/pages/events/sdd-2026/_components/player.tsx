@@ -18,7 +18,7 @@ import {Join} from './join'
 import {noticeText} from './notices'
 import {Pairing} from './pairing'
 import {Review, Turn} from './turn'
-import {Button, Notice, Screen} from './ui'
+import {Button, Loading, Notice, Screen} from './ui'
 
 type GameProps = {
   session: GameSession
@@ -65,7 +65,7 @@ const Game = ({session, state, tokens, code}: GameProps) => {
       case 'waiting':
         return (
           <Screen>
-            <p className='text-center text-2xl'>
+            <p className='font-title py-10 text-center text-3xl font-bold text-balance'>
               {state.round === null ? copy.waiting.firstRound : copyFor(language).phases.waiting}
             </p>
           </Screen>
@@ -75,7 +75,9 @@ const Game = ({session, state, tokens, code}: GameProps) => {
       case 'sitting_out':
         return (
           <Screen>
-            <p className='text-center text-2xl'>{copyFor(language).phases.sitting_out}</p>
+            <p className='font-title py-10 text-center text-3xl font-bold text-balance'>
+              {copyFor(language).phases.sitting_out}
+            </p>
           </Screen>
         )
       default:
@@ -86,28 +88,40 @@ const Game = ({session, state, tokens, code}: GameProps) => {
   const partners = state.pair?.partners.map((p) => p.name).join(', ')
   return (
     <div className='flex w-full flex-col gap-3'>
-      <header className='flex items-baseline justify-between gap-3 pt-2 text-sm'>
+      <header className='flex min-h-10 items-center justify-between gap-3 border-b border-white/10 pt-2 pb-3 text-sm'>
         <span className='font-semibold'>{state.me.name}</span>
         {state.round && (
-          <span>
+          <span className='text-gray-lighter'>
             {copy.screen.round} {state.round.n}
-            {timer.roundRemainingMs !== null && ` · ${formatClock(timer.roundRemainingMs)}`}
+            {timer.roundRemainingMs !== null && (
+              <span className='ml-2 font-mono text-yellow-300 tabular-nums'>
+                {formatClock(timer.roundRemainingMs)}
+              </span>
+            )}
           </span>
         )}
       </header>
       {partners && (
-        <p className='text-mutedOnLight text-sm'>
-          {copy.pairing.partner} {partners}
+        <p className='text-gray-dark text-sm'>
+          {copy.pairing.partner} <span className='text-white'>{partners}</span>
         </p>
       )}
       {turn.notice && (
         <Notice onDismiss={turn.dismissNotice}>{noticeText(language, turn.notice)}</Notice>
       )}
-      {session.error && !session.error.refusal && <Notice>{copy.notices.network}</Notice>}
       {body()}
-      <a href={`/events/sdd-2026/me?code=${code}`} className='mx-auto py-4 underline'>
+      <a
+        href={`/events/sdd-2026/me?code=${code}`}
+        className='text-gray-lighter mx-auto py-4 underline underline-offset-4 hover:text-white'
+      >
         {copy.mine.link}
       </a>
+      {session.error && !session.error.refusal && (
+        // Fixed so a flaky poll never shoves the card around.
+        <div className='fixed inset-x-0 bottom-4 z-10 mx-auto w-full max-w-md px-4'>
+          <Notice>{copy.notices.network}</Notice>
+        </div>
+      )}
     </div>
   )
 }
@@ -144,21 +158,23 @@ export const SddPlayer = () => {
     return null
   }
 
+  const [retrying, setRetrying] = useState(false)
+  const retry = async () => {
+    setRetrying(true)
+    await session.refresh()
+    setRetrying(false)
+  }
+
   const copy = playerCopyFor(session.state?.me.language ?? 'en')
   const content = () => {
     if (!joined) return <Join initialCode={code} onJoin={join} lookup={lookup} />
     if (session.state)
       return <Game session={session} state={session.state} tokens={tokens} code={code} />
-    if (session.loading)
-      return (
-        <Screen>
-          <span className='loading loading-dots loading-lg' aria-label={copy.waiting.loading} />
-        </Screen>
-      )
+    if (session.loading || retrying) return <Loading label={copy.waiting.loading} />
     return (
       <Screen>
         <Notice>{copy.notices.network}</Notice>
-        <Button onClick={() => void session.refresh()}>{copy.waiting.retry}</Button>
+        <Button onClick={() => void retry()}>{copy.waiting.retry}</Button>
       </Screen>
     )
   }
