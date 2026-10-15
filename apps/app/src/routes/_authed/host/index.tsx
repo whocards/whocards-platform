@@ -65,7 +65,7 @@ function HostGames() {
               placeholder="Conference or company"
             />
           </Label>
-          <Button type="submit" variant="primary" disabled={create.isPending}>
+          <Button type="submit" variant="primary" pending={create.isPending}>
             {create.isPending ? 'Creating…' : 'Create draft'}
           </Button>
         </form>
@@ -73,7 +73,16 @@ function HostGames() {
       </Card>
 
       <SectionTitle>Your workshops</SectionTitle>
-      {games.isLoading ? <p className="text-gray-dark">Loading…</p> : null}
+      {games.isLoading ? (
+        <ul aria-busy aria-label="Loading workshops" className="flex flex-col gap-3">
+          {['a', 'b', 'c'].map((k) => (
+            <li
+              key={k}
+              className="h-21 animate-pulse rounded-2.5xl bg-white/[0.05] motion-reduce:animate-none"
+            />
+          ))}
+        </ul>
+      ) : null}
       {games.isError ? <ErrorText>{games.error.message}</ErrorText> : null}
       {games.data?.length === 0 ? <Empty>No games yet. Create one above.</Empty> : null}
 
