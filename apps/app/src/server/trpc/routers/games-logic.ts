@@ -66,10 +66,7 @@ export type GameCopy = {
   rounds: Array<RoundRecord & {n: number}>
 }
 
-/**
- * A fresh draft of the same workshop design for `copierId`, who becomes its creator: no players,
- * play, standby key or recap state, and the original creator stays on as a co-facilitator.
- */
+/** A fresh draft for `copierId` without players, play, standby key or mailings; the original creator stays a co-facilitator. */
 export const copyOf = (snapshot: GameSnapshot, hosts: GameHosts, copierId: string): GameCopy => {
   const {title, settings} = snapshot.game
   const questions = customQuestionsOf(settings)
@@ -97,8 +94,7 @@ export const copyOf = (snapshot: GameSnapshot, hosts: GameHosts, copierId: strin
 }
 
 /** The emails a host sends once after the game, each recorded under `hosted_game.settings[mailing]`. */
-export const MAILINGS = ['recap', 'revisit'] as const
-export type Mailing = (typeof MAILINGS)[number]
+export type Mailing = 'recap' | 'revisit'
 
 /** What a send recorded; its presence in settings claims the one send. */
 export const sendStateSchema = z.object({
@@ -164,6 +160,11 @@ export const strandedByRemoval = (
 
 export type Recap = {to: string; props: GameRecapProps}
 
+const regularPlayers = (snapshot: GameSnapshot): Player[] => {
+  const standby = standbyIds(snapshot)
+  return snapshot.players.filter((p) => !standby.has(p.id))
+}
+
 type RecapInput = {
   snapshot: GameSnapshot
   savedByPlayer: Readonly<Record<string, number>>
@@ -174,12 +175,13 @@ type RecapInput = {
 const recapProps = ({snapshot, savedByPlayer, now, random}: RecapInput) => {
   const played = snapshot.rounds.filter((r) => r.startedAt !== null)
   const links = eventLinks(snapshot.game.code)
+  const players = regularPlayers(snapshot)
   const event = {
-    players: snapshot.players.length,
+    players: players.length,
     rounds: played.length,
     turns: snapshot.turns.length,
     minutes: minutes(snapshot.turns.reduce((sum, t) => sum + spokenMs(snapshot, t, now), 0)),
-    languages: new Set(snapshot.players.map((p) => p.language)).size,
+    languages: new Set(players.map((p) => p.language)).size,
   }
 
   const sources = {custom: customQuestionsOf(snapshot.game.settings), decks: getDeck}
@@ -212,10 +214,10 @@ const recapProps = ({snapshot, savedByPlayer, now, random}: RecapInput) => {
   }
 }
 
-/** One recap per player who asked for it and left an email; stats are counts only, never names. */
+/** One recap per player who asked for it and left an email, standby facilitators never; stats are counts only, never names. */
 export const buildRecaps = (input: RecapInput): Recap[] => {
   const propsFor = recapProps(input)
-  return input.snapshot.players.flatMap((player): Recap[] =>
+  return regularPlayers(input.snapshot).flatMap((player): Recap[] =>
     player.consentRecap && player.email ? [{to: player.email, props: propsFor(player)}] : []
   )
 }
@@ -278,9 +280,8 @@ const answeredRefs = (snapshot: GameSnapshot, playerId?: string): string[] => [
 /** One per recap-consenting player with an email who answered something; standby facilitators never. */
 export const buildRevisits = (snapshot: GameSnapshot): Revisit[] => {
   const propsFor = revisitProps(snapshot)
-  const standby = standbyIds(snapshot)
-  return snapshot.players.flatMap((player): Revisit[] => {
-    if (!player.consentRecap || !player.email || standby.has(player.id)) return []
+  return regularPlayers(snapshot).flatMap((player): Revisit[] => {
+    if (!player.consentRecap || !player.email) return []
     const props = propsFor(player.name, player.language, answeredRefs(snapshot, player.id))
     return props.questions.length > 0 ? [{to: player.email, props}] : []
   })

@@ -87,6 +87,26 @@ describe('drizzle game port', () => {
     expect(g.state.phase).toBe('standby')
   })
 
+  it('leaves no player behind when the standby append fails', async () => {
+    const standbyKey = 'standby-secret-0123456789'
+    await db
+      .update(hostedGame)
+      .set({settings: {round: {}, standbyKey}})
+      .where(eq(hostedGame.id, gameId))
+    await client.exec(`
+      CREATE FUNCTION refuse_update() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'refused'; END $$ LANGUAGE plpgsql;
+      CREATE TRIGGER refuse_update BEFORE UPDATE ON hosted_game FOR EACH ROW EXECUTE FUNCTION refuse_update();
+    `)
+    try {
+      await expect(
+        as(null).game.join({code: 'work', name: 'Fac', language: 'en', standbyKey})
+      ).rejects.toThrow('Failed query')
+    } finally {
+      await client.exec('DROP TRIGGER refuse_update ON hosted_game; DROP FUNCTION refuse_update();')
+    }
+    expect(await db.select().from(gamePlayer)).toEqual([])
+  })
+
   it('runs a pair through a round end to end', async () => {
     const a = await join('Ann')
     const b = await join('Bo')

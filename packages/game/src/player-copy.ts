@@ -21,6 +21,7 @@ export type PlayerCopy = {
     transcriptHint: string
     typed: string
     typedHint: string
+    later: string
     recap: string
     email: string
     play: string
@@ -39,6 +40,7 @@ export type PlayerCopy = {
     partner: string
     codePlaceholder: string
     pick: string
+    joined: string
   }
   turn: {
     me: string
@@ -116,6 +118,7 @@ const en: PlayerCopy = {
       'Your answers are turned into text and saved automatically. Edit or delete them any time in My answers. Audio is not kept.',
     typed: 'Let me save my typed answers',
     typedHint: 'Nothing is kept until you tap Save.',
+    later: 'If the host turns on answers later, let me save mine',
     recap: 'Email me a recap, and my questions to revisit later',
     email: 'Email',
     play: "Let's play",
@@ -145,6 +148,7 @@ const en: PlayerCopy = {
     partner: 'Talking with',
     codePlaceholder: 'ABC234 or Anna',
     pick: 'Which one?',
+    joined: 'joined',
   },
   turn: {
     me: 'You',

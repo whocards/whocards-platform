@@ -37,6 +37,7 @@ import type {
   QuestionSources,
   RoundSettings,
   RoundView,
+  ScreenState,
 } from '@whocards/game'
 import {z} from 'zod'
 
@@ -227,6 +228,8 @@ export type GameDetail = {
   >
   liveRoundId: string | null
   counts: {players: number; pairs: number; turnsInProgress: number; responses: number}
+  /** The public projector's counts, for the host's projector mode. */
+  room: ScreenState['counts']
 }
 
 type Hosting = Pick<GameDetail['game'], 'createdBy' | 'facilitators' | 'canManageHosts'>
@@ -282,6 +285,7 @@ const detailOf = (
       turnsInProgress: screen.counts.talking,
       responses: Object.values(saved).reduce((sum, n) => sum + n, 0),
     },
+    room: screen.counts,
   }
 }
 
@@ -507,9 +511,7 @@ export const createGamesRouter = ({
     enableStandby: gameProcedure.input(gameIdSchema).mutation(async ({ctx, input}) => {
       const snapshot = await load(input.gameId)
       if (snapshot.game.status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
-      if (!snapshot.game.settings.standbyKey) {
-        await store.ensureStandbyKey(input.gameId, crypto.randomUUID().replaceAll('-', ''))
-      }
+      await store.ensureStandbyKey(input.gameId, crypto.randomUUID().replaceAll('-', ''))
       return detail(input.gameId, ctx)
     }),
 
@@ -657,6 +659,7 @@ export const createGamesRouter = ({
       const {status} = (await load(input.gameId)).game
       if (status === 'live') throw fail('BAD_REQUEST', 'End the game first.')
       if (!(await store.deleteGame(input.gameId))) {
+        await load(input.gameId)
         throw fail('CONFLICT', 'The game went live meanwhile. End it first.')
       }
       return {deleted: true}

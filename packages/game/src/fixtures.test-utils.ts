@@ -9,6 +9,7 @@ export const player = (id: string, extra: Partial<Player> = {}): Player => ({
   email: null,
   consentTranscript: false,
   consentRecap: false,
+  joinedAt: 0,
   ...extra,
 })
 

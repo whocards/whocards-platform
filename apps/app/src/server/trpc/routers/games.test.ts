@@ -285,6 +285,7 @@ const memoryStore = (clock = {now: T0}) => {
       email: null,
       consentTranscript: false,
       consentRecap: false,
+      joinedAt: 0,
       ...extra,
     }
     mem.players.push(player)
@@ -680,6 +681,7 @@ describe('games router', () => {
 
     const detail = await c.detail({gameId})
     expect(detail.counts).toEqual({players: 3, pairs: 1, turnsInProgress: 1, responses: 1})
+    expect(detail.room).toEqual({joined: 3, paired: 2, talking: 1, done: 0})
     expect(JSON.stringify(detail)).not.toContain('@')
   })
 
@@ -1122,6 +1124,7 @@ const player = (id: string, language: 'en' | 'hu'): Player => ({
   email: `${id}@example.com`,
   consentTranscript: false,
   consentRecap: true,
+  joinedAt: 0,
 })
 
 const snapshot = (): GameSnapshot => {
@@ -1205,6 +1208,18 @@ describe('buildRecaps', () => {
       myAnswersUrl: 'https://whocards.cc/events/sdd-2026/me?code=K7QM2',
     })
     expect(recaps[2]?.props.asked).toEqual([])
+  })
+
+  it('skips standby facilitators as recipients and leaves them out of the room counts', () => {
+    const base = snapshot()
+    const recaps = buildRecaps({
+      snapshot: {...base, game: {...base.game, settings: {round: {}, standby: ['a']}}},
+      savedByPlayer: {},
+      now: T0,
+      random: () => 0,
+    })
+    expect(recaps.map((r) => r.to)).toEqual(['b@example.com', 'c@example.com'])
+    expect(recaps[0]?.props.event).toMatchObject({players: 2, languages: 1})
   })
 
   it('previews the room for a sample player when nobody asked for a recap', () => {
@@ -1453,6 +1468,17 @@ describe('copy and delete a game', () => {
     expect(await c.deleteGame({gameId})).toEqual({deleted: true})
     expect(mem).toMatchObject({games: [], players: [], rounds: [], pairs: [], turns: []})
     await expect(c.detail({gameId})).rejects.toMatchObject({code: 'NOT_FOUND'})
+  })
+
+  it('says a game deleted meanwhile is gone, not live', async () => {
+    const {c, gameId} = await played()
+    await c.endGame({gameId})
+    const [first, second] = await Promise.allSettled([
+      c.deleteGame({gameId}),
+      c.deleteGame({gameId}),
+    ])
+    expect(first).toMatchObject({status: 'fulfilled', value: {deleted: true}})
+    expect(second).toMatchObject({status: 'rejected', reason: {code: 'NOT_FOUND'}})
   })
 
   it('deletes a draft, and lets admins delete anyone’s game', async () => {

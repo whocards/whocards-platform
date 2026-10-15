@@ -18,6 +18,9 @@ type PairingProps = {
   hint?: string
 }
 
+const joinedTime = (at: number) =>
+  new Date(at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
+
 export const Pairing = ({state, act, candidates, hint}: PairingProps) => {
   const {language, pairCode} = state.me
   const copy = playerCopyFor(language)
@@ -52,6 +55,7 @@ export const Pairing = ({state, act, candidates, hint}: PairingProps) => {
     }
     await send({partnerCode})
   }
+  const mixedLanguages = new Set(choices.map((c) => c.language)).size > 1
   const pairRef = useRef(pair)
   useEffect(() => {
     pairRef.current = pair
@@ -129,6 +133,14 @@ export const Pairing = ({state, act, candidates, hint}: PairingProps) => {
               onClick={() => void send({partnerId: choice.id})}
             >
               {choice.name}
+              <span className='text-gray-dark text-sm font-normal'>
+                {[
+                  mixedLanguages && copy.join.languages[choice.language],
+                  `${copy.pairing.joined} ${joinedTime(choice.joinedAt)}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
             </Button>
           ))}
         </div>

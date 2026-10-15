@@ -17,7 +17,7 @@ export type GamePort = {
   random: () => number
   findGameByCode: (code: string) => Promise<HostedGame | null>
   findPlayerByToken: (token: string) => Promise<Player | null>
-  /** Mints the bearer token and a pair code unique within the game. */
+  /** Mints the bearer token and a pair code unique within the game; `standby` also appends to `settings.standby` in the same transaction. */
   createPlayer: (input: {
     gameId: string
     name: string
@@ -25,9 +25,8 @@ export type GamePort = {
     email: string | null
     consentTranscript: boolean
     consentRecap: boolean
+    standby: boolean
   }) => Promise<{player: Player; token: string}>
-  /** Appends to `hosted_game.settings.standby` atomically. */
-  addStandby: (input: {gameId: string; playerId: string}) => Promise<void>
   loadSnapshot: (gameId: string) => Promise<GameSnapshot | null>
   createPair: (input: {roundId: string; playerIds: [string, string]}) => Promise<WriteResult>
   /** Takes the pair's lowest free slot; a slot freed by a removed player is reused. */
