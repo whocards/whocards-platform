@@ -78,6 +78,9 @@ export type PlayerCopy = {
     starting: string
     ended: string
     noCode: string
+    orVisit: string
+    code: string
+    howTo: {title: string; steps: string[]}
     counts: {joined: string; paired: string; talking: string; done: string}
   }
 }
@@ -178,6 +181,16 @@ const en: PlayerCopy = {
     starting: 'Starting soon',
     ended: 'Thanks for playing',
     noCode: 'Add ?code=GAMECODE to the address',
+    orVisit: 'or go to',
+    code: 'Game code',
+    howTo: {
+      title: 'How to play',
+      steps: [
+        'Join on your phone',
+        'Find someone new and scan their code, or type their name',
+        'Take turns answering the question',
+      ],
+    },
     counts: {joined: 'joined', paired: 'paired', talking: 'talking', done: 'done'},
   },
 }

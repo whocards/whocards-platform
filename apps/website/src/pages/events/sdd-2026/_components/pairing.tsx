@@ -57,10 +57,12 @@ export const Pairing = ({state, act}: PairingProps) => {
 
   return (
     <Screen>
-      <div className='flex flex-col items-center gap-2'>
-        <span className='text-mutedOnLight'>{copy.pairing.myCode}</span>
+      <div className='bg-background/80 flex w-full flex-col items-center gap-3 rounded-3xl border border-white/10 p-5 shadow-2xl shadow-black/40 backdrop-blur-md'>
+        <span className='text-gray-dark'>{copy.pairing.myCode}</span>
         <QrCode value={pairCode} className='w-56' />
-        <span className='font-mono text-4xl font-semibold tracking-[0.3em]'>{pairCode}</span>
+        <span className='font-mono text-4xl font-semibold tracking-[0.3em] text-yellow-300'>
+          {pairCode}
+        </span>
       </div>
       <video
         ref={video}
@@ -82,7 +84,7 @@ export const Pairing = ({state, act}: PairingProps) => {
         }}
       >
         <label className='flex flex-col gap-1'>
-          <span>{copy.pairing.typeCode}</span>
+          <span className='text-gray-lighter'>{copy.pairing.typeCode}</span>
           <input
             className={cn(inputClass, 'font-mono uppercase tracking-widest')}
             value={typed}
@@ -93,7 +95,7 @@ export const Pairing = ({state, act}: PairingProps) => {
             onChange={(event) => setTyped(event.target.value)}
           />
         </label>
-        <Button type='submit' variant='ghost' disabled={busy || typed.trim() === ''}>
+        <Button type='submit' variant='ghost' pending={busy} disabled={typed.trim() === ''}>
           {copyFor(language).actions.pair}
         </Button>
       </form>

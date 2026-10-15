@@ -6,7 +6,7 @@ import {useState} from 'react'
 import {cn} from '~utils/cn'
 
 import {noticeText} from './notices'
-import {Button, Notice, Screen} from './ui'
+import {Button, choiceClass, Notice, Screen, textareaClass} from './ui'
 
 const RATINGS = [1, 2, 3, 4, 5] as const
 
@@ -39,10 +39,7 @@ export const Feedback = ({language, act}: {language: GameLanguage; act: GameSess
               key={value}
               type='button'
               aria-pressed={rating === value}
-              className={cn(
-                'h-14 rounded-2xl border text-xl',
-                rating === value ? 'bg-darkest text-primary-light' : 'border-darkest/20'
-              )}
+              className={cn('h-14 text-xl', choiceClass(rating === value))}
               onClick={() => setRating(value)}
             >
               {value}
@@ -53,14 +50,14 @@ export const Feedback = ({language, act}: {language: GameLanguage; act: GameSess
       <label className='flex w-full flex-col gap-1'>
         <span>{copy.feedback.text}</span>
         <textarea
-          className='textarea bg-white text-darkest border-darkest/20 min-h-32 w-full rounded-2xl text-lg'
+          className={cn(textareaClass, 'min-h-32')}
           value={text}
           maxLength={2000}
           onChange={(event) => setText(event.target.value)}
         />
       </label>
       {notice && <Notice>{notice}</Notice>}
-      <Button disabled={rating === null || status === 'sending'} onClick={() => void send()}>
+      <Button pending={status === 'sending'} disabled={rating === null} onClick={() => void send()}>
         {copy.feedback.send}
       </Button>
     </Screen>

@@ -8,7 +8,7 @@ import {formatClock} from '~lib/game/format'
 import {joinPath} from '~lib/game/links'
 import {cn} from '~utils/cn'
 
-import {Button, Screen} from './ui'
+import {Button, Loading, Screen, Spinner, textareaClass} from './ui'
 
 type TurnProps = {state: PlayerState; timer: TimerView; turn: TurnControls}
 
@@ -23,11 +23,11 @@ const Card = ({
 }) => (
   <div
     className={cn(
-      'bg-darkest text-white flex min-h-44 w-full flex-col gap-3 rounded-3xl p-5 shadow-lg',
+      'bg-background/80 text-white flex min-h-44 w-full flex-col gap-3 rounded-3xl border border-white/10 p-5 shadow-2xl shadow-black/40 backdrop-blur-md',
       locked && 'opacity-50'
     )}
   >
-    <span className='text-primary-light text-sm uppercase tracking-wider'>{label}</span>
+    <span className='text-yellow-300 text-sm font-semibold uppercase tracking-wider'>{label}</span>
     {children}
   </div>
 )
@@ -40,7 +40,9 @@ const Clock = ({timer, language}: {timer: TimerView; language: PlayerState['me']
   if (!timer.turn) return null
   const copy = playerCopyFor(language)
   return timer.turn.phase === 'talking' ? (
-    <span className='font-mono text-3xl tabular-nums'>{formatClock(timer.turn.remainingMs)}</span>
+    <span className='text-gray-lighter font-mono text-xl tabular-nums'>
+      {formatClock(timer.turn.remainingMs)}
+    </span>
   ) : (
     <span className='text-primary-light text-xl font-semibold'>{copy.turn.overtime}</span>
   )
@@ -92,7 +94,11 @@ export const Turn = ({state, timer, turn}: TurnProps) => {
           <p className='text-primary-light text-xl font-semibold'>{copy.turn.micBlocked}</p>
           <p>{copy.turn.micBlockedHint}</p>
           <CopyLink code={state.game.code} language={me.language} />
-          <Button className='bg-primary-light text-darkest' onClick={() => void turn.finish()}>
+          <Button
+            className='bg-primary-light text-darkest'
+            pending={turn.stage === 'finishing'}
+            onClick={() => void turn.finish()}
+          >
             {rules.actions.finish}
           </Button>
         </Card>
@@ -117,6 +123,7 @@ export const Turn = ({state, timer, turn}: TurnProps) => {
           {voice && !turn.canRecord && <span className='text-gray-dark'>{copy.turn.justTalk}</span>}
           <Button
             className='bg-primary-light text-darkest'
+            pending={turn.stage === 'finishing'}
             disabled={!['idle', 'starting', 'recording'].includes(turn.stage)}
             onClick={() => void turn.finish()}
           >
@@ -141,11 +148,14 @@ export const Turn = ({state, timer, turn}: TurnProps) => {
         type='button'
         aria-label={rules.actions.claim}
         disabled={turn.stage !== 'idle'}
-        className='w-full text-left transition-transform active:scale-95'
+        className='w-full cursor-pointer rounded-3xl text-left ring-1 ring-yellow-400/50 transition-transform active:scale-95 disabled:cursor-progress'
         onClick={() => void turn.claim()}
       >
         <Card label={copy.turn.me}>
-          <p className='font-title text-4xl'>{rules.actions.claim}</p>
+          <span className='font-title flex items-center gap-3 text-4xl font-bold text-yellow-300'>
+            {turn.stage === 'claiming' && <Spinner className='size-7' />}
+            {rules.actions.claim}
+          </span>
         </Card>
       </button>
     )
@@ -192,8 +202,7 @@ export const Review = ({state, timer, turn, draft}: ReviewProps) => {
   if (turn.stage === 'transcribing' || !draft)
     return (
       <Screen title={copy.review.title}>
-        <span className='loading loading-dots loading-lg' />
-        <p>{copy.review.transcribing}</p>
+        <Loading label={copy.review.transcribing} className='py-12' />
       </Screen>
     )
 
@@ -224,14 +233,15 @@ export const Review = ({state, timer, turn, draft}: ReviewProps) => {
           <Clock timer={timer} language={language} />
         </Card>
       )}
-      <p className='text-mutedOnLight'>{typed ? copy.review.typeHint : copy.review.hint}</p>
+      <p className='text-gray-dark'>{typed ? copy.review.typeHint : copy.review.hint}</p>
       <textarea
-        className='textarea bg-white text-darkest border-darkest/20 min-h-48 w-full rounded-2xl text-lg'
+        className={cn(textareaClass, 'min-h-48')}
         aria-label={typed ? copy.review.typeHint : copy.review.title}
         value={text}
         onChange={(event) => setText(event.target.value)}
       />
       <Button
+        pending={turn.stage === 'saving'}
         disabled={turn.stage !== 'review' || text.trim() === ''}
         onClick={() => void turn.save(text)}
       >

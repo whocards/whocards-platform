@@ -7,7 +7,7 @@ import {formatClock} from '~lib/game/format'
 import {joinPath} from '~lib/game/links'
 import {createTokenStore} from '~lib/game/token-store'
 
-import {buttonClass, Notice, Screen} from './ui'
+import {buttonClass, Loading, Notice, Screen} from './ui'
 
 export const SddMine = () => {
   const [tokens] = useState(() => createTokenStore())
@@ -52,18 +52,21 @@ export const SddMine = () => {
     <Screen title={copy.mine.title}>
       {!joined && <p>{copy.mine.notJoined}</p>}
       {failed && <Notice onDismiss={() => setFailed(false)}>{copy.notices.network}</Notice>}
-      {joined && !data && !failed && <span className='loading loading-dots loading-lg' />}
+      {joined && !data && !failed && <Loading label={copy.waiting.loading} />}
       {data?.responses.length === 0 && <p>{copy.mine.empty}</p>}
       <ul className='flex w-full flex-col gap-3'>
         {data?.responses.map((response) => (
-          <li key={response.id} className='flex flex-col gap-2 rounded-2xl bg-white/70 p-4'>
-            <span className='text-mutedOnLight text-sm'>
+          <li
+            key={response.id}
+            className='flex flex-col gap-2 rounded-2xl border border-white/10 bg-background/80 p-4'
+          >
+            <span className='text-gray-dark text-sm'>
               {new Date(response.createdAt).toLocaleString()} · {formatClock(response.durationMs)}
             </span>
             <p className='whitespace-pre-wrap'>{response.transcript}</p>
             <button
               type='button'
-              className='text-errorOnLight self-end underline'
+              className='text-errorOnDark cursor-pointer self-end underline'
               onClick={() => void remove(response.id)}
             >
               {armed === response.id ? copy.mine.confirmDelete : copy.mine.delete}
