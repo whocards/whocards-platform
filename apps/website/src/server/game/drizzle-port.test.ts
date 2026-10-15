@@ -200,4 +200,19 @@ describe('drizzle game port', () => {
     await port.releaseTranscription(turnId)
     expect(await port.claimTranscription(turnId)).toBe(true)
   })
+
+  it('stores and clears a question vote, and the database rejects anything but ±1', async () => {
+    const [a, b] = await Promise.all([join('Ann'), join('Bo')])
+    await a.caller.game.round.pair({partnerCode: b.state.me.pairCode})
+    const turnId = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn?.id ?? ''
+    await a.caller.game.round.turn({action: 'finish'})
+
+    const down = await a.caller.game.round.vote({turnId, vote: -1})
+    expect(down.pair?.turns[0]?.questionVote).toBe(-1)
+    const cleared = await a.caller.game.round.vote({turnId, vote: null})
+    expect(cleared.pair?.turns[0]?.questionVote).toBeNull()
+    await expect(
+      client.exec(`UPDATE game_turn SET question_vote = 2 WHERE id = '${turnId}'`)
+    ).rejects.toThrow('game_turn_question_vote_check')
+  })
 })

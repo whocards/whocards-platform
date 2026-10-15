@@ -1,6 +1,6 @@
 import type {PlayerState, TurnView} from '@whocards/game'
 import {copyFor, playerCopyFor} from '@whocards/game'
-import type {Draft, TimerView, TurnControls} from '@whocards/game/hooks'
+import type {Draft, GameSession, TimerView, TurnControls} from '@whocards/game/hooks'
 import type {ReactNode} from 'react'
 import {useState} from 'react'
 
@@ -8,9 +8,15 @@ import {formatClock} from '~lib/game/format'
 import {joinPath} from '~lib/game/links'
 import {cn} from '~utils/cn'
 
+import {QuestionVote} from './question-vote'
 import {Button, Screen} from './ui'
 
-type TurnProps = {state: PlayerState; timer: TimerView; turn: TurnControls}
+type TurnProps = {
+  state: PlayerState
+  timer: TimerView
+  turn: TurnControls
+  act: GameSession['act']
+}
 
 const Card = ({
   label,
@@ -73,7 +79,7 @@ const CopyLink = ({code, language}: {code: string; language: PlayerState['me']['
   )
 }
 
-export const Turn = ({state, timer, turn}: TurnProps) => {
+export const Turn = ({state, timer, turn, act}: TurnProps) => {
   const {me, pair} = state
   const copy = playerCopyFor(me.language)
   const rules = copyFor(me.language)
@@ -82,6 +88,7 @@ export const Turn = ({state, timer, turn}: TurnProps) => {
   const answered = (playerId: string) =>
     pair?.turns.some((t) => t.playerId === playerId && t.finishedAt !== null) ?? false
   const partnerAnswering = active !== null && mine === null
+  const myDone = pair?.turns.find((t) => t.playerId === me.id && t.finishedAt !== null) ?? null
 
   const myCard = () => {
     if (mine && turn.micBlocked)
@@ -124,10 +131,12 @@ export const Turn = ({state, timer, turn}: TurnProps) => {
           </Button>
         </Card>
       )
-    if (answered(me.id))
+    if (myDone)
       return (
         <Card label={copy.turn.me}>
           <p className='text-xl'>{copy.turn.answered}</p>
+          <Question turn={myDone} />
+          <QuestionVote turn={myDone} language={me.language} act={act} />
         </Card>
       )
     if (partnerAnswering)

@@ -32,6 +32,12 @@ describe('playerView', () => {
     expect(view?.phase).toBe('answered')
   })
 
+  it('shows a question vote on my own turn only', () => {
+    const voted = {...s, turns: s.turns.map((t) => ({...t, questionVote: 1 as const}))}
+    expect(playerView(voted, 'c', 100)?.pair?.turns.map((t) => t.questionVote)).toEqual([1, null])
+    expect(playerView(voted, 'd', 100)?.pair?.turns.map((t) => t.questionVote)).toEqual([null, 1])
+  })
+
   it('returns null for a stranger', () => {
     expect(playerView(s, 'zz', 0)).toBeNull()
   })

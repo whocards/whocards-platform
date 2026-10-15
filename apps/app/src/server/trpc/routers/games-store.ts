@@ -289,6 +289,7 @@ export const createDrizzleHostStore = <
           questionId: gameTurn.questionId,
           startedAt: gameTurn.startedAt,
           finishedAt: gameTurn.finishedAt,
+          questionVote: gameTurn.questionVote,
         })
         .from(gameTurn)
         .innerJoin(gamePair, eq(gamePair.id, gameTurn.pairId))

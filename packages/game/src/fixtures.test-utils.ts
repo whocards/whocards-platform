@@ -39,6 +39,7 @@ export const turn = (extra: Partial<Turn> & Pick<Turn, 'id' | 'pairId' | 'player
   questionId: 'q1',
   startedAt: 0,
   finishedAt: null,
+  questionVote: null,
   ...extra,
 })
 

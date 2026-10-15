@@ -48,6 +48,9 @@ export type PlayerCopy = {
     micBlockedHint: string
     copyLink: string
     linkCopied: string
+    rateQuestion: string
+    voteUp: string
+    voteDown: string
   }
   review: {
     title: string
@@ -137,6 +140,9 @@ const en: PlayerCopy = {
       "This browser won't let the game use your mic, so this answer can't be saved. Talk anyway, then tap Done.",
     copyLink: 'Copy link',
     linkCopied: 'Link copied',
+    rateQuestion: 'Rate this question',
+    voteUp: 'Good question',
+    voteDown: 'Not a good question',
   },
   review: {
     title: 'Your answer',

@@ -25,6 +25,7 @@ const myTurn: Turn = {
   questionId: '1',
   startedAt: NOW - 10_000,
   finishedAt: null,
+  questionVote: null,
 }
 
 const snapshot = (

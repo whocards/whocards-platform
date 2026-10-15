@@ -99,6 +99,7 @@ export const refusalSchema = z.enum([
   'not_found',
   'wrong_answer_mode',
   'no_consent',
+  'still_answering',
 ])
 export type Refusal = z.infer<typeof refusalSchema>
 
@@ -134,6 +135,15 @@ export const feedbackInputSchema = z.object({
   text: z.string().trim().max(2000).optional(),
 })
 
+/** A player's thumb on their own question: up, down, or null to clear it. */
+export const questionVoteSchema = z.union([z.literal(1), z.literal(-1)])
+export type QuestionVote = z.infer<typeof questionVoteSchema>
+
+export const voteInputSchema = z.object({
+  turnId: z.string().min(1),
+  vote: questionVoteSchema.nullable(),
+})
+
 export const deleteResponseInputSchema = z.object({responseId: z.string().min(1)})
 
 export const transcribeFieldsSchema = z.object({
@@ -167,6 +177,8 @@ export const turnViewSchema = z.object({
   finishedAt: z.number().nullable(),
   /** Server stops the turn at this instant if nobody taps Finish. */
   deadline: z.number(),
+  /** Only ever set on my own turns. */
+  questionVote: questionVoteSchema.nullable(),
 })
 export type TurnView = z.infer<typeof turnViewSchema>
 

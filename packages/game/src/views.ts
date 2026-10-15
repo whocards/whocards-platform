@@ -32,17 +32,18 @@ const turnView = (
   round: Round,
   turn: Turn,
   now: number,
-  language: GameLanguage,
+  viewer: {id: string; language: GameLanguage},
   resolve: ResolveQuestion
 ): TurnView => ({
   id: turn.id,
   playerId: turn.playerId,
   questionId: turn.questionId,
-  questionText: resolve(turn.questionId, language),
+  questionText: resolve(turn.questionId, viewer.language),
   answerMode: answerModeAt(settings, turn.startedAt),
   startedAt: turn.startedAt,
   finishedAt: finishedAtOf(round, turn, now),
   deadline: deadlineOf(round, turn),
+  questionVote: turn.playerId === viewer.id ? turn.questionVote : null,
 })
 
 /** Everything one phone needs to render, from that player's point of view. */
@@ -60,7 +61,7 @@ export const playerView = (
   let pairView: PlayerState['pair'] = null
   if (round && pair) {
     const turns = turnsOf(snapshot, pair.id).map((t) =>
-      turnView(snapshot.game.settings, round, t, now, me.language, resolve)
+      turnView(snapshot.game.settings, round, t, now, me, resolve)
     )
     const open = openTurnOf(round, turnsOf(snapshot, pair.id), now)
     pairView = {

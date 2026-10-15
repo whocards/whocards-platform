@@ -154,6 +154,7 @@ export const createDrizzleGamePort = <
             questionId: gameTurn.questionId,
             startedAt: gameTurn.startedAt,
             finishedAt: gameTurn.finishedAt,
+            questionVote: gameTurn.questionVote,
           })
           .from(gameTurn)
           .innerJoin(gamePair, eq(gamePair.id, gameTurn.pairId))
@@ -244,6 +245,10 @@ export const createDrizzleGamePort = <
 
     releaseTranscription: async (turnId) => {
       await db.update(gameTurn).set({transcribedAt: null}).where(eq(gameTurn.id, turnId))
+    },
+
+    voteQuestion: async ({turnId, vote}) => {
+      await db.update(gameTurn).set({questionVote: vote}).where(eq(gameTurn.id, turnId))
     },
 
     saveResponse: async (input) => {
