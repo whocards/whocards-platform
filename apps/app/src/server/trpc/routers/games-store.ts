@@ -377,18 +377,19 @@ export const createDrizzleHostStore = <
       await tx.update(hostedGame).set({status: 'ended'}).where(eq(hostedGame.id, gameId))
     }),
 
-  claimRecap: async (gameId, claim) => {
+  claimSend: async (gameId, mailing, claim) => {
+    const sent = sql`${hostedGame.settings} -> ${mailing}::text`
     const rows = await db
       .update(hostedGame)
-      .set({settings: mergeSettings({recap: claim})})
+      .set({settings: mergeSettings({[mailing]: claim})})
       .where(
         and(
           eq(hostedGame.id, gameId),
           eq(hostedGame.status, 'ended'),
           // Unclaimed, or a finished send where nothing went out: retrying can't double-send.
-          sql`(${hostedGame.settings} -> 'recap' is null or (
-            coalesce((${hostedGame.settings} -> 'recap' ->> 'pending')::boolean, false) = false
-            and (${hostedGame.settings} -> 'recap' ->> 'sent')::int = 0
+          sql`(${sent} is null or (
+            coalesce((${sent} ->> 'pending')::boolean, false) = false
+            and (${sent} ->> 'sent')::int = 0
           ))`
         )
       )
@@ -396,10 +397,10 @@ export const createDrizzleHostStore = <
     return rows.length > 0
   },
 
-  saveRecapState: async (gameId, recap) => {
+  saveSendState: async (gameId, mailing, state) => {
     await db
       .update(hostedGame)
-      .set({settings: mergeSettings({recap})})
+      .set({settings: mergeSettings({[mailing]: state})})
       .where(eq(hostedGame.id, gameId))
   },
 

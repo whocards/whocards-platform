@@ -10,5 +10,6 @@ export const eventLinks = (code: string) => {
     screen: `${event}/screen${q}`,
     me: `${event}/me${q}`,
     app: `${WEBSITE_ORIGIN}/app`,
+    play: `${WEBSITE_ORIGIN}/play`,
   }
 }

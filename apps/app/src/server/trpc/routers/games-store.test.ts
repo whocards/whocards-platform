@@ -10,7 +10,7 @@ import {beforeAll, beforeEach, describe, expect, it} from 'vitest'
 
 import {appMember, appOrganization, appUser} from '~/server/db/schema'
 import {createDrizzleHostStore} from './games-store'
-import {readRecapState} from './games-logic'
+import {readSendState} from './games-logic'
 
 const client = new PGlite()
 const db = drizzle(client)
@@ -18,9 +18,9 @@ const store = createDrizzleHostStore(db)
 let gameId = ''
 
 const claim = (sentAt: number) => ({sentAt, sent: 0, failed: 0, error: null, pending: true})
-const recapOf = async () => {
+const stateOf = async (mailing: 'recap' | 'revisit') => {
   const [row] = await db.select().from(hostedGame).where(eq(hostedGame.id, gameId))
-  return readRecapState(row?.settings)
+  return readSendState(row?.settings, mailing)
 }
 
 beforeAll(async () => {
@@ -66,22 +66,43 @@ describe('drizzle host store conditional writes', () => {
   })
 
   it('lets one claim through, keeps settings, and reopens only a send that delivered nothing', async () => {
-    expect(await store.claimRecap(gameId, claim(1))).toBe(false)
+    expect(await store.claimSend(gameId, 'recap', claim(1))).toBe(false)
     await store.endGame({gameId, endedAt: 1})
 
     expect(
-      await Promise.all([store.claimRecap(gameId, claim(2)), store.claimRecap(gameId, claim(3))])
+      await Promise.all([
+        store.claimSend(gameId, 'recap', claim(2)),
+        store.claimSend(gameId, 'recap', claim(3)),
+      ])
     ).toEqual([true, false])
-    expect(await store.claimRecap(gameId, claim(4))).toBe(false)
+    expect(await store.claimSend(gameId, 'recap', claim(4))).toBe(false)
 
-    await store.saveRecapState(gameId, {...claim(2), failed: 3, error: 'down', pending: false})
-    expect(await store.claimRecap(gameId, claim(5))).toBe(true)
-    await store.saveRecapState(gameId, {...claim(5), sent: 3, pending: false})
-    expect(await store.claimRecap(gameId, claim(6))).toBe(false)
+    await store.saveSendState(gameId, 'recap', {
+      ...claim(2),
+      failed: 3,
+      error: 'down',
+      pending: false,
+    })
+    expect(await store.claimSend(gameId, 'recap', claim(5))).toBe(true)
+    await store.saveSendState(gameId, 'recap', {...claim(5), sent: 3, pending: false})
+    expect(await store.claimSend(gameId, 'recap', claim(6))).toBe(false)
 
-    expect(await recapOf()).toMatchObject({sentAt: 5, sent: 3, pending: false})
+    expect(await stateOf('recap')).toMatchObject({sentAt: 5, sent: 3, pending: false})
     const snapshot = await store.loadSnapshot(gameId)
     expect(snapshot?.game.settings).toMatchObject({round: {}, organizer: 'SDD Conf'})
+  })
+
+  it('claims each mailing on its own, so a sent recap leaves the revisit email open', async () => {
+    await store.endGame({gameId, endedAt: 1})
+    expect(await store.claimSend(gameId, 'recap', claim(1))).toBe(true)
+    await store.saveSendState(gameId, 'recap', {...claim(1), sent: 2, pending: false})
+
+    expect(await store.claimSend(gameId, 'revisit', claim(2))).toBe(true)
+    expect(await store.claimSend(gameId, 'revisit', claim(3))).toBe(false)
+    await store.saveSendState(gameId, 'revisit', {...claim(2), sent: 2, pending: false})
+
+    expect(await stateOf('recap')).toMatchObject({sentAt: 1, sent: 2})
+    expect(await stateOf('revisit')).toMatchObject({sentAt: 2, sent: 2, pending: false})
   })
 
   it('saves custom questions and round plans without touching other settings', async () => {

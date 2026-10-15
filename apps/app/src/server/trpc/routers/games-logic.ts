@@ -1,21 +1,24 @@
-import {getDeck} from '@whocards/decks'
+import {DEFAULT_DECK_SLUG, getDeck} from '@whocards/decks'
 import {
+  CUSTOM_SOURCE,
   customQuestionsOf,
   deadlineOf,
   drawQuestion,
   finishedAtOf,
   metBefore,
   questionText,
+  sourceOf,
   sourceRefs,
+  standbyIds,
   turnDeadline,
   turnRef,
   usedRefs,
 } from '@whocards/game'
-import type {GameSnapshot, Player, Round, Turn} from '@whocards/game'
-import type {GameRecapProps} from '@whocards/emails'
+import type {GameLanguage, GameSnapshot, Player, QuestionSources, Round, Turn} from '@whocards/game'
+import type {GameRecapProps, GameRevisitProps} from '@whocards/emails'
 import {z} from 'zod'
 
-import {eventLinks} from '../../../lib/event-links'
+import {eventLinks, WEBSITE_ORIGIN} from '../../../lib/event-links'
 import {roleAtLeast} from '../../auth/permissions'
 import type {AppRole} from '../../auth/permissions'
 
@@ -41,19 +44,23 @@ export const hostAccess = (
   return hosts.facilitators.includes(user.id) ? 'run' : null
 }
 
-/** What the recap send recorded; kept under `hosted_game.settings.recap`, whose presence claims the one send. */
-export const recapStateSchema = z.object({
+/** The emails a host sends once after the game, each recorded under `hosted_game.settings[mailing]`. */
+export const MAILINGS = ['recap', 'revisit'] as const
+export type Mailing = (typeof MAILINGS)[number]
+
+/** What a send recorded; its presence in settings claims the one send. */
+export const sendStateSchema = z.object({
   sentAt: z.number(),
   sent: z.number().int(),
   failed: z.number().int(),
   error: z.string().nullable(),
   pending: z.boolean().default(false),
 })
-export type RecapState = z.infer<typeof recapStateSchema>
+export type SendState = z.infer<typeof sendStateSchema>
 
-export const readRecapState = (settings: unknown): RecapState | null => {
-  const recap = z.object({recap: recapStateSchema}).safeParse(settings)
-  return recap.success ? recap.data.recap : null
+export const readSendState = (settings: unknown, mailing: Mailing): SendState | null => {
+  const parsed = z.object({[mailing]: sendStateSchema}).safeParse(settings)
+  return parsed.success ? (parsed.data[mailing] ?? null) : null
 }
 
 export const organizerOf = (snapshot: GameSnapshot): string | null =>
@@ -170,4 +177,72 @@ export const previewRecap = (
   if (first) return {recipients: recaps.length, sample: false, props: first.props}
   const props = recapProps(input)({id: '', name: 'Sample player', language: 'en'})
   return {recipients: 0, sample: true, props}
+}
+
+export type Revisit = {to: string; props: GameRevisitProps}
+
+/** The question's card on whocards.cc; null for a host's own question, which only lived in the game. */
+export const questionUrl = (
+  ref: string,
+  language: GameLanguage,
+  sources: QuestionSources
+): string | null => {
+  const source = sourceOf(ref)
+  if (source === CUSTOM_SOURCE) return null
+  const id = ref.slice(source.length + 1)
+  const text = sources.decks(source)?.questions[id]
+  if (!text) return null
+  const path = source === DEFAULT_DECK_SLUG ? '/play' : `/play/${source}`
+  const lang = text[language] ? language : 'en'
+  return `${WEBSITE_ORIGIN}${path}?lang=${lang}&q=${encodeURIComponent(id)}`
+}
+
+const revisitProps = (snapshot: GameSnapshot) => {
+  const sources = {custom: customQuestionsOf(snapshot.game.settings), decks: getDeck}
+  const links = eventLinks(snapshot.game.code)
+  return (name: string, language: GameLanguage, refs: string[]): GameRevisitProps => ({
+    name,
+    eventTitle: snapshot.game.title,
+    organizer: organizerOf(snapshot),
+    questions: refs.flatMap((ref) => {
+      const text = questionText(ref, language, sources)
+      return text ? [{text, url: questionUrl(ref, language, sources)}] : []
+    }),
+    playUrl: links.play,
+    appUrl: links.app,
+  })
+}
+
+/** Distinct refs answered, oldest first; everyone's when `playerId` is left out. */
+const answeredRefs = (snapshot: GameSnapshot, playerId?: string): string[] => [
+  ...new Set(
+    snapshot.turns
+      .filter((t) => playerId === undefined || t.playerId === playerId)
+      .toSorted((a, b) => a.startedAt - b.startedAt)
+      .map((t) => turnRef(snapshot, t))
+  ),
+]
+
+/** One per recap-consenting player with an email who answered something; standby facilitators never. */
+export const buildRevisits = (snapshot: GameSnapshot): Revisit[] => {
+  const propsFor = revisitProps(snapshot)
+  const standby = standbyIds(snapshot)
+  return snapshot.players.flatMap((player): Revisit[] => {
+    if (!player.consentRecap || !player.email || standby.has(player.id)) return []
+    const props = propsFor(player.name, player.language, answeredRefs(snapshot, player.id))
+    return props.questions.length > 0 ? [{to: player.email, props}] : []
+  })
+}
+
+const SAMPLE_QUESTIONS = 3
+
+/** What the host sees before sending: the first real email, else a sample with the room's first questions. */
+export const previewRevisit = (
+  snapshot: GameSnapshot
+): {recipients: number; sample: boolean; props: GameRevisitProps} => {
+  const revisits = buildRevisits(snapshot)
+  const first = revisits[0]
+  if (first) return {recipients: revisits.length, sample: false, props: first.props}
+  const refs = answeredRefs(snapshot).slice(0, SAMPLE_QUESTIONS)
+  return {recipients: 0, sample: true, props: revisitProps(snapshot)('Sample player', 'en', refs)}
 }
