@@ -2,7 +2,16 @@ import {PGlite} from '@electric-sql/pglite'
 import {answerModeAt} from '@whocards/game'
 import type {QuestionPlan} from '@whocards/game'
 import * as gameSchema from '@whocards/game/db'
-import {hostedGame} from '@whocards/game/db'
+import {
+  gameFeedback,
+  gamePair,
+  gamePairPlayer,
+  gamePlayer,
+  gameResponse,
+  gameRound,
+  gameTurn,
+  hostedGame,
+} from '@whocards/game/db'
 import {generateDrizzleJson, generateMigration} from 'drizzle-kit/api'
 import {eq, sql} from 'drizzle-orm'
 import {drizzle} from 'drizzle-orm/pglite'
@@ -214,5 +223,93 @@ describe('drizzle host store conditional writes', () => {
       {id: 'u-tamas', label: 'Tamas'},
       {id: 'u-avi', label: 'Avi'},
     ])
+  })
+
+  it('copies a game and its rounds in one go, under a new code', async () => {
+    const copy = await store.copyGame({
+      title: 'SDD (copy)',
+      createdBy: 'u-tamas',
+      settings: {round: {}, organizer: 'SDD Conf', answerModes: [{mode: 'type', at: 0}]},
+      facilitators: ['u-avi'],
+      rounds: [
+        {
+          n: 1,
+          questionPlan: {mode: 'random', source: 'library'},
+          deckSlug: 'library',
+          turnSeconds: 60,
+          oddRule: 'trio',
+          overtime: 'nudge',
+          overtimeSeconds: 30,
+        },
+      ],
+    })
+    expect(copy).toMatchObject({title: 'SDD (copy)', status: 'lobby'})
+    expect(await store.hostsOf(copy.id)).toEqual({createdBy: 'u-tamas', facilitators: ['u-avi']})
+    const snapshot = await store.loadSnapshot(copy.id)
+    expect(snapshot?.rounds).toMatchObject([{n: 1, status: 'pending', turnSeconds: 60}])
+    expect(snapshot?.game.code).not.toBe((await store.loadSnapshot(gameId))?.game.code)
+  })
+
+  it('deletes a game with every row under it, but never while live', async () => {
+    await store.goLive(gameId)
+    await store.addRound({
+      questionPlan: {mode: 'random', source: 'library'},
+      deckSlug: 'library',
+      turnSeconds: 60,
+      oddRule: 'trio',
+      overtime: 'nudge',
+      overtimeSeconds: 30,
+      gameId,
+      n: 1,
+    })
+    const [round] = await db.select().from(gameRound)
+    const players = await db
+      .insert(gamePlayer)
+      .values(
+        ['A', 'B'].map((name) => ({
+          gameId,
+          name,
+          language: 'en' as const,
+          tokenHash: `t-${name}`,
+          pairCode: `P${name}`,
+        }))
+      )
+      .returning()
+    const [pair] = await db.insert(gamePair).values({roundId: round!.id}).returning()
+    await db
+      .insert(gamePairPlayer)
+      .values(
+        players.map((p, slot) => ({pairId: pair!.id, roundId: round!.id, playerId: p.id, slot}))
+      )
+    const [turn] = await db
+      .insert(gameTurn)
+      .values({pairId: pair!.id, playerId: players[0]!.id, questionId: '1', startedAt: new Date()})
+      .returning()
+    await db.insert(gameResponse).values({
+      turnId: turn!.id,
+      playerId: players[0]!.id,
+      language: 'en',
+      transcript: 'hi',
+      durationMs: 1000,
+    })
+    await db.insert(gameFeedback).values({gameId, playerId: players[1]!.id, rating: 5})
+
+    expect(await store.deleteGame(gameId)).toBe(false)
+    await store.endGame({gameId, endedAt: 1})
+    expect(await store.deleteGame(gameId)).toBe(true)
+    expect(await store.deleteGame(gameId)).toBe(false)
+
+    const tables = [
+      hostedGame,
+      gamePlayer,
+      gameRound,
+      gamePair,
+      gamePairPlayer,
+      gameTurn,
+      gameResponse,
+      gameFeedback,
+    ]
+    const counts = await Promise.all(tables.map((t) => db.$count(t)))
+    expect(counts).toEqual([0, 0, 0, 0, 0, 0, 0, 0])
   })
 })

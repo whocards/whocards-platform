@@ -1,11 +1,14 @@
 import {DEFAULT_DECK_SLUG, getDeck} from '@whocards/decks'
 import {
   CUSTOM_SOURCE,
+  currentAnswerMode,
   customQuestionsOf,
   deadlineOf,
   drawQuestion,
   finishedAtOf,
   metBefore,
+  planDeckSlug,
+  planOf,
   questionText,
   sourceOf,
   sourceRefs,
@@ -14,13 +17,22 @@ import {
   turnRef,
   usedRefs,
 } from '@whocards/game'
-import type {GameLanguage, GameSnapshot, Player, QuestionSources, Round, Turn} from '@whocards/game'
+import type {
+  GameLanguage,
+  GameSettings,
+  GameSnapshot,
+  Player,
+  QuestionSources,
+  Round,
+  Turn,
+} from '@whocards/game'
 import type {GameRecapProps, GameRevisitProps} from '@whocards/emails'
 import {z} from 'zod'
 
 import {eventLinks, WEBSITE_ORIGIN} from '../../../lib/event-links'
 import {roleAtLeast} from '../../auth/permissions'
 import type {AppRole} from '../../auth/permissions'
+import type {RoundRecord} from './games'
 
 export const GAMES_MIN_ROLE = 'facilitator' as const
 
@@ -42,6 +54,46 @@ export const hostAccess = (
 ): 'manage' | 'run' | null => {
   if (roleAtLeast(user.role, 'admin') || hosts.createdBy === user.id) return 'manage'
   return hosts.facilitators.includes(user.id) ? 'run' : null
+}
+
+const TITLE_MAX = 80
+const COPY_SUFFIX = ' (copy)'
+
+export type GameCopy = {
+  title: string
+  settings: GameSettings
+  facilitators: string[]
+  rounds: Array<RoundRecord & {n: number}>
+}
+
+/**
+ * A fresh draft of the same workshop design for `copierId`, who becomes its creator: no players,
+ * play, standby key or recap state, and the original creator stays on as a co-facilitator.
+ */
+export const copyOf = (snapshot: GameSnapshot, hosts: GameHosts, copierId: string): GameCopy => {
+  const {title, settings} = snapshot.game
+  const questions = customQuestionsOf(settings)
+  return {
+    title: `${title.slice(0, TITLE_MAX - COPY_SUFFIX.length)}${COPY_SUFFIX}`,
+    settings: {
+      round: settings.round,
+      ...(settings.organizer ? {organizer: settings.organizer} : {}),
+      ...(questions.length > 0 ? {questions} : {}),
+      answerModes: [{mode: currentAnswerMode(settings), at: 0}],
+    },
+    facilitators: [
+      ...new Set([...(hosts.createdBy ? [hosts.createdBy] : []), ...hosts.facilitators]),
+    ].filter((id) => id !== copierId),
+    rounds: snapshot.rounds.map((r) => ({
+      n: r.n,
+      questionPlan: planOf(r),
+      deckSlug: planDeckSlug(planOf(r)),
+      turnSeconds: r.turnSeconds,
+      oddRule: r.oddRule,
+      overtime: r.overtime,
+      overtimeSeconds: r.overtimeSeconds,
+    })),
+  }
 }
 
 /** The emails a host sends once after the game, each recorded under `hosted_game.settings[mailing]`. */

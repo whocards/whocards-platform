@@ -1,5 +1,5 @@
 import {keepPreviousData, useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
-import {createFileRoute, redirect} from '@tanstack/react-router'
+import {createFileRoute, redirect, useNavigate} from '@tanstack/react-router'
 import {TRPCClientError} from '@trpc/client'
 import {answerModeSchema, CUSTOM_SOURCE, qrPath, sourceOf} from '@whocards/game'
 import type {AnswerMode, OddRule, Overtime, QuestionPlan} from '@whocards/game'
@@ -12,6 +12,7 @@ import {Card} from '~/components/ui/card'
 import {Input, Label, Select} from '~/components/ui/field'
 import {cn} from '~/lib/cn'
 import {eventLinks} from '~/lib/event-links'
+import {confirmCopyGame, confirmDeleteGame, LIVE_DELETE_HINT} from '~/lib/game-actions'
 import {trpc} from '~/lib/trpc'
 import {roleAtLeast} from '~/server/auth/permissions'
 import type {GameDetail} from '~/server/trpc/routers/games'
@@ -37,7 +38,7 @@ type RoundSettings = {
   overtimeSeconds: number
 }
 type Mode = QuestionPlan['mode']
-type Run = (id: string, fn: () => Promise<GameDetail>, onDone?: () => void) => void
+type Run = (id: string, fn: () => Promise<GameDetail | null>, onDone?: () => void) => void
 
 const settingsOf = (r: RoundSettings): RoundSettings => ({
   questionPlan: r.questionPlan,
@@ -83,6 +84,7 @@ const STATUS = {
 function HostGame() {
   const {gameId} = Route.useParams()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const key = ['games.detail', gameId]
   const detail = useQuery({
     queryKey: key,
@@ -94,12 +96,12 @@ function HostGame() {
     },
   })
   const act = useMutation({
-    mutationFn: (action: {id: string; fn: () => Promise<GameDetail>}) => action.fn(),
+    mutationFn: (action: {id: string; fn: () => Promise<GameDetail | null>}) => action.fn(),
     onMutate: () => queryClient.cancelQueries({queryKey: key}),
     onSuccess: async (data) => {
       // A poll that started before the write would land after it and flash the old state back.
       await queryClient.cancelQueries({queryKey: key})
-      queryClient.setQueryData(key, data)
+      if (data) queryClient.setQueryData(key, data)
     },
     onError: (error) => {
       if (isConflict(error)) void queryClient.invalidateQueries({queryKey: key})
@@ -131,6 +133,27 @@ function HostGame() {
     if (ok) run('end-game', () => trpc.games.endGame.mutate({gameId}))
   }
 
+  const copyGame = () => {
+    if (!confirmCopyGame(game.title)) return
+    run('copy-game', async () => {
+      const copy = await trpc.games.copyGame.mutate({gameId})
+      void queryClient.invalidateQueries({queryKey: ['games.list']})
+      await navigate({to: '/host/$gameId', params: {gameId: copy.id}})
+      return null
+    })
+  }
+
+  const deleteGame = () => {
+    if (!confirmDeleteGame(game.title)) return
+    run('delete-game', async () => {
+      await trpc.games.deleteGame.mutate({gameId})
+      queryClient.removeQueries({queryKey: key})
+      void queryClient.invalidateQueries({queryKey: ['games.list']})
+      await navigate({to: '/host'})
+      return null
+    })
+  }
+
   const goLive = () => {
     const ok = window.confirm('Go live? Players can join with the code from now on.')
     if (ok) run('go-live', () => trpc.games.goLive.mutate({gameId}))
@@ -149,33 +172,56 @@ function HostGame() {
           .filter(Boolean)
           .join(' · ')}
         actions={
-          ended ? null : (
-            <>
-              {editingDetails ? null : (
-                <Button variant="ghost" onClick={() => setEditingDetails(true)}>
-                  Edit details
-                </Button>
-              )}
-              {draft ? (
+          <>
+            {ended ? null : (
+              <>
+                {editingDetails ? null : (
+                  <Button variant="ghost" onClick={() => setEditingDetails(true)}>
+                    Edit details
+                  </Button>
+                )}
+                {draft ? (
+                  <Button
+                    variant="primary"
+                    onClick={goLive}
+                    disabled={act.isPending}
+                    pending={busy === 'go-live'}
+                  >
+                    {busy === 'go-live' ? 'Going live…' : 'Go live'}
+                  </Button>
+                ) : null}
                 <Button
-                  variant="primary"
-                  onClick={goLive}
+                  variant="danger"
+                  onClick={endGame}
                   disabled={act.isPending}
-                  pending={busy === 'go-live'}
+                  pending={busy === 'end-game'}
                 >
-                  {busy === 'go-live' ? 'Going live…' : 'Go live'}
+                  {busy === 'end-game' ? 'Ending…' : 'End game'}
                 </Button>
-              ) : null}
+              </>
+            )}
+            <Button
+              variant="secondary"
+              onClick={copyGame}
+              disabled={act.isPending}
+              pending={busy === 'copy-game'}
+            >
+              {busy === 'copy-game' ? 'Copying…' : 'Copy'}
+            </Button>
+            {game.canManageHosts && game.status === 'live' ? (
+              <span className="text-xs text-gray-dark">{LIVE_DELETE_HINT}</span>
+            ) : null}
+            {game.canManageHosts && game.status !== 'live' ? (
               <Button
                 variant="danger"
-                onClick={endGame}
+                onClick={deleteGame}
                 disabled={act.isPending}
-                pending={busy === 'end-game'}
+                pending={busy === 'delete-game'}
               >
-                {busy === 'end-game' ? 'Ending…' : 'End game'}
+                {busy === 'delete-game' ? 'Deleting…' : 'Delete'}
               </Button>
-            </>
-          )
+            ) : null}
+          </>
         }
       />
 
