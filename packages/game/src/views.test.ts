@@ -45,6 +45,11 @@ describe('screenView', () => {
     expect(screenView(snapshot({rounds: [round({status: 'pending'})]}), 0).round).toBeNull()
   })
 
+  it('leaves standby facilitators out of the counts', () => {
+    const covered = {...s, game: {...s.game, settings: {round: {}, standby: ['d']}}}
+    expect(screenView(covered, 2000).counts).toEqual({joined: 3, paired: 3, talking: 1, done: 1})
+  })
+
   it('shows the organizer, or null for games made before organizers existed', () => {
     expect(screenView(s, 0).game.organizer).toBeNull()
     const hosted = {...s, game: {...s.game, settings: {round: {}, organizer: 'SDD Conf'}}}

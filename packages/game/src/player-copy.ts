@@ -13,6 +13,7 @@ export type PlayerCopy = {
     code: string
     next: string
     hostedBy: string
+    standby: string
   }
   consent: {
     title: string
@@ -35,6 +36,7 @@ export type PlayerCopy = {
     cameraOff: string
     partner: string
     codePlaceholder: string
+    pick: string
   }
   turn: {
     me: string
@@ -90,6 +92,7 @@ const en: PlayerCopy = {
     code: 'Game code',
     next: 'Next',
     hostedBy: 'Hosted by',
+    standby: "You're joining as a facilitator on standby",
   },
   consent: {
     title: 'Before you play',
@@ -118,11 +121,12 @@ const en: PlayerCopy = {
     myCode: 'Your code',
     scan: 'Scan their code',
     stopScan: 'Stop scanning',
-    typeCode: 'Or type their code',
+    typeCode: 'Their code or name',
     notACode: "That's not a player code",
-    cameraOff: 'No camera. Type their code instead',
+    cameraOff: 'No camera. Type their code or name instead',
     partner: 'Talking with',
-    codePlaceholder: 'ABC234',
+    codePlaceholder: 'ABC234 or Anna',
+    pick: 'Which one?',
   },
   turn: {
     me: 'You',

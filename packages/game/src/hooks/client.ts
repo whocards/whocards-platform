@@ -1,6 +1,12 @@
 import type {z} from 'zod'
 
-import type {feedbackInputSchema, JoinInput, PlayerState, responseInputSchema} from '../schemas'
+import type {
+  feedbackInputSchema,
+  JoinInput,
+  PairInput,
+  PlayerState,
+  responseInputSchema,
+} from '../schemas'
 
 export type ResponseInput = z.input<typeof responseInputSchema>
 export type FeedbackInput = z.input<typeof feedbackInputSchema>
@@ -9,7 +15,7 @@ export type FeedbackInput = z.input<typeof feedbackInputSchema>
 export type GameClient = {
   join: (input: JoinInput) => Promise<PlayerState>
   state: () => Promise<PlayerState>
-  pair: (partnerCode: string) => Promise<PlayerState>
+  pair: (input: PairInput) => Promise<PlayerState>
   turn: (action: 'claim' | 'finish') => Promise<PlayerState>
   response: (input: ResponseInput) => Promise<PlayerState>
   feedback: (input: FeedbackInput) => Promise<PlayerState>

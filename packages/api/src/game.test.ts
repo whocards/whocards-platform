@@ -141,6 +141,92 @@ describe('game.round.pair', () => {
   })
 })
 
+describe('game.round.pair by name', () => {
+  it('pairs on a unique name, ignoring case, accents and spaces', async () => {
+    const {join} = setup()
+    const a = await join('Ann')
+    await join('Áron')
+    const paired = await a.caller.game.round.pair({partner: '  aron '})
+    expect(paired.pair?.partners.map((p) => p.name)).toEqual(['Áron'])
+  })
+
+  it('lets a pair code win over a name, and refuses unknown names', async () => {
+    const {join} = setup()
+    const a = await join('Ann')
+    const b = await join('Bo')
+    await join(a.state.me.pairCode)
+    const paired = await b.caller.game.round.pair({partner: a.state.me.pairCode.toLowerCase()})
+    expect(paired.pair?.partners.map((p) => p.id)).toEqual([a.state.me.id])
+    const c = await join('Cy')
+    expect(await refusalOf(c.caller.game.round.pair({partner: 'Zed'}))).toBe('unknown_name')
+  })
+
+  it('lists namesakes to pick from, skipping ones I cannot pair with', async () => {
+    const {join} = setup([{...liveRound, oddRule: 'sitout'}])
+    const a = await join('Ann')
+    const anna1 = await join('Anna')
+    const anna2 = await join('anna')
+    expect(await refusalOf(a.caller.game.round.pair({partner: 'ANNA'}))).toBe('ambiguous_name')
+    expect(await a.caller.game.round.candidates({partner: 'Anna'})).toEqual([
+      {id: anna1.state.me.id, name: 'Anna'},
+      {id: anna2.state.me.id, name: 'anna'},
+    ])
+    const picked = await a.caller.game.round.pair({partnerId: anna2.state.me.id})
+    expect(picked.pair?.partners.map((p) => p.name)).toEqual(['anna'])
+
+    const b = await join('Bo')
+    expect(await b.caller.game.round.candidates({partner: 'anna'})).toEqual([
+      {id: anna1.state.me.id, name: 'Anna'},
+    ])
+  })
+
+  it("reports the rule's reason when every namesake is refused", async () => {
+    const {join} = setup([{...liveRound, oddRule: 'sitout'}])
+    const a = await join('Ann')
+    await join('Bo')
+    const c = await join('Cy')
+    await a.caller.game.round.pair({partner: 'bo'})
+    expect(await refusalOf(c.caller.game.round.pair({partner: 'Ann'}))).toBe('partner_busy')
+  })
+})
+
+const KEY = 'standby-secret-0123456789'
+const joinStandby = async (ctx: ReturnType<typeof setup>, standbyKey: string) => {
+  const {token, state} = await ctx.as(null).game.join({
+    code: 'ABCD',
+    name: 'Fac',
+    language: 'en',
+    standbyKey,
+  })
+  return {caller: ctx.as(token), state}
+}
+
+describe('standby facilitators', () => {
+  it('refuses a wrong key and a game without one', async () => {
+    expect(await refusalOf(joinStandby(setup(), KEY))).toBe('standby_key')
+    const ctx = setup([liveRound], {round: {}, standbyKey: KEY})
+    expect(await refusalOf(joinStandby(ctx, 'guess-guess-guess-guess'))).toBe('standby_key')
+  })
+
+  it('covers only the odd one out and stays off the projector counts', async () => {
+    const ctx = setup([liveRound], {round: {}, standbyKey: KEY})
+    const fac = await joinStandby(ctx, KEY)
+    expect(fac.state.phase).toBe('standby')
+    const a = await ctx.join('Ann')
+    const b = await ctx.join('Bo')
+    const c = await ctx.join('Cy')
+
+    expect(await refusalOf(a.caller.game.round.pair({partner: 'Fac'}))).toBe('standby_partner')
+    await a.caller.game.round.pair({partnerCode: b.state.me.pairCode})
+    expect((await c.caller.game.state()).phase).toBe('find_facilitator')
+    const paired = await c.caller.game.round.pair({partner: 'fac'})
+    expect(paired.pair?.partners.map((p) => p.name)).toEqual(['Fac'])
+
+    const screen = await ctx.as(null).game.screen({code: 'ABCD'})
+    expect(screen.counts).toMatchObject({joined: 3, paired: 3})
+  })
+})
+
 const pairedUp = async () => {
   const ctx = setup()
   const a = await ctx.join('Ann')

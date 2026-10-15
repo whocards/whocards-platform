@@ -210,6 +210,15 @@ function HostGame() {
         </div>
       </div>
 
+      {ended ? null : (
+        <StandbyPanel
+          code={game.code}
+          standbyKey={game.standbyKey}
+          pending={act.isPending}
+          onEnable={() => act.mutate(() => trpc.games.enableStandby.mutate({gameId}))}
+        />
+      )}
+
       <QuestionsPanel
         gameId={gameId}
         questions={detail.data.questions}
@@ -252,7 +261,7 @@ function HostGame() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{p.name}</p>
                 <p className="text-xs text-gray-dark">
-                  {`${p.language.toUpperCase()}${p.recap ? ' · wants recap' : ''}`}
+                  {`${p.language.toUpperCase()}${p.standby ? ' · standby facilitator' : ''}${p.recap ? ' · wants recap' : ''}`}
                 </p>
               </div>
               <Button
@@ -321,6 +330,54 @@ function JoinPanel({code}: Readonly<{code: string}>) {
         >
           Open projector screen ↗
         </a>
+      </div>
+    </Card>
+  )
+}
+
+function StandbyPanel({
+  code,
+  standbyKey,
+  pending,
+  onEnable,
+}: Readonly<{code: string; standbyKey: string | null; pending: boolean; onEnable: () => void}>) {
+  const link = standbyKey
+    ? `${eventLinks(code).join}&standby=${encodeURIComponent(standbyKey)}`
+    : null
+  const qr = useMemo(() => (link ? qrPath(link) : null), [link])
+  return (
+    <Card className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-center">
+      {qr ? (
+        <svg
+          viewBox={`0 0 ${qr.size} ${qr.size}`}
+          shapeRendering="crispEdges"
+          className="size-36 shrink-0 self-center rounded-2xl bg-white p-2"
+        >
+          <title>Facilitator standby QR code</title>
+          <rect width={qr.size} height={qr.size} fill="#fff" />
+          <path d={qr.d} fill="#000" />
+        </svg>
+      ) : null}
+      <div className="flex min-w-0 flex-col gap-1">
+        <p className="font-semibold">Facilitator on standby</p>
+        <p className="text-sm text-gray-lighter">
+          A facilitator who joins with this link pairs with the odd player out. Keep it off the
+          projector.
+        </p>
+        {link ? (
+          <a
+            href={link}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 truncate text-sm text-gray-lighter underline decoration-white/20 underline-offset-4 hover:text-white"
+          >
+            Join as facilitator (standby) ↗
+          </a>
+        ) : (
+          <Button size="sm" className="mt-2 self-start" disabled={pending} onClick={onEnable}>
+            Create standby link
+          </Button>
+        )}
       </div>
     </Card>
   )

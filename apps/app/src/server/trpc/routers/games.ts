@@ -21,6 +21,7 @@ import {
   roundView,
   samePlan,
   screenView,
+  standbyIds,
   turnRef,
 } from '@whocards/game'
 import type {GameRecapProps} from '@whocards/emails'
@@ -104,6 +105,8 @@ export type HostStore = {
   }) => Promise<WriteResult>
   /** Appends to `hosted_game.settings.answerModes` while the game has not ended, stamped by the database clock. */
   setAnswerMode: (input: {gameId: string; mode: AnswerMode}) => Promise<WriteResult>
+  /** Sets `hosted_game.settings.standbyKey` unless one is already there. */
+  ensureStandbyKey: (gameId: string, key: string) => Promise<void>
   /** Replaces `hosted_game.settings.questions`. */
   saveQuestions: (gameId: string, questions: CustomQuestion[]) => Promise<void>
   /** Pending round to live in a live game; 'conflict' when another round is live, 'stale' when the game or round moved on. */
@@ -194,9 +197,17 @@ export type GameDetail = {
     /** How the next claimed turn is answered. */
     answerMode: AnswerMode
     recap: RecapState | null
+    /** Secret for the facilitator standby join link; null until a host asks for one. */
+    standbyKey: string | null
   }
   questions: Array<CustomQuestion & {used: boolean}>
-  players: Array<{id: string; name: string; language: GameLanguage; recap: boolean}>
+  players: Array<{
+    id: string
+    name: string
+    language: GameLanguage
+    recap: boolean
+    standby: boolean
+  }>
   /** `picks` is the English text of a same/per-turn round's fixed questions. */
   rounds: Array<
     RoundView & {pairs: number; turns: number; questionPlan: QuestionPlan; picks: string[]}
@@ -217,6 +228,7 @@ const detailOf = (
   const round = currentRound(snapshot)
   const sources = sourcesOf(snapshot)
   const used = refsInUse(snapshot)
+  const standby = standbyIds(snapshot)
   const pairsByRound = new Map<string, number>()
   for (const pair of snapshot.pairs) {
     pairsByRound.set(pair.roundId, (pairsByRound.get(pair.roundId) ?? 0) + 1)
@@ -232,6 +244,7 @@ const detailOf = (
       status: snapshot.game.status,
       answerMode: currentAnswerMode(snapshot.game.settings),
       recap: readRecapState(snapshot.game.settings),
+      standbyKey: snapshot.game.settings.standbyKey ?? null,
     },
     questions: sources.custom.map((q) => ({...q, used: used.has(q.id)})),
     players: snapshot.players.map((p) => ({
@@ -239,6 +252,7 @@ const detailOf = (
       name: p.name,
       language: p.language,
       recap: p.consentRecap && p.email !== null,
+      standby: standby.has(p.id),
     })),
     rounds: snapshot.rounds.map((r) => ({
       ...roundView(r),
@@ -249,7 +263,7 @@ const detailOf = (
     })),
     liveRoundId: round?.status === 'live' ? round.id : null,
     counts: {
-      players: snapshot.players.length,
+      players: screen.counts.joined,
       pairs: round ? (pairsByRound.get(round.id) ?? 0) : 0,
       turnsInProgress: screen.counts.talking,
       responses: Object.values(saved).reduce((sum, n) => sum + n, 0),
@@ -446,6 +460,16 @@ export const createGamesRouter = ({
         }
         return detail(input.gameId, ctx)
       }),
+
+    /** Mints the facilitator standby key once; later calls keep the first. */
+    enableStandby: gameProcedure.input(gameIdSchema).mutation(async ({ctx, input}) => {
+      const snapshot = await load(input.gameId)
+      if (snapshot.game.status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
+      if (!snapshot.game.settings.standbyKey) {
+        await store.ensureStandbyKey(input.gameId, crypto.randomUUID().replaceAll('-', ''))
+      }
+      return detail(input.gameId, ctx)
+    }),
 
     /** Replaces the game's custom question list; ids stay put so turns keep their text. */
     saveQuestions: gameProcedure

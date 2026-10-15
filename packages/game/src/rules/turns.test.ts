@@ -95,6 +95,16 @@ describe('phaseOf', () => {
     expect(phaseOf(three, round({oddRule: 'sitout'}), 'c', 0)).toBe('sitting_out')
     expect(phaseOf(three, round(), 'c', 0)).toBe('unpaired')
   })
+
+  it('sends the odd one to a free standby facilitator, who waits on standby', () => {
+    const settings = {round: {}, standby: ['d']}
+    const s = snapshot({game: {...snapshot().game, settings}, pairs: [p]})
+    expect(phaseOf(s, round({oddRule: 'sitout'}), 'c', 0)).toBe('find_facilitator')
+    expect(phaseOf(s, round(), 'd', 0)).toBe('standby')
+    const covered = {...s, pairs: [p, pair('p2', ['c', 'd'])]}
+    expect(phaseOf(covered, round(), 'd', 0)).toBe('ready')
+    expect(phaseOf({...s, pairs: []}, round(), 'c', 0)).toBe('unpaired')
+  })
 })
 
 describe('drawQuestion', () => {

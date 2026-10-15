@@ -196,6 +196,10 @@ const memoryStore = (clock = {now: T0}) => {
       g.settings = Object.assign({}, g.settings, {recap: claim})
       return true
     },
+    ensureStandbyKey: async (gameId, key) => {
+      const g = game(gameId)
+      if (g) g.settings = {...g.settings, standbyKey: g.settings.standbyKey ?? key}
+    },
     saveQuestions: async (gameId, questions) => {
       const g = game(gameId)
       if (g) g.settings = {...g.settings, questions}
@@ -767,6 +771,29 @@ describe('custom questions and round plans', () => {
     await expect(save([])).rejects.toMatchObject({
       code: 'BAD_REQUEST',
     })
+  })
+})
+
+describe('standby facilitators', () => {
+  it('mints the standby key once and keeps standby players out of the joined count', async () => {
+    const {caller, mem, join} = setup()
+    const c = caller()
+    const {gameId} = await opened(c)
+    expect((await c.detail({gameId})).game.standbyKey).toBeNull()
+    const key = (await c.enableStandby({gameId})).game.standbyKey
+    expect(key).toMatch(/^[0-9a-f]{32}$/)
+    expect((await c.enableStandby({gameId})).game.standbyKey).toBe(key)
+
+    join(gameId, 'Anna')
+    const fac = join(gameId, 'Fac')
+    const g = mem.games.find((x) => x.id === gameId)!
+    g.settings = {...g.settings, standby: [fac.id]}
+    const detail = await c.detail({gameId})
+    expect(detail.counts.players).toBe(1)
+    expect(detail.players.map((p) => [p.name, p.standby])).toEqual([
+      ['Anna', false],
+      ['Fac', true],
+    ])
   })
 })
 

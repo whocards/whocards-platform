@@ -125,6 +125,14 @@ export const createDrizzleGamePort = <
       throw new Error('Could not allocate a unique pair code')
     },
 
+    addStandby: async ({gameId, playerId}) => {
+      const list = sql`coalesce(${hostedGame.settings} -> 'standby', '[]'::jsonb) || to_jsonb(${playerId}::text)`
+      await db
+        .update(hostedGame)
+        .set({settings: sql`${hostedGame.settings} || jsonb_build_object('standby', ${list})`})
+        .where(eq(hostedGame.id, gameId))
+    },
+
     loadSnapshot: async (gameId) => {
       const [game] = await db.select().from(hostedGame).where(eq(hostedGame.id, gameId))
       if (!game) return null

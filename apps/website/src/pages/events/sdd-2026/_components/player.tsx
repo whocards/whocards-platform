@@ -1,4 +1,4 @@
-import type {JoinInput, PlayerState} from '@whocards/game'
+import type {JoinInput, PairCandidate, PlayerState} from '@whocards/game'
 import {copyFor, playerCopyFor, readPairCode} from '@whocards/game'
 import type {GameSession} from '@whocards/game/hooks'
 import {useHostedGame, useRoundTimer, useTurn} from '@whocards/game/hooks'
@@ -25,9 +25,10 @@ type GameProps = {
   state: PlayerState
   tokens: TokenStore
   code: string
+  candidates: (name: string) => Promise<PairCandidate[]>
 }
 
-const Game = ({session, state, tokens, code}: GameProps) => {
+const Game = ({session, state, tokens, code, candidates}: GameProps) => {
   const {language} = state.me
   const copy = playerCopyFor(language)
   const [devices] = useState(() => ({recorder: createWebRecorder(), wakeLock: createWakeLock()}))
@@ -71,7 +72,17 @@ const Game = ({session, state, tokens, code}: GameProps) => {
           </Screen>
         )
       case 'unpaired':
-        return <Pairing state={state} act={session.act} />
+        return <Pairing state={state} act={session.act} candidates={candidates} />
+      case 'find_facilitator':
+      case 'standby':
+        return (
+          <Pairing
+            state={state}
+            act={session.act}
+            candidates={candidates}
+            hint={copyFor(language).phases[state.phase]}
+          />
+        )
       case 'sitting_out':
         return (
           <Screen>
@@ -121,6 +132,9 @@ export const SddPlayer = () => {
       ''
   )
   const [joined, setJoined] = useState(() => code !== '' && tokens.get(code) !== null)
+  const [standbyKey] = useState(
+    () => new URLSearchParams(location.search).get('standby')?.trim() || undefined
+  )
   const api = useMemo(() => createGameApi(code, tokens), [code, tokens])
   const onUnauthorized = useCallback(() => {
     tokens.clear(code)
@@ -146,9 +160,18 @@ export const SddPlayer = () => {
 
   const copy = playerCopyFor(session.state?.me.language ?? 'en')
   const content = () => {
-    if (!joined) return <Join initialCode={code} onJoin={join} lookup={lookup} />
+    if (!joined)
+      return <Join initialCode={code} standbyKey={standbyKey} onJoin={join} lookup={lookup} />
     if (session.state)
-      return <Game session={session} state={session.state} tokens={tokens} code={code} />
+      return (
+        <Game
+          session={session}
+          state={session.state}
+          tokens={tokens}
+          code={code}
+          candidates={api.candidates}
+        />
+      )
     if (session.loading)
       return (
         <Screen>

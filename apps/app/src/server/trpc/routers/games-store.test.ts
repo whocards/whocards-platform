@@ -107,6 +107,16 @@ describe('drizzle host store conditional writes', () => {
     expect(snapshot?.rounds[0]).toMatchObject({deckSlug: 'custom', questionPlan: plan})
   })
 
+  it('keeps the first standby key and the other settings', async () => {
+    await store.ensureStandbyKey(gameId, 'first-key-0123456789')
+    await store.ensureStandbyKey(gameId, 'second-key-0123456789')
+    const snapshot = await store.loadSnapshot(gameId)
+    expect(snapshot?.game.settings).toMatchObject({
+      organizer: 'SDD Conf',
+      standbyKey: 'first-key-0123456789',
+    })
+  })
+
   it('stamps answer-mode switches with the database clock, which also stamps turn starts', async () => {
     const dbNow = async () => {
       const result = await db.execute<{ms: string}>(

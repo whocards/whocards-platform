@@ -10,6 +10,8 @@ import {Button, inputClass, Notice, Screen} from './ui'
 
 type JoinProps = {
   initialCode: string
+  /** From the host's facilitator link; joins this player on standby. */
+  standbyKey?: string
   onJoin: (input: JoinInput, records: boolean) => Promise<GameError | null>
   /** The public projector view of a game code: its title, organizer and whether it's open. */
   lookup: (code: string) => Promise<ScreenState>
@@ -45,7 +47,7 @@ const useWorkshop = (code: string, lookup: JoinProps['lookup']): Workshop | null
   return found && found.code === valid ? found : null
 }
 
-export const Join = ({initialCode, onJoin, lookup}: JoinProps) => {
+export const Join = ({initialCode, standbyKey, onJoin, lookup}: JoinProps) => {
   const [step, setStep] = useState<'details' | 'consent'>('details')
   const [name, setName] = useState('')
   const [language, setLanguage] = useState<GameLanguage>('en')
@@ -69,6 +71,7 @@ export const Join = ({initialCode, onJoin, lookup}: JoinProps) => {
     email: recap && email.trim() ? email.trim() : undefined,
     consentTranscript: records,
     consentRecap: recap,
+    standbyKey,
   })
   const detailsReady = name.trim() !== '' && readPairCode(code) !== null
   const consentReady =
@@ -86,6 +89,7 @@ export const Join = ({initialCode, onJoin, lookup}: JoinProps) => {
     return (
       <Screen title={copy.join.title}>
         {workshop && <WorkshopHeading workshop={workshop} hostedBy={copy.join.hostedBy} />}
+        {standbyKey && <p className='text-center font-semibold'>{copy.join.standby}</p>}
         <form
           className='flex w-full flex-col gap-4'
           onSubmit={(event) => {
