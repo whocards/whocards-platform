@@ -80,6 +80,7 @@ const toPlayer = (row: typeof gamePlayer.$inferSelect): Player => ({
   email: row.email,
   consentTranscript: row.consentTranscript,
   consentRecap: row.consentRecap,
+  joinedAt: row.createdAt.getTime(),
 })
 
 const toRound = (row: typeof gameRound.$inferSelect): Round => ({

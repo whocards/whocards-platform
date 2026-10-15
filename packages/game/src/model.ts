@@ -28,6 +28,7 @@ export type Player = {
   email: string | null
   consentTranscript: boolean
   consentRecap: boolean
+  joinedAt: number
 }
 
 export type Round = {

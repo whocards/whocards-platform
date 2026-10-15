@@ -13,6 +13,7 @@ const player: Player = {
   email: null,
   consentTranscript: true,
   consentRecap: false,
+  joinedAt: 0,
 }
 
 const NOW = 1_000_000

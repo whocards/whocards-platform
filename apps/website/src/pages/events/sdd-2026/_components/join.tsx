@@ -76,9 +76,8 @@ export const Join = ({initialCode, standbyKey, onJoin, lookup}: JoinProps) => {
   const detailsReady = name.trim() !== '' && readPairCode(code) !== null
   // Lookup can fail, so an unknown mode keeps the full voice consent.
   const mode = workshop?.answerMode ?? 'voice'
-  const consents = mode !== 'none' && transcript
   const consentReady =
-    joinInputSchema.safeParse(input(consents)).success && (!recap || email.trim() !== '')
+    joinInputSchema.safeParse(input(transcript)).success && (!recap || email.trim() !== '')
 
   const submit = async (records: boolean) => {
     setBusy(records ? 'play' : 'decline')
@@ -153,22 +152,24 @@ export const Join = ({initialCode, standbyKey, onJoin, lookup}: JoinProps) => {
 
   return (
     <Screen title={copy.consent.title}>
-      {mode !== 'none' && (
-        <label className='flex w-full items-start gap-3'>
-          <input
-            type='checkbox'
-            className='mt-1 size-5 shrink-0 accent-yellow-400'
-            checked={transcript}
-            onChange={(event) => setTranscript(event.target.checked)}
-          />
+      <label className='flex w-full items-start gap-3'>
+        <input
+          type='checkbox'
+          className='mt-1 size-5 shrink-0 accent-yellow-400'
+          checked={transcript}
+          onChange={(event) => setTranscript(event.target.checked)}
+        />
+        {mode === 'none' ? (
+          <span>{copy.consent.later}</span>
+        ) : (
           <span>
             {mode === 'type' ? copy.consent.typed : copy.consent.transcript}
             <span className='text-gray-dark block text-sm'>
               {mode === 'type' ? copy.consent.typedHint : copy.consent.transcriptHint}
             </span>
           </span>
-        </label>
-      )}
+        )}
+      </label>
       <label className='flex w-full items-start gap-3'>
         <input
           type='checkbox'
@@ -193,9 +194,9 @@ export const Join = ({initialCode, standbyKey, onJoin, lookup}: JoinProps) => {
       <Privacy language={language} />
       {shown && <Notice>{noticeText(language, shown)}</Notice>}
       <Button
-        pending={busy === (consents ? 'play' : 'decline')}
+        pending={busy === (transcript ? 'play' : 'decline')}
         disabled={busy !== null || !consentReady}
-        onClick={() => void submit(consents)}
+        onClick={() => void submit(transcript)}
       >
         {copy.consent.play}
       </Button>

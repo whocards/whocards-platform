@@ -212,8 +212,8 @@ export const gameRouter = createTRPCRouter({
         email: input.email ?? null,
         consentTranscript: input.consentTranscript,
         consentRecap: input.consentRecap,
+        standby,
       })
-      if (standby) await ctx.game.addStandby({gameId: game.id, playerId: player.id})
       return {token, state: await freshState(ctx.game, player)}
     }),
 
@@ -234,7 +234,7 @@ export const gameRouter = createTRPCRouter({
       return freshState(ctx.game, ctx.player)
     }),
 
-    /** Players with this name I could pair with now; names only, for the pick list after `ambiguous_name`. */
+    /** Players with this name I could pair with now, for the pick list after `ambiguous_name`; never codes or emails. */
     candidates: playerProcedure
       .input(pairCandidatesInputSchema)
       .query(async ({ctx, input}): Promise<PairCandidate[]> => {
@@ -243,6 +243,8 @@ export const gameRouter = createTRPCRouter({
         return matchName(snapshot, round, ctx.player.id, input.partner).eligible.map((p) => ({
           id: p.id,
           name: p.name,
+          language: p.language,
+          joinedAt: p.joinedAt,
         }))
       }),
 

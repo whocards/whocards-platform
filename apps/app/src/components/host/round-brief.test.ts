@@ -75,10 +75,13 @@ describe('roundBrief', () => {
     )
   })
 
-  it('sends the odd one out to a standby facilitator whatever the rule', () => {
+  it('sends the odd one out to a facilitator first, falling back on the round rule', () => {
     const lines = roundBrief(round({oddRule: 'sitout'}), {answerMode: 'none', standby: true})
-    expect(lines).toContain('Odd one out pairs with a facilitator.')
+    expect(lines).toContain('Odd one out: find a facilitator. If none is free, sit this round out.')
     expect(lines).toContain('Just talk. Nothing is recorded.')
+    expect(roundBrief(round(), {answerMode: 'none', standby: true})).toContain(
+      'Odd one out: find a facilitator. If none is free, join a pair as a trio.'
+    )
   })
 
   it('describes physical and per-turn rounds', () => {

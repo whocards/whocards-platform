@@ -1,6 +1,6 @@
 import {keepPreviousData, useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {createFileRoute, Link, useNavigate} from '@tanstack/react-router'
-import {answerModeSchema, CUSTOM_SOURCE, qrPath, sourceOf} from '@whocards/game'
+import {answerModeSchema, CUSTOM_SOURCE, qrPath, questionPlanSchema, sourceOf} from '@whocards/game'
 import type {AnswerMode, OddRule, Overtime, QuestionPlan} from '@whocards/game'
 import {useMemo, useState} from 'react'
 
@@ -44,7 +44,7 @@ const settingsOf = (r: RoundSettings): RoundSettings => ({
 const isOddRule = (v: string): v is OddRule => v === 'trio' || v === 'sitout'
 const isOvertime = (v: string): v is Overtime => v === 'nudge' || v === 'hard'
 const isMode = (v: string): v is Mode =>
-  v === 'random' || v === 'same' || v === 'per-turn' || v === 'physical'
+  questionPlanSchema.options.some((o) => o.shape.mode.value === v)
 
 const MODES: Record<Mode, {label: string; option: string}> = {
   random: {label: 'Random', option: 'Random: each player draws their own'},

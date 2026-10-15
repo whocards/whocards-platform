@@ -143,8 +143,8 @@ export type PairInput = z.input<typeof pairInputSchema>
 
 export const pairCandidatesInputSchema = z.object({partner: z.string().trim().min(1).max(40)})
 
-export const pairCandidateSchema = z.object({id: z.string(), name: z.string()})
-export type PairCandidate = z.infer<typeof pairCandidateSchema>
+/** Non-secret details that tell namesakes apart in the pick list. */
+export type PairCandidate = {id: string; name: string; language: GameLanguage; joinedAt: number}
 
 export const turnInputSchema = z.object({action: z.enum(['claim', 'finish'])})
 

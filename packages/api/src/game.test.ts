@@ -162,22 +162,24 @@ describe('game.round.pair by name', () => {
     expect(await refusalOf(c.caller.game.round.pair({partner: 'Zed'}))).toBe('unknown_name')
   })
 
-  it('lists namesakes to pick from, skipping ones I cannot pair with', async () => {
-    const {join} = setup([{...liveRound, oddRule: 'sitout'}])
+  it('lists namesakes with join time and language, skipping ones I cannot pair with', async () => {
+    const ctx = setup([{...liveRound, oddRule: 'sitout'}])
+    const {join} = ctx
     const a = await join('Ann')
     const anna1 = await join('Anna')
-    const anna2 = await join('anna')
+    ctx.fake.advance(60_000)
+    const anna2 = await join('anna', 'hu')
     expect(await refusalOf(a.caller.game.round.pair({partner: 'ANNA'}))).toBe('ambiguous_name')
     expect(await a.caller.game.round.candidates({partner: 'Anna'})).toEqual([
-      {id: anna1.state.me.id, name: 'Anna'},
-      {id: anna2.state.me.id, name: 'anna'},
+      {id: anna1.state.me.id, name: 'Anna', language: 'en', joinedAt: 1_000_000},
+      {id: anna2.state.me.id, name: 'anna', language: 'hu', joinedAt: 1_060_000},
     ])
     const picked = await a.caller.game.round.pair({partnerId: anna2.state.me.id})
     expect(picked.pair?.partners.map((p) => p.name)).toEqual(['anna'])
 
     const b = await join('Bo')
     expect(await b.caller.game.round.candidates({partner: 'anna'})).toEqual([
-      {id: anna1.state.me.id, name: 'Anna'},
+      expect.objectContaining({id: anna1.state.me.id, name: 'Anna'}),
     ])
   })
 
@@ -460,6 +462,26 @@ describe('game.round.response / game.me', () => {
     const turn = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
     expect(turn?.startedAt).toBe(fake.port.now())
     expect(turn?.answerMode).toBe('voice')
+  })
+
+  it('saves answers from a player who consented while the game was in None mode', async () => {
+    const ctx = setup([liveRound], {round: {}, answerModes: [{mode: 'none', at: 0}]})
+    const a = await ctx.join('Ann')
+    const b = await ctx.join('Bo')
+    await a.caller.game.round.pair({partnerCode: b.state.me.pairCode})
+    ctx.fake.advance(1000)
+    ctx.fake.snapshot.game.settings.answerModes?.push({mode: 'type', at: ctx.fake.port.now()})
+    ctx.fake.advance(1000)
+    const turn = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
+    expect(turn?.answerMode).toBe('type')
+    await a.caller.game.round.response({
+      turnId: turn?.id ?? '',
+      language: 'en',
+      transcript: 'Typed later',
+      durationMs: 0,
+      consent: true,
+    })
+    expect((await a.caller.game.me.get()).responses).toMatchObject([{transcript: 'Typed later'}])
   })
 
   it('refuses any saved answer from a player who chose to play without saving', async () => {

@@ -62,6 +62,7 @@ const toPlayer = (row: typeof gamePlayer.$inferSelect): Player => ({
   email: row.email,
   consentTranscript: row.consentTranscript,
   consentRecap: row.consentRecap,
+  joinedAt: row.createdAt.getTime(),
 })
 
 const toRound = (row: typeof gameRound.$inferSelect): Round => ({
@@ -104,33 +105,37 @@ export const createDrizzleGamePort = <
       return row ? toPlayer(row) : null
     },
 
-    createPlayer: async (input) => {
+    createPlayer: async ({standby, ...input}) => {
       const token = randomBytes(32).toString('base64url')
       // Pair codes are short, so collide now and then; the (game_id, pair_code) unique decides.
       for (let attempt = 0; attempt < 8; attempt++) {
         try {
-          const [row] = await db
-            .insert(gamePlayer)
-            .values({
-              ...input,
-              tokenHash: hashToken(token),
-              pairCode: makeCode(PAIR_CODE_LENGTH, cryptoRandom),
-            })
-            .returning()
+          const row = await db.transaction(async (tx) => {
+            const [inserted] = await tx
+              .insert(gamePlayer)
+              .values({
+                ...input,
+                tokenHash: hashToken(token),
+                pairCode: makeCode(PAIR_CODE_LENGTH, cryptoRandom),
+              })
+              .returning()
+            if (inserted && standby) {
+              const list = sql`coalesce(${hostedGame.settings} -> 'standby', '[]'::jsonb) || to_jsonb(${inserted.id}::text)`
+              await tx
+                .update(hostedGame)
+                .set({
+                  settings: sql`${hostedGame.settings} || jsonb_build_object('standby', ${list})`,
+                })
+                .where(eq(hostedGame.id, input.gameId))
+            }
+            return inserted
+          })
           if (row) return {player: toPlayer(row), token}
         } catch (error) {
           if (!isUniqueViolation(error)) throw error
         }
       }
       throw new Error('Could not allocate a unique pair code')
-    },
-
-    addStandby: async ({gameId, playerId}) => {
-      const list = sql`coalesce(${hostedGame.settings} -> 'standby', '[]'::jsonb) || to_jsonb(${playerId}::text)`
-      await db
-        .update(hostedGame)
-        .set({settings: sql`${hostedGame.settings} || jsonb_build_object('standby', ${list})`})
-        .where(eq(hostedGame.id, gameId))
     },
 
     loadSnapshot: async (gameId) => {

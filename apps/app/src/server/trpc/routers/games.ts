@@ -511,9 +511,7 @@ export const createGamesRouter = ({
     enableStandby: gameProcedure.input(gameIdSchema).mutation(async ({ctx, input}) => {
       const snapshot = await load(input.gameId)
       if (snapshot.game.status === 'ended') throw fail('BAD_REQUEST', 'The game is over.')
-      if (!snapshot.game.settings.standbyKey) {
-        await store.ensureStandbyKey(input.gameId, crypto.randomUUID().replaceAll('-', ''))
-      }
+      await store.ensureStandbyKey(input.gameId, crypto.randomUUID().replaceAll('-', ''))
       return detail(input.gameId, ctx)
     }),
 
@@ -661,6 +659,7 @@ export const createGamesRouter = ({
       const {status} = (await load(input.gameId)).game
       if (status === 'live') throw fail('BAD_REQUEST', 'End the game first.')
       if (!(await store.deleteGame(input.gameId))) {
+        await load(input.gameId)
         throw fail('CONFLICT', 'The game went live meanwhile. End it first.')
       }
       return {deleted: true}

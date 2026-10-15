@@ -47,9 +47,10 @@ export const roundBrief = (
     round.overtime === 'hard' || round.overtimeSeconds === 0
       ? 'When time is up, the turn ends.'
       : `When time is up, you get ${spokenDuration(round.overtimeSeconds)} more to wrap up.`
+  const trio = round.oddRule === 'trio'
   const odd = o.standby
-    ? 'Odd one out pairs with a facilitator.'
-    : round.oddRule === 'trio'
+    ? `Odd one out: find a facilitator. If none is free, ${trio ? 'join a pair as a trio' : 'sit this round out'}.`
+    : trio
       ? 'Odd one out joins a pair as a trio.'
       : 'Odd one out sits this round out.'
   return [

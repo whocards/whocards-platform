@@ -37,20 +37,21 @@ export const createFakeGamePort = (seed: {game: HostedGame; rounds?: Round[]}) =
       const id = tokens.get(token)
       return snapshot.players.find((p) => p.id === id) ?? null
     },
-    createPlayer: async (input) => {
+    createPlayer: async ({standby, ...input}) => {
       const player: Player = {
         ...input,
         id: nextId('player'),
+        joinedAt: clock,
         pairCode: `P${String(ids).padStart(3, '0')}`,
       }
       snapshot.players.push(player)
+      if (standby) {
+        const {settings} = snapshot.game
+        snapshot.game.settings = {...settings, standby: [...(settings.standby ?? []), player.id]}
+      }
       const token = `token-${player.id}`
       tokens.set(token, player.id)
       return {player, token}
-    },
-    addStandby: async ({playerId}) => {
-      const {settings} = snapshot.game
-      snapshot.game.settings = {...settings, standby: [...(settings.standby ?? []), playerId]}
     },
     loadSnapshot: async (gameId) => (gameId === snapshot.game.id ? clone(snapshot) : null),
     createPair: async ({roundId, playerIds}) => {
