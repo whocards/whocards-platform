@@ -51,6 +51,8 @@ const Board = ({code}: {code: string}) => {
   if (!screen) return <Loading label={copy.waiting.loading} className='min-h-dvh text-[2em]' />
 
   const {game, counts} = screen
+  const {steps, physicalStep} = copy.screen.howTo
+  const howTo = screen.round?.physical ? [...steps.slice(0, -1), physicalStep] : steps
   const host = joinUrl.replace(/^https?:\/\//, '')
 
   return (
@@ -73,7 +75,7 @@ const Board = ({code}: {code: string}) => {
               {copy.screen.howTo.title}
             </h2>
             <ol className='flex flex-col gap-[0.5em] text-[1.6em]'>
-              {copy.screen.howTo.steps.map((step, i) => (
+              {howTo.map((step, i) => (
                 <li key={step} className='flex items-baseline gap-[0.6em]'>
                   <span className='bg-yellow-400 text-darkest inline-flex size-[1.5em] shrink-0 items-center justify-center rounded-full text-[0.8em] font-bold'>
                     {i + 1}

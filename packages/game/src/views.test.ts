@@ -1,6 +1,11 @@
 import {describe, expect, it} from 'vitest'
 import {pair, round, snapshot, turn} from './fixtures.test-utils'
-import {playerStateSchema, screenStateSchema} from './schemas'
+import {
+  PHYSICAL_QUESTION_ID,
+  PHYSICAL_SOURCE,
+  playerStateSchema,
+  screenStateSchema,
+} from './schemas'
 import {playerView, screenView} from './views'
 
 const s = snapshot({
@@ -36,6 +41,22 @@ describe('playerView', () => {
     const voted = {...s, turns: s.turns.map((t) => ({...t, questionVote: 1 as const}))}
     expect(playerView(voted, 'c', 100)?.pair?.turns.map((t) => t.questionVote)).toEqual([1, null])
     expect(playerView(voted, 'd', 100)?.pair?.turns.map((t) => t.questionVote)).toEqual([null, 1])
+  })
+
+  it('flags a physical-cards round and gives its turns no question text', () => {
+    const physical = {
+      ...s,
+      rounds: [round({deckSlug: PHYSICAL_SOURCE, questionPlan: {mode: 'physical'}})],
+      turns: s.turns.map((t) => ({...t, questionId: PHYSICAL_QUESTION_ID})),
+    }
+    const view = playerView(physical, 'b', 2000, (id) => (id === PHYSICAL_QUESTION_ID ? null : id))
+    expect(view?.round?.physical).toBe(true)
+    expect(view?.pair?.activeTurn).toMatchObject({
+      questionId: PHYSICAL_QUESTION_ID,
+      questionText: null,
+    })
+    expect(screenView(physical, 2000).round?.physical).toBe(true)
+    expect(playerView(s, 'b', 2000)?.round?.physical).toBe(false)
   })
 
   it('returns null for a stranger', () => {

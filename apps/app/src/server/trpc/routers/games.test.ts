@@ -1,4 +1,5 @@
 import {getDeck} from '@whocards/decks'
+import {PHYSICAL_QUESTION_ID, PHYSICAL_SOURCE} from '@whocards/game'
 import type {
   GameSnapshot,
   HostedGame,
@@ -749,6 +750,18 @@ describe('custom questions and round plans', () => {
     ])
   })
 
+  it('stores a physical-cards round with no deck and no picks, and starts it', async () => {
+    const {c, gameId} = await withGame()
+    const {rounds} = await c.addRound({
+      gameId,
+      settings: {...ROUND, questionPlan: {mode: 'physical'}},
+    })
+    expect(rounds.map((r) => [r.deckSlug, r.questionPlan.mode, r.picks])).toEqual([
+      [PHYSICAL_SOURCE, 'physical', []],
+    ])
+    expect((await c.startRound({gameId, roundId: rounds[0]!.id})).liveRoundId).toBe(rounds[0]!.id)
+  })
+
   it('rejects plans pointing at unknown decks or questions', async () => {
     const {c, gameId} = await withGame()
     const bad: QuestionPlan[] = [
@@ -1081,6 +1094,31 @@ describe('buildRecaps', () => {
       random: () => 0,
     })
     expect(anna?.props.question).toBe('B, magyarul?')
+  })
+
+  it('leaves physical-card turns out of the asked list and the question to take home', () => {
+    const base = snapshot()
+    const physicalRound = {
+      ...round('r2', 2, PHYSICAL_SOURCE),
+      questionPlan: {mode: 'physical'} as const,
+    }
+    const [anna] = buildRecaps({
+      snapshot: {
+        ...base,
+        rounds: [base.rounds[0]!, physicalRound],
+        turns: base.turns.map((t) =>
+          t.id === 't3' ? {...t, questionId: PHYSICAL_QUESTION_ID} : t
+        ),
+      },
+      savedByPlayer: {},
+      now: T0,
+      random: () => 0,
+    })
+    const deck = getDeck('hajnalig')!
+    expect(anna?.props.you.turns).toBe(2)
+    expect(anna?.props.asked).toEqual([deck.questions['1']?.hu])
+    const firstUndrawn = deck.questionIds.find((id) => id !== '1')!
+    expect(anna?.props.question).toBe(deck.questions[firstUndrawn]?.hu)
   })
 
   it('previews with a question from the custom list too', () => {

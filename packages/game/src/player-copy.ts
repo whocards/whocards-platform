@@ -55,6 +55,8 @@ export type PlayerCopy = {
     rateQuestion: string
     voteUp: string
     voteDown: string
+    physical: string
+    physicalPartner: string
   }
   review: {
     title: string
@@ -75,6 +77,7 @@ export type PlayerCopy = {
     notJoined: string
     back: string
     link: string
+    physical: string
   }
   screen: {
     joinAt: string
@@ -85,7 +88,7 @@ export type PlayerCopy = {
     noCode: string
     orVisit: string
     code: string
-    howTo: {title: string; steps: string[]}
+    howTo: {title: string; steps: string[]; physicalStep: string}
     counts: {joined: string; paired: string; talking: string; done: string}
   }
 }
@@ -154,6 +157,8 @@ const en: PlayerCopy = {
     rateQuestion: 'Rate this question',
     voteUp: 'Good question',
     voteDown: 'Not a good question',
+    physical: 'Draw a card from the deck and read it out',
+    physicalPartner: 'They draw a card from the deck',
   },
   review: {
     title: 'Your answer',
@@ -183,6 +188,7 @@ const en: PlayerCopy = {
     notJoined: 'Join a game first',
     back: 'Back to the game',
     link: 'My answers',
+    physical: 'Physical card',
   },
   screen: {
     joinAt: 'Scan to join',
@@ -200,6 +206,7 @@ const en: PlayerCopy = {
         'Find someone new and scan their code, or type their name',
         'Take turns answering the question',
       ],
+      physicalStep: 'Draw a card and take turns answering',
     },
     counts: {joined: 'joined', paired: 'paired', talking: 'talking', done: 'done'},
   },

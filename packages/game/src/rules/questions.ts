@@ -1,5 +1,5 @@
 import type {GameSnapshot, Round, Turn} from '../model'
-import {CUSTOM_ID_PREFIX, CUSTOM_SOURCE} from '../schemas'
+import {CUSTOM_ID_PREFIX, CUSTOM_SOURCE, PHYSICAL_QUESTION_ID, PHYSICAL_SOURCE} from '../schemas'
 import type {CustomQuestion, GameLanguage, GameSettings, QuestionPlan} from '../schemas'
 import {drawQuestion} from './turns'
 
@@ -32,6 +32,7 @@ export const sourceOf = (ref: string): string =>
 /** What `game_round.deck_slug` records for a plan: the random source, else the first pick's source. */
 export const planDeckSlug = (plan: QuestionPlan): string => {
   if (plan.mode === 'random') return plan.source
+  if (plan.mode === 'physical') return PHYSICAL_SOURCE
   return sourceOf(plan.mode === 'same' ? plan.question : plan.questions[0])
 }
 
@@ -59,6 +60,7 @@ export const questionText = (
   language: GameLanguage,
   sources: QuestionSources
 ): string | null => {
+  if (ref === PHYSICAL_QUESTION_ID) return null
   if (ref.startsWith(CUSTOM_ID_PREFIX)) {
     const q = sources.custom.find((c) => c.id === ref)
     return q ? q[language] || q.en : null
@@ -72,9 +74,13 @@ export const questionText = (
 export const turnRef = (snapshot: GameSnapshot, turn: Turn): string =>
   refOf(turn.questionId, snapshot.rounds.find((r) => r.id === turn.roundId)?.deckSlug ?? '')
 
-/** Refs this player has had anywhere in the game. */
+/** Refs this player has had anywhere in the game; a physical card is no ref. */
 export const usedRefs = (snapshot: GameSnapshot, playerId: string): Set<string> =>
-  new Set(snapshot.turns.filter((t) => t.playerId === playerId).map((t) => turnRef(snapshot, t)))
+  new Set(
+    snapshot.turns
+      .filter((t) => t.playerId === playerId && t.questionId !== PHYSICAL_QUESTION_ID)
+      .map((t) => turnRef(snapshot, t))
+  )
 
 /** The question for a pair's next turn; `turnIndex` is how many turns the pair has already taken. */
 export const questionForTurn = ({
@@ -90,6 +96,7 @@ export const questionForTurn = ({
   random: () => number
   sources: QuestionSources
 }): string | null => {
+  if (plan.mode === 'physical') return PHYSICAL_QUESTION_ID
   if (plan.mode === 'same') return plan.question
   // A trio's third turn wraps back to the first question.
   if (plan.mode === 'per-turn') return plan.questions[turnIndex % 2 === 0 ? 0 : 1]
@@ -100,6 +107,7 @@ export type PlanProblem = 'unknown_source' | 'unknown_question' | 'no_questions'
 
 /** Why a plan can't run as is; `no_questions` only matters once the round starts. */
 export const checkPlan = (plan: QuestionPlan, sources: QuestionSources): PlanProblem | null => {
+  if (plan.mode === 'physical') return null
   if (plan.mode === 'random') {
     if (plan.source !== CUSTOM_SOURCE && !sources.decks(plan.source)) return 'unknown_source'
     return sourceRefs(plan.source, sources).length === 0 ? 'no_questions' : null

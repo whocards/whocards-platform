@@ -16,6 +16,7 @@ import {
   pairCandidatesInputSchema,
   pairInputSchema,
   pairOf,
+  PHYSICAL_QUESTION_ID,
   planOf,
   playerView,
   questionForTurn,
@@ -282,6 +283,7 @@ export const gameRouter = createTRPCRouter({
       const round = turn && snapshot.rounds.find((r) => r.id === turn.roundId)
       if (!turn || !round) throw refuse('not_found')
       if (turn.playerId !== ctx.player.id) throw refuse('not_your_turn')
+      if (turn.questionId === PHYSICAL_QUESTION_ID) throw refuse('physical_card')
       if (finishedAtOf(round, turn, ctx.game.now()) === null) throw refuse('still_answering')
       await ctx.game.voteQuestion({turnId: turn.id, vote: input.vote})
       return freshState(ctx.game, ctx.player)

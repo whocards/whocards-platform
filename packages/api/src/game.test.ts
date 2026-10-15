@@ -1,5 +1,6 @@
 import {TRPCError} from '@trpc/server'
 import {fetchRequestHandler} from '@trpc/server/adapters/fetch'
+import {PHYSICAL_QUESTION_ID, PHYSICAL_SOURCE} from '@whocards/game'
 import type {GameLanguage, GameSettings, HostedGame, PlayerState, Round} from '@whocards/game'
 import {describe, expect, it} from 'vitest'
 import {z} from 'zod'
@@ -341,6 +342,35 @@ describe('question plans', () => {
     const asked = await trio({mode: 'per-turn', questions: ['c:bbbb', 'library:2']})
     expect(asked.map((q) => q.id)).toEqual(['c:bbbb', 'library:2', 'c:bbbb'])
     expect(asked[1]?.text).toEqual(expect.any(String))
+  })
+
+  it('gives physical-card turns the sentinel and no text, saves answers, and refuses votes', async () => {
+    const physical: Round = {
+      ...liveRound,
+      deckSlug: PHYSICAL_SOURCE,
+      questionPlan: {mode: 'physical'},
+    }
+    const {join} = setup([physical], settings)
+    const a = await join('Ann')
+    const b = await join('Bo')
+    await a.caller.game.round.pair({partnerCode: b.state.me.pairCode})
+    const claimed = await a.caller.game.round.turn({action: 'claim'})
+    expect(claimed.round?.physical).toBe(true)
+    const turn = claimed.pair?.activeTurn
+    expect(turn).toMatchObject({questionId: PHYSICAL_QUESTION_ID, questionText: null})
+
+    const saved = await a.caller.game.round.response({
+      turnId: turn?.id ?? '',
+      language: 'en',
+      transcript: 'I drew the one about mornings.',
+      durationMs: 5000,
+      consent: true,
+    })
+    expect(saved.phase).toBe('answered')
+    expect((await a.caller.game.me.get()).responses[0]?.questionId).toBe(PHYSICAL_QUESTION_ID)
+    expect(await refusalOf(a.caller.game.round.vote({turnId: turn?.id ?? '', vote: 1}))).toBe(
+      'physical_card'
+    )
   })
 })
 

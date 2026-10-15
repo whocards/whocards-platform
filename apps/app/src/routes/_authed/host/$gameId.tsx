@@ -49,17 +49,20 @@ const settingsOf = (r: RoundSettings): RoundSettings => ({
 
 const isOddRule = (v: string): v is OddRule => v === 'trio' || v === 'sitout'
 const isOvertime = (v: string): v is Overtime => v === 'nudge' || v === 'hard'
-const isMode = (v: string): v is Mode => v === 'random' || v === 'same' || v === 'per-turn'
+const isMode = (v: string): v is Mode =>
+  v === 'random' || v === 'same' || v === 'per-turn' || v === 'physical'
 
 const MODES: Record<Mode, {label: string; option: string}> = {
   random: {label: 'Random', option: 'Random: each player draws their own'},
   same: {label: 'Same question', option: 'Same question for everyone'},
   'per-turn': {label: 'Question per turn', option: 'One question per turn (1st and 2nd speaker)'},
+  physical: {label: 'Physical cards', option: 'Physical cards: players draw from a real deck'},
 }
 
 const planSummary = (round: RoundRow, deckTitle: (slug: string) => string): string => {
   const plan = round.questionPlan
   if (plan.mode === 'random') return `From ${deckTitle(plan.source)}`
+  if (plan.mode === 'physical') return 'Players draw a card from the deck in the room'
   const [a, b] = round.picks.map((t) => `“${t}”`)
   return plan.mode === 'same' ? `Everyone: ${a}` : `Turn 1: ${a} · Turn 2: ${b}`
 }
@@ -1195,6 +1198,7 @@ function RoundEditor({
   const randomSource = source || decks.data?.[0]?.slug || ''
 
   const questionPlan = ((): QuestionPlan | null => {
+    if (mode === 'physical') return {mode}
     if (mode === 'random') return randomSource ? {mode, source: randomSource} : null
     if (mode === 'same') return first ? {mode, question: first} : null
     return first && second ? {mode, questions: [first, second]} : null
@@ -1244,7 +1248,7 @@ function RoundEditor({
               ))}
             </Select>
           </Label>
-        ) : (
+        ) : mode === 'physical' ? null : (
           <QuestionPicker
             label={mode === 'same' ? 'Everyone' : 'Turn 1'}
             value={first}

@@ -1,5 +1,5 @@
 import type {MyData} from '@whocards/game'
-import {playerCopyFor, readPairCode} from '@whocards/game'
+import {PHYSICAL_QUESTION_ID, playerCopyFor, readPairCode} from '@whocards/game'
 import {useEffect, useMemo, useState} from 'react'
 
 import {createGameApi} from '~lib/game/client'
@@ -63,6 +63,9 @@ export const SddMine = () => {
             <span className='text-gray-dark text-sm'>
               {new Date(response.createdAt).toLocaleString()} · {formatClock(response.durationMs)}
             </span>
+            {response.questionId === PHYSICAL_QUESTION_ID && (
+              <span className='text-yellow-300 text-sm font-semibold'>{copy.mine.physical}</span>
+            )}
             <p className='whitespace-pre-wrap'>{response.transcript}</p>
             <button
               type='button'

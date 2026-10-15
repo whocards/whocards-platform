@@ -9,6 +9,7 @@ import type {
 } from './schemas'
 import {answerModeAt, currentAnswerMode} from './rules/answer-mode'
 import {pairOf, standbyIds} from './rules/pairing'
+import {planOf} from './rules/questions'
 import {currentRound} from './rules/status'
 import {deadlineOf, finishedAtOf, openTurnOf, phaseOf, turnsOf} from './rules/turns'
 
@@ -19,6 +20,7 @@ export const roundView = (round: Round): RoundView => ({
   n: round.n,
   status: round.status,
   deckSlug: round.deckSlug,
+  physical: planOf(round).mode === 'physical',
   turnSeconds: round.turnSeconds,
   oddRule: round.oddRule,
   overtime: round.overtime,

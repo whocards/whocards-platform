@@ -30,6 +30,7 @@ const en: GameCopy = {
     unknown_name: 'No player with that code or name',
     ambiguous_name: 'More than one player has that name. Pick one',
     still_answering: 'Finish your answer first',
+    physical_card: 'Cards from the deck are not rated here',
   },
   phases: {
     waiting: 'Waiting for the next round',

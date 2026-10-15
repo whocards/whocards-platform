@@ -1,5 +1,5 @@
 import type {PlayerState, TurnView} from '@whocards/game'
-import {copyFor, playerCopyFor} from '@whocards/game'
+import {copyFor, PHYSICAL_QUESTION_ID, playerCopyFor} from '@whocards/game'
 import type {Draft, GameSession, TimerView, TurnControls} from '@whocards/game/hooks'
 import type {ReactNode} from 'react'
 import {useState} from 'react'
@@ -38,9 +38,24 @@ const Card = ({
   </div>
 )
 
-const Question = ({turn}: {turn: TurnView}) => (
-  <p className='text-2xl font-semibold leading-snug'>{turn.questionText ?? ''}</p>
-)
+const Question = ({
+  turn,
+  language,
+  partner,
+}: {
+  turn: TurnView
+  language: PlayerState['me']['language']
+  partner?: boolean
+}) => {
+  const physical = playerCopyFor(language).turn
+  const text =
+    turn.questionId === PHYSICAL_QUESTION_ID
+      ? partner
+        ? physical.physicalPartner
+        : physical.physical
+      : turn.questionText
+  return <p className='text-2xl font-semibold leading-snug'>{text ?? ''}</p>
+}
 
 const Clock = ({timer, language}: {timer: TimerView; language: PlayerState['me']['language']}) => {
   if (!timer.turn) return null
@@ -96,7 +111,7 @@ export const Turn = ({state, timer, turn, act}: TurnProps) => {
     if (mine && turn.micBlocked)
       return (
         <Card label={copy.turn.me}>
-          <Question turn={mine} />
+          <Question turn={mine} language={me.language} />
           <Clock timer={timer} language={me.language} />
           <p className='text-primary-light text-xl font-semibold'>{copy.turn.micBlocked}</p>
           <p>{copy.turn.micBlockedHint}</p>
@@ -114,7 +129,7 @@ export const Turn = ({state, timer, turn, act}: TurnProps) => {
     if (mine)
       return (
         <Card label={copy.turn.me}>
-          <Question turn={mine} />
+          <Question turn={mine} language={me.language} />
           <Clock timer={timer} language={me.language} />
           {voice && turn.canRecord && turn.stage === 'idle' && (
             <Button className='bg-primary-dark text-white' onClick={() => void turn.record()}>
@@ -142,8 +157,10 @@ export const Turn = ({state, timer, turn, act}: TurnProps) => {
       return (
         <Card label={copy.turn.me}>
           <p className='text-xl'>{copy.turn.answered}</p>
-          <Question turn={myDone} />
-          <QuestionVote turn={myDone} language={me.language} act={act} />
+          <Question turn={myDone} language={me.language} />
+          {myDone.questionId !== PHYSICAL_QUESTION_ID && (
+            <QuestionVote turn={myDone} language={me.language} act={act} />
+          )}
         </Card>
       )
     if (partnerAnswering)
@@ -180,7 +197,7 @@ export const Turn = ({state, timer, turn, act}: TurnProps) => {
           <Card key={partner.id} label={partner.name} locked={!theirs}>
             {theirs ? (
               <>
-                <Question turn={theirs} />
+                <Question turn={theirs} language={me.language} partner />
                 <Clock timer={timer} language={me.language} />
               </>
             ) : (
@@ -238,7 +255,7 @@ export const Review = ({state, timer, turn, draft}: ReviewProps) => {
     <Screen title={copy.review.title}>
       {asked && (
         <Card label={copy.turn.me}>
-          <Question turn={asked} />
+          <Question turn={asked} language={language} />
           <Clock timer={timer} language={language} />
         </Card>
       )}

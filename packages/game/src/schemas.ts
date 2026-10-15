@@ -29,6 +29,11 @@ export const customQuestionSchema = z.object({
 })
 export type CustomQuestion = z.infer<typeof customQuestionSchema>
 
+/** `game_round.deck_slug` of a physical-cards round; names no deck. */
+export const PHYSICAL_SOURCE = 'physical'
+/** `game_turn.question_id` of a physical-cards turn: the question is on a card in the room. */
+export const PHYSICAL_QUESTION_ID = `${PHYSICAL_SOURCE}:card`
+
 /** A custom question id (`c:<id>`) or a deck question (`<deckSlug>:<id>`). */
 export const questionRefSchema = z.string().regex(/^[a-z0-9-]+:[^:]+$/)
 export type QuestionRef = z.infer<typeof questionRefSchema>
@@ -41,6 +46,7 @@ export const questionPlanSchema = z.discriminatedUnion('mode', [
     mode: z.literal('per-turn'),
     questions: z.tuple([questionRefSchema, questionRefSchema]),
   }),
+  z.object({mode: z.literal('physical')}),
 ])
 export type QuestionPlan = z.infer<typeof questionPlanSchema>
 
@@ -108,6 +114,7 @@ export const refusalSchema = z.enum([
   'unknown_name',
   'ambiguous_name',
   'still_answering',
+  'physical_card',
 ])
 export type Refusal = z.infer<typeof refusalSchema>
 
@@ -178,6 +185,8 @@ export const roundViewSchema = z.object({
   n: z.number().int(),
   status: roundStatusSchema,
   deckSlug: z.string(),
+  /** Questions come from a physical deck in the room, not the app. */
+  physical: z.boolean(),
   turnSeconds: z.number().int(),
   oddRule: oddRuleSchema,
   overtime: overtimeSchema,

@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 import {round, snapshot, turn} from '../fixtures.test-utils'
-import {questionPlanSchema} from '../schemas'
+import {PHYSICAL_QUESTION_ID, PHYSICAL_SOURCE, questionPlanSchema} from '../schemas'
 import type {QuestionPlan} from '../schemas'
 import {
   checkPlan,
@@ -139,5 +139,32 @@ describe('plans', () => {
     expect(checkPlan({mode: 'per-turn', questions: ['c:aaaa', 'library:9']}, sources)).toBe(
       'unknown_question'
     )
+  })
+})
+
+describe('physical cards', () => {
+  const physical: QuestionPlan = {mode: 'physical'}
+
+  it('hands every turn the sentinel, which has no text and names no deck', () => {
+    for (const turnIndex of [0, 1, 2]) {
+      expect(
+        questionForTurn({plan: physical, turnIndex, used: new Set(), random: () => 0, sources})
+      ).toBe(PHYSICAL_QUESTION_ID)
+    }
+    expect(questionText(PHYSICAL_QUESTION_ID, 'en', sources)).toBeNull()
+    expect(checkPlan(physical, {custom: [], decks})).toBeNull()
+    expect(planDeckSlug(physical)).toBe(PHYSICAL_SOURCE)
+    expect(samePlan(physical, {mode: 'physical'})).toBe(true)
+    expect(samePlan(physical, {mode: 'random', source: 'library'})).toBe(false)
+  })
+
+  it('keeps the sentinel out of the used refs', () => {
+    const s = snapshot({
+      turns: [
+        turn({id: 't1', pairId: 'p1', playerId: 'a', questionId: PHYSICAL_QUESTION_ID}),
+        turn({id: 't2', pairId: 'p1', playerId: 'a', questionId: 'library:1'}),
+      ],
+    })
+    expect(usedRefs(s, 'a')).toEqual(new Set(['library:1']))
   })
 })
