@@ -7,7 +7,7 @@ import type {
   ScreenState,
   TurnView,
 } from './schemas'
-import {answerModeAt} from './rules/answer-mode'
+import {answerModeAt, currentAnswerMode} from './rules/answer-mode'
 import {pairOf} from './rules/pairing'
 import {currentRound} from './rules/status'
 import {deadlineOf, finishedAtOf, openTurnOf, phaseOf, turnsOf} from './rules/turns'
@@ -110,6 +110,7 @@ export const screenView = (snapshot: GameSnapshot, now: number): ScreenState => 
       title: snapshot.game.title,
       organizer: snapshot.game.settings.organizer ?? null,
       status: snapshot.game.status,
+      answerMode: currentAnswerMode(snapshot.game.settings),
     },
     round: round ? roundView(round) : null,
     counts: {

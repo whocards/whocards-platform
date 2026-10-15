@@ -18,6 +18,8 @@ export type PlayerCopy = {
     title: string
     transcript: string
     transcriptHint: string
+    typed: string
+    typedHint: string
     recap: string
     email: string
     play: string
@@ -95,6 +97,8 @@ const en: PlayerCopy = {
     title: 'Before you play',
     transcript: 'Record my answers so I can save the text',
     transcriptHint: 'You read every answer before it is saved. Audio is not kept.',
+    typed: 'Let me save my typed answers',
+    typedHint: 'Nothing is kept until you tap Save.',
     recap: 'Email me a recap tonight',
     email: 'Email',
     play: "Let's play",

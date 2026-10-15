@@ -221,6 +221,7 @@ export const screenStateSchema = z.object({
     title: z.string(),
     organizer: z.string().nullable(),
     status: gameStatusSchema,
+    answerMode: answerModeSchema,
   }),
   round: roundViewSchema.nullable(),
   counts: z.object({

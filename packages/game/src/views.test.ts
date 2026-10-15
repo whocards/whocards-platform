@@ -50,5 +50,11 @@ describe('screenView', () => {
     const hosted = {...s, game: {...s.game, settings: {round: {}, organizer: 'SDD Conf'}}}
     expect(screenView(hosted, 0).game.organizer).toBe('SDD Conf')
     expect(playerView(hosted, 'a', 0)?.game.organizer).toBe('SDD Conf')
+    expect(screenView(s, 0).game.answerMode).toBe('voice')
+    const typed = {
+      ...s,
+      game: {...s.game, settings: {round: {}, answerModes: [{mode: 'type' as const, at: 0}]}},
+    }
+    expect(screenView(typed, 0).game.answerMode).toBe('type')
   })
 })

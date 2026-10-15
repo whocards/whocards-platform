@@ -390,7 +390,16 @@ describe('game.screen', () => {
       title: 'Workshop',
       organizer: 'SDD Conf',
       status: 'lobby',
+      answerMode: 'voice',
     })
+  })
+
+  it('shows the answer mode the next turn gets, so joining can skip the recording choice', async () => {
+    const fake = createFakeGamePort({
+      game: {...game, settings: {round: {}, answerModes: [{mode: 'none', at: 0}]}},
+    })
+    const caller = createCaller({recordAnswer: async () => {}, game: fake.port, playerToken: null})
+    expect((await caller.game.screen({code: 'ABCD'})).game.answerMode).toBe('none')
   })
 })
 

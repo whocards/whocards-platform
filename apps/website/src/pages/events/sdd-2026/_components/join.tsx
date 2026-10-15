@@ -71,8 +71,11 @@ export const Join = ({initialCode, onJoin, lookup}: JoinProps) => {
     consentRecap: recap,
   })
   const detailsReady = name.trim() !== '' && readPairCode(code) !== null
+  // Lookup can fail, so an unknown mode keeps the full voice consent.
+  const mode = workshop?.answerMode ?? 'voice'
+  const consents = mode !== 'none' && transcript
   const consentReady =
-    joinInputSchema.safeParse(input(transcript)).success && (!recap || email.trim() !== '')
+    joinInputSchema.safeParse(input(consents)).success && (!recap || email.trim() !== '')
 
   const submit = async (records: boolean) => {
     setBusy(true)
@@ -146,18 +149,22 @@ export const Join = ({initialCode, onJoin, lookup}: JoinProps) => {
 
   return (
     <Screen title={copy.consent.title}>
-      <label className='flex w-full items-start gap-3'>
-        <input
-          type='checkbox'
-          className='checkbox mt-1'
-          checked={transcript}
-          onChange={(event) => setTranscript(event.target.checked)}
-        />
-        <span>
-          {copy.consent.transcript}
-          <span className='text-mutedOnLight block text-sm'>{copy.consent.transcriptHint}</span>
-        </span>
-      </label>
+      {mode !== 'none' && (
+        <label className='flex w-full items-start gap-3'>
+          <input
+            type='checkbox'
+            className='checkbox mt-1'
+            checked={transcript}
+            onChange={(event) => setTranscript(event.target.checked)}
+          />
+          <span>
+            {mode === 'type' ? copy.consent.typed : copy.consent.transcript}
+            <span className='text-mutedOnLight block text-sm'>
+              {mode === 'type' ? copy.consent.typedHint : copy.consent.transcriptHint}
+            </span>
+          </span>
+        </label>
+      )}
       <label className='flex w-full items-start gap-3'>
         <input
           type='checkbox'
@@ -181,10 +188,10 @@ export const Join = ({initialCode, onJoin, lookup}: JoinProps) => {
       )}
       <Privacy language={language} />
       {shown && <Notice>{noticeText(language, shown)}</Notice>}
-      <Button disabled={busy || !consentReady} onClick={() => void submit(transcript)}>
+      <Button disabled={busy || !consentReady} onClick={() => void submit(consents)}>
         {copy.consent.play}
       </Button>
-      {transcript && (
+      {mode === 'voice' && transcript && (
         <Button
           variant='ghost'
           disabled={busy || !joinInputSchema.safeParse(input(false)).success}
