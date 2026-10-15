@@ -1,10 +1,11 @@
 import {keepPreviousData, useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
-import {createFileRoute, redirect, useNavigate} from '@tanstack/react-router'
-import {TRPCClientError} from '@trpc/client'
+import {createFileRoute, Link, useNavigate} from '@tanstack/react-router'
 import {answerModeSchema, CUSTOM_SOURCE, qrPath, sourceOf} from '@whocards/game'
 import type {AnswerMode, OddRule, Overtime, QuestionPlan} from '@whocards/game'
 import {useMemo, useState} from 'react'
 
+import {ANSWER_MODES, isConflict, requireHost, useHostGame} from '~/components/host/use-host-game'
+import type {Run} from '~/components/host/use-host-game'
 import {Empty, ErrorText, Page, PageHeader, SectionTitle} from '~/components/page'
 import {Badge} from '~/components/ui/badge'
 import {Button, buttonVariants} from '~/components/ui/button'
@@ -14,19 +15,12 @@ import {cn} from '~/lib/cn'
 import {eventLinks} from '~/lib/event-links'
 import {confirmCopyGame, confirmDeleteGame, LIVE_DELETE_HINT} from '~/lib/game-actions'
 import {trpc} from '~/lib/trpc'
-import {roleAtLeast} from '~/server/auth/permissions'
 import type {GameDetail} from '~/server/trpc/routers/games'
 
 export const Route = createFileRoute('/_authed/host/$gameId')({
-  beforeLoad: ({context}) => {
-    if (!context.membership || !roleAtLeast(context.membership.role, 'facilitator')) {
-      throw redirect({to: '/'})
-    }
-  },
+  beforeLoad: requireHost,
   component: HostGame,
 })
-
-const LIVE_REFRESH_MS = 4000
 
 type RoundRow = GameDetail['rounds'][number]
 type CustomRow = GameDetail['questions'][number]
@@ -38,7 +32,6 @@ type RoundSettings = {
   overtimeSeconds: number
 }
 type Mode = QuestionPlan['mode']
-type Run = (id: string, fn: () => Promise<GameDetail | null>, onDone?: () => void) => void
 
 const settingsOf = (r: RoundSettings): RoundSettings => ({
   questionPlan: r.questionPlan,
@@ -71,10 +64,6 @@ const planSummary = (round: RoundRow, deckTitle: (slug: string) => string): stri
 const clock = (ms: number | null) =>
   ms === null ? '' : new Date(ms).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
 
-// The server answers CONFLICT when another host moved the game on (a lost race or a stale write).
-const isConflict = (error: Error) =>
-  error instanceof TRPCClientError && error.data?.code === 'CONFLICT'
-
 const STATUS = {
   lobby: {label: 'Draft', tone: 'neutral'},
   live: {label: 'Live', tone: 'live'},
@@ -85,33 +74,19 @@ function HostGame() {
   const {gameId} = Route.useParams()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const key = ['games.detail', gameId]
-  const detail = useQuery({
-    queryKey: key,
-    queryFn: () => trpc.games.detail.query({gameId}),
-    refetchInterval: (query) => {
-      const game = query.state.data?.game
-      const sending = game?.recap?.pending || game?.revisit?.pending
-      return game?.status === 'ended' && !sending ? false : LIVE_REFRESH_MS
-    },
-  })
-  const act = useMutation({
-    mutationFn: (action: {id: string; fn: () => Promise<GameDetail | null>}) => action.fn(),
-    onMutate: () => queryClient.cancelQueries({queryKey: key}),
-    onSuccess: async (data) => {
-      // A poll that started before the write would land after it and flash the old state back.
-      await queryClient.cancelQueries({queryKey: key})
-      if (data) queryClient.setQueryData(key, data)
-    },
-    onError: (error) => {
-      if (isConflict(error)) void queryClient.invalidateQueries({queryKey: key})
-    },
-  })
-  const busy = act.isPending ? act.variables.id : null
-  const run: Run = (id, fn, onDone) => {
-    if (act.isPending) return
-    act.mutate({id, fn}, {onSuccess: onDone})
-  }
+  const {
+    key,
+    detail,
+    act,
+    busy,
+    run,
+    goLive,
+    endGame,
+    startRound,
+    endRound,
+    setAnswerMode,
+    pendingMode,
+  } = useHostGame(gameId)
   const [editingDetails, setEditingDetails] = useState(false)
 
   if (detail.isLoading) return <HostSkeleton />
@@ -125,13 +100,6 @@ function HostGame() {
   const ended = game.status === 'ended'
   const draft = game.status === 'lobby'
   const status = STATUS[game.status]
-
-  const endGame = () => {
-    const ok = window.confirm(
-      'End the game? Any live round stops and players can no longer play. You preview the recap email next and send it when ready.'
-    )
-    if (ok) run('end-game', () => trpc.games.endGame.mutate({gameId}))
-  }
 
   const copyGame = () => {
     if (!confirmCopyGame(game.title)) return
@@ -154,11 +122,6 @@ function HostGame() {
     })
   }
 
-  const goLive = () => {
-    const ok = window.confirm('Go live? Players can join with the code from now on.')
-    if (ok) run('go-live', () => trpc.games.goLive.mutate({gameId}))
-  }
-
   return (
     <Page className="max-w-5xl">
       <PageHeader
@@ -175,6 +138,14 @@ function HostGame() {
           <>
             {ended ? null : (
               <>
+                <Link
+                  to="/host/$gameId/present"
+                  params={{gameId}}
+                  target="_blank"
+                  className={buttonVariants({variant: 'accent'})}
+                >
+                  Projector mode ↗
+                </Link>
                 {editingDetails ? null : (
                   <Button variant="ghost" onClick={() => setEditingDetails(true)}>
                     Edit details
@@ -281,10 +252,8 @@ function HostGame() {
           mode={game.answerMode}
           live={!draft}
           disabled={act.isPending}
-          pendingMode={busy?.startsWith('mode:') ? busy.slice('mode:'.length) : null}
-          onChange={(mode) =>
-            run(`mode:${mode}`, () => trpc.games.setAnswerMode.mutate({gameId, mode}))
-          }
+          pendingMode={pendingMode}
+          onChange={setAnswerMode}
         />
       )}
 
@@ -325,6 +294,8 @@ function HostGame() {
         disabled={act.isPending}
         busy={busy}
         run={run}
+        startRound={startRound}
+        endRound={endRound}
       />
 
       <HostsPanel gameId={gameId} game={game} disabled={act.isPending} busy={busy} run={run} />
@@ -559,12 +530,6 @@ function DetailsEditor({
       </form>
     </Card>
   )
-}
-
-const ANSWER_MODES: Record<AnswerMode, {label: string; hint: string}> = {
-  voice: {label: 'Voice', hint: 'Players record, read the transcript, and save it.'},
-  type: {label: 'Type', hint: 'No mic. Players type their answer.'},
-  none: {label: 'None', hint: 'Nothing captured. Phones only pace turns.'},
 }
 
 function AnswerModePanel({
@@ -1033,6 +998,8 @@ function RoundsPanel({
   disabled,
   busy,
   run,
+  startRound,
+  endRound,
 }: Readonly<{
   gameId: string
   rounds: RoundRow[]
@@ -1043,6 +1010,8 @@ function RoundsPanel({
   disabled: boolean
   busy: string | null
   run: Run
+  startRound: (roundId: string) => void
+  endRound: (roundId: string) => void
 }>) {
   const [editing, setEditing] = useState<string | null>(null)
   const last = rounds.at(-1)
@@ -1143,11 +1112,7 @@ function RoundsPanel({
                     disabled={disabled || draft || liveRoundId !== null}
                     pending={busy === `start:${round.id}`}
                     title={draft ? 'Go live first' : undefined}
-                    onClick={() =>
-                      run(`start:${round.id}`, () =>
-                        trpc.games.startRound.mutate({gameId, roundId: round.id})
-                      )
-                    }
+                    onClick={() => startRound(round.id)}
                   >
                     {busy === `start:${round.id}` ? 'Starting…' : 'Start round'}
                   </Button>
@@ -1158,11 +1123,7 @@ function RoundsPanel({
                     size="sm"
                     disabled={disabled}
                     pending={busy === `end:${round.id}`}
-                    onClick={() =>
-                      run(`end:${round.id}`, () =>
-                        trpc.games.endRound.mutate({gameId, roundId: round.id})
-                      )
-                    }
+                    onClick={() => endRound(round.id)}
                   >
                     {busy === `end:${round.id}` ? 'Ending…' : 'End round'}
                   </Button>

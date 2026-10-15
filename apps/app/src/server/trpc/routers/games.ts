@@ -37,6 +37,7 @@ import type {
   QuestionSources,
   RoundSettings,
   RoundView,
+  ScreenState,
 } from '@whocards/game'
 import {z} from 'zod'
 
@@ -227,6 +228,8 @@ export type GameDetail = {
   >
   liveRoundId: string | null
   counts: {players: number; pairs: number; turnsInProgress: number; responses: number}
+  /** The public projector's counts, for the host's projector mode. */
+  room: ScreenState['counts']
 }
 
 type Hosting = Pick<GameDetail['game'], 'createdBy' | 'facilitators' | 'canManageHosts'>
@@ -282,6 +285,7 @@ const detailOf = (
       turnsInProgress: screen.counts.talking,
       responses: Object.values(saved).reduce((sum, n) => sum + n, 0),
     },
+    room: screen.counts,
   }
 }
 
