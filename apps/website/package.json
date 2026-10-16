@@ -62,7 +62,7 @@
     "daisyui": "^5.7.47",
     "drizzle-orm": "^0.45.4",
     "gsap": "^3.12.2",
-    "nanostores": "^0.9.4",
+    "nanostores": "^1.5.5",
     "object-to-formdata": "^5.0.0",
     "pdf-lib": "^1.17.1",
     "postgres": "^3.4.9",
