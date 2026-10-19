@@ -22,17 +22,17 @@ catalog:
   # Pinned exact: TS 7 (native compiler) must stay in lockstep with
   # oxlint-tsgolint's paired version (see root package.json).
   typescript: 7.0.2
-  vitest: ^5.0.3
+  vitest: ^5.0.5
   tsup: ^8.5.1
 
   # env validation (Standard Schema based — see each package's keys.ts)
   '@t3-oss/env-core': ^0.13.8
-  zod: ^4.6.5
+  zod: ^4.6.7
 
   # tRPC (in-app router — see ADR-0002)
   '@trpc/server': ^11.19.0
   '@trpc/client': ^11.19.0
-  '@tanstack/react-query': ^5.104.1
+  '@tanstack/react-query': ^5.104.3
 
   # react (shared major across web React-DOM islands + React Native)
   react: ^19.2.1
