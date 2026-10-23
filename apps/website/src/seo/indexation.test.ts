@@ -7,7 +7,6 @@ describe('search indexation policy', () => {
   it.each([
     '/404',
     '/android-testers',
-    '/android-testers-birthday-present',
     '/images',
     '/hu/images',
     '/dev/image-playground',
@@ -52,7 +51,6 @@ describe('search indexation policy', () => {
 
   it.each([
     '/android-testers.html',
-    '/android-testers-birthday-present.html',
     '/events/hajnalig/play.html',
     '/events/hajnalig/2025/play.html',
     '/events/sdd-2026.html',
