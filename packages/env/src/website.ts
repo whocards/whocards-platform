@@ -33,7 +33,7 @@ export function createWebsiteEnv(runtimeEnv: RuntimeEnv) {
       // Per-store switches: /app offers a real download for a launched store and
       // routes the other into its closed test (Android: /android-testers).
       PUBLIC_APP_IOS_LAUNCHED: z.stringbool().default(true),
-      PUBLIC_APP_ANDROID_LAUNCHED: z.stringbool().default(false),
+      PUBLIC_APP_ANDROID_LAUNCHED: z.stringbool().default(true),
       // Use Cloudflare's always-pass test keys locally.
       PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1),
     },

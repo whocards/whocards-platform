@@ -1,13 +1,12 @@
 import {expect, test} from '@playwright/test'
 
 // /app is SSR (prerender = false). The e2e-ssr suite runs against `astro dev`
-// under the default flags (PUBLIC_APP_IOS_LAUNCHED on, PUBLIC_APP_ANDROID_LAUNCHED
-// off) → the page renders in download mode: iOS is a real App Store download and
-// Android routes to the /android-testers Closed Test funnel. These assertions need
-// no external services (no valid form submit, so neither Postgres nor Resend is hit).
+// under the default flags (both stores launched) → the page offers both store
+// downloads. These assertions need no external services (no valid form submit,
+// so neither Postgres nor Resend is hit).
 
-test.describe('/app download mode (iOS live, Android in testing)', () => {
-  test('offers the real iOS App Store download', async ({page}) => {
+test.describe('/app download mode (iOS + Android live)', () => {
+  test('offers both store downloads', async ({page}) => {
     const res = await page.goto('/app')
 
     // Prove we are on /app, not an unexpected redirect to /.
@@ -16,35 +15,20 @@ test.describe('/app download mode (iOS live, Android in testing)', () => {
 
     const html = await res!.text()
     expect(html).toContain('apps.apple.com')
+    expect(html).toContain('play.google.com')
     await expect(page.locator('a[data-store="ios"]').first()).toBeVisible()
+    await expect(page.locator('a[data-store="android"]').first()).toBeVisible()
+    await expect(page.locator('a[data-store="android-test"]')).toHaveCount(0)
   })
 
-  test('routes Android visitors to the tester funnel, not a dead Play badge', async ({page}) => {
-    const res = await page.goto('/app')
-    const html = await res!.text()
-
-    // While Android is in Closed Testing the Play store link must not appear.
-    expect(html).not.toContain('play.google.com')
-
-    // The android-test tile is the tester-funnel route (its href is the configured
-    // ANDROID_TESTER_SIGNUP_URL, which may be overridden per environment, so we only
-    // assert the tile is present rather than a hardcoded path).
-    await expect(page.locator('a[data-store="android-test"]').first()).toBeVisible()
-  })
-
-  test('leads Android visitors with the tester tile (UA-aware ordering)', async ({browser}) => {
-    // Exercise the server-side UA branch: an Android visitor's first tile must be
-    // the tester route, not the iOS App Store badge they can't use.
+  test('leads Android visitors with Google Play (UA-aware ordering)', async ({browser}) => {
     const context = await browser.newContext({
       userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/124 Mobile',
     })
     const page = await context.newPage()
     await page.goto('/app')
 
-    await expect(page.locator('a[data-store]').first()).toHaveAttribute(
-      'data-store',
-      'android-test'
-    )
+    await expect(page.locator('a[data-store]').first()).toHaveAttribute('data-store', 'android')
     await context.close()
   })
 
