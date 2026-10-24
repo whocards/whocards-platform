@@ -91,7 +91,7 @@ None of the four charge a marketplace fee to list; all require a hosted privacy 
 
 ## 4. Platform recommendation, with the ai-at-work strategy in view
 
-`docs/growth/03-growth-strategy.md`'s Lever 5 names the AI-at-work B2B wedge as "the most likely first revenue" and the highest-willingness-to-pay channel, converting through team workshops and subscriptions — i.e. **work calls are exactly where this feature's audience already is.** That argues for weighting audience fit toward workplace-video-call platforms over Discord (whose audience, per the epic itself, is "social, not work" — a poor match for a feature meant to serve the work-deck funnel first).
+`whocards/whocards:docs/growth/03-growth-strategy.md` (private)'s Lever 5 names the AI-at-work B2B wedge as "the most likely first revenue" and the highest-willingness-to-pay channel, converting through team workshops and subscriptions — i.e. **work calls are exactly where this feature's audience already is.** That argues for weighting audience fit toward workplace-video-call platforms over Discord (whose audience, per the epic itself, is "social, not work" — a poor match for a feature meant to serve the work-deck funnel first).
 
 Within the workplace platforms:
 
@@ -135,4 +135,4 @@ _(Not filed — owner picks direction first, per the epic.)_
 
 5. **Re-evaluate Google Meet when Co-Doing (or a GA replacement) reopens** — Time-boxed periodic check (e.g. quarterly) on Co-Doing API / Co-Watching API early-access status; Meet add-on work stays parked until a first-party sync primitive is available, per §1b.
 
-6. **PostHog instrumentation for in-call draws** — Once any platform ships, add a distinct event source (e.g. `source: 'zoom_incall'`) to the existing `deck_opened`/`question_shown` funnel (`apps/website/src/components/Play/Play.tsx`'s tracking pattern) so in-call usage is visible in the funnel described in `docs/growth/03-growth-strategy.md` §4.
+6. **PostHog instrumentation for in-call draws** — Once any platform ships, add a distinct event source (e.g. `source: 'zoom_incall'`) to the existing `deck_opened`/`question_shown` funnel (`apps/website/src/components/Play/Play.tsx`'s tracking pattern) so in-call usage is visible in the funnel described in `whocards/whocards:docs/growth/03-growth-strategy.md` (private) §4.
