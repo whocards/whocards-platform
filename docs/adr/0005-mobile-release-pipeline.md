@@ -64,4 +64,4 @@ tag, runs the gate → `eas build` → `eas submit` (beta track) → `eas update
   approved iOS build for weeks costs real retention for no benefit. The website encodes this with
   per-platform flags (`PUBLIC_APP_IOS_LAUNCHED`, `PUBLIC_APP_ANDROID_LAUNCHED`): `/app` shows a real
   iOS download and routes Android visitors to `/android-testers` until the Android flag flips. See
-  `docs/growth/04-app-launch-plan.md` for the launch/campaign side.
+  `whocards/whocards:docs/growth/04-app-launch-plan.md` (private) for the launch/campaign side.

@@ -10,7 +10,7 @@ content/marketing/SEO site — Astro's sweet spot: islands, ship-zero-JS, MDX, 1
 prerendered question pages, build-time OG generation. That content moat is growth Lever 3 and must
 not be disturbed.
 
-The new work (see `docs/strategy/ai-at-work-business-plan.md`) is **app-shaped**: authenticated,
+The new work (see `whocards/whocards:docs/strategy/ai-at-work-business-plan.md` (private)) is **app-shaped**: authenticated,
 stateful, multi-user, real-time-ish — a collaborative **question-review** tool, **RBAC** for
 admins/facilitators, a **moderation cockpit**, and eventually **Tier 2 "WhoCards for Teams"**
 (multi-tenant orgs, seats, roles). Astro's page-first + islands model fights this the moment shared
