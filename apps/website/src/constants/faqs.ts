@@ -20,7 +20,7 @@ export const faqs = [
 // uncontested search/AEO intent named in issue #207 ("AI team check-in
 // questions", "how to talk to my team about AI"), which is the SEO/AEO
 // angle on the AI-at-work B2B wedge (growth Lever 5, see
-// docs/growth/03-growth-strategy.md §3). Every answer paraphrases copy
+// whocards/whocards docs/growth/03-growth-strategy.md (private) §3). Every answer paraphrases copy
 // that already exists on the page itself (hero, value props, CTA) — no
 // new stats or claims introduced, same discipline as the on-page-derived
 // meta descriptions added in #66.
