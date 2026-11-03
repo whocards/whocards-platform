@@ -2,7 +2,6 @@
 export const prerender = false
 
 import {Resend} from 'resend'
-import Button from '~components/ui/Button.astro'
 import {env} from '~env'
 import Layout from '~layouts/Layout.astro'
 import {syncConsentsBestEffort} from '~server/consent-sync'
@@ -55,9 +54,9 @@ const copy = {
         <form method='post'>
           <input type='hidden' name='email' value={email} />
           <input type='hidden' name='token' value={token} />
-          <Button type='submit' tag='button' size='md' hideIcon>
+          <button class='btn-primary btn' type='submit'>
             Confirm
-          </Button>
+          </button>
         </form>
       ) : (
         <a class='btn-primary btn' href='/'>
