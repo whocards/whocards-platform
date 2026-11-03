@@ -1,3 +1,5 @@
+import type {GenericEndpointContext} from 'better-auth'
+
 /**
  * Invite-only sign-up. better-auth's magic-link `verify` handler only
  * consults `disableSignUp` in the branch where `findUserByEmail` finds
@@ -15,3 +17,12 @@
  * decks-logic.ts and question-review-logic.ts.
  */
 export const MAGIC_LINK_DISABLE_SIGNUP = true
+
+type MagicLinkData = {email: string; url: string}
+
+/** Sign-up is closed, so a link to an unknown address could never work: don't spend an email on it. */
+export const knownUsersOnly =
+  (send: (data: MagicLinkData) => Promise<void>) =>
+  async (data: MagicLinkData, ctx?: GenericEndpointContext) => {
+    if (await ctx?.context.internalAdapter.findUserByEmail(data.email)) await send(data)
+  }
