@@ -15,6 +15,12 @@ export default defineConfig({
   server: {
     port: 3100,
   },
+  // Netlify sets DEPLOY_PRIME_URL only at build time, and production must keep its explicit BETTER_AUTH_URL.
+  define: {
+    'process.env.DEPLOY_PRIME_URL': JSON.stringify(
+      process.env.CONTEXT === 'production' ? '' : (process.env.DEPLOY_PRIME_URL ?? '')
+    ),
+  },
   plugins: [
     tsconfigPaths(),
     tailwindcss(),

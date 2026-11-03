@@ -9,9 +9,10 @@ import {env} from '@whocards/env/app'
 import {MAGIC_LINK_DISABLE_SIGNUP} from './magic-link-policy'
 import {roles} from './permissions'
 
+// Invite-only like magic links: Google signs in existing users, never creates one.
 const googleProvider =
   env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
-    ? {clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET}
+    ? {clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET, disableSignUp: true}
     : undefined
 
 // The Drizzle adapter looks up each model by the STRING key it's configured
@@ -39,9 +40,6 @@ export const auth = betterAuth({
     schema: adapterSchema,
     usePlural: false,
   }),
-  // No email+password or Google-only-required flow — magic link is the primary
-  // (and, tonight, only guaranteed-working) sign-in method. Google is scaffolded
-  // and env-gated (see googleAuthEnabled) per the overnight build plan.
   emailAndPassword: {enabled: false},
   ...(googleProvider ? {socialProviders: {google: googleProvider}} : {}),
   user: {modelName: 'app_user'},
