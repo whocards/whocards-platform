@@ -29,6 +29,9 @@ const buildAuth = ({guarded = false} = {}) => {
   const sentLinks: Record<string, string> = {}
   const users: FakeUserRow[] = []
   const sessions: unknown[] = []
+  const record = async ({email, url}: {email: string; url: string}) => {
+    sentLinks[email] = url
+  }
   const auth = betterAuth({
     database: memoryAdapter({user: users, session: sessions, account: [], verification: []}),
     secret: 'vitest-only-secret-never-used-for-anything-real',
@@ -37,9 +40,7 @@ const buildAuth = ({guarded = false} = {}) => {
     plugins: [
       magicLink({
         disableSignUp: MAGIC_LINK_DISABLE_SIGNUP,
-        sendMagicLink: (guarded ? knownUsersOnly : <T>(send: T) => send)(async ({email, url}) => {
-          sentLinks[email] = url
-        }),
+        sendMagicLink: guarded ? knownUsersOnly(record) : record,
       }),
     ],
   })
@@ -107,7 +108,7 @@ describe('knownUsersOnly', () => {
     const {auth, sentLinks, headers} = buildAuth({guarded: true})
     const result = await auth.api.signInMagicLink({body: {email: 'rando@example.com'}, headers})
 
-    expect(result).toEqual({status: true}) // same answer as a known address: no account enumeration
+    expect(result).toEqual({status: true}) // same body as a known address (timing still differs)
     expect(sentLinks).toEqual({})
   })
 
