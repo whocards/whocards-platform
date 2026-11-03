@@ -58,8 +58,9 @@ export type ConsentCreate = {
 //     otherwise look "already synced" and be skipped by needsSync()).
 //   - Does NOT overwrite consentedAt (preserves first-consent timestamp).
 //   - Does NOT touch fulfilledAt.
-//   - Keeps an active row's confirmation; a resubscribe after unsubscribing
-//     must confirm again unless this signup is itself confirmed.
+//   - Never changes an active row's confirmation: only the double opt-in link
+//     confirms a pending one. A resubscribe after unsubscribing takes this
+//     signup's confirmation.
 export const upsertConsent = <T extends PgQueryResultHKT>(
   database: PgDatabase<T, typeof schema>,
   consent: ConsentCreate
@@ -81,7 +82,7 @@ export const upsertConsent = <T extends PgQueryResultHKT>(
       set: {
         name: sql`CASE WHEN excluded.name IS NOT NULL THEN excluded.name ELSE ${schema.emailConsent.name} END`,
         userId: sql`COALESCE(excluded.user_id, ${schema.emailConsent.userId})`,
-        confirmedAt: sql`CASE WHEN ${schema.emailConsent.unsubscribedAt} IS NULL THEN COALESCE(${schema.emailConsent.confirmedAt}, excluded.confirmed_at) ELSE excluded.confirmed_at END`,
+        confirmedAt: sql`CASE WHEN ${schema.emailConsent.unsubscribedAt} IS NULL THEN ${schema.emailConsent.confirmedAt} ELSE excluded.confirmed_at END`,
         unsubscribedAt: null,
         unsubscribeSource: null,
         providerSyncedAt: null,

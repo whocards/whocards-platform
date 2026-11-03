@@ -127,6 +127,18 @@ describe('upsertConsent — email_consent table (#119)', () => {
     expect(new Date(second.consentedAt).toISOString()).toBe(fixedConsentedAt)
   })
 
+  it('never confirms a pending row, e.g. from the legacy backfill (#360)', async () => {
+    const consent = {
+      email: 'pending@example.com',
+      consentType: 'newsletter',
+      consentSource: 'footer',
+      confirmed: false,
+    } as const
+    await upsertConsent(db, consent)
+    const backfill = {...consent, consentSource: 'legacy_user_newsletter', confirmed: true}
+    expect((await upsertConsent(db, backfill)).confirmedAt).toBeNull()
+  })
+
   it('keeps an active confirmation, but a resubscribe after unsubscribing must confirm again (#360)', async () => {
     const consent = {
       email: 'again@example.com',
