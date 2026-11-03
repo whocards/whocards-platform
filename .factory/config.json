@@ -35,6 +35,7 @@
       "apps/app/src/routes/api/**",
       "apps/website/src/pages/api/**",
       "apps/website/src/server/**",
+      "packages/api/**",
       "packages/env/**",
       "**/netlify.toml",
       ".github/workflows/**"
