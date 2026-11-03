@@ -6,7 +6,7 @@ import {sendEmail} from '@whocards/emails/resend'
 
 import {db, schema} from '../db'
 import {env} from '@whocards/env/app'
-import {MAGIC_LINK_DISABLE_SIGNUP} from './magic-link-policy'
+import {MAGIC_LINK_DISABLE_SIGNUP, knownUsersOnly} from './magic-link-policy'
 import {roles} from './permissions'
 
 // Invite-only like magic links: Google signs in existing users, never creates one.
@@ -52,7 +52,7 @@ export const auth = betterAuth({
       // lock out the seeded owner or anyone people.ts's invite already added.
       disableSignUp: MAGIC_LINK_DISABLE_SIGNUP,
       expiresIn: 60 * 15,
-      sendMagicLink: async ({email, url}) => {
+      sendMagicLink: knownUsersOnly(async ({email, url}) => {
         // Build-time flag: Netlify's function runtime doesn't set NODE_ENV, so a runtime check leaks links to prod logs.
         if (import.meta.env.DEV) {
           // oxlint-disable-next-line no-console -- deliberate dev-only sign-in log, not an error
@@ -66,7 +66,7 @@ export const auth = betterAuth({
           html: <MagicLinkEmail url={url} />,
           text: magicLinkText({url}),
         })
-      },
+      }),
     }),
     organization({
       schema: {

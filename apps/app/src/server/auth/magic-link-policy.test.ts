@@ -3,7 +3,7 @@ import {memoryAdapter} from 'better-auth/adapters/memory'
 import {magicLink} from 'better-auth/plugins'
 import {describe, expect, it} from 'vitest'
 
-import {MAGIC_LINK_DISABLE_SIGNUP} from './magic-link-policy'
+import {MAGIC_LINK_DISABLE_SIGNUP, knownUsersOnly} from './magic-link-policy'
 
 describe('MAGIC_LINK_DISABLE_SIGNUP', () => {
   it('is invite-only: no anonymous magic-link sign-up', () => {
@@ -25,7 +25,7 @@ type FakeUserRow = {
  *  to the users/sessions arrays directly (rather than reading them back out
  *  through MemoryDB's `{[key: string]: any[]}` index signature) so
  *  assertions don't fight noUncheckedIndexedAccess. */
-const buildAuth = () => {
+const buildAuth = ({guarded = false} = {}) => {
   const sentLinks: Record<string, string> = {}
   const users: FakeUserRow[] = []
   const sessions: unknown[] = []
@@ -37,9 +37,9 @@ const buildAuth = () => {
     plugins: [
       magicLink({
         disableSignUp: MAGIC_LINK_DISABLE_SIGNUP,
-        sendMagicLink: async ({email, url}) => {
+        sendMagicLink: (guarded ? knownUsersOnly : <T>(send: T) => send)(async ({email, url}) => {
           sentLinks[email] = url
-        },
+        }),
       }),
     ],
   })
@@ -99,5 +99,32 @@ describe('better-auth magic-link disableSignUp mechanism (invite-only)', () => {
     ).rejects.toMatchObject({statusCode: 302})
     expect(users).toHaveLength(0)
     expect(sessions).toHaveLength(0)
+  })
+})
+
+describe('knownUsersOnly', () => {
+  it('sends no email to an address without a user', async () => {
+    const {auth, sentLinks, headers} = buildAuth({guarded: true})
+    const result = await auth.api.signInMagicLink({body: {email: 'rando@example.com'}, headers})
+
+    expect(result).toEqual({status: true}) // same answer as a known address: no account enumeration
+    expect(sentLinks).toEqual({})
+  })
+
+  it('still sends to an existing user, whatever the case of the address', async () => {
+    const {auth, users, sentLinks, headers} = buildAuth({guarded: true})
+    const now = new Date()
+    users.push({
+      id: 'u1',
+      email: 'avicharlop@gmail.com',
+      name: 'Avi',
+      emailVerified: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+
+    await auth.api.signInMagicLink({body: {email: 'AviCharlop@gmail.com'}, headers})
+
+    expect(Object.keys(sentLinks)).toHaveLength(1)
   })
 })
