@@ -757,6 +757,41 @@ exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
                     | fontStyle: "normal"
                     | fontWeight: "normal"
                     ""
+              <Text>
+                | borderColor: "#dcdee9"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | color: "#6b6d82"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | marginTop: 7
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
+                | textTransform: "uppercase"
+                "Notifications"
+              <View accessibilityRole="button" accessibilityLabel="Daily question: open notification settings" accessibilityState={}>
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Daily question"
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "ionicons"
+                  | fontSize: 16
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
       <View>
         | bottom: 0
         | left: 0
@@ -1118,6 +1153,41 @@ exports[`Settings sheet renders the menu 1`] = `
                     | fontStyle: "normal"
                     | fontWeight: "normal"
                     ""
+              <Text>
+                | borderColor: "#dcdee9"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | color: "#6b6d82"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | marginTop: 7
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
+                | textTransform: "uppercase"
+                "Notifications"
+              <View accessibilityRole="button" accessibilityLabel="Daily question: open notification settings" accessibilityState={}>
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Daily question"
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "ionicons"
+                  | fontSize: 16
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
 `;
 
 exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] = `
@@ -1353,6 +1423,41 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                     | fontStyle: "normal"
                     | fontWeight: "normal"
                     ""
+              <Text>
+                | borderColor: "#f5f5f51a"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | color: "#9698af"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | marginTop: 7
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
+                | textTransform: "uppercase"
+                "Notifications"
+              <View accessibilityRole="button" accessibilityLabel="Daily question: open notification settings" accessibilityState={}>
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#f5f5f5"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Daily question"
+                <Text>
+                  | color: "#9698af"
+                  | fontFamily: "ionicons"
+                  | fontSize: 16
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
 `;
 
 exports[`Share sheet renders all three rows for a Pool-backed Deck 1`] = `

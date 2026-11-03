@@ -36,6 +36,7 @@
  */
 import React from 'react'
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native'
+import {Linking} from 'react-native'
 
 // Jest's default is 5s PER TEST, which this file alone outgrew on CI's 4-vCPU
 // runners: its first `render()` also pays NativeWind's one-off style-registry
@@ -209,6 +210,17 @@ describe('SettingsModal — menu', () => {
     await fireEvent.press(row)
     // No page opened — "back" only ever renders on a pushed page's header.
     expect(screen.queryByLabelText('back')).toBeNull()
+  })
+})
+
+describe('SettingsModal — Notifications (issue #361)', () => {
+  it('opens the OS notification setting from the Daily question row', async () => {
+    const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue()
+    await renderModal()
+    await fireEvent.press(
+      await screen.findByLabelText('Daily question: open notification settings')
+    )
+    expect(openSettings).toHaveBeenCalledTimes(1)
   })
 })
 
