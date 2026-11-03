@@ -1,0 +1,54 @@
+{
+  "$schema": "./schema.json",
+  "configVersion": 1,
+  "departments": ["app", "mobile", "website"],
+  "steps": {
+    "gate": "none",
+    "merge": 2
+  },
+  "modules": {
+    "reviewBots": {
+      "bots": {
+        "greptile": {
+          "login": "greptile-apps",
+          "verdict": "greptile_confidence_score:(\\d)",
+          "pass": "^[45]$",
+          "threads": "findings"
+        },
+        "coderabbit": {
+          "login": "coderabbitai",
+          "threads": "findings"
+        }
+      }
+    }
+  },
+  "labelRenames": {
+    "backlog": "Parked"
+  },
+  "foreman": {
+    "setup": "pnpm wt:setup",
+    "requires": ["pnpm", "docker"],
+    "pushCheck": "pnpm check",
+    "security": [
+      "apps/app/src/server/auth/**",
+      "apps/app/src/server/trpc/**",
+      "apps/app/src/routes/api/**",
+      "apps/website/src/pages/api/**",
+      "apps/website/src/server/**",
+      "packages/env/**",
+      "**/netlify.toml",
+      ".github/workflows/**"
+    ],
+    "migrations": [
+      "apps/app/src/server/db/schema.ts",
+      "apps/website/src/server/db/schema.ts",
+      "packages/game/src/db/schema.ts"
+    ],
+    "migrationFiles": [
+      "apps/app/src/server/db/migrations/*.sql",
+      "apps/website/src/server/db/migrations/*.sql"
+    ],
+    "generate": "pnpm --filter app --filter website db:generate",
+    "schemaChanges": "pr"
+  }
+}

@@ -23,6 +23,7 @@
     "**/drizzle/**",
     "packages/tokens/theme.css",
     "apps/website/**",
-    "**/routeTree.gen.ts"
+    "**/routeTree.gen.ts",
+    ".factory/schema.json"
   ]
 }
