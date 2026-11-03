@@ -51,6 +51,9 @@ export const myOpenTurn = (state: PlayerState | null): TurnView | null => {
   return turn && turn.playerId === state?.me.id && turn.finishedAt === null ? turn : null
 }
 
+/** A recorder stop that hangs past this ends the Turn without its Response, so the game carries on. */
+export const STOP_TIMEOUT_MS = 5000
+
 const noticeOf = (failure: GameError): TurnNotice => failure.refusal ?? 'network'
 
 export const useTurn = <TAudio>({
@@ -144,7 +147,8 @@ export const useTurn = <TAudio>({
     go('finishing')
     let recording: Recording<TAudio> | null = null
     if (from === 'recording' && recorder) {
-      recording = await recorder.stop().catch(() => null)
+      const timedOut = new Promise<null>((resolve) => after(STOP_TIMEOUT_MS, () => resolve(null)))
+      recording = await Promise.race([recorder.stop(), timedOut]).catch(() => null)
       await wakeLock?.release()
     }
     // Queued before the finish call so a tab closed mid-request still keeps the take.
