@@ -5,7 +5,7 @@ import {defineConfig, devices} from '@playwright/test'
 // function), so the static `dist/` harness in playwright.config.ts cannot serve
 // them. We run them against `astro dev`, which serves SSR routes locally.
 //
-// Requires apps/website/.env (placeholder values are fine — see HANDOFF.md).
+// Requires the root .env (placeholder values are fine, see .env.example).
 // The static-page + OG-image suites stay in playwright.config.ts.
 const PORT = 4321
 const baseURL = `http://localhost:${PORT}`
