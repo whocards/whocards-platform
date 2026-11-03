@@ -27,7 +27,7 @@ catalog:
 
   # env validation (Standard Schema based — see each package's keys.ts)
   '@t3-oss/env-core': ^0.13.8
-  zod: ^4.6.5
+  zod: ^4.6.6
 
   # tRPC (in-app router — see ADR-0002)
   '@trpc/server': ^11.19.0
@@ -64,7 +64,30 @@ overrides:
   '@expo/metro-config>lightningcss': 1.30.1
   # One pg keeps a single drizzle-orm copy, so the @whocards/game tables type-check in every host.
   pg: ^8.23.0
+  # Audit floors: transitive advisories, lifted within each parent's range.
+  brace-expansion@<1.1.20: ^1.1.20
+  brace-expansion@>=4.0.0 <5.0.11: ^5.0.11
+  compression@<1.8.2: ^1.8.2
+  devalue@<5.9.3: ^5.9.3
+  dompurify@<3.4.17: ^3.4.17
+  node-forge@<1.4.1: ^1.4.1
+  sharp@<0.35.5: ^0.35.5
+  shell-quote@<1.11.0: ^1.11.0
+  source-map-js@<1.2.2: ^1.2.2
+  # Only zip-it-and-ship-it's Rust function builder reads TOML; its default import works on 5.
+  toml@<5.0.1: ^5.0.1
+  undici@>=8.0.0 <8.12.2: ^8.12.2
+  vite@>=8.2.0 <8.2.4: ^8.2.4
+  zod@>=4.0.0 <4.6.6: ^4.6.6
 
 # Supply-chain guard: quarantine newly published versions for 2 days (2880 min)
 # before they're installable.
 minimumReleaseAge: 2880
+
+# Advisories with no in-range fix; drop each once its parent moves on.
+auditConfig:
+  ignoreGhsas:
+    # zod 3 (no 3.x fix) only via @expo/cli, the dev/EAS-time CLI; app code is on patched zod 4.
+    - GHSA-mrhx-c7xc-m3w5
+    # decode-uri-component 0.2 via expo-router's query-string 7; the fix (0.5.1) is ESM-only and query-string require()s it. Slow path is malformed %-runs in a deep link on the user's own device.
+    - GHSA-qr28-fpjm-wq7f
