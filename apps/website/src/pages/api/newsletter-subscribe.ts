@@ -13,7 +13,10 @@ import {TURNSTILE_ACTION, turnstileMessageFor, verifyTurnstile} from '~server/tu
 // the double opt-in link; the address reaches Resend only once /newsletter/confirm runs.
 export const prerender = false
 
-const schema = z.object({email: z.string().trim().email(), turnstileToken: z.string().default('')})
+const schema = z.object({
+  email: z.string().trim().max(254).email(),
+  turnstileToken: z.string().default(''),
+})
 
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json'}})
