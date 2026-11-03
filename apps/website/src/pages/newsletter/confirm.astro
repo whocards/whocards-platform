@@ -1,0 +1,38 @@
+---
+export const prerender = false
+
+import {Resend} from 'resend'
+import {env} from '~env'
+import Layout from '~layouts/Layout.astro'
+import {syncConsentsBestEffort} from '~server/consent-sync'
+import {normalizeEmail} from '~server/consent'
+import {confirmNewsletterConsent} from '~server/db'
+import {isValidNewsletterConfirmToken} from '~server/newsletter-token'
+
+// Double opt-in landing (#360): the emailed link confirms the newsletter consent,
+// then syncs it to Resend. Re-clicking a used link is a harmless no-op.
+const email = normalizeEmail(Astro.url.searchParams.get('email') ?? '')
+const token = Astro.url.searchParams.get('token') ?? ''
+const valid = email !== '' && isValidNewsletterConfirmToken(email, token, env.RESEND_WEBHOOK_SECRET)
+
+if (valid && (await confirmNewsletterConsent(email)) > 0) {
+  await syncConsentsBestEffort(new Resend(env.RESEND_API_KEY), email, 'newsletter-confirm')
+}
+if (!valid) Astro.response.status = 400
+---
+
+<Layout noindex>
+  <div class='flex w-full flex-col items-center gap-6 self-start px-4 pt-12 text-center text-white'>
+    <h1 class='font-title text-4xl md:text-6xl'>
+      {valid ? "You're subscribed" : 'This link does not work'}
+    </h1>
+    <p class='md:text-2xl'>
+      {
+        valid
+          ? "We'll send you the occasional good question. Unsubscribe anytime."
+          : 'Sign up again from the bottom of any page to get a fresh link.'
+      }
+    </p>
+    <a class='btn-primary btn' href='/'>Go to homepage</a>
+  </div>
+</Layout>

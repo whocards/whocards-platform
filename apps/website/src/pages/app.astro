@@ -376,6 +376,7 @@ const features = [
       const json = (await res.json().catch(() => ({}))) as {message?: string}
       if (res.ok) {
         window.posthog?.capture('app_waitlist_signup', {source, newsletter_opt_in: newsletter})
+        if (newsletter) window.posthog?.capture('newsletter_signup', {source})
         form.reset()
         setStatus(json.message || 'You’re on the list — we’ll email you when it’s live.', true)
       } else {
