@@ -27,7 +27,7 @@ catalog:
 
   # env validation (Standard Schema based — see each package's keys.ts)
   '@t3-oss/env-core': ^0.13.8
-  zod: ^4.6.6
+  zod: ^4.6.5
 
   # tRPC (in-app router — see ADR-0002)
   '@trpc/server': ^11.19.0
@@ -64,7 +64,8 @@ overrides:
   '@expo/metro-config>lightningcss': 1.30.1
   # One pg keeps a single drizzle-orm copy, so the @whocards/game tables type-check in every host.
   pg: ^8.23.0
-  # Audit floors: transitive advisories, lifted within each parent's range.
+  # Audit floors: transitive advisories, lifted within each parent's range
+  # except sharp, which lifts dev-only ipx (Netlify dev image server, wants ^0.34) to 0.35.
   brace-expansion@<1.1.20: ^1.1.20
   brace-expansion@>=4.0.0 <5.0.11: ^5.0.11
   compression@<1.8.2: ^1.8.2
@@ -89,5 +90,8 @@ auditConfig:
   ignoreGhsas:
     # zod 3 (no 3.x fix) only via @expo/cli, the dev/EAS-time CLI; app code is on patched zod 4.
     - GHSA-mrhx-c7xc-m3w5
-    # decode-uri-component 0.2 via expo-router's query-string 7; the fix (0.5.1) is ESM-only and query-string require()s it. Slow path is malformed %-runs in a deep link on the user's own device.
+    # decode-uri-component 0.2 via expo-router's query-string 7: patched locally via patches/decode-uri-component@0.2.2.patch (0.5.1's linear decoder; 0.5 is ESM-only and query-string require()s it).
     - GHSA-qr28-fpjm-wq7f
+
+patchedDependencies:
+  decode-uri-component@0.2.2: patches/decode-uri-component@0.2.2.patch
