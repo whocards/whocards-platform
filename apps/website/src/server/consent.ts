@@ -18,4 +18,5 @@ export const normalizeEmail = (email: string) => email.trim().toLowerCase()
 // Canonical consent_source values written by the app routes.
 export const CONSENT_SOURCE = {
   appPage: 'app_page',
+  footer: 'footer',
 } as const
