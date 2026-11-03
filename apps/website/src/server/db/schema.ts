@@ -44,6 +44,8 @@ export const emailConsent = pgTable(
       .defaultNow()
       .notNull(),
     consentSource: text('consent_source').notNull(),
+    // Null until the double opt-in link is clicked; Resend sync skips unconfirmed rows (#360).
+    confirmedAt: timestamp('confirmed_at', {withTimezone: true, mode: 'string'}),
     unsubscribedAt: timestamp('unsubscribed_at', {withTimezone: true, mode: 'string'}),
     unsubscribeSource: text('unsubscribe_source'),
     fulfilledAt: timestamp('fulfilled_at', {withTimezone: true, mode: 'string'}),
