@@ -3,7 +3,7 @@ name: whocards-questions
 description: Writes or revises WhoCards questions and reflective writing prompts for a frame that combines topic, time, situation, intention, audience, and format. Use when the user wants an insightful or thought-provoking question or conversation starter for a conversation, a check-in, a deck or set, an icebreaker, a journal, or a writing prompt.
 license: MIT
 metadata:
-  version: '0.2'
+  version: '0.1'
   source: https://github.com/whocards/whocards-platform/tree/main/skills/whocards-questions
 ---
 
