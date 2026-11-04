@@ -1,6 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Notifications from 'expo-notifications'
 import {Alert, Linking, Platform} from 'react-native'
+import {
+  DEFAULT_DECK_SLUG,
+  DEFAULT_LANGUAGE,
+  isLanguageCode,
+  pool,
+  questionOfTheDay,
+} from '@whocards/decks'
+import {EVENTS, track} from '@whocards/observability/events'
+import type {PromptScheduledProps} from '@whocards/observability/events'
+
+import {getStoredLanguage} from './language-store'
 
 const KEY_OPEN_COUNT = 'whocards-notifications:open-count'
 const KEY_ASKED = 'whocards-notifications:asked'
@@ -13,15 +24,58 @@ export const ASK_DELAY_MS = 2000
 
 export const ANDROID_CHANNEL_ID = 'daily-question'
 
+/** Local hour the Question of the Day arrives. */
+export const DAILY_HOUR = 18
+
+/** Days scheduled ahead; iOS keeps at most 64 pending local notifications. */
+export const WINDOW_DAYS = 60
+
+const createChannel = async () => {
+  if (Platform.OS !== 'android') return
+  await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+    name: 'Daily question',
+    importance: Notifications.AndroidImportance.DEFAULT,
+  })
+}
+
+const localDateKey = (date: Date) =>
+  [date.getFullYear(), date.getMonth() + 1, date.getDate()]
+    .map((part) => String(part).padStart(2, '0'))
+    .join('-')
+
+/** Replaces the scheduled window with one Question of the Day per local day, only once the OS allows notifications. */
+export const refillDailyQuestions = async (now = new Date()): Promise<void> => {
+  const {status} = await Notifications.getPermissionsAsync()
+  if (status !== Notifications.PermissionStatus.GRANTED) return
+
+  const stored = await getStoredLanguage(DEFAULT_DECK_SLUG)
+  const language = stored && isLanguageCode(stored) ? stored : DEFAULT_LANGUAGE
+  // Android below 13 grants without a prompt, so the channel may not exist yet.
+  await createChannel()
+  await Notifications.cancelAllScheduledNotificationsAsync()
+
+  let count = 0
+  for (let day = 0; count < WINDOW_DAYS; day++) {
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + day, DAILY_HOUR)
+    if (date <= now) continue
+    await Notifications.scheduleNotificationAsync({
+      content: {body: pool[questionOfTheDay(localDateKey(date))]?.[language]},
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date,
+        channelId: ANDROID_CHANNEL_ID,
+      },
+    })
+    count++
+  }
+  track({name: EVENTS.PROMPT_SCHEDULED, props: {count} satisfies PromptScheduledProps})
+}
+
 const requestPermission = async () => {
   // Android 13+ only shows the POST_NOTIFICATIONS prompt once a channel exists.
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-      name: 'Daily question',
-      importance: Notifications.AndroidImportance.DEFAULT,
-    })
-  }
+  await createChannel()
   await Notifications.requestPermissionsAsync()
+  await refillDailyQuestions()
 }
 
 // "Not now" is final: the app never asks again; Settings opens the OS setting instead.
