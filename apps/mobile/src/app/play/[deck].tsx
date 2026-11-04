@@ -233,34 +233,42 @@ const DeckPlayer = ({
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   const {theme, select: selectTheme} = useThemeSetting()
 
-  // Read secondaries + tabletop mode (and language, unless a shared link set it)
-  // from storage: on mount, and again when the in-play Settings sheet closes
-  // (issue #197). Display settings only; draws and progress are untouched. Only
-  // apply stored languages still present in this deck's languages list (guard
-  // against decks dropping one).
+  // Read secondaries + tabletop mode (and language, unless `keepLanguage` says the
+  // current one stands) from storage: on mount, and again when the in-play Settings
+  // sheet closes (issue #197). Display settings only; draws and progress are
+  // untouched. Only apply stored languages still present in this deck's languages
+  // list (guard against decks dropping one).
   const readSettings = useCallback(
-    (applyLinkLanguage: boolean) => {
-      const secondaries = getStoredSecondaryLanguages(deckSlug).then((stored) =>
-        setSecondary(stored.filter((code) => languages.includes(code)))
-      )
-      const tabletopMode = getStoredTabletopMode().then((stored) => setTabletop(stored))
-      // A shared link's language takes precedence on open — skip the stored value.
-      const primary =
-        applyLinkLanguage && linkLanguage
-          ? Promise.resolve(setLanguage(linkLanguage))
-          : getStoredLanguage(deckSlug).then((stored) => {
-              if (stored && languages.includes(stored)) {
-                setLanguage(stored)
-              }
-            })
-      return Promise.all([primary, secondaries, tabletopMode])
-    },
-    [deckSlug, languages, linkLanguage]
+    (keepLanguage: (stored: string | undefined) => boolean) =>
+      Promise.all([
+        getStoredLanguage(deckSlug).then((stored) => {
+          if (stored && languages.includes(stored) && !keepLanguage(stored)) {
+            setLanguage(stored)
+          }
+        }),
+        getStoredSecondaryLanguages(deckSlug).then((stored) =>
+          setSecondary(stored.filter((code) => languages.includes(code)))
+        ),
+        getStoredTabletopMode().then(setTabletop),
+      ]),
+    [deckSlug, languages]
   )
 
+  // A shared link's language takes precedence on open — skip the stored value.
   useEffect(() => {
-    void readSettings(true).then(() => setLanguageReady(true))
-  }, [readSettings])
+    if (linkLanguage) setLanguage(linkLanguage)
+    void readSettings(() => linkLanguage !== undefined).then(() => setLanguageReady(true))
+  }, [readSettings, linkLanguage])
+
+  // The stored language as the gear opened: on close, only a change made in the
+  // sheet replaces the language on screen, so a link's language survives.
+  const languageOnOpenRef = useRef<string | undefined>(undefined)
+  const openSettings = useCallback(() => {
+    void getStoredLanguage(deckSlug).then((stored) => {
+      languageOnOpenRef.current = stored
+    })
+    setSettingsModalOpen(true)
+  }, [deckSlug])
 
   // A deep link that arrives while this deck is already open can't ride the route
   // params: expo-router de-dupes a same-route link (e.g. `play/library?q=5` while
@@ -658,7 +666,7 @@ const DeckPlayer = ({
             onPrevious={goPrevious}
             onNext={goNext}
             onShare={handleShare}
-            onSettings={() => setSettingsModalOpen(true)}
+            onSettings={openSettings}
             onExit={handleExit}
           />
         </Animated.View>
@@ -677,7 +685,7 @@ const DeckPlayer = ({
           visible={settingsModalOpen}
           onClose={() => {
             setSettingsModalOpen(false)
-            void readSettings(false)
+            void readSettings((stored) => stored === languageOnOpenRef.current)
           }}
           deckSlug={deckSlug}
           languages={languages}

@@ -180,6 +180,7 @@ jest.mock('@whocards/observability/events', () => {
 
 import {getDeck} from '@whocards/decks'
 import {getStoredGame} from '@/lib/game-store'
+import {getStoredLanguage} from '@/lib/language-store'
 import {getStoredTabletopMode} from '@/lib/tabletop-store'
 import {getStoredTheme} from '@/lib/theme-store'
 
@@ -284,6 +285,42 @@ describe('Play screen', () => {
     await fireEvent.press(screen.getByLabelText('close'))
     await settle()
     expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(2)
+  })
+
+  it("keeps a link's language when the in-play Settings sheet closes unchanged (issue #197)", async () => {
+    const deck = getDeck('library')
+    const [stored = '', linked = ''] = deck?.languages ?? []
+    mockParams = {deck: 'library', q: '1', lang: linked}
+    // Mount, gear open, and close each read the stored language once.
+    jest
+      .mocked(getStoredLanguage)
+      .mockResolvedValueOnce(stored)
+      .mockResolvedValueOnce(stored)
+      .mockResolvedValueOnce(stored)
+    await renderUi(<PlayScreen />)
+    await settle()
+    const linkedQuestion = deck?.questions['1']?.[linked] ?? ''
+    expect(screen.getByText(linkedQuestion)).toBeTruthy()
+    await fireEvent.press(screen.getByLabelText('open settings'))
+    await settle()
+    await fireEvent.press(screen.getByLabelText('close'))
+    await settle()
+    expect(screen.getByText(linkedQuestion)).toBeTruthy()
+  })
+
+  it('applies a Language changed in the in-play Settings sheet on close (issue #197)', async () => {
+    const deck = getDeck('library')
+    const [stored = '', linked = '', chosen = ''] = deck?.languages ?? []
+    mockParams = {deck: 'library', q: '1', lang: linked}
+    jest.mocked(getStoredLanguage).mockResolvedValueOnce(stored).mockResolvedValueOnce(stored)
+    await renderUi(<PlayScreen />)
+    await settle()
+    await fireEvent.press(screen.getByLabelText('open settings'))
+    await settle()
+    jest.mocked(getStoredLanguage).mockResolvedValueOnce(chosen)
+    await fireEvent.press(screen.getByLabelText('close'))
+    await settle()
+    expect(screen.getByText(deck?.questions['1']?.[chosen] ?? '')).toBeTruthy()
   })
 
   it('renders the unknown-Deck message', async () => {
