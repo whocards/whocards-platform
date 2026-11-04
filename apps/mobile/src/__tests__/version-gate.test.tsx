@@ -38,7 +38,10 @@ const renderGate = async () => {
   await act(async () => {})
 }
 
-afterEach(() => mockQuery.mockReset())
+afterEach(() => {
+  mockQuery.mockReset()
+  jest.restoreAllMocks()
+})
 
 describe('isBelowMinimum', () => {
   it.each([
@@ -57,13 +60,17 @@ describe('isBelowMinimum', () => {
 })
 
 describe('VersionGate', () => {
-  it('shows the update screen with the store link when the installed version is below the minimum', async () => {
+  it.each([
+    ['ios', storeUrl.ios],
+    ['android', storeUrl.android],
+  ] as const)('on %s, below the minimum shows the update screen and opens %s', async (os, url) => {
+    jest.replaceProperty(Platform, 'OS', os)
     mockQuery.mockResolvedValue({minVersion: '1.3.0', storeUrl})
     const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true)
     await renderGate()
     expect(screen.queryByText('Library')).toBeNull()
     await fireEvent.press(screen.getByRole('button', {name: 'Update'}))
-    expect(openURL).toHaveBeenCalledWith(Platform.OS === 'ios' ? storeUrl.ios : storeUrl.android)
+    expect(openURL).toHaveBeenCalledWith(url)
   })
 
   it('runs the app when the installed version is at the minimum', async () => {
