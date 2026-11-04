@@ -118,5 +118,163 @@
       ],
       "note": "Daily sequence: a seventh day of the same request. Returning to the broad theme of today is fine; repeating any listed angle is not."
     }
+  },
+  {
+    "id": "RQ-set",
+    "prompt": "Give me 5 questions for a Monday team check-in.",
+    "recent_questions": [
+      {
+        "question": "What is one thing you are looking forward to this week?",
+        "delivered_at": "2026-11-03",
+        "frame": "Monday team check-in, colleagues"
+      },
+      {
+        "question": "How are you arriving today?",
+        "delivered_at": "2026-11-02",
+        "frame": "Monday team check-in, colleagues"
+      },
+      {
+        "question": "What is taking up most of your headspace right now?",
+        "delivered_at": "2026-11-01",
+        "frame": "Monday team check-in, colleagues"
+      },
+      {
+        "question": "What would make this week a good one for you?",
+        "delivered_at": "2026-10-31",
+        "frame": "Monday team check-in, colleagues"
+      },
+      {
+        "question": "What is something small that went well last week?",
+        "delivered_at": "2026-10-30",
+        "frame": "Monday team check-in, colleagues"
+      },
+      {
+        "question": "Where could you use a hand this week?",
+        "delivered_at": "2026-10-29",
+        "frame": "Monday team check-in, colleagues"
+      },
+      {
+        "question": "What gave you energy over the weekend?",
+        "delivered_at": "2026-10-28",
+        "frame": "Monday team check-in, colleagues"
+      },
+      {
+        "question": "What is one word for how you are feeling right now?",
+        "delivered_at": "2026-10-27",
+        "frame": "Monday team check-in, colleagues"
+      }
+    ],
+    "expect": {
+      "count": 5,
+      "format": "question",
+      "avoid": [
+        "What is one thing you are looking forward to this week?",
+        "How are you arriving today?",
+        "What is taking up most of your headspace right now?",
+        "What would make this week a good one for you?",
+        "What is something small that went well last week?",
+        "Where could you use a hand this week?",
+        "What gave you energy over the weekend?",
+        "What is one word for how you are feeling right now?"
+      ],
+      "note": "Set with history: eight earlier check-in questions cover the obvious angles (week ahead, arriving, headspace, last week, help, weekend, one word). None of the five may repeat or closely paraphrase one, and the five must still differ from each other."
+    }
+  },
+  {
+    "id": "RQ-set-paraphrase",
+    "prompt": "Give me 5 questions for a first date.",
+    "recent_questions": [
+      {
+        "question": "What is something you are excited about right now?",
+        "delivered_at": "2026-11-02",
+        "frame": "first date, two people"
+      },
+      {
+        "question": "What does a perfect weekend look like for you?",
+        "delivered_at": "2026-11-01",
+        "frame": "first date, two people"
+      },
+      {
+        "question": "What is a small thing that always makes your day better?",
+        "delivered_at": "2026-10-31",
+        "frame": "first date, two people"
+      },
+      {
+        "question": "Who in your life has shaped you the most?",
+        "delivered_at": "2026-10-30",
+        "frame": "first date, two people"
+      },
+      {
+        "question": "What is something you have changed your mind about?",
+        "delivered_at": "2026-10-29",
+        "frame": "first date, two people"
+      },
+      {
+        "question": "What would you do with a year off?",
+        "delivered_at": "2026-10-28",
+        "frame": "first date, two people"
+      }
+    ],
+    "expect": {
+      "count": 5,
+      "format": "question",
+      "avoid": [
+        "What is something you are excited about right now?",
+        "What does a perfect weekend look like for you?",
+        "What is a small thing that always makes your day better?",
+        "Who in your life has shaped you the most?",
+        "What is something you have changed your mind about?",
+        "What would you do with a year off?"
+      ],
+      "note": "Close paraphrase in a set: \"What are you looking forward to these days?\" or \"Who has influenced you most?\" repeat a listed angle under new wording."
+    }
+  },
+  {
+    "id": "RQ-opener",
+    "prompt": "Give me a question for a New Year's Eve dinner with friends.",
+    "recent_questions": [
+      {
+        "question": "What are you most proud of from this past year?",
+        "delivered_at": "2025-12-31",
+        "frame": "New Year's Eve, friends, dinner"
+      },
+      {
+        "question": "What do you want to leave behind in this year?",
+        "delivered_at": "2024-12-31",
+        "frame": "New Year's Eve, friends, dinner"
+      },
+      {
+        "question": "What are you hoping for in the year ahead?",
+        "delivered_at": "2023-12-31",
+        "frame": "New Year's Eve, friends, dinner"
+      },
+      {
+        "question": "What surprised you most about this year?",
+        "delivered_at": "2022-12-31",
+        "frame": "New Year's Eve, friends, dinner"
+      }
+    ],
+    "expect": {
+      "count": 1,
+      "format": "question",
+      "avoid": [
+        "What are you most proud of from this past year?",
+        "What do you want to leave behind in this year?",
+        "What are you hoping for in the year ahead?",
+        "What surprised you most about this year?"
+      ],
+      "note": "New opener alone is not new: \"Looking back, what are you proudest of this year?\" or \"As this year closes, what are you ready to let go of?\" keep a listed angle behind a new opening clause."
+    }
+  },
+  {
+    "id": "RQ-empty",
+    "prompt": "Give me 3 questions for siblings on a long train ride.",
+    "recent_questions": [],
+    "expect": {
+      "count": 3,
+      "format": "question",
+      "avoid": [],
+      "note": "Empty history: write as with no history. Three questions and nothing else; no mention of history or freshness."
+    }
   }
 ]
