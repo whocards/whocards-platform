@@ -14,7 +14,12 @@ import * as Notifications from 'expo-notifications'
 import {Alert, Platform} from 'react-native'
 import type {AlertButton} from 'react-native'
 
-import {ANDROID_CHANNEL_ID, recordOpenAndMaybeAsk} from '../lib/notification-store'
+import {
+  ANDROID_CHANNEL_ID,
+  ASK_DELAY_MS,
+  askAfterLaunch,
+  recordOpenAndMaybeAsk,
+} from '../lib/notification-store'
 
 const getPermissions = jest.mocked(Notifications.getPermissionsAsync)
 const requestPermissions = jest.mocked(Notifications.requestPermissionsAsync)
@@ -86,5 +91,41 @@ describe('notification permission ask', () => {
     await recordOpenAndMaybeAsk()
     await recordOpenAndMaybeAsk()
     expect(alert).not.toHaveBeenCalled()
+  })
+
+  it('stops counting opens once it has asked', async () => {
+    await recordOpenAndMaybeAsk()
+    await recordOpenAndMaybeAsk()
+    await recordOpenAndMaybeAsk()
+    expect(await AsyncStorage.getItem('whocards-notifications:open-count')).toBe('2')
+  })
+
+  it('swallows a failed OS request after "Yes"', async () => {
+    requestPermissions.mockRejectedValueOnce(new Error('denied by OS'))
+    await recordOpenAndMaybeAsk()
+    await recordOpenAndMaybeAsk()
+    await pressAlertButton('Yes')
+    expect(requestPermissions).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('askAfterLaunch', () => {
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
+  it('waits past the splash and entrance before counting the open', async () => {
+    askAfterLaunch()
+    await jest.advanceTimersByTimeAsync(ASK_DELAY_MS - 1)
+    expect(await AsyncStorage.getItem('whocards-notifications:open-count')).toBeNull()
+    await jest.advanceTimersByTimeAsync(1)
+    expect(await AsyncStorage.getItem('whocards-notifications:open-count')).toBe('1')
+  })
+
+  it('never asks once cancelled by an unmount', async () => {
+    await recordOpenAndMaybeAsk()
+    askAfterLaunch()()
+    await jest.advanceTimersByTimeAsync(ASK_DELAY_MS)
+    expect(alert).not.toHaveBeenCalled()
+    expect(await AsyncStorage.getItem('whocards-notifications:open-count')).toBe('1')
   })
 })
