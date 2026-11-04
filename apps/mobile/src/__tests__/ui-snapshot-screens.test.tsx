@@ -119,6 +119,12 @@ jest.mock('expo-splash-screen', () => ({
 // Offline-first (ADR-0002): the Library renders the bundled Deck numbers and
 // silently reconciles with the API. An empty manifest is the offline path, and
 // the one that doesn't depend on what the server happens to hold today.
+jest.mock('expo-notifications', () => ({
+  ...jest.requireActual('expo-notifications'),
+  addNotificationResponseReceivedListener: jest.fn(() => ({remove: jest.fn()})),
+  getLastNotificationResponse: jest.fn(() => null),
+}))
+
 jest.mock('@/lib/trpc', () => ({
   trpc: {decks: {manifest: {query: jest.fn().mockResolvedValue([])}}},
 }))

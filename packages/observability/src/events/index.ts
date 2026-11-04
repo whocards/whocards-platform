@@ -31,6 +31,8 @@ export const EVENTS = {
   SHARE_SHEET_OPENED: 'share_sheet_opened',
   SHARE_COMPLETED: 'share_completed',
   PROMPT_SCHEDULED: 'prompt_scheduled',
+  PROMPT_OPENED: 'prompt_opened',
+  PROMPT_PLAYED: 'prompt_played',
 } as const
 
 /** Game ids used in event payloads — single source of truth for the `game` prop. */
@@ -122,6 +124,10 @@ export type ShareEventName = typeof EVENTS.SHARE_SHEET_OPENED | typeof EVENTS.SH
 
 /** The app re-filled its rolling window of daily Question of the Day notifications (issue #362). */
 export type PromptScheduledProps = {count: number}
+/** A Question of the Day notification was tapped (issue #363). */
+export type PromptOpenedProps = {question_id: string; language: string}
+/** The player showed the Question a tapped notification asked for (issue #363). */
+export type PromptPlayedProps = {deck_id: string; question_id: string; language: string}
 
 // ---------------------------------------------------------------------------
 // Typed track wrapper

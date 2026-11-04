@@ -9,9 +9,14 @@ import {
   questionOfTheDay,
 } from '@whocards/decks'
 import {EVENTS, track} from '@whocards/observability/events'
-import type {PromptScheduledProps} from '@whocards/observability/events'
+import type {
+  PromptOpenedProps,
+  PromptPlayedProps,
+  PromptScheduledProps,
+} from '@whocards/observability/events'
 
 import {getStoredLanguage} from './language-store'
+import {parsePlayLink} from './play-link'
 
 const KEY_OPEN_COUNT = 'whocards-notifications:open-count'
 const KEY_ASKED = 'whocards-notifications:asked'
@@ -29,6 +34,9 @@ export const DAILY_HOUR = 18
 
 /** Days scheduled ahead; iOS keeps at most 64 pending local notifications. */
 export const WINDOW_DAYS = 60
+
+/** Marks a scheduled notification's `data` as a Question of the Day. */
+export const PROMPT_SOURCE = 'question_of_the_day'
 
 const createChannel = async () => {
   if (Platform.OS !== 'android') return
@@ -58,8 +66,15 @@ export const refillDailyQuestions = async (now = new Date()): Promise<void> => {
   for (let day = 0; count < WINDOW_DAYS; day++) {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + day, DAILY_HOUR)
     if (date <= now) continue
+    const id = questionOfTheDay(localDateKey(date))
     await Notifications.scheduleNotificationAsync({
-      content: {body: pool[questionOfTheDay(localDateKey(date))]?.[language]},
+      content: {
+        body: pool[id]?.[language],
+        data: {
+          url: `mobile://play/${DEFAULT_DECK_SLUG}?q=${id}&lang=${language}`,
+          source: PROMPT_SOURCE,
+        },
+      },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date,
@@ -111,4 +126,44 @@ export const openNotificationSetting = async (): Promise<void> => {
   } else {
     await Linking.openSettings()
   }
+}
+
+// The tapped Question waiting for the player to show it; prompt_played fires once, then clears it.
+let pendingPrompt: string | null = null
+let lastResponseId: string | null = null
+
+const openPrompt = (response: Notifications.NotificationResponse) => {
+  const {identifier, content} = response.notification.request
+  // A cold-start tap can reach both the listener and the launch check.
+  if (identifier === lastResponseId) return
+  const {url, source} = content.data ?? {}
+  if (source !== PROMPT_SOURCE || typeof url !== 'string') return
+  const link = parsePlayLink(url)
+  if (!link?.q) return
+  lastResponseId = identifier
+  pendingPrompt = link.q
+  track({
+    name: EVENTS.PROMPT_OPENED,
+    props: {
+      question_id: link.q,
+      language: link.lang ?? DEFAULT_LANGUAGE,
+    } satisfies PromptOpenedProps,
+  })
+  // openURL, not router.navigate: the player's `url` listener moves the Card when the deck is already open.
+  void Linking.openURL(url)
+}
+
+/** Opens the player on a tapped Question of the Day, from cold start or the background; returns the cleanup. */
+export const listenForPromptTaps = (): (() => void) => {
+  const sub = Notifications.addNotificationResponseReceivedListener(openPrompt)
+  const launch = Notifications.getLastNotificationResponse()
+  if (launch) openPrompt(launch)
+  return () => sub.remove()
+}
+
+/** Called as the player shows a Question: reports prompt_played when it is the tapped one. */
+export const notePromptShown = (props: PromptPlayedProps): void => {
+  if (props.question_id !== pendingPrompt || props.deck_id !== DEFAULT_DECK_SLUG) return
+  pendingPrompt = null
+  track({name: EVENTS.PROMPT_PLAYED, props})
 }
