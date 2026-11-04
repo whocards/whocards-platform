@@ -166,7 +166,7 @@ describe('Share sheet', () => {
     visible: true,
     questionText: 'What is your favorite memory?',
     shareUrl: 'https://whocards.cc/play?lang=en&q=q-1',
-    onShare: noop,
+    onShareEvent: noop,
     onClose: noop,
   }
 

@@ -19,6 +19,7 @@ import type {GameId, NavAction, QuestionSet} from '@whocards/decks'
 import {DEFAULT_GAME, getDeck, getInitialNav, isPoolBacked, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
+import type {ShareEventName} from '@whocards/observability/events'
 
 import {PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
@@ -493,10 +494,10 @@ const DeckPlayer = ({
     setShareModalOpen(true)
   }, [text])
 
-  const handleShareCompleted = useCallback(
-    (format: ShareFormat) => {
+  const handleShareEvent = useCallback(
+    (name: ShareEventName, format: ShareFormat) => {
       track({
-        name: EVENTS.SHARE_COMPLETED,
+        name,
         props: {deck_id: deckSlug, question_id: questionId, language, game: GAMES.WH, format},
       })
     },
@@ -655,7 +656,7 @@ const DeckPlayer = ({
           shareUrl={buildShareUrl(deckSlug, language, questionId)}
           storyImageUrl={poolBacked ? buildShareCardUrl('story', language, questionId) : undefined}
           postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
-          onShare={handleShareCompleted}
+          onShareEvent={handleShareEvent}
           onClose={() => setShareModalOpen(false)}
         />
       </View>
