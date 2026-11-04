@@ -6,14 +6,15 @@ import {
   commitsAfter,
   greptileFinding,
   greptileSummary,
+  mapLine,
   matchFindings,
   parseMarkerComment,
   touchesWindow,
   upsertRow,
+  verdict,
 } from './review-diff.mjs'
 
 const f = (path, line) => ({path, line, summary: ''})
-const commit = (sha, date) => ({sha, commit: {committer: {date}}})
 
 void test('parses path:line findings from the marker comment only', () => {
   const body = `${MARKER}\n## Findings\n- \`src/a.ts:12\` — leaks a timer\nsrc/b.ts:40-44 - no timeout\nnot a finding`
@@ -65,10 +66,46 @@ void test('Greptile findings keep the line numbered at the reviewed commit', () 
   assert.equal(greptileFinding({...c, original_line: null}).line, 81)
 })
 
-void test('later commits are those after the reviewed sha, even when dates say otherwise', () => {
-  // a rebase restamps every commit after the comment
-  const commits = [commit('a', '2026-02-01'), commit('b', '2026-02-01'), commit('c', '2026-02-01')]
-  assert.deepEqual(commitsAfter(commits, {commitId: 'b', createdAt: '2026-01-15'}), ['c'])
-  const dated = [commit('x', '2026-01-10'), commit('y', '2026-01-20')]
-  assert.deepEqual(commitsAfter(dated, {commitId: 'gone', createdAt: '2026-01-15'}), ['y'])
+void test('later commits are those after the reviewed sha, and unknown once it is gone', () => {
+  const commits = [{sha: 'a'}, {sha: 'b'}, {sha: 'c'}]
+  assert.deepEqual(commitsAfter(commits, {commitId: 'b'}), ['c'])
+  assert.equal(commitsAfter(commits, {commitId: 'gone'}), null)
+})
+
+void test('a line is carried past the hunks above it', () => {
+  const insert10 = `@@ -1,1 +1,11 @@\n ctx\n${'+x\n'.repeat(10)}`
+  assert.equal(mapLine(insert10, 50), 60)
+  assert.equal(mapLine(insert10, 1), 1)
+  assert.equal(mapLine('@@ -40,3 +40,2 @@\n ctx\n-gone\n ctx', 50), 49)
+  assert.equal(mapLine('@@ -40,3 +40,2 @@\n ctx\n-gone\n ctx', 42), 41)
+  assert.equal(mapLine('@@ -60,1 +60,2 @@\n ctx\n+x', 50), 50)
+})
+
+void test('verdict follows the finding through earlier commits', () => {
+  const insert10 = `@@ -1,1 +1,11 @@\n ctx\n${'+x\n'.repeat(10)}`
+  const fixAt60 = '@@ -59,3 +59,3 @@\n ctx\n-old\n+new\n ctx'
+  const files = {a: [{filename: 'a.ts', patch: insert10}], b: [{filename: 'a.ts', patch: fixAt60}]}
+  const finding = {path: 'a.ts', line: 50}
+  assert.equal(
+    verdict(finding, ['a', 'b'], (sha) => files[sha]),
+    'acted-on'
+  )
+  // the same edit at the finding's old number is now 10 lines away from it
+  const fixAt50 = '@@ -49,3 +49,3 @@\n ctx\n-old\n+new\n ctx'
+  assert.equal(
+    verdict(
+      finding,
+      ['a', 'c'],
+      (sha) => ({...files, c: [{filename: 'a.ts', patch: fixAt50}]})[sha]
+    ),
+    'ignored'
+  )
+  assert.equal(
+    verdict(finding, null, () => []),
+    'unknown'
+  )
+  assert.equal(
+    verdict({...finding, thumbsDown: true}, null, () => []),
+    'thumbs-down'
+  )
 })

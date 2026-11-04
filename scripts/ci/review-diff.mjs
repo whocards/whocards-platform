@@ -69,6 +69,27 @@ export function touchesWindow(patch, line, tolerance = TOLERANCE) {
   return changedOldLines(patch).some((l) => Math.abs(l - line) <= tolerance)
 }
 
+// Where an unchanged old-side line sits after the patch.
+export function mapLine(patch, line) {
+  let old = 0
+  let now = 0
+  for (const text of patch.split('\n')) {
+    const hunk = /^@@ -(\d+)(?:,\d+)? \+(\d+)/.exec(text)
+    if (hunk) {
+      if (line < Number(hunk[1])) break
+      old = Number(hunk[1])
+      now = Number(hunk[2])
+    } else if (text.startsWith('-')) old++
+    else if (text.startsWith('+')) now++
+    else if (!text.startsWith('\\')) {
+      if (old === line) return now
+      old++
+      now++
+    }
+  }
+  return line + now - old
+}
+
 function ghJsonLines(path) {
   const out = execFileSync('gh', ['api', '--paginate', path, '--jq', '.[]'], {encoding: 'utf8'})
   return out
@@ -82,14 +103,18 @@ function ghJson(path) {
 }
 
 // thumbs-down wins over acted-on: a person said it was wrong even if the lines later moved.
-function verdict(finding, laterCommits, filesBySha) {
+// Each patch is numbered at its parent, so the finding's line is carried through every commit it survives.
+export function verdict(finding, laterCommits, filesBySha) {
   if (finding.thumbsDown) return 'thumbs-down'
-  const acted = laterCommits.some((sha) =>
-    filesBySha(sha).some(
-      (f) => f.filename === finding.path && f.patch && touchesWindow(f.patch, finding.line)
-    )
-  )
-  return acted ? 'acted-on' : 'ignored'
+  if (!laterCommits) return 'unknown'
+  let line = finding.line
+  for (const sha of laterCommits) {
+    const patch = filesBySha(sha).find((f) => f.filename === finding.path)?.patch
+    if (!patch) continue
+    if (touchesWindow(patch, line)) return 'acted-on'
+    line = mapLine(patch, line)
+  }
+  return 'ignored'
 }
 
 // Greptile opens with a P1/P2 badge image; keep its alt text, drop the markup, keep the first line.
@@ -109,19 +134,14 @@ export function greptileFinding(c) {
     line: c.original_line ?? c.line,
     summary: greptileSummary(c.body),
     commitId: c.original_commit_id,
-    createdAt: c.created_at,
     thumbsDown: (c.reactions?.['-1'] ?? 0) > 0,
   }
 }
 
-// Commits after the reviewed one in PR order; dates only when a force-push dropped that sha, since rebases rewrite them.
+// Commits after the reviewed one in PR order; none when a force-push dropped that sha, since rebases restamp dates.
 export function commitsAfter(commits, finding) {
   const at = commits.findIndex((c) => c.sha === finding.commitId)
-  const later =
-    at === -1
-      ? commits.filter((c) => c.commit.committer.date > finding.createdAt)
-      : commits.slice(at + 1)
-  return later.map((c) => c.sha)
+  return at === -1 ? null : commits.slice(at + 1).map((c) => c.sha)
 }
 
 function reviewPr(pr) {
