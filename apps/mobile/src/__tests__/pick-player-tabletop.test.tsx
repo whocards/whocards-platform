@@ -1,7 +1,3 @@
-/**
- * Tabletop mode in Pick a Card (issue #170): the revealed Card's question face
- * mirrors like Classic's, with the rotated copy hidden from screen readers.
- */
 import React from 'react'
 import {fireEvent, render, screen} from '@testing-library/react-native'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
@@ -52,7 +48,6 @@ const revealCard = async (tabletop: boolean) => {
   await fireEvent.press(await screen.findByLabelText('Pick a card'))
 }
 
-/** True when an ancestor hides `node` from the accessibility tree. */
 type Node = ReturnType<typeof screen.getAllByText>[number]
 
 const hiddenFromA11y = (node: Node) => {

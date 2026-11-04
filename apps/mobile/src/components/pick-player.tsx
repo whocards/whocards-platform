@@ -35,8 +35,8 @@ import {incrementCardCount, incrementSessionCount} from '@/lib/app-review'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
-import {getStoredTabletopMode} from '@/lib/tabletop-store'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
+import {getStoredTabletopMode} from '@/lib/tabletop-store'
 
 // Full card flip (deal → reveal) duration; DESIGN.md's 200–300 ms band applies to
 // interaction transitions — the deal is the one composed "moment of theatre" per card.
