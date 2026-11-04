@@ -216,6 +216,20 @@ describe('SettingsModal — menu', () => {
   })
 })
 
+describe('SettingsModal — in-play sheet (issue #197)', () => {
+  it('hides the Game row when showGame is false, keeping every other setting', async () => {
+    await renderModal({showGame: false})
+    await screen.findByText('Settings')
+    expect(screen.queryByText('Game')).toBeNull()
+    expect(screen.queryByLabelText(/^Game:/)).toBeNull()
+    expect(screen.getByText('Language')).toBeTruthy()
+    expect(screen.getByText('Second language')).toBeTruthy()
+    expect(screen.getByText('Tabletop mode')).toBeTruthy()
+    expect(screen.getByText('Theme')).toBeTruthy()
+    expect(screen.getByLabelText('Daily question: open notification settings')).toBeTruthy()
+  })
+})
+
 describe('SettingsModal — Notifications (issue #361)', () => {
   it('opens the notification setting from the Daily question row', async () => {
     await renderModal()

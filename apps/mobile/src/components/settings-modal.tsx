@@ -77,6 +77,8 @@ type SettingsModalProps = {
   languages: string[]
   theme: ThemeSetting
   onSelectTheme: (theme: ThemeSetting) => void
+  /** False in the play screens (issue #197): the Game never changes mid-session. */
+  showGame?: boolean
 }
 
 /**
@@ -217,6 +219,7 @@ export const SettingsModal = ({
   languages,
   theme,
   onSelectTheme,
+  showGame = true,
 }: SettingsModalProps) => {
   const insets = useSafeAreaInsets()
   const isDark = useIsDark()
@@ -373,20 +376,22 @@ export const SettingsModal = ({
               {/* label mirrors the visible text so tests and screen readers see the
                   current value (a button's children collapse behind its label in
                   the iOS a11y tree) — same pattern as the old Library chips. */}
-              <Pressable
-                onPress={() => goToPage('game')}
-                accessibilityRole="button"
-                accessibilityLabel={`Game: ${gameTitle}`}
-                className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
-              >
-                <Text className="text-darker dark:text-white font-sans text-lg">Game</Text>
-                <View className="flex-row items-center gap-1.5">
-                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                    {gameTitle}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={16} color={chevronColor} />
-                </View>
-              </Pressable>
+              {showGame ? (
+                <Pressable
+                  onPress={() => goToPage('game')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Game: ${gameTitle}`}
+                  className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                >
+                  <Text className="text-darker dark:text-white font-sans text-lg">Game</Text>
+                  <View className="flex-row items-center gap-1.5">
+                    <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
+                      {gameTitle}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={16} color={chevronColor} />
+                  </View>
+                </Pressable>
+              ) : null}
 
               <Pressable
                 onPress={() => hasLanguageChoice && goToPage('language')}
