@@ -3,6 +3,8 @@ import {test} from 'node:test'
 import {
   MARKER,
   changedOldLines,
+  commitsAfter,
+  greptileFinding,
   greptileSummary,
   matchFindings,
   parseMarkerComment,
@@ -11,6 +13,7 @@ import {
 } from './review-diff.mjs'
 
 const f = (path, line) => ({path, line, summary: ''})
+const commit = (sha, date) => ({sha, commit: {committer: {date}}})
 
 void test('parses path:line findings from the marker comment only', () => {
   const body = `${MARKER}\n## Findings\n- \`src/a.ts:12\` — leaks a timer\nsrc/b.ts:40-44 - no timeout\nnot a finding`
@@ -54,4 +57,18 @@ void test('Greptile summaries keep the badge and drop the markup', () => {
   const body =
     '\n<a href="#"><img alt="P1" src="https://x/p1.svg" align="top"></a> **No timeout on verify**\n\nmore'
   assert.equal(greptileSummary(body), 'P1 **No timeout on verify**')
+})
+
+void test('Greptile findings keep the line numbered at the reviewed commit', () => {
+  const c = {path: 'a.ts', line: 81, original_line: 75, original_commit_id: 'b', body: 'x'}
+  assert.equal(greptileFinding(c).line, 75)
+  assert.equal(greptileFinding({...c, original_line: null}).line, 81)
+})
+
+void test('later commits are those after the reviewed sha, even when dates say otherwise', () => {
+  // a rebase restamps every commit after the comment
+  const commits = [commit('a', '2026-02-01'), commit('b', '2026-02-01'), commit('c', '2026-02-01')]
+  assert.deepEqual(commitsAfter(commits, {commitId: 'b', createdAt: '2026-01-15'}), ['c'])
+  const dated = [commit('x', '2026-01-10'), commit('y', '2026-01-20')]
+  assert.deepEqual(commitsAfter(dated, {commitId: 'gone', createdAt: '2026-01-15'}), ['y'])
 })

@@ -102,16 +102,32 @@ export function greptileSummary(body) {
     .slice(0, 120)
 }
 
+// original_line is numbered at the commit Greptile reviewed, as later patches and the skill run are; line has moved to head.
+export function greptileFinding(c) {
+  return {
+    path: c.path,
+    line: c.original_line ?? c.line,
+    summary: greptileSummary(c.body),
+    commitId: c.original_commit_id,
+    createdAt: c.created_at,
+    thumbsDown: (c.reactions?.['-1'] ?? 0) > 0,
+  }
+}
+
+// Commits after the reviewed one in PR order; dates only when a force-push dropped that sha, since rebases rewrite them.
+export function commitsAfter(commits, finding) {
+  const at = commits.findIndex((c) => c.sha === finding.commitId)
+  const later =
+    at === -1
+      ? commits.filter((c) => c.commit.committer.date > finding.createdAt)
+      : commits.slice(at + 1)
+  return later.map((c) => c.sha)
+}
+
 function reviewPr(pr) {
   const greptile = ghJsonLines(`repos/{owner}/{repo}/pulls/${pr}/comments`)
     .filter((c) => c.user?.login === GREPTILE_LOGIN && !c.in_reply_to_id)
-    .map((c) => ({
-      path: c.path,
-      line: c.line ?? c.original_line,
-      summary: greptileSummary(c.body),
-      createdAt: c.created_at,
-      thumbsDown: (c.reactions?.['-1'] ?? 0) > 0,
-    }))
+    .map(greptileFinding)
   const markerComments = ghJsonLines(`repos/{owner}/{repo}/issues/${pr}/comments`).filter((c) =>
     c.body.includes(MARKER)
   )
@@ -125,8 +141,7 @@ function reviewPr(pr) {
     return files.get(sha)
   }
   for (const g of result.greptileOnly) {
-    const later = commits.filter((c) => c.commit.committer.date > g.createdAt).map((c) => c.sha)
-    g.verdict = verdict(g, later, filesBySha)
+    g.verdict = verdict(g, commitsAfter(commits, g), filesBySha)
   }
   const merged = ghJson(`repos/{owner}/{repo}/pulls/${pr}`).merged_at
   return {pr, merged, hasMarker: markerComments.length > 0, ...result}
