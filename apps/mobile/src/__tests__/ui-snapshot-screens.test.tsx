@@ -37,7 +37,7 @@
  * of the removed `UNSAFE_*` queries appear.
  */
 import React from 'react'
-import {act, render, screen} from '@testing-library/react-native'
+import {act, fireEvent, render, screen} from '@testing-library/react-native'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
 import {setColorScheme} from '@/lib/color-scheme'
 
@@ -178,7 +178,9 @@ jest.mock('@whocards/observability/events', () => {
   return {...actual, track: jest.fn()}
 })
 
+import {getDeck} from '@whocards/decks'
 import {getStoredGame} from '@/lib/game-store'
+import {getStoredTabletopMode} from '@/lib/tabletop-store'
 import {getStoredTheme} from '@/lib/theme-store'
 
 import RootLayout from '../app/_layout'
@@ -267,6 +269,21 @@ describe('Play screen', () => {
     await screen.findByLabelText('exit deck')
     await settle()
     expect(uiSnapshot(screen)).toMatchSnapshot()
+  })
+
+  it('applies a Tabletop mode change from the in-play Settings sheet on close, keeping the Question (issue #197)', async () => {
+    mockParams = {deck: 'library', q: '1'}
+    const question = getDeck('library')?.questions['1']?.en ?? ''
+    await renderUi(<PlayScreen />)
+    await settle()
+    // The mirrored half is hidden from screen readers, so count hidden nodes too.
+    expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(1)
+    await fireEvent.press(screen.getByLabelText('open settings'))
+    expect(screen.queryByLabelText(/^Game:/)).toBeNull()
+    jest.mocked(getStoredTabletopMode).mockResolvedValueOnce(true)
+    await fireEvent.press(screen.getByLabelText('close'))
+    await settle()
+    expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(2)
   })
 
   it('renders the unknown-Deck message', async () => {
