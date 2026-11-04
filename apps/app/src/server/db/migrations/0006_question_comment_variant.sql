@@ -1,1 +1,0 @@
-ALTER TABLE "question_comment" ADD COLUMN "variant" text;
