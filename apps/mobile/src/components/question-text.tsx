@@ -276,13 +276,15 @@ export const QuestionText = ({
 
   const halfBox = {width: box.width, height: Math.max(0, (box.height - MIRROR_GAP) / 2)}
   const far = shown[0]
+  // both halves take the same height so the divider stays centred whatever each language wraps to
+  const half = {height: halfBox.height, justifyContent: 'center'} as const
 
   return (
     <View>
       <View
         accessibilityElementsHidden={!far}
         importantForAccessibility={far ? 'auto' : 'no-hide-descendants'}
-        style={{transform: [{rotate: '180deg'}]}}
+        style={[half, {transform: [{rotate: '180deg'}]}]}
       >
         <QuestionFace
           text={far?.text ?? text}
@@ -294,14 +296,16 @@ export const QuestionText = ({
         />
       </View>
       <TabletopDivider />
-      <QuestionFace
-        text={text}
-        language={language}
-        box={halfBox}
-        shown={[]}
-        compact
-        themedText={themedText}
-      />
+      <View style={half}>
+        <QuestionFace
+          text={text}
+          language={language}
+          box={halfBox}
+          shown={[]}
+          compact
+          themedText={themedText}
+        />
+      </View>
     </View>
   )
 }

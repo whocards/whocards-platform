@@ -113,6 +113,26 @@ describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
     expect(isRotated(secondaries[0])).toBe(true)
   })
 
+  it('gives both halves the same height, each language centred, so the divider stays put', async () => {
+    await render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[
+          {language: 'es', text: 'Una pregunta mucho más larga que ocupa varias líneas'},
+        ]}
+        mirrored
+      />
+    )
+    const halfHeight = (box.height - 28) / 2
+    for (const text of [question, 'Una pregunta mucho más larga que ocupa varias líneas']) {
+      const half = resolvedStyle(screen.getByText(text).parent ?? {props: {}})
+      expect(half.height).toBe(halfHeight)
+      expect(half.justifyContent).toBe('center')
+    }
+  })
+
   it('keeps the rotated second language readable by a screen reader', async () => {
     await render(
       <QuestionText
