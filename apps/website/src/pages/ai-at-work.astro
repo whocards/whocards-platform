@@ -61,35 +61,32 @@ const stats = [
   class='scrollbar-hide'
 >
   <!-- 1. HERO -->
-  <section
-    class='flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col items-center justify-center gap-6 px-8 text-center lg:gap-8'
-  >
-    <h3
-      class='text-sm font-semibold uppercase leading-snug tracking-wide text-primary-dark lg:text-base'
-    >
+  <section class='flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col items-center justify-center gap-6 px-8 text-center lg:gap-8'>
+    <h3 class='text-sm leading-snug font-semibold tracking-wide text-primary-dark uppercase lg:text-base'>
       The AI Check-In
     </h3>
-    <h1 class='font-title text-4xl font-bold leading-tight text-white lg:text-7xl lg:leading-tight'>
+    <h1 class='font-title text-4xl leading-tight font-bold text-white lg:text-7xl lg:leading-tight'>
       Your AI rollout isn't stalling on the tech. It's stalling on the
       <span class='text-gradient'>people</span>.
     </h1>
-    <p class='max-w-2xl text-sm font-semibold leading-7 lg:text-lg'>
+    <p class='max-w-2xl text-sm leading-7 font-semibold lg:text-lg'>
       Use these AI team check-in questions to talk to your team about AI in a free, ~20-minute
       conversation — and surface what people actually think before silence decides for them.
     </p>
     <div class='w-full max-w-xs pt-2'>
-      <Button tag='a' href={deckHref} size='lg' full>Run the check-in</Button>
+      <Button tag='a' href={deckHref} size='lg' full>
+        Run the check-in
+      </Button>
     </div>
     <p class='text-xs text-gray-dark'>
       Free. ~20 minutes. No sign-up — just open the deck and start the conversation.
     </p>
-    <div class='absolute bottom-5 left-0 right-0 grid place-items-center'>
+    <div class='absolute right-0 bottom-5 left-0 grid place-items-center'>
       <a
         href='#why-a-check-in'
         class='scale-150 border-0 border-x-8 border-t-8 border-solid border-x-transparent border-t-primary-light transition-transform hover:scale-[2]'
         aria-label='Scroll to learn more'
-      >
-      </a>
+      ></a>
     </div>
   </section>
 
@@ -113,32 +110,27 @@ const stats = [
 
   <!-- 3. PROOF / STAT STRIP -->
   <section class='w-full px-5 lg:max-w-7xl xl:px-0'>
-    <h2
-      class='mb-8 px-5 text-center font-title text-2xl font-bold leading-snug text-white lg:text-4xl'
-    >
-      The gap isn't capability. It's the <span class='text-gradient'>conversation</span> no one's started.
+    <h2 class='mb-8 px-5 text-center font-title text-2xl leading-snug font-bold text-white lg:text-4xl'>
+      The gap isn't capability. It's the <span class='text-gradient'>conversation</span> no one's
+      started.
     </h2>
-    <div
-      class='grid grid-cols-2 gap-6 rounded-3xl border border-gray-dark bg-background px-6 py-10 lg:grid-cols-4 lg:gap-8 lg:px-12 lg:py-14'
-    >
-      {
-        stats.map((stat) => (
-          <div class='flex flex-col items-center gap-2 text-center'>
-            <span class='text-gradient font-title text-4xl font-extrabold lg:text-6xl'>
-              {stat.value}
-            </span>
-            <span class='text-xs leading-snug text-gray-dark lg:text-sm'>{stat.label}</span>
-            <a
-              href={stat.href}
-              target='_blank'
-              rel='noopener noreferrer'
-              class='text-[0.65rem] text-primary-dark underline transition-colors hover:text-primary-light lg:text-xs'
-            >
-              {stat.source}
-            </a>
-          </div>
-        ))
-      }
+    <div class='grid grid-cols-2 gap-6 rounded-3xl border border-gray-dark bg-background px-6 py-10 lg:grid-cols-4 lg:gap-8 lg:px-12 lg:py-14'>
+      {stats.map((stat) => (
+        <div class='flex flex-col items-center gap-2 text-center'>
+          <span class='text-gradient font-title text-4xl font-extrabold lg:text-6xl'>
+            {stat.value}
+          </span>
+          <span class='text-xs leading-snug text-gray-dark lg:text-sm'>{stat.label}</span>
+          <a
+            href={stat.href}
+            target='_blank'
+            rel='noopener noreferrer'
+            class='text-[0.65rem] text-primary-dark underline transition-colors hover:text-primary-light lg:text-xs'
+          >
+            {stat.source}
+          </a>
+        </div>
+      ))}
     </div>
   </section>
 
@@ -150,7 +142,9 @@ const stats = [
   >
     <form id='lead-magnet-form' class='flex w-full max-w-xl flex-col gap-4'>
       <div class='flex w-full flex-col gap-4 sm:flex-row'>
-        <label class='sr-only' for='lead-magnet-email'>Email address</label>
+        <label class='sr-only' for='lead-magnet-email'>
+          Email address
+        </label>
         <input
           id='lead-magnet-email'
           type='email'
@@ -163,24 +157,21 @@ const stats = [
           Get the 10-question starter
         </Button>
       </div>
-      {
-        siteKey && (
-          <div
-            class='cf-turnstile'
-            data-sitekey={siteKey}
-            data-action={TURNSTILE_ACTION.aiCheckin}
-            data-theme='dark'
-          />
-        )
-      }
+      {siteKey && (
+        <div
+          class='cf-turnstile'
+          data-sitekey={siteKey}
+          data-action={TURNSTILE_ACTION.aiCheckin}
+          data-theme='dark'
+        />
+      )}
     </form>
     <p
       id='lead-magnet-status'
       class='min-h-5 text-sm text-primary-light'
       role='status'
       aria-live='polite'
-    >
-    </p>
+    ></p>
   </PreorderSection>
 
   <!-- 5. FAQ (#207) — targets the named uncontested search/AEO intent
@@ -193,28 +184,26 @@ const stats = [
 
   <!-- 6. FOOTER CTA back to the deck -->
   <div class='w-full px-5 pb-12 lg:max-w-7xl xl:px-0'>
-    <div
-      class='relative flex flex-col items-center overflow-hidden rounded-3xl border border-gray-dark bg-background px-5 py-16 text-center lg:gap-5'
-    >
-      <Icon name='pattern-mobile' class='absolute left-0 right-0 top-0 lg:hidden' />
-      <h3
-        class='text-gradient px-5 text-center font-title text-4xl font-extrabold leading-10 text-white lg:text-[54px] lg:leading-normal'
-      >
+    <div class='relative flex flex-col items-center overflow-hidden rounded-3xl border border-gray-dark bg-background px-5 py-16 text-center lg:gap-5'>
+      <Icon name='pattern-mobile' class='absolute top-0 right-0 left-0 lg:hidden' />
+      <h3 class='text-gradient px-5 text-center font-title text-4xl leading-10 font-extrabold text-white lg:text-[54px] lg:leading-normal'>
         Start the conversation today.
       </h3>
-      <p
-        class='max-w-xl px-5 pb-10 pt-5 text-center text-sm leading-snug lg:max-w-3xl lg:text-lg lg:leading-normal'
-      >
+      <p class='max-w-xl px-5 pt-5 pb-10 text-center text-sm leading-snug lg:max-w-3xl lg:text-lg lg:leading-normal'>
         It takes about 20 minutes and costs nothing. Draw a card, ask the question, and find out
         what your team is really thinking about AI. For conversations beyond work, explore the
         <a
           href='/'
           class='font-semibold text-primary-dark underline underline-offset-4 transition-colors hover:text-primary-light'
-          >free WhoCards conversation game</a
-        >.
+        >
+          free WhoCards conversation game
+        </a>
+        .
       </p>
       <span class='px-5'>
-        <Button tag='a' href={deckHref} size='lg'>Run the check-in</Button>
+        <Button tag='a' href={deckHref} size='lg'>
+          Run the check-in
+        </Button>
       </span>
     </div>
   </div>
@@ -233,11 +222,9 @@ const stats = [
   />
 </Layout>
 
-{
-  siteKey && (
-    <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
-  )
-}
+{siteKey && (
+  <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
+)}
 
 <script>
   const form = document.getElementById('lead-magnet-form') as HTMLFormElement | null

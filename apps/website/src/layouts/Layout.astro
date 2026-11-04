@@ -55,26 +55,22 @@ const noindex = noindexProp || isNoindexRoute(Astro.url.pathname)
       id={id}
       language={lang}
     />
-    {
-      /* iOS Smart App Banner — surfaces install/open on iOS Safari sitewide once the App Store listing is live (#90) */
-    }
+    {/* iOS Smart App Banner — surfaces install/open on iOS Safari sitewide once the App Store listing is live (#90) */}
     {APP_IOS_LAUNCHED && <meta name='apple-itunes-app' content={`app-id=${APP_STORE_APP_ID}`} />}
     <PostHog />
   </head>
   <body
-    class='m-0 flex min-h-screen flex-col font-sans text-white selection:bg-primary-dark selection:text-primary-light scrollbar-hide'
-    class:list={[oldBg && 'bg-hero bg-fixed bg-center bg-no-repeat bg-cover']}
+    class='m-0 scrollbar-hide flex min-h-screen flex-col font-sans text-white selection:bg-primary-dark selection:text-primary-light'
+    class:list={[oldBg && 'bg-hero bg-cover bg-fixed bg-center bg-no-repeat']}
   >
     <Navigation links={links}>
-      {
-        !oldBg && (
-          <span class='-z-10 overflow-hidden absolute top-0 right-0 left-0 bottom-0'>
-            <BackgroundImages />
-          </span>
-        )
-      }
+      {!oldBg && (
+        <span class='absolute top-0 right-0 bottom-0 left-0 -z-10 overflow-hidden'>
+          <BackgroundImages />
+        </span>
+      )}
       <main
-        class='flex min-h-screen pt-16 w-full flex-col items-center justify-center'
+        class='flex min-h-screen w-full flex-col items-center justify-center pt-16'
         class:list={[mainClasses]}
       >
         <slot />

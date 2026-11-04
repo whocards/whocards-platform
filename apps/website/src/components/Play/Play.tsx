@@ -368,7 +368,7 @@ export const Play = ({
           questionClassName
         )}
       >
-        <h1 dir={direction} className='whitespace-pre-wrap leading-tight'>
+        <h1 dir={direction} className='leading-tight whitespace-pre-wrap'>
           {questionText}
         </h1>
       </div>
@@ -382,7 +382,7 @@ export const Play = ({
         }`}
       >
         <div
-          className={`text-gray flex w-full max-w-2xl items-center justify-between gap-8 transition-all duration-500 ${
+          className={`flex w-full max-w-2xl items-center justify-between gap-8 text-gray transition-all duration-500 ${
             showControls ? 'translate-y-0' : 'md:translate-y-16'
           }`}
         >
@@ -407,7 +407,7 @@ export const Play = ({
             <button
               aria-label='change language'
               onClick={handleToggleLanguage}
-              className='group/button btn btn-circle btn-ghost bg-gray hover:bg-gray/80 hover:text-primary-light relative uppercase text-white'
+              className='group/button btn relative btn-circle bg-gray btn-ghost text-white uppercase hover:bg-gray/80 hover:text-primary-light'
             >
               <span className='absolute transition-all duration-200 group-hover/button:-translate-y-full group-hover/button:opacity-0'>
                 {language}

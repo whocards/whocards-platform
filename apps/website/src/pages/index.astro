@@ -30,52 +30,43 @@ const description =
 ---
 
 <Layout title={title} description={description} class='scrollbar-hide'>
-  <div
-    class='flex flex-col gap-4 lg:gap-5 px-8 md:pb-16 max-w-5xl lg:items-center h-[calc(100vh-4rem)] justify-center relative'
-  >
-    <h1
-      class='text-center font-title font-bold text-white text-4xl lg:text-7xl leading-10 lg:leading-20 xs:text-3xl'
-    >
-      Change Your World,<br />One <span class='text-gradient'>Conversation</span> at a Time.
+  <div class='relative flex h-[calc(100vh-4rem)] max-w-5xl flex-col justify-center gap-4 px-8 md:pb-16 lg:items-center lg:gap-5'>
+    <h1 class='text-center font-title text-4xl leading-10 font-bold text-white lg:text-7xl lg:leading-20 xs:text-3xl'>
+      Change Your World,
+      <br />
+      One <span class='text-gradient'>Conversation</span> at a Time.
     </h1>
-    <p
-      class='text-center text-sm lg:text-lg font-semibold xs:leading-normal leading-7 pb-2 lg:px-10'
-    >
+    <p class='pb-2 text-center text-sm leading-7 font-semibold lg:px-10 lg:text-lg xs:leading-normal'>
       Join us in spreading openness, vulnerability, and authenticity by gifting WhoCards for
       yourself or someone who'll treasure them.
     </p>
-    <div
-      class='grid grid-flow-row md:grid-flow-col md:grid-cols-2 gap-8 w-full md:max-w-xl py-5 lg:pt-8 mx-auto'
-    >
-      <Button tag='a' class='play' size='lg' full>Play Online</Button>
-      {
-        APP_VISIBLE ? (
-          <Button tag='a' href='/app' full hideIcon variant='secondary'>
-            Get the App
-          </Button>
-        ) : (
-          <Button tag='a' href='/request-cards' full hideIcon variant='secondary'>
-            Request Cards
-          </Button>
-        )
-      }
+    <div class='mx-auto grid w-full grid-flow-row gap-8 py-5 md:max-w-xl md:grid-flow-col md:grid-cols-2 lg:pt-8'>
+      <Button tag='a' class='play' size='lg' full>
+        Play Online
+      </Button>
+      {APP_VISIBLE ? (
+        <Button tag='a' href='/app' full hideIcon variant='secondary'>
+          Get the App
+        </Button>
+      ) : (
+        <Button tag='a' href='/request-cards' full hideIcon variant='secondary'>
+          Request Cards
+        </Button>
+      )}
     </div>
-    {
-      APP_VISIBLE && (
-        <a
-          href='/request-cards'
-          class='text-sm font-semibold text-gray-lighter underline-offset-4 transition-colors hover:text-primary-light hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light'
-        >
-          Request cards →
-        </a>
-      )
-    }
-    <div class='absolute bottom-5 left-0 right-0 grid place-items-center'>
+    {APP_VISIBLE && (
+      <a
+        href='/request-cards'
+        class='text-sm font-semibold text-gray-lighter underline-offset-4 transition-colors hover:text-primary-light hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light'
+      >
+        Request cards →
+      </a>
+    )}
+    <div class='absolute right-0 bottom-5 left-0 grid place-items-center'>
       <a
         href='#what-is-whocards'
-        class='border-solid scale-150 border-t-primary-light border-t-8 border-x-transparent border-x-8 border-b-0 hover:scale-[2] transition-transform'
-      >
-      </a>
+        class='scale-150 border-x-8 border-t-8 border-b-0 border-solid border-x-transparent border-t-primary-light transition-transform hover:scale-[2]'
+      ></a>
     </div>
   </div>
   <PreorderSection
@@ -83,7 +74,7 @@ const description =
     title='Unlock Deep Conversations and Meaningful Connections'
     description='WhoCards offers 66 carefully curated questions, empowering you to transform your interactions with people from social gatherings to professional settings. The courageous questions and playful guidelines of WhoCards create an atmosphere where you can relax, open up and get to know each other better.'
   >
-    <div class='grid lg:grid-flow-col gap-4 lg:gap-8 lg:grid-cols-4'>
+    <div class='grid gap-4 lg:grid-flow-col lg:grid-cols-4 lg:gap-8'>
       <WhatCard icon='cards' title='Play with Anyone'>
         Establish new connections or uncover deeper aspects of those you believe you already know,
         all by asking one of the "Who Are You" questions.
@@ -98,7 +89,10 @@ const description =
         <a
           href='/ai-at-work'
           class='font-semibold text-primary-dark underline underline-offset-4 transition-colors hover:text-primary-light'
-        >AI team check-in questions</a>.
+        >
+          AI team check-in questions
+        </a>
+        .
       </WhatCard>
       <WhatCard icon='star-circle' title='Take the Lead'>
         Most people enjoy the experience facilitated by WhoCards, and it only requires you to draw a
@@ -113,11 +107,11 @@ const description =
     description='We strongly believe that in this age of disruption and complexity, when our differences are used to keep us separate, one of the most courageous things we can do is show up for others with authenticity, vulnerability, and openness.'
   >
     <RoundedImage alt='people stacking their hands' src={humanityImage} />
-    <Button tag='a' href='/contact' slot='button' light variant='secondary'
-      >Register for our email list</Button
-    >
+    <Button tag='a' href='/contact' slot='button' light variant='secondary'>
+      Register for our email list
+    </Button>
     <p
-      class='leading-snug text-gray-dark pb-2 lg:text-lg lg:max-w-3xl lg:tracking-tight'
+      class='pb-2 leading-snug text-gray-dark lg:max-w-3xl lg:text-lg lg:tracking-tight'
       slot='image-description'
     >
       Whether or not we recognize it on a daily basis, we are all deeply interconnected. WhoCards'
@@ -135,8 +129,8 @@ const description =
   >
     <RoundedImage alt='a team of people' src={teamImage} />
 
-    <div id='description-extra' slot='image-description' class='flex flex-col gap-4 lg:gap5 hidden'>
-      <p class='leading-snug text-gray-dark pb-2 lg:text-lg lg:max-w-3xl lg:tracking-tight'>
+    <div id='description-extra' slot='image-description' class='lg:gap5 flex hidden flex-col gap-4'>
+      <p class='pb-2 leading-snug text-gray-dark lg:max-w-3xl lg:text-lg lg:tracking-tight'>
         WhoCards were born as part of this experiment, as a helper to go beyond starting
         conversations with questions related to our job titles, identities and social status.
         Instead of leaning on socially acceptable questions like, “What do you do?” or “Where are
@@ -144,20 +138,22 @@ const description =
         does happiness mean to you?”, “How do you want to grow old?” or “What was the last thing you
         cried about?”
       </p>
-      <p class='leading-snug text-gray-dark pb-2 lg:text-lg lg:max-w-3xl lg:tracking-tight'>
+      <p class='pb-2 leading-snug text-gray-dark lg:max-w-3xl lg:text-lg lg:tracking-tight'>
         Since then, countless people have found delight in using our carefully curated questions
         across the planet amongst a manifold of different contexts. From garden parties with family
         or friends to strategic and innovation workshops, from orthodox jewish matchmaking dates to
         political negotiations; WhoCards have helped us to move beyond social anxiety, disconnection
         and loneliness.
       </p>
-      <p class='leading-snug text-gray-dark pb-2 lg:text-lg lg:max-w-3xl lg:tracking-tight'>
+      <p class='pb-2 leading-snug text-gray-dark lg:max-w-3xl lg:text-lg lg:tracking-tight'>
         As a result we, humans, were able to playfully find commonalities with others while holding
         completely different beliefs, norms and ideas about what it means to be alive today.
       </p>
     </div>
 
-    <Button slot='button' variant='secondary' id='read-more' light hideIcon>Read more</Button>
+    <Button slot='button' variant='secondary' id='read-more' light hideIcon>
+      Read more
+    </Button>
   </PreorderSectionImage>
 
   <PreorderSectionImage subtitle='how to play?' title='Different ways to engage' forceReverse>
@@ -168,7 +164,7 @@ const description =
   <PreorderSection
     subtitle='testimonials'
     title='Why do people love to play WhoCards?'
-    class='lg:pb-10 pb-4'
+    class='pb-4 lg:pb-10'
   >
     <Testimonials slot='outside' />
   </PreorderSection>
@@ -204,55 +200,49 @@ const description =
     </Button>
   </PreorderSectionImage>
 
-  <div class='px-5 pb-12 w-full lg:max-w-7xl xl:px-0 lg:min-h-[80vh]'>
-    <div
-      class='rounded-3xl flex items-center border border-gray-dark pt-16 relative overflow-hidden bg-background'
-    >
-      <Icon name='pattern-mobile' class='absolute top-0 left-0 right-0 lg:hidden' />
+  <div class='w-full px-5 pb-12 lg:min-h-[80vh] lg:max-w-7xl xl:px-0'>
+    <div class='relative flex items-center overflow-hidden rounded-3xl border border-gray-dark bg-background pt-16'>
+      <Icon name='pattern-mobile' class='absolute top-0 right-0 left-0 lg:hidden' />
       <Image
         src={bgRightImage}
-        class='absolute top-0 right-0 h-[110%] -mr-[10%] hidden lg:block'
+        class='absolute top-0 right-0 -mr-[10%] hidden h-[110%] lg:block'
         alt='background'
       />
       <Image
         src={bgLeftImage}
-        class='absolute top-0 left-0 h-[110%] -ml-[10%] hidden lg:block'
+        class='absolute top-0 left-0 -ml-[10%] hidden h-[110%] lg:block'
         alt='background'
       />
-      <div class='flex flex-col h-full flex-1 lg:items-center lg:gap-5'>
-        <h3
-          class='px-5 text-gradient text-center font-title text-4xl lg:text-[54px] lg:leading-normal font-extrabold leading-10 text-white'
-        >
+      <div class='flex h-full flex-1 flex-col lg:items-center lg:gap-5'>
+        <h3 class='text-gradient px-5 text-center font-title text-4xl leading-10 font-extrabold text-white lg:text-[54px] lg:leading-normal'>
           Request Your Deck!
         </h3>
-        <p
-          class='px-5 text-center pt-5 text-sm lg:text-lg lg:leading-normal leading-snug pb-10 max-w-xl lg:max-w-3xl'
-        >
+        <p class='max-w-xl px-5 pt-5 pb-10 text-center text-sm leading-snug lg:max-w-3xl lg:text-lg lg:leading-normal'>
           WhoCards is on a mission to transform social interactions to become more open, vulnerable,
           and authentic. Reach out through our contact form to request cards for yourself or someone
           who'll treasure them.
         </p>
         <span class='px-5'>
-          <Button tag='a' href='/request-cards'>Request Cards</Button>
+          <Button tag='a' href='/request-cards'>
+            Request Cards
+          </Button>
         </span>
-        <div
-          class='w-full h-60 lg:h-96 overflow-hidden mt-auto mx-auto flex items-end justify-center'
-        >
+        <div class='mx-auto mt-auto flex h-60 w-full items-end justify-center overflow-hidden lg:h-96'>
           <div class='relative w-[165px] lg:w-[16.5rem]'>
             <WhoCard
               lang='en'
               id='66'
-              class='absolute -bottom-8 mx-auto left-0 right-0 z-10 shadow-xl shadow-darker'
+              class='absolute right-0 -bottom-8 left-0 z-10 mx-auto shadow-xl shadow-darker'
             />
             <WhoCard
               lang='en'
               id='65'
-              class='absolute -bottom-16 lg:-bottom-24 -left-36 lg:-left-60 -rotate-12'
+              class='absolute -bottom-16 -left-36 -rotate-12 lg:-bottom-24 lg:-left-60'
             />
             <WhoCard
               lang='en'
               id='64'
-              class='absolute -bottom-16 lg:-bottom-24 -right-36 lg:-right-60 rotate-12'
+              class='absolute -right-36 -bottom-16 rotate-12 lg:-right-60 lg:-bottom-24'
             />
           </div>
         </div>

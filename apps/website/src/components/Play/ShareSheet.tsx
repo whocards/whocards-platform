@@ -196,12 +196,12 @@ export const ShareSheet = ({
           }}
           disabled={state === 'busy'}
           aria-busy={state === 'busy'}
-          className='who-modal btn-ghost flex w-full items-center px-4 py-3 text-left disabled:opacity-60'
+          className='who-modal flex w-full items-center btn-ghost px-4 py-3 text-left disabled:opacity-60'
         >
           {state === 'busy' ? 'Preparing image…' : getImageRowLabel(format, canShareFiles)}
         </button>
         {state === 'error' && (
-          <p role='alert' className='text-red px-4 pb-2 text-sm'>
+          <p role='alert' className='px-4 pb-2 text-sm text-red'>
             Couldn&apos;t load that image — try again.
           </p>
         )}
@@ -216,7 +216,7 @@ export const ShareSheet = ({
       className='modal modal-bottom sm:modal-middle'
     >
       <div className='modal-box max-w-sm bg-white p-0 text-darker'>
-        <div className='flex items-center justify-between px-4 pb-2 pt-4'>
+        <div className='flex items-center justify-between px-4 pt-4 pb-2'>
           <h2 className='text-lg font-bold'>Share</h2>
           <button
             type='button'
@@ -233,12 +233,12 @@ export const ShareSheet = ({
             onClick={() => {
               void handleShareLink()
             }}
-            className='who-modal btn-ghost flex w-full items-center px-4 py-3 text-left'
+            className='who-modal flex w-full items-center btn-ghost px-4 py-3 text-left'
           >
             {linkCopied ? 'Link copied!' : 'Share link'}
           </button>
           {linkError && (
-            <p role='alert' className='text-red px-4 pb-2 text-sm'>
+            <p role='alert' className='px-4 pb-2 text-sm text-red'>
               Couldn&apos;t copy the link — try again.
             </p>
           )}

@@ -360,7 +360,7 @@ function CardVariantCard({
           </button>
         )}
         <a
-          className='btn btn-outline btn-xs ml-auto'
+          className='btn ml-auto btn-outline btn-xs'
           href={imageUrl}
           target='_blank'
           rel='noreferrer'

@@ -11,10 +11,10 @@ export type Props = {
 const {src, alt, full = false, class: classes} = Astro.props
 ---
 
-<div class:list={[full && 'w-full h-full']}>
+<div class:list={[full && 'h-full w-full']}>
   <Image
     src={src}
     alt={alt}
-    class:list={['rounded-[1.25rem] aspect-auto object-cover w-full lg:h-full lg:w-auto', classes]}
+    class:list={['aspect-auto w-full rounded-[1.25rem] object-cover lg:h-full lg:w-auto', classes]}
   />
 </div>

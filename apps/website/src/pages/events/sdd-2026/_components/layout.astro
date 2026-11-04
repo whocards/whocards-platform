@@ -18,18 +18,10 @@ const {title = 'SDD 2026 · WhoCards', wide = false} = Astro.props
       noindex={isNoindexRoute(Astro.url.pathname)}
     />
   </head>
-  <body
-    class='m-0 flex min-h-dvh flex-col bg-background font-sans text-white antialiased selection:bg-primary-dark selection:text-primary-light'
-  >
+  <body class='m-0 flex min-h-dvh flex-col bg-background font-sans text-white antialiased selection:bg-primary-dark selection:text-primary-light'>
     <div aria-hidden='true' class='pointer-events-none fixed inset-0 -z-10 overflow-hidden'>
-      <div
-        class='absolute -top-[35vmax] -right-[25vmax] size-[90vmax] rounded-full bg-[radial-gradient(closest-side,--alpha(var(--color-primary-dark)/32%),transparent)]'
-      >
-      </div>
-      <div
-        class='absolute -bottom-[40vmax] -left-[30vmax] size-[90vmax] rounded-full bg-[radial-gradient(closest-side,--alpha(var(--color-yellow-400)/14%),transparent)]'
-      >
-      </div>
+      <div class='absolute -top-[35vmax] -right-[25vmax] size-[90vmax] rounded-full bg-[radial-gradient(closest-side,--alpha(var(--color-primary-dark)/32%),transparent)]'></div>
+      <div class='absolute -bottom-[40vmax] -left-[30vmax] size-[90vmax] rounded-full bg-[radial-gradient(closest-side,--alpha(var(--color-yellow-400)/14%),transparent)]'></div>
       <div class='absolute inset-0 bg-hero bg-cover bg-center opacity-40'></div>
     </div>
     <header

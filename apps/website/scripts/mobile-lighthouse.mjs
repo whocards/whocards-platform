@@ -81,7 +81,7 @@ const runLighthouse = (index) =>
         `--output-path=${outputPath}`,
         '--quiet',
       ],
-      {stdio: 'inherit'},
+      {stdio: 'inherit'}
     )
     lighthouse.on('error', reject)
     lighthouse.on('exit', (code) => {
@@ -118,13 +118,11 @@ try {
       lcp: metrics.observedLargestContentfulPaint,
       simulatedLcp: report.audits['largest-contentful-paint'].numericValue,
       lcpElement: report.audits['lcp-breakdown-insight']?.details?.items?.find(
-        (item) => item.type === 'node',
+        (item) => item.type === 'node'
       )?.snippet,
     }
   })
-  const lcpMedianSample = samples.toSorted((a, b) => a.lcp - b.lcp)[
-    Math.floor(samples.length / 2)
-  ]
+  const lcpMedianSample = samples.toSorted((a, b) => a.lcp - b.lcp)[Math.floor(samples.length / 2)]
   const median = {
     accessibility: medianOf(samples.map((sample) => sample.accessibility)),
     cls: medianOf(samples.map((sample) => sample.cls)),
@@ -139,7 +137,7 @@ try {
   if (median.cls > MAX_CLS) throw new Error(`CLS ${median.cls} exceeds ${MAX_CLS}`)
   if (median.accessibility < MIN_ACCESSIBILITY_SCORE) {
     throw new Error(
-      `Accessibility ${median.accessibility} regressed below ${MIN_ACCESSIBILITY_SCORE}`,
+      `Accessibility ${median.accessibility} regressed below ${MIN_ACCESSIBILITY_SCORE}`
     )
   }
 } finally {

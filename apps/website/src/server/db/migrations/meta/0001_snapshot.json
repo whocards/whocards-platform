@@ -97,12 +97,8 @@
           "name": "account_account_userId_account_user_id_fk",
           "tableFrom": "account_account",
           "tableTo": "account_user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -110,10 +106,7 @@
       "compositePrimaryKeys": {
         "account_account_provider_providerAccountId_pk": {
           "name": "account_account_provider_providerAccountId_pk",
-          "columns": [
-            "provider",
-            "providerAccountId"
-          ]
+          "columns": ["provider", "providerAccountId"]
         }
       },
       "uniqueConstraints": {}
@@ -193,9 +186,7 @@
         "account_user_email_unique": {
           "name": "account_user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       }
     },
@@ -227,10 +218,7 @@
       "compositePrimaryKeys": {
         "account_verificationToken_identifier_token_pk": {
           "name": "account_verificationToken_identifier_token_pk",
-          "columns": [
-            "identifier",
-            "token"
-          ]
+          "columns": ["identifier", "token"]
         }
       },
       "uniqueConstraints": {}
@@ -430,12 +418,8 @@
           "name": "auth_account_user_id_auth_user_id_fk",
           "tableFrom": "auth_account",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -443,10 +427,7 @@
       "compositePrimaryKeys": {
         "auth_account_provider_provider_account_id_pk": {
           "name": "auth_account_provider_provider_account_id_pk",
-          "columns": [
-            "provider",
-            "provider_account_id"
-          ]
+          "columns": ["provider", "provider_account_id"]
         }
       },
       "uniqueConstraints": {}
@@ -496,12 +477,8 @@
           "name": "auth_session_user_id_auth_user_id_fk",
           "tableFrom": "auth_session",
           "tableTo": "auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -592,10 +569,7 @@
       "compositePrimaryKeys": {
         "auth_verification_token_identifier_token_pk": {
           "name": "auth_verification_token_identifier_token_pk",
-          "columns": [
-            "identifier",
-            "token"
-          ]
+          "columns": ["identifier", "token"]
         }
       },
       "uniqueConstraints": {}
@@ -773,12 +747,8 @@
           "name": "conference_question_tracking_conference_id_fkey",
           "tableFrom": "conference_question_tracking",
           "tableTo": "conference",
-          "columnsFrom": [
-            "conference_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["conference_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -902,12 +872,8 @@
           "name": "email_consent_user_id_user_id_fk",
           "tableFrom": "email_consent",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -917,10 +883,7 @@
         "email_consent_email_consent_type_unique": {
           "name": "email_consent_email_consent_type_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email",
-            "consent_type"
-          ]
+          "columns": ["email", "consent_type"]
         }
       }
     },
@@ -971,12 +934,8 @@
           "name": "purchase_user_id_user_id_fk",
           "tableFrom": "purchase",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1104,12 +1063,8 @@
           "name": "shipping_purchaseId_purchase_id_fk",
           "tableFrom": "shipping",
           "tableTo": "purchase",
-          "columnsFrom": [
-            "purchaseId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["purchaseId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1119,9 +1074,7 @@
         "shipping_purchaseId_unique": {
           "name": "shipping_purchaseId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "purchaseId"
-          ]
+          "columns": ["purchaseId"]
         }
       }
     },
@@ -1168,9 +1121,7 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       }
     },
@@ -1228,12 +1179,8 @@
           "name": "whocards_purchase_userId_account_user_id_fk",
           "tableFrom": "whocards_purchase",
           "tableTo": "account_user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1286,12 +1233,8 @@
           "name": "whocards_session_userId_account_user_id_fk",
           "tableFrom": "whocards_session",
           "tableTo": "account_user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1401,12 +1344,8 @@
           "name": "whocards_shipping_purchaseId_whocards_purchase_id_fk",
           "tableFrom": "whocards_shipping",
           "tableTo": "whocards_purchase",
-          "columnsFrom": [
-            "purchaseId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["purchaseId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1416,9 +1355,7 @@
         "whocards_shipping_purchaseId_unique": {
           "name": "whocards_shipping_purchaseId_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "purchaseId"
-          ]
+          "columns": ["purchaseId"]
         }
       }
     }
@@ -1427,11 +1364,7 @@
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "admin",
-        "owner",
-        "user"
-      ]
+      "values": ["admin", "owner", "user"]
     }
   },
   "schemas": {},
