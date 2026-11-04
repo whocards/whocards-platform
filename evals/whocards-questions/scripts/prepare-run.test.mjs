@@ -4,6 +4,7 @@ import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {test} from 'node:test'
+import {fileURLToPath} from 'node:url'
 import {assertUsableScenarioIds, prepareRun} from './prepare-run.mjs'
 
 await test('freezes repeatable inputs, withholds answers, and refuses to replace a run', async (t) => {
@@ -35,7 +36,9 @@ await test('passes a scenario history to the job and keeps what to avoid out of 
   const parent = await mkdtemp(join(tmpdir(), 'whocards-eval-test-'))
   t.after(() => rm(parent, {recursive: true, force: true}))
   const output = join(parent, 'run')
-  await prepareRun(output, 'test-model', 1, 'prompts-recent-questions.json')
+  const promptsFile = fileURLToPath(new URL('../prompts-recent-questions.json', import.meta.url))
+  const manifest = await prepareRun(output, 'test-model', 1, promptsFile)
+  assert.equal(manifest.prompts, 'prompts-recent-questions.json')
   const expectations = JSON.parse(await readFile(join(output, 'expectations.json'), 'utf8'))
   for (const scenario of expectations) {
     const job = await readFile(join(output, 'jobs', `${scenario.id}-1.txt`), 'utf8')
@@ -44,7 +47,7 @@ await test('passes a scenario history to the job and keeps what to avoid out of 
     assert.ok(job.endsWith(`${scenario.prompt}\n`))
     assert.ok(!job.includes(scenario.expect.note))
   }
-  await prepareRun(join(parent, 'plain'), 'test-model')
+  assert.equal((await prepareRun(join(parent, 'plain'), 'test-model')).prompts, 'prompts.json')
   assert.ok(
     !(await readFile(join(parent, 'plain', 'jobs', 'A-1.txt'), 'utf8')).includes('RECENT QUESTIONS')
   )

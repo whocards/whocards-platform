@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import {createHash} from 'node:crypto'
 import {mkdir, readFile, writeFile} from 'node:fs/promises'
-import {dirname, join, resolve} from 'node:path'
+import {dirname, join, relative, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 const evalRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -18,7 +18,7 @@ const runtimeFiles = [
 // expectations, which makes the evidence it did write unusable.
 export function assertUsableScenarioIds(prompts) {
   if (!Array.isArray(prompts) || prompts.length === 0) {
-    throw new Error('prompts.json must be a non-empty array of scenarios.')
+    throw new Error('The prompts file must be a non-empty array of scenarios.')
   }
   const seen = new Set()
   for (const scenario of prompts) {
@@ -82,7 +82,7 @@ export async function prepareRun(output, model, repeats = 1, promptsFile = 'prom
     requestedModel: model,
     mode: 'explicit skill, bundled resources, fresh conversation per job',
     repeats,
-    prompts: promptsFile,
+    prompts: relative(evalRoot, resolve(evalRoot, promptsFile)),
     hashes,
     jobs,
   }
