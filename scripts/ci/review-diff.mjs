@@ -210,7 +210,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   for (const pr of prs) {
     const r = reviewPr(pr)
     print(r)
-    if (log !== undefined) log = upsertRow(log, logRow(r))
+    if (log === undefined) continue
+    if (r.hasMarker) log = upsertRow(log, logRow(r))
+    else console.error(`PR ${pr} not logged: /code-review has not run on it`)
   }
   if (log !== undefined) {
     writeFileSync(LOG_PATH, log)
