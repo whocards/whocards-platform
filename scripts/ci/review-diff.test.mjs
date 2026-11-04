@@ -23,6 +23,7 @@ void test('parses path:line findings from the marker comment only', () => {
     {path: 'src/b.ts', line: 40, summary: 'no timeout'},
   ])
   assert.deepEqual(parseMarkerComment('src/a.ts:12 — no marker'), [])
+  assert.deepEqual(parseMarkerComment(`quoting:\n${body}`), [])
 })
 
 void test('matches on path within ±3 lines into three lists', () => {

@@ -23,8 +23,10 @@ const LOG_PATH = resolve(
 // `path:line — summary`, optionally bulleted or backticked; `-`, `–` or `—` before the summary.
 const FINDING_LINE = /^\s*(?:[-*]\s+)?`?([^\s`:]+):(\d+)(?:-\d+)?`?\s*[—–-]\s*(.+?)\s*$/
 
+export const isMarkerComment = (body) => body.trimStart().startsWith(MARKER)
+
 export function parseMarkerComment(body) {
-  if (!body.includes(MARKER)) return []
+  if (!isMarkerComment(body)) return []
   return body.split('\n').flatMap((text) => {
     const m = FINDING_LINE.exec(text)
     return m ? [{path: m[1], line: Number(m[2]), summary: m[3]}] : []
@@ -149,7 +151,7 @@ function reviewPr(pr) {
     .filter((c) => c.user?.login === GREPTILE_LOGIN && !c.in_reply_to_id)
     .map(greptileFinding)
   const markerComments = ghJsonLines(`repos/{owner}/{repo}/issues/${pr}/comments`).filter((c) =>
-    c.body.includes(MARKER)
+    isMarkerComment(c.body)
   )
   const skill = markerComments.flatMap((c) => parseMarkerComment(c.body))
   const result = matchFindings(greptile, skill)
