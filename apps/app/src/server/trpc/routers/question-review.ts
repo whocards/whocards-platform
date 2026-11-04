@@ -168,6 +168,7 @@ export const questionReviewRouter = createTRPCRouter({
         db
           .select({
             id: questionComment.id,
+            variant: questionComment.variant,
             body: questionComment.body,
             createdAt: questionComment.createdAt,
             authorEmail: appUser.email,
@@ -180,12 +181,14 @@ export const questionReviewRouter = createTRPCRouter({
               eq(questionComment.questionId, input.questionId)
             )
           )
+          .orderBy(questionComment.createdAt, questionComment.id)
       ),
     add: roleProcedure('reviewer')
       .input(
         z.object({
           deckSlug: z.string().min(1),
           questionId: z.string().min(1),
+          variant: z.string().min(1).optional(),
           body: z.string().min(1).max(2000),
         })
       )
@@ -196,6 +199,7 @@ export const questionReviewRouter = createTRPCRouter({
           deckSlug: input.deckSlug,
           questionId: input.questionId,
           authorId: ctx.user.id,
+          variant: input.variant ?? null,
           body: input.body,
         })
       }),

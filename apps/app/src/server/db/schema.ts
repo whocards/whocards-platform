@@ -225,6 +225,8 @@ export const questionComment = pgTable(
     authorId: text('author_id')
       .notNull()
       .references(() => appUser.id),
+    // The variant slug this comment is on; null for one on the Question as a whole.
+    variant: text('variant'),
     body: text('body').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
