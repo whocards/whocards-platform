@@ -4,9 +4,9 @@
     "date": "2026-11-04",
     "model": "claude-opus-5-5 (Opus 5.5)",
     "reasoningEffort": "not set by the run; agent default",
-    "method": "Claude Code Agent tool, general-purpose subagent, one fresh agent per job launched in parallel. Each agent was told to read its job file (copied to /tmp) and answer it as its only task, with no other reads, no skills and no other tools; its hand-back was the response. Agents inherit the Claude Code system prompt, so the job text was not the only context.",
+    "method": "Claude Code Agent tool, general-purpose subagent, one fresh agent per job launched in parallel. Each agent was told to read its job file (copied to /tmp) and answer it as its only task, with no other reads, no skills and no other tools; its hand-back was the response, copied verbatim into rawResponse. Agents inherit the Claude Code system prompt, so the job text was not the only context.",
     "createdAt": "2026-11-04T00:27:59.927Z",
-    "sourceExperiment": "experiments/whocards-questions/rq-376-v01 (gitignored working directory)",
+    "sourceExperiment": "experiments/whocards-questions/rq-376-v01 (gitignored working directory, not kept; its responses/ folder stayed empty because each rawResponse below was copied verbatim from the agent hand-back)",
     "prompts": "prompts-recent-questions.json",
     "repeats": 2,
     "jobsRun": "the eight jobs of the four scenarios added for #376; the four earlier scenarios ran at the same SKILL.md hash in 2026-11-04-recent-questions.json",
@@ -154,7 +154,7 @@
       "closeParaphrase": false,
       "repeatPass": true,
       "issues": [
-        "Borderline, judged pass: the weather forecast asks about the week ahead as a picture, near \"What would make this week a good one\" and \"one word for how you are feeling\" in spirit but asking a different thing; the help question inverts \"Where could you use a hand\" (giving, not needing)."
+        "Borderline, judged pass: the weather forecast asks about the week ahead as a picture, near \"What would make this week a good one\" and \"one word for how you are feeling\" in spirit but asking a different thing; the help question inverts \"Where could you use a hand\" (giving, not needing). Second borderline pass for a human taste pass to settle: \"What question are you carrying into this week?\" against the history's \"What is taking up most of your headspace right now?\"."
       ],
       "reviewerNotes": "No exact repeat or reworded listed question; two items sit near listed angles without restating them."
     },

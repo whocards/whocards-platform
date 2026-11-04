@@ -18,7 +18,7 @@
 | RQ-opener         | One for New Year's Eve; history holds proud, let go, hopes, surprised     | 2/2 pass |
 | RQ-empty          | Three for siblings on a train, `recent_questions: []`                     | 2/2 pass |
 
-All counts matched; every reply held only the questions. Opener answers: "If you could live one day from this year again, which day would you pick?" and "What moment from this year would you happily live again?", a new angle rather than a listed one behind a new opener. Nearest call, judged pass: RQ-set-2's "If your week had a weather forecast, what would it say?" sits near the history's week and mood angles but asks something else.
+All counts matched; every reply held only the questions. Opener answers: "If you could live one day from this year again, which day would you pick?" and "What moment from this year would you happily live again?", a new angle rather than a listed one behind a new opener. Two near calls, both judged pass, for a human taste pass to settle: RQ-set-2's "If your week had a weather forecast, what would it say?" sits near the history's week and mood angles but asks something else, and RQ-set-2's "What question are you carrying into this week?" sits near the history's "What is taking up most of your headspace right now?".
 
 With the baseline, the set now passes for single and multi-question requests and empty history, all on v0.1.
 
