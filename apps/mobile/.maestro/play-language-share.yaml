@@ -3,9 +3,8 @@
 # the Settings menu's Language sheet, the swipe gesture engine, the auto-hiding
 # chrome, and the share action) on one run.
 #
-# Issue #176 moved the language sheet out of the play screen entirely — it's
-# only reachable from the home screen's Settings menu now, so the language
-# switch happens BEFORE tapping Play, not from within the player.
+# The language switch happens on the home screen's Settings menu before Play;
+# the player's gear (issue #197) then shows the same sheet, minus the Game row.
 #
 # NOTE (issue #189, fourth pass): Settings is a single Modal with sliding
 # internal pages. Picking a primary language now auto-returns to the menu —
@@ -44,6 +43,16 @@ tags:
 - waitForAnimationToEnd
 - swipe:
     direction: RIGHT
+- waitForAnimationToEnd
+
+# The bar's gear opens Settings mid-play (issue #197): the language picked on
+# the home screen shows, and the Game row is hidden while a deck is open.
+- tapOn:
+    point: '50%,45%'
+- tapOn: 'open settings'
+- assertVisible: 'Language: Hebrew'
+- assertNotVisible: 'Game: .*'
+- tapOn: 'close'
 - waitForAnimationToEnd
 
 # Reveal the auto-hiding chrome (a tap anywhere) and fire the share action. The

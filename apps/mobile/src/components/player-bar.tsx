@@ -44,6 +44,8 @@ type PlayerBarProps = {
   onPrevious: () => void
   onNext: () => void
   onShare: () => void
+  /** Open the in-play Settings sheet (issue #197). */
+  onSettings: () => void
   /** Leave the player — same handler the old top-right close chip called (issue #186). */
   onExit: () => void
 }
@@ -62,14 +64,15 @@ type PlayerBarProps = {
  * right after Back. Used to also carry a Language/Display button that opened
  * the in-play language sheet (issue #148); issue #176 moved every setting
  * (Language, Tabletop mode, Game, Theme) into one Settings menu reachable only
- * from the home screen — the play screens have no settings entry of their own
- * anymore, so the bar reads Prev · Exit · Share · Next.
+ * from the home screen; issue #197 adds a Settings gear back, opening that same
+ * sheet without the Game row, so the bar reads Prev · Exit · Settings · Share · Next.
  */
 export const PlayerBar = ({
   showShare = true,
   onPrevious,
   onNext,
   onShare,
+  onSettings,
   onExit,
 }: PlayerBarProps) => {
   const insets = useSafeAreaInsets()
@@ -93,6 +96,13 @@ export const PlayerBar = ({
         label="Exit"
         onPress={onExit}
         accessibilityLabel="exit deck"
+        iconColor={iconColor}
+      />
+      <BarButton
+        icon="settings-outline"
+        label="Settings"
+        onPress={onSettings}
+        accessibilityLabel="open settings"
         iconColor={iconColor}
       />
       {showShare ? (

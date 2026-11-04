@@ -253,7 +253,7 @@ describe('Play screen', () => {
 
   it('renders a Question in the Dark Theme Display setting', async () => {
     mockParams = {deck: 'library', q: '1'}
-    await act(() => setColorScheme('dark'))
+    jest.mocked(getStoredTheme).mockResolvedValueOnce('dark')
     await renderUi(<PlayScreen />)
     await screen.findByLabelText('exit deck')
     await settle()

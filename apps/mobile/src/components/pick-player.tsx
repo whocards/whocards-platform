@@ -25,10 +25,12 @@ import type {ShareEventName} from '@whocards/observability/events'
 import {PlayerBar} from '@/components/player-bar'
 import {PressableScale} from '@/components/pressable-scale'
 import {LINE_HEIGHT_RATIO, QuestionText} from '@/components/question-text'
+import {SettingsModal} from '@/components/settings-modal'
 import type {ShareFormat} from '@/components/share-modal'
 import {ShareModal} from '@/components/share-modal'
 import {usePlayerChrome} from '@/hooks/use-player-chrome'
 import {useReviewPrompt} from '@/hooks/use-review-prompt'
+import {useThemeSetting} from '@/hooks/use-theme-setting'
 import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
 import {useIsDark} from '@/lib/color-scheme'
@@ -124,8 +126,7 @@ export const PickPlayer = ({
   const defaultLanguage = languages[0]
   const [language, setLanguage] = useState(defaultLanguage)
   // secondary display language rendered under the primary (a Display setting,
-  // issue #176: at most one now, not up to two) — read-only here, same as
-  // DeckPlayer: set from the home-screen Settings menu, not from this screen.
+  // issue #176: at most one now, not up to two) — set from the Settings sheet.
   const [secondary, setSecondary] = useState<string[]>([])
   // Tabletop mode (issue #148, a Display setting): mirrors the revealed face, same as DeckPlayer.
   const [tabletop, setTabletop] = useState(false)
@@ -133,19 +134,30 @@ export const PickPlayer = ({
   const [languageReady, setLanguageReady] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
 
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+  const {theme, select: selectTheme} = useThemeSetting()
+
+  // On mount, and again when the in-play Settings sheet closes (issue #197);
+  // display settings only, so the deal and its progress stay as they are.
+  const readSettings = useCallback(
+    () =>
+      Promise.all([
+        getStoredLanguage(deckSlug).then((stored) => {
+          if (stored && languages.includes(stored)) {
+            setLanguage(stored)
+          }
+        }),
+        getStoredSecondaryLanguages(deckSlug).then((stored) =>
+          setSecondary(stored.filter((code) => languages.includes(code)))
+        ),
+        getStoredTabletopMode().then(setTabletop),
+      ]),
+    [deckSlug, languages]
+  )
+
   useEffect(() => {
-    void Promise.all([
-      getStoredLanguage(deckSlug).then((stored) => {
-        if (stored && languages.includes(stored)) {
-          setLanguage(stored)
-        }
-      }),
-      getStoredSecondaryLanguages(deckSlug).then((stored) =>
-        setSecondary(stored.filter((code) => languages.includes(code)))
-      ),
-      getStoredTabletopMode().then(setTabletop),
-    ]).then(() => setLanguageReady(true))
-  }, [deckSlug, languages])
+    void readSettings().then(() => setLanguageReady(true))
+  }, [readSettings])
 
   const questionId = nav.ids[nav.idx]
   const text = questions[questionId]?.[language] ?? questions[questionId]?.[defaultLanguage] ?? ''
@@ -533,6 +545,7 @@ export const PickPlayer = ({
             onPrevious={goPrevious}
             onNext={goNext}
             onShare={handleShare}
+            onSettings={() => setSettingsModalOpen(true)}
             onExit={handleExit}
           />
         </Animated.View>
@@ -545,6 +558,19 @@ export const PickPlayer = ({
           postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
           onShareEvent={handleShareEvent}
           onClose={() => setShareModalOpen(false)}
+        />
+
+        <SettingsModal
+          visible={settingsModalOpen}
+          onClose={() => {
+            setSettingsModalOpen(false)
+            void readSettings()
+          }}
+          deckSlug={deckSlug}
+          languages={languages}
+          theme={theme}
+          onSelectTheme={selectTheme}
+          showGame={false}
         />
       </View>
     </ScreenBackground>

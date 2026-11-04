@@ -118,6 +118,12 @@ describe('Settings sheet', () => {
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
+  it('renders the in-play menu, without the Game row (issue #197)', async () => {
+    await renderSettings({showGame: false})
+    await screen.findByText('Settings')
+    expect(uiSnapshot(screen)).toMatchSnapshot()
+  })
+
   it('renders a risen page over the dimmed menu', async () => {
     await renderSettings()
     await fireEvent.press(await screen.findByLabelText('Game: Classic'))
@@ -191,15 +197,24 @@ describe('Share sheet', () => {
 })
 
 describe('Player bar', () => {
-  it('renders Prev / Exit / Share / Next', async () => {
-    await renderUi(<PlayerBar onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} />)
+  it('renders Prev / Exit / Settings / Share / Next', async () => {
+    await renderUi(
+      <PlayerBar onPrevious={noop} onNext={noop} onShare={noop} onSettings={noop} onExit={noop} />
+    )
     await screen.findByLabelText('exit deck')
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
   it('renders without Share (the pick screen before a deal)', async () => {
     await renderUi(
-      <PlayerBar showShare={false} onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} />
+      <PlayerBar
+        showShare={false}
+        onPrevious={noop}
+        onNext={noop}
+        onShare={noop}
+        onSettings={noop}
+        onExit={noop}
+      />
     )
     await screen.findByLabelText('exit deck')
     expect(uiSnapshot(screen)).toMatchSnapshot()

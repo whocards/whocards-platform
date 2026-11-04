@@ -25,10 +25,12 @@ import {PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
 import {QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
+import {SettingsModal} from '@/components/settings-modal'
 import type {ShareFormat} from '@/components/share-modal'
 import {ShareModal} from '@/components/share-modal'
 import {usePlayerChrome} from '@/hooks/use-player-chrome'
 import {useReviewPrompt} from '@/hooks/use-review-prompt'
+import {useThemeSetting} from '@/hooks/use-theme-setting'
 import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
 import {useIsDark} from '@/lib/color-scheme'
@@ -228,27 +230,37 @@ const DeckPlayer = ({
   const [languageReady, setLanguageReady] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
 
-  // Seed language + secondaries + tabletop mode from storage on mount — READ
-  // only. Issue #176 moved every setting into the home-screen Settings menu;
-  // this screen just applies whatever was last chosen there (or on a previous
-  // visit, before #176), it doesn't offer a way to change them anymore. Only
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+  const {theme, select: selectTheme} = useThemeSetting()
+
+  // Read secondaries + tabletop mode (and language, unless a shared link set it)
+  // from storage: on mount, and again when the in-play Settings sheet closes
+  // (issue #197). Display settings only; draws and progress are untouched. Only
   // apply stored languages still present in this deck's languages list (guard
   // against decks dropping one).
+  const readSettings = useCallback(
+    (applyLinkLanguage: boolean) => {
+      const secondaries = getStoredSecondaryLanguages(deckSlug).then((stored) =>
+        setSecondary(stored.filter((code) => languages.includes(code)))
+      )
+      const tabletopMode = getStoredTabletopMode().then((stored) => setTabletop(stored))
+      // A shared link's language takes precedence on open — skip the stored value.
+      const primary =
+        applyLinkLanguage && linkLanguage
+          ? Promise.resolve(setLanguage(linkLanguage))
+          : getStoredLanguage(deckSlug).then((stored) => {
+              if (stored && languages.includes(stored)) {
+                setLanguage(stored)
+              }
+            })
+      return Promise.all([primary, secondaries, tabletopMode])
+    },
+    [deckSlug, languages, linkLanguage]
+  )
+
   useEffect(() => {
-    const secondaries = getStoredSecondaryLanguages(deckSlug).then((stored) =>
-      setSecondary(stored.filter((code) => languages.includes(code)))
-    )
-    const tabletopMode = getStoredTabletopMode().then((stored) => setTabletop(stored))
-    // A shared link's language takes precedence — skip the stored value entirely.
-    const primary = linkLanguage
-      ? Promise.resolve(setLanguage(linkLanguage))
-      : getStoredLanguage(deckSlug).then((stored) => {
-          if (stored && languages.includes(stored)) {
-            setLanguage(stored)
-          }
-        })
-    void Promise.all([primary, secondaries, tabletopMode]).then(() => setLanguageReady(true))
-  }, [deckSlug, languages, linkLanguage])
+    void readSettings(true).then(() => setLanguageReady(true))
+  }, [readSettings])
 
   // A deep link that arrives while this deck is already open can't ride the route
   // params: expo-router de-dupes a same-route link (e.g. `play/library?q=5` while
@@ -646,6 +658,7 @@ const DeckPlayer = ({
             onPrevious={goPrevious}
             onNext={goNext}
             onShare={handleShare}
+            onSettings={() => setSettingsModalOpen(true)}
             onExit={handleExit}
           />
         </Animated.View>
@@ -658,6 +671,19 @@ const DeckPlayer = ({
           postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
           onShareEvent={handleShareEvent}
           onClose={() => setShareModalOpen(false)}
+        />
+
+        <SettingsModal
+          visible={settingsModalOpen}
+          onClose={() => {
+            setSettingsModalOpen(false)
+            void readSettings(false)
+          }}
+          deckSlug={deckSlug}
+          languages={languages}
+          theme={theme}
+          onSelectTheme={selectTheme}
+          showGame={false}
         />
       </View>
     </ScreenBackground>
