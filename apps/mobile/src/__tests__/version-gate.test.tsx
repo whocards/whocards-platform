@@ -54,6 +54,8 @@ describe('isBelowMinimum', () => {
     ['1.2.0', null, false],
     [null, '9.9.9', false],
     ['garbage', '1.0.0', false],
+    ['0.9.bad', '1.0.0', false],
+    ['0.9.0', '1.0.bad', false],
   ])('%s below %s: %s', (installed, minimum, expected) => {
     expect(isBelowMinimum(installed, minimum)).toBe(expected)
   })
