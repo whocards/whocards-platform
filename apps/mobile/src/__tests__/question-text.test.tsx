@@ -4,7 +4,8 @@
  * Covers Tabletop mode (issue #148, a Display setting): with `mirrored`, the
  * Question renders twice — a normal bottom half and a 180°-rotated top half —
  * and the rotated copy must be hidden from the accessibility tree so a screen
- * reader announces the Question once, not twice. Also covers the `fitFontSize`
+ * reader announces the Question once, not twice; with a second language each
+ * side shows one language (issue #366). Also covers the `fitFontSize`
  * `minFont` override that gives the mirrored halves a lower font floor, and
  * `fitSecondaryFontSize`'s headroom growth (issue #189).
  */
@@ -73,6 +74,10 @@ describe('fitSecondaryFontSize — headroom growth (issue #189)', () => {
   })
 })
 
+type Node = ReturnType<typeof screen.getByText>
+const isRotated = (node: Node | null | undefined): boolean =>
+  !!node && (JSON.stringify(node.props.style ?? null).includes('180deg') || isRotated(node.parent))
+
 describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
   const box = {width: 300, height: 400}
   const question = 'What matters to you right now?'
@@ -99,20 +104,66 @@ describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
     expect(screen.getAllByText(question)).toHaveLength(1)
   })
 
-  it('renders secondaries in both mirrored halves, one hidden from accessibility', async () => {
+  // issue #366: each side reads its own language — near = primary, far (rotated) = secondary
+  const secondary = '¿Qué te importa ahora mismo?'
+  it('shows only the primary near and only the secondary on the rotated far side', async () => {
     await render(
       <QuestionText
         text={question}
         language="en"
         box={box}
-        secondaries={[{language: 'es', text: '¿Qué te importa ahora mismo?'}]}
+        secondaries={[{language: 'es', text: secondary}]}
         mirrored
       />
     )
-    expect(
-      screen.getAllByText('¿Qué te importa ahora mismo?', {includeHiddenElements: true})
-    ).toHaveLength(2)
-    expect(screen.getAllByText('¿Qué te importa ahora mismo?')).toHaveLength(1)
+    const primaries = screen.getAllByText(question, {includeHiddenElements: true})
+    const secondaries = screen.getAllByText(secondary, {includeHiddenElements: true})
+    expect(primaries).toHaveLength(1)
+    expect(secondaries).toHaveLength(1)
+    expect(isRotated(primaries[0])).toBe(false)
+    expect(isRotated(secondaries[0])).toBe(true)
+  })
+
+  it('keeps the rotated second language readable by a screen reader', async () => {
+    await render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[{language: 'es', text: secondary}]}
+        mirrored
+      />
+    )
+    // the far side is no longer a duplicate, so hiding it would drop the second language
+    expect(screen.getByText(question)).toBeTruthy()
+    expect(screen.getByText(secondary)).toBeTruthy()
+  })
+
+  it('falls back to the primary on both sides when the secondary has no translation', async () => {
+    await render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[{language: 'es', text: ''}]}
+        mirrored
+      />
+    )
+    expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(2)
+    expect(screen.getAllByText(question)).toHaveLength(1)
+  })
+
+  it('stacks both languages when not mirrored', async () => {
+    await render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[{language: 'es', text: secondary}]}
+      />
+    )
+    expect(screen.getAllByText(question)).toHaveLength(1)
+    expect(screen.getAllByText(secondary)).toHaveLength(1)
   })
 })
 
