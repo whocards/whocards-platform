@@ -1,5 +1,5 @@
 {
-  "$schema": "./schema.json",
+  "$schema": "https://gist.githubusercontent.com/acharlop/231a74058cbcb56fe3dce2d354f4d3a4/raw/v1.json",
   "configVersion": 1,
   "departments": ["app", "mobile", "website"],
   "steps": {
