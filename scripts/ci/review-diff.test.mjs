@@ -67,6 +67,24 @@ void test('Greptile findings keep the line numbered at the reviewed commit', () 
   assert.equal(greptileFinding({...c, original_line: null}).line, 81)
 })
 
+void test('a finding on a deleted line is unknown and pairs with nothing', () => {
+  const c = {
+    path: 'a.ts',
+    line: 10,
+    original_line: 10,
+    side: 'LEFT',
+    original_commit_id: 'b',
+    body: 'x',
+  }
+  const finding = greptileFinding(c)
+  const fixAt10 = '@@ -9,3 +9,3 @@\n ctx\n-old\n+new\n ctx'
+  assert.equal(
+    verdict(finding, ['c'], () => [{filename: 'a.ts', patch: fixAt10}]),
+    'unknown'
+  )
+  assert.deepEqual(matchFindings([finding], [{path: 'a.ts', line: 10}]).both, [])
+})
+
 void test('later commits are those after the reviewed sha, and unknown once it is gone', () => {
   const commits = [{sha: 'a'}, {sha: 'b'}, {sha: 'c'}]
   assert.deepEqual(commitsAfter(commits, {commitId: 'b'}), ['c'])

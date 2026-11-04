@@ -37,7 +37,7 @@ export function parseMarkerComment(body) {
 export function matchFindings(greptile, skill, tolerance = TOLERANCE) {
   const pairs = greptile
     .flatMap((g) => skill.map((s) => ({g, s, distance: Math.abs(s.line - g.line)})))
-    .filter(({g, s, distance}) => g.path === s.path && distance <= tolerance)
+    .filter(({g, s, distance}) => g.side !== 'LEFT' && g.path === s.path && distance <= tolerance)
     .toSorted((a, b) => a.distance - b.distance)
   const paired = new Set()
   const both = []
@@ -105,10 +105,11 @@ function ghJson(path) {
 }
 
 // thumbs-down wins over acted-on: a person said it was wrong even if the lines later moved.
+// A LEFT-side finding is numbered in the base file, which no later patch is numbered against.
 // Each patch is numbered at its parent, so the finding's line is carried through every commit it survives.
 export function verdict(finding, laterCommits, filesBySha) {
   if (finding.thumbsDown) return 'thumbs-down'
-  if (!laterCommits) return 'unknown'
+  if (!laterCommits || finding.side === 'LEFT') return 'unknown'
   let line = finding.line
   for (const sha of laterCommits) {
     const patch = filesBySha(sha).find((f) => f.filename === finding.path)?.patch
@@ -134,6 +135,7 @@ export function greptileFinding(c) {
   return {
     path: c.path,
     line: c.original_line ?? c.line,
+    side: c.side,
     summary: greptileSummary(c.body),
     commitId: c.original_commit_id,
     thumbsDown: (c.reactions?.['-1'] ?? 0) > 0,
