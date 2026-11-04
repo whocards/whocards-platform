@@ -18,7 +18,7 @@ WhoCards is a conversation game: curated questions on Cards, played on the web, 
 
 - **Databases:** prod is Supabase Postgres; its URL is only in `.env.prod` and Netlify's production context. Netlify previews and branch deploys share the Neon `preview` branch. Local dev and worktrees use a local Docker Postgres (`.env`). Never point anything but production at the prod URL.
 - **Env:** one root `.env`, loaded by each app's `with-env` script; `ENV=prod pnpm …` swaps in `.env.prod`. The schemas are `packages/env` (one entry point per app). See [docs/agents/local-dev.md](docs/agents/local-dev.md).
-- **Migrations:** Drizzle, per app (`apps/app/src/server/db`, `apps/website/src/server/db`), both recorded in one `drizzle.__drizzle_migrations` table, so website migrations run before app ones. Prod is migrated by hand, never by a deploy. Never `drizzle-kit push`: it changes a database with nothing recorded or reviewable, so prod, preview and local drift apart; a migration is SQL a person reads before running it on prod, and every database replays the same history. Change the schema with `db:generate` and commit the SQL. A new migration's journal `when` must be later than every recorded one in either app, or `migrate` skips it silently: regenerate an old branch's migrations after rebasing.
+- **Schema changes:** Drizzle `db:push`, no migration files. Each app's `drizzle.config.ts` loads both apps' schemas, because they share one database and push drops any table it can't see. Prod is pushed by hand (`ENV=prod pnpm --filter app db:push`), never by a deploy; read the statements it prints before confirming.
 - **Content:** decks and the Pool are in `packages/decks`; strategy, growth and pricing docs are in the private `whocards/whocards` repo, never here (this repo is public).
 
 ## Decisions not to undo
@@ -33,7 +33,7 @@ The ADRs in [docs/adr](docs/adr) are settled; open a ticket before working again
 
 ## Exceptions to the factory handbook
 
-- **Merging:** squash, as the factory handbook says. Factory PRs auto-merge once green and through quality control, app changes included. Schema changes open with auto-merge off (`schemaChanges: pr`), because prod migrations are run by a person.
+- **Merging:** squash, as the factory handbook says. Factory PRs auto-merge once green and through quality control, app changes included. Schema changes open with auto-merge off (`schemaChanges: pr`), because prod is pushed by a person.
 - **Releases are never an agent's:** a `v*` tag runs a real store build and submit (`mobile-release.yml`). Don't tag, run `pnpm release`, or touch EAS credentials.
 - **Tickets:** factory paperwork (claims, memos, odd jobs boxes) is fine. Any other new ticket or label is proposed to Avi first, never filed unasked.
 - **Visual changes need pixels:** a mobile or web change with a visual surface ships with a screenshot of the changed state in both themes; a new look for the Card or another brand surface is mocked for Avi before it is built.

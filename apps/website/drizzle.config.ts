@@ -3,8 +3,8 @@ import '@whocards/env/load'
 import {dbEnv} from '@whocards/env/db'
 
 const config: Config = {
-  schema: './src/server/db/schema.ts',
-  out: './src/server/db/migrations',
+  // both apps share one database, so push must see every table or it drops the other app's
+  schema: ['./src/server/db/schema.ts', '../app/src/server/db/schema.ts'],
   dialect: 'postgresql',
   verbose: true,
   dbCredentials: {
