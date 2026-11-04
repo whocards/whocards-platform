@@ -8,6 +8,7 @@ import {identify} from '@whocards/observability'
 import {colors} from '@whocards/tokens'
 
 import {ErrorBoundary} from '@/components/error-boundary'
+import {VersionGate} from '@/components/version-gate'
 import {setColorScheme, useColorScheme} from '@/lib/color-scheme'
 import {getDeviceId} from '@/lib/device-id'
 import {initObservability, posthog} from '@/lib/observability'
@@ -50,12 +51,14 @@ export default function RootLayout() {
   // just follows suit, live, via `@/lib/color-scheme`.
   const isDark = useColorScheme() === 'dark'
   const navigator = (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: {backgroundColor: isDark ? colors.darkest : colors.canvasLight},
-      }}
-    />
+    <VersionGate>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: {backgroundColor: isDark ? colors.darkest : colors.canvasLight},
+        }}
+      />
+    </VersionGate>
   )
 
   return (
