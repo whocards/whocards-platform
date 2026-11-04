@@ -63,7 +63,7 @@ const SECONDARY_MAX = 34
 // fill its share of the box, so a size well below MAX_FONT — while still well
 // above the floor — means there was headroom to spare). A question sized at (or
 // near) its floor gets exactly the base ratio — the same value this always used
-// — so long questions, and the tighter Tabletop-mirrored floors, are unaffected.
+// — so long questions, and the Tabletop-mirrored floor, are unaffected.
 const SECONDARY_RATIO = 0.5
 const SECONDARY_RATIO_HEADROOM_BONUS = 0.15
 
@@ -75,17 +75,13 @@ const SECONDARY_RATIO_HEADROOM_BONUS = 0.15
  * was fit against, so headroom is measured from the floor that was actually in
  * play.
  */
-export const fitSecondaryFontSize = (
-  primaryFontSize: number,
-  primaryMinFont: number,
-  secondaryMin: number
-) => {
+export const fitSecondaryFontSize = (primaryFontSize: number, primaryMinFont: number) => {
   const headroom = Math.max(
     0,
     Math.min(1, (primaryFontSize - primaryMinFont) / (MAX_FONT - primaryMinFont))
   )
   const ratio = SECONDARY_RATIO + headroom * SECONDARY_RATIO_HEADROOM_BONUS
-  return Math.round(Math.max(secondaryMin, Math.min(SECONDARY_MAX, primaryFontSize * ratio)))
+  return Math.round(Math.max(SECONDARY_MIN, Math.min(SECONDARY_MAX, primaryFontSize * ratio)))
 }
 
 // --- Tabletop mode (issue #148, a Display setting): the Card splits horizontally,
@@ -190,7 +186,7 @@ const QuestionFace = ({
     () => fitFontSize(text, box.width, box.height * share, minFont),
     [text, box.width, box.height, share, minFont]
   )
-  const secondaryFont = fitSecondaryFontSize(fontSize, minFont, SECONDARY_MIN)
+  const secondaryFont = fitSecondaryFontSize(fontSize, minFont)
 
   if (shown.length === 0) {
     return (
@@ -232,9 +228,7 @@ const QuestionFace = ({
  * `linear-gradient()` string — a web-only value, not something an RN `View`
  * can render without an SVG/gradient dependency this two-line polish item
  * doesn't justify pulling in. Purely decorative, so it carries no
- * accessibility role; the rotated half's `accessibilityElementsHidden` (the
- * actual a11y-sensitive part of Tabletop mode) lives on the sibling view above
- * this one and is untouched.
+ * accessibility role.
  */
 const TabletopDivider = () => (
   <View style={{height: MIRROR_GAP}} className="items-center justify-center">

@@ -35,42 +35,31 @@ describe('fitFontSize — minFont override', () => {
 })
 
 describe('fitSecondaryFontSize — headroom growth (issue #189)', () => {
-  // secondaryMin=10 throughout (below every computed value here) so the floor
-  // clamp doesn't mask the ratio math being asserted — the floor itself gets
-  // its own dedicated test below.
-
   it('uses exactly the base 0.5 ratio when the primary is at its floor (no headroom)', () => {
-    // primaryFontSize === primaryMinFont → headroom is 0 → the pre-#189 ratio,
-    // unchanged from before this issue.
-    expect(fitSecondaryFontSize(22, 22, 10)).toBe(11)
+    // primaryFontSize === primaryMinFont → headroom is 0 → the pre-#189 ratio.
+    expect(fitSecondaryFontSize(40, 40)).toBe(20)
   })
 
   it('grows past the base ratio as the primary sizes further above its floor', () => {
-    const atFloor = fitSecondaryFontSize(22, 22, 10)
-    const midHeadroom = fitSecondaryFontSize(40, 22, 10)
-    const moreHeadroom = fitSecondaryFontSize(50, 22, 10)
-    // Monotonic: more headroom under the primary's own fit → a bigger secondary,
-    // for the same primary floor and secondary floor — never a static bump.
+    const atFloor = fitSecondaryFontSize(40, 40)
+    const midHeadroom = fitSecondaryFontSize(50, 22)
+    const moreHeadroom = fitSecondaryFontSize(60, 22)
     expect(midHeadroom).toBeGreaterThan(atFloor)
     expect(moreHeadroom).toBeGreaterThan(midHeadroom)
   })
 
   it('caps the ratio at 0.65 (base 0.5 + the 0.15 headroom bonus), never more', () => {
-    // primaryFontSize === MAX_FONT (96) → maximum possible headroom (1.0) → the
-    // ratio tops out at 0.65 — but SECONDARY_MAX (34) is reached first here, so
-    // this also exercises that cap; see the next test for the cap in isolation.
-    expect(fitSecondaryFontSize(96, 22, 10)).toBe(34)
+    // MAX_FONT (96) → full headroom → ratio 0.65, but SECONDARY_MAX (34) is reached first.
+    expect(fitSecondaryFontSize(96, 22)).toBe(34)
   })
 
   it('caps at SECONDARY_MAX (34) regardless of how large the primary is', () => {
-    expect(fitSecondaryFontSize(200, 22, 10)).toBe(34)
+    expect(fitSecondaryFontSize(200, 22)).toBe(34)
   })
 
-  it('floors at the caller-supplied secondaryMin, honoring the Tabletop-mirrored floor', () => {
-    // A tiny primary right at the mirrored floor (16) computes well under the
-    // mirrored secondary floor (11) on the base ratio (16 * 0.5 = 8) — the
-    // floor wins, same as it always did.
-    expect(fitSecondaryFontSize(16, 16, 11)).toBe(11)
+  it('floors at SECONDARY_MIN (16)', () => {
+    // A primary at the mirrored floor (16) computes 8 on the base ratio; the floor wins.
+    expect(fitSecondaryFontSize(16, 16)).toBe(16)
   })
 })
 
