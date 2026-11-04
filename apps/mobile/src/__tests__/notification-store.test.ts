@@ -4,33 +4,49 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('expo-notifications', () => ({
   AndroidImportance: {DEFAULT: 3},
   PermissionStatus: {GRANTED: 'granted', UNDETERMINED: 'undetermined'},
+  SchedulableTriggerInputTypes: {DATE: 'date'},
+  cancelAllScheduledNotificationsAsync: jest.fn(),
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
+  scheduleNotificationAsync: jest.fn(),
   setNotificationChannelAsync: jest.fn(),
 }))
+jest.mock('@whocards/observability', () => ({trackEvent: jest.fn()}))
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Notifications from 'expo-notifications'
 import {Alert, Linking, Platform} from 'react-native'
 import type {AlertButton} from 'react-native'
+import {pool, questionOfTheDay} from '@whocards/decks'
+import {trackEvent} from '@whocards/observability'
 
 import {
   ANDROID_CHANNEL_ID,
   ASK_DELAY_MS,
   askAfterLaunch,
+  DAILY_HOUR,
   openNotificationSetting,
   recordOpenAndMaybeAsk,
+  refillDailyQuestions,
+  WINDOW_DAYS,
 } from '../lib/notification-store'
+import {setStoredLanguage} from '../lib/language-store'
 
 const getPermissions = jest.mocked(Notifications.getPermissionsAsync)
 const requestPermissions = jest.mocked(Notifications.requestPermissionsAsync)
 const setChannel = jest.mocked(Notifications.setNotificationChannelAsync)
+const schedule = jest.mocked(Notifications.scheduleNotificationAsync)
+const cancelAll = jest.mocked(Notifications.cancelAllScheduledNotificationsAsync)
 const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
 const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue()
 
 const permission = (status: string, canAskAgain = true) =>
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- only the two fields the store reads.
   ({status, canAskAgain}) as unknown as Notifications.NotificationPermissionsStatus
+
+const scheduled = () =>
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the store only schedules DATE triggers.
+  schedule.mock.calls.map(([request]) => request.trigger as {date: Date; channelId: string})
 
 const pressAlertButton = async (text: string) => {
   const buttons: AlertButton[] = alert.mock.calls[0]?.[2] ?? []
@@ -151,5 +167,61 @@ describe('openNotificationSetting', () => {
     await openNotificationSetting()
     expect(openSettings).toHaveBeenCalledTimes(1)
     expect(requestPermissions).not.toHaveBeenCalled()
+  })
+})
+
+describe('refillDailyQuestions', () => {
+  it('schedules nothing until the OS grants notifications', async () => {
+    await refillDailyQuestions()
+    expect(cancelAll).not.toHaveBeenCalled()
+    expect(schedule).not.toHaveBeenCalled()
+  })
+
+  it('replaces the window with one Question of the Day per local day at 18:00', async () => {
+    getPermissions.mockResolvedValue(permission('granted'))
+    await refillDailyQuestions(new Date(2026, 10, 4, 12))
+
+    expect(cancelAll.mock.invocationCallOrder[0]).toBeLessThan(
+      schedule.mock.invocationCallOrder[0] ?? 0
+    )
+    expect(schedule).toHaveBeenCalledTimes(WINDOW_DAYS)
+    expect(scheduled()[0]).toEqual({
+      type: 'date',
+      date: new Date(2026, 10, 4, DAILY_HOUR),
+      channelId: ANDROID_CHANNEL_ID,
+    })
+    expect(scheduled()[1]?.date).toEqual(new Date(2026, 10, 5, DAILY_HOUR))
+    expect(schedule.mock.calls[0]?.[0].content.body).toBe(pool[questionOfTheDay('2026-11-04')]?.en)
+    expect(trackEvent).toHaveBeenCalledWith('prompt_scheduled', {count: WINDOW_DAYS})
+  })
+
+  it("starts tomorrow once today's 18:00 has passed, keeping the window full", async () => {
+    getPermissions.mockResolvedValue(permission('granted'))
+    await refillDailyQuestions(new Date(2026, 10, 4, DAILY_HOUR, 1))
+    expect(schedule).toHaveBeenCalledTimes(WINDOW_DAYS)
+    expect(scheduled()[0]?.date).toEqual(new Date(2026, 10, 5, DAILY_HOUR))
+  })
+
+  it('stays within the iOS cap of 64 pending notifications', () => {
+    expect(WINDOW_DAYS).toBeLessThanOrEqual(64)
+  })
+
+  it('writes the question in the Library deck language', async () => {
+    getPermissions.mockResolvedValue(permission('granted'))
+    await setStoredLanguage('library', 'he')
+    await refillDailyQuestions(new Date(2026, 10, 4, 12))
+    expect(schedule.mock.calls[0]?.[0].content.body).toBe(pool[questionOfTheDay('2026-11-04')]?.he)
+  })
+
+  it('schedules right after the OS grants on "Yes"', async () => {
+    requestPermissions.mockImplementationOnce(async () => {
+      getPermissions.mockResolvedValue(permission('granted'))
+      return permission('granted')
+    })
+    await recordOpenAndMaybeAsk()
+    await recordOpenAndMaybeAsk()
+    await pressAlertButton('Yes')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(schedule).toHaveBeenCalledTimes(WINDOW_DAYS)
   })
 })
