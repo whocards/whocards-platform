@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Notifications from 'expo-notifications'
-import {Alert, Platform} from 'react-native'
+import {Alert, Linking, Platform} from 'react-native'
 
 const KEY_OPEN_COUNT = 'whocards-notifications:open-count'
 const KEY_ASKED = 'whocards-notifications:asked'
@@ -47,4 +47,14 @@ export const askAfterLaunch = (): (() => void) => {
   // Best-effort: a failed permission check must never break launch.
   const timer = setTimeout(() => void recordOpenAndMaybeAsk().catch(() => {}), ASK_DELAY_MS)
   return () => clearTimeout(timer)
+}
+
+// iOS lists no Notifications switch for an app it never asked, so ask instead of opening a dead end.
+export const openNotificationSetting = async (): Promise<void> => {
+  const {status, canAskAgain} = await Notifications.getPermissionsAsync()
+  if (status === Notifications.PermissionStatus.UNDETERMINED && canAskAgain) {
+    await requestPermission()
+  } else {
+    await Linking.openSettings()
+  }
 }

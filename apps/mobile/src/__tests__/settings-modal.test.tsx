@@ -36,7 +36,6 @@
  */
 import React from 'react'
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native'
-import {Linking} from 'react-native'
 
 // Jest's default is 5s PER TEST, which this file alone outgrew on CI's 4-vCPU
 // runners: its first `render()` also pays NativeWind's one-off style-registry
@@ -94,6 +93,9 @@ jest.mock('@/lib/game-store', () => ({
   setStoredGame: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock('@/lib/notification-store', () => ({
+  openNotificationSetting: jest.fn().mockResolvedValue(undefined),
+}))
 jest.mock('@/lib/tabletop-store', () => ({
   getStoredTabletopMode: jest.fn().mockResolvedValue(false),
   setStoredTabletopMode: jest.fn().mockResolvedValue(undefined),
@@ -119,6 +121,7 @@ import {
   getStoredSecondaryLanguages,
   setStoredLanguage,
 } from '../lib/language-store'
+import {openNotificationSetting} from '../lib/notification-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '../lib/tabletop-store'
 
 const mockedGetStoredGame = jest.mocked(getStoredGame)
@@ -214,13 +217,12 @@ describe('SettingsModal — menu', () => {
 })
 
 describe('SettingsModal — Notifications (issue #361)', () => {
-  it('opens the OS notification setting from the Daily question row', async () => {
-    const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue()
+  it('opens the notification setting from the Daily question row', async () => {
     await renderModal()
     await fireEvent.press(
       await screen.findByLabelText('Daily question: open notification settings')
     )
-    expect(openSettings).toHaveBeenCalledTimes(1)
+    expect(openNotificationSetting).toHaveBeenCalledTimes(1)
   })
 })
 

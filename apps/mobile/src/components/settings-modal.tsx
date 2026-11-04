@@ -2,7 +2,6 @@ import {Ionicons} from '@expo/vector-icons'
 import {StatusBar} from 'expo-status-bar'
 import {useEffect, useState} from 'react'
 import {
-  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -39,6 +38,7 @@ import {
   setStoredLanguage,
   setStoredSecondaryLanguages,
 } from '@/lib/language-store'
+import {openNotificationSetting} from '@/lib/notification-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '@/lib/tabletop-store'
 import type {ThemeSetting} from '@/lib/theme-store'
 
@@ -503,7 +503,7 @@ export const SettingsModal = ({
                 Notifications
               </Text>
               <Pressable
-                onPress={() => void Linking.openSettings()}
+                onPress={() => void openNotificationSetting().catch(() => {})}
                 accessibilityRole="button"
                 accessibilityLabel="Daily question: open notification settings"
                 className="flex-row items-center justify-between px-5 py-4"

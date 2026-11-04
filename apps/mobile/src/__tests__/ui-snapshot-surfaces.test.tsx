@@ -41,6 +41,7 @@ jest.mock('@/lib/game-store', () => ({
   setStoredGame: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock('@/lib/notification-store', () => ({openNotificationSetting: jest.fn()}))
 jest.mock('@/lib/tabletop-store', () => ({
   getStoredTabletopMode: jest.fn().mockResolvedValue(false),
   setStoredTabletopMode: jest.fn().mockResolvedValue(undefined),

@@ -3,7 +3,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 )
 jest.mock('expo-notifications', () => ({
   AndroidImportance: {DEFAULT: 3},
-  PermissionStatus: {GRANTED: 'granted'},
+  PermissionStatus: {GRANTED: 'granted', UNDETERMINED: 'undetermined'},
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
   setNotificationChannelAsync: jest.fn(),
@@ -11,13 +11,14 @@ jest.mock('expo-notifications', () => ({
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Notifications from 'expo-notifications'
-import {Alert, Platform} from 'react-native'
+import {Alert, Linking, Platform} from 'react-native'
 import type {AlertButton} from 'react-native'
 
 import {
   ANDROID_CHANNEL_ID,
   ASK_DELAY_MS,
   askAfterLaunch,
+  openNotificationSetting,
   recordOpenAndMaybeAsk,
 } from '../lib/notification-store'
 
@@ -25,6 +26,7 @@ const getPermissions = jest.mocked(Notifications.getPermissionsAsync)
 const requestPermissions = jest.mocked(Notifications.requestPermissionsAsync)
 const setChannel = jest.mocked(Notifications.setNotificationChannelAsync)
 const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue()
 
 const permission = (status: string, canAskAgain = true) =>
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- only the two fields the store reads.
@@ -127,5 +129,27 @@ describe('askAfterLaunch', () => {
     await jest.advanceTimersByTimeAsync(ASK_DELAY_MS)
     expect(alert).not.toHaveBeenCalled()
     expect(await AsyncStorage.getItem('whocards-notifications:open-count')).toBe('1')
+  })
+})
+
+describe('openNotificationSetting', () => {
+  it('asks the OS when it never has, since iOS lists no switch until then', async () => {
+    await openNotificationSetting()
+    expect(requestPermissions).toHaveBeenCalledTimes(1)
+    expect(openSettings).not.toHaveBeenCalled()
+  })
+
+  it('opens the OS setting once the OS has decided', async () => {
+    getPermissions.mockResolvedValue(permission('denied', false))
+    await openNotificationSetting()
+    expect(openSettings).toHaveBeenCalledTimes(1)
+    expect(requestPermissions).not.toHaveBeenCalled()
+  })
+
+  it('opens the OS setting when already granted', async () => {
+    getPermissions.mockResolvedValue(permission('granted'))
+    await openNotificationSetting()
+    expect(openSettings).toHaveBeenCalledTimes(1)
+    expect(requestPermissions).not.toHaveBeenCalled()
   })
 })
