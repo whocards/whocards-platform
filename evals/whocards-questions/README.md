@@ -2,6 +2,7 @@
 
 Recorded runs, newest first:
 
+- [recent_questions sets, opener rewrites and empty history · 2026-11-04](REPORT-2026-11-04-recent-questions-sets.md) — Opus 5.5, eight jobs: sets of five with history, an opener trap and empty history all passed on v0.1, so the skill text stays unchanged.
 - [recent_questions baseline · 2026-11-04](REPORT-2026-11-04-recent-questions.md) — Opus 5.5, eight single-question jobs with a supplied history: none repeated or closely paraphrased it, against the expected failure. The v0.1 skill already documents the input.
 - [Maintainer taste test · 2026-09-08](REPORT-2026-09-08-maintainer.md) — 21/25 reviewed items rated 4 or 5; five unrated. Human taste calibration, plus a four-request [single-question check](results/2026-09-08-single-question-check.json) against the v0.1 instructions.
 - [Claude Haiku 4.5 · 2026-09-08](REPORT-2026-09-08-haiku.md) — same skill bytes and scenarios as the baseline, different model, but also a different vendor, harness and reasoning setting. Better cards, worse counting: all four count failures were plural asks for a group setting.

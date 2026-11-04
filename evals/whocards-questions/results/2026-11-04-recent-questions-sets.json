@@ -1,0 +1,392 @@
+{
+  "manifest": {
+    "run": "recent_questions sets, opener rewrites and empty history",
+    "date": "2026-11-04",
+    "model": "claude-opus-5-5 (Opus 5.5)",
+    "reasoningEffort": "not set by the run; agent default",
+    "method": "Claude Code Agent tool, general-purpose subagent, one fresh agent per job launched in parallel. Each agent was told to read its job file (copied to /tmp) and answer it as its only task, with no other reads, no skills and no other tools; its hand-back was the response. Agents inherit the Claude Code system prompt, so the job text was not the only context.",
+    "createdAt": "2026-11-04T00:27:59.927Z",
+    "sourceExperiment": "experiments/whocards-questions/rq-376-v01 (gitignored working directory)",
+    "prompts": "prompts-recent-questions.json",
+    "repeats": 2,
+    "jobsRun": "the eight jobs of the four scenarios added for #376; the four earlier scenarios ran at the same SKILL.md hash in 2026-11-04-recent-questions.json",
+    "skillHashes": {
+      "SKILL.md": "44c3bb84f6a51f25d966e57cf919df36baed0c5e54733592bd1818c17934c555",
+      "references/mission.md": "e324f5d2bc3fe7da7b92e2ec59906a909fe0829a8a8ff629dc204d8b9ee0ee0b",
+      "references/editorial-calibration.md": "7496de9d98a00c0d2347fd8509946d7b7b371e7f3a77144836d518be8a3c1b81",
+      "assets/pool-en.json": "6e2d8f4682df4c45211fb862bbef8d7cda9c93d48f66d121908bf074543344e6"
+    },
+    "skillVersion": "0.1",
+    "snapshotRelationToShippedSkill": "SKILL.md at main b1641b2, unchanged since ec6ff98: v0.1 with the documented recent_questions input contract and no avoidance instruction."
+  },
+  "purpose": "Find where v0.1 is weak on recent_questions: multi-question requests with history, close paraphrases in a set, a single request whose history holds the obvious angles (a new opener alone is not new), and an empty history.",
+  "reviewer": "the building agent (claude-opus-5-5); assistant judgments, not maintainer ratings",
+  "results": [
+    {
+      "job": "RQ-set-1",
+      "scenario": "RQ-set",
+      "request": "Give me 5 questions for a Monday team check-in.",
+      "recent_questions": [
+        {
+          "question": "What is one thing you are looking forward to this week?",
+          "delivered_at": "2026-11-03",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "How are you arriving today?",
+          "delivered_at": "2026-11-02",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "What is taking up most of your headspace right now?",
+          "delivered_at": "2026-11-01",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "What would make this week a good one for you?",
+          "delivered_at": "2026-10-31",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "What is something small that went well last week?",
+          "delivered_at": "2026-10-30",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "Where could you use a hand this week?",
+          "delivered_at": "2026-10-29",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "What gave you energy over the weekend?",
+          "delivered_at": "2026-10-28",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "What is one word for how you are feeling right now?",
+          "delivered_at": "2026-10-27",
+          "frame": "Monday team check-in, colleagues"
+        }
+      ],
+      "avoid": [
+        "What is one thing you are looking forward to this week?",
+        "How are you arriving today?",
+        "What is taking up most of your headspace right now?",
+        "What would make this week a good one for you?",
+        "What is something small that went well last week?",
+        "Where could you use a hand this week?",
+        "What gave you energy over the weekend?",
+        "What is one word for how you are feeling right now?"
+      ],
+      "rawResponse": "1. What have you been curious about lately?\n2. When do you do your best work?\n3. How do you like to get feedback?\n4. If your desk could talk, what would it say about you?\n5. What is something you've appreciated about working with this team?\n",
+      "observedCount": 5,
+      "expectedCount": 5,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "Five new angles (curiosity, working style, feedback, play, appreciation); none restates a listed one."
+    },
+    {
+      "job": "RQ-set-2",
+      "scenario": "RQ-set",
+      "request": "Give me 5 questions for a Monday team check-in.",
+      "recent_questions": [
+        {
+          "question": "What is one thing you are looking forward to this week?",
+          "delivered_at": "2026-11-03",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "How are you arriving today?",
+          "delivered_at": "2026-11-02",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "What is taking up most of your headspace right now?",
+          "delivered_at": "2026-11-01",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "What would make this week a good one for you?",
+          "delivered_at": "2026-10-31",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "What is something small that went well last week?",
+          "delivered_at": "2026-10-30",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "Where could you use a hand this week?",
+          "delivered_at": "2026-10-29",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "What gave you energy over the weekend?",
+          "delivered_at": "2026-10-28",
+          "frame": "Monday team check-in, colleagues"
+        },
+        {
+          "question": "What is one word for how you are feeling right now?",
+          "delivered_at": "2026-10-27",
+          "frame": "Monday team check-in, colleagues"
+        }
+      ],
+      "avoid": [
+        "What is one thing you are looking forward to this week?",
+        "How are you arriving today?",
+        "What is taking up most of your headspace right now?",
+        "What would make this week a good one for you?",
+        "What is something small that went well last week?",
+        "Where could you use a hand this week?",
+        "What gave you energy over the weekend?",
+        "What is one word for how you are feeling right now?"
+      ],
+      "rawResponse": "1. If your week had a weather forecast, what would it say?\n2. What question are you carrying into this week?\n3. What kind of help are you good at giving that people rarely ask you for?\n4. What are you curious about at the moment, at work or beyond it?\n5. Which part of your work do you wish more people knew about?\n",
+      "observedCount": 5,
+      "expectedCount": 5,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [
+        "Borderline, judged pass: the weather forecast asks about the week ahead as a picture, near \"What would make this week a good one\" and \"one word for how you are feeling\" in spirit but asking a different thing; the help question inverts \"Where could you use a hand\" (giving, not needing)."
+      ],
+      "reviewerNotes": "No exact repeat or reworded listed question; two items sit near listed angles without restating them."
+    },
+    {
+      "job": "RQ-set-paraphrase-1",
+      "scenario": "RQ-set-paraphrase",
+      "request": "Give me 5 questions for a first date.",
+      "recent_questions": [
+        {
+          "question": "What is something you are excited about right now?",
+          "delivered_at": "2026-11-02",
+          "frame": "first date, two people"
+        },
+        {
+          "question": "What does a perfect weekend look like for you?",
+          "delivered_at": "2026-11-01",
+          "frame": "first date, two people"
+        },
+        {
+          "question": "What is a small thing that always makes your day better?",
+          "delivered_at": "2026-10-31",
+          "frame": "first date, two people"
+        },
+        {
+          "question": "Who in your life has shaped you the most?",
+          "delivered_at": "2026-10-30",
+          "frame": "first date, two people"
+        },
+        {
+          "question": "What is something you have changed your mind about?",
+          "delivered_at": "2026-10-29",
+          "frame": "first date, two people"
+        },
+        {
+          "question": "What would you do with a year off?",
+          "delivered_at": "2026-10-28",
+          "frame": "first date, two people"
+        }
+      ],
+      "avoid": [
+        "What is something you are excited about right now?",
+        "What does a perfect weekend look like for you?",
+        "What is a small thing that always makes your day better?",
+        "Who in your life has shaped you the most?",
+        "What is something you have changed your mind about?",
+        "What would you do with a year off?"
+      ],
+      "rawResponse": "1. What could you talk about for hours?\n2. Which song takes you back somewhere as soon as it starts?\n3. When do you feel most like yourself?\n4. If you could be great at something overnight, what would you choose?\n5. What helps you feel at ease with someone?\n",
+      "observedCount": 5,
+      "expectedCount": 5,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "None of the listed angles (excitement now, perfect weekend, small joys, who shaped you, changed mind, a year off) returns under new wording."
+    },
+    {
+      "job": "RQ-set-paraphrase-2",
+      "scenario": "RQ-set-paraphrase",
+      "request": "Give me 5 questions for a first date.",
+      "recent_questions": [
+        {
+          "question": "What is something you are excited about right now?",
+          "delivered_at": "2026-11-02",
+          "frame": "first date, two people"
+        },
+        {
+          "question": "What does a perfect weekend look like for you?",
+          "delivered_at": "2026-11-01",
+          "frame": "first date, two people"
+        },
+        {
+          "question": "What is a small thing that always makes your day better?",
+          "delivered_at": "2026-10-31",
+          "frame": "first date, two people"
+        },
+        {
+          "question": "Who in your life has shaped you the most?",
+          "delivered_at": "2026-10-30",
+          "frame": "first date, two people"
+        },
+        {
+          "question": "What is something you have changed your mind about?",
+          "delivered_at": "2026-10-29",
+          "frame": "first date, two people"
+        },
+        {
+          "question": "What would you do with a year off?",
+          "delivered_at": "2026-10-28",
+          "frame": "first date, two people"
+        }
+      ],
+      "avoid": [
+        "What is something you are excited about right now?",
+        "What does a perfect weekend look like for you?",
+        "What is a small thing that always makes your day better?",
+        "Who in your life has shaped you the most?",
+        "What is something you have changed your mind about?",
+        "What would you do with a year off?"
+      ],
+      "rawResponse": "1. When your friends need something, what do they come to you for?\n2. If we swapped lives for a day, what would you want me to know before I started?\n3. What's a song that takes you somewhere the moment it starts?\n4. How did you end up living where you live now?\n5. What do you love talking about that people rarely ask you about?\n",
+      "observedCount": 5,
+      "expectedCount": 5,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "Five new angles; none restates a listed one."
+    },
+    {
+      "job": "RQ-opener-1",
+      "scenario": "RQ-opener",
+      "request": "Give me a question for a New Year's Eve dinner with friends.",
+      "recent_questions": [
+        {
+          "question": "What are you most proud of from this past year?",
+          "delivered_at": "2025-12-31",
+          "frame": "New Year's Eve, friends, dinner"
+        },
+        {
+          "question": "What do you want to leave behind in this year?",
+          "delivered_at": "2024-12-31",
+          "frame": "New Year's Eve, friends, dinner"
+        },
+        {
+          "question": "What are you hoping for in the year ahead?",
+          "delivered_at": "2023-12-31",
+          "frame": "New Year's Eve, friends, dinner"
+        },
+        {
+          "question": "What surprised you most about this year?",
+          "delivered_at": "2022-12-31",
+          "frame": "New Year's Eve, friends, dinner"
+        }
+      ],
+      "avoid": [
+        "What are you most proud of from this past year?",
+        "What do you want to leave behind in this year?",
+        "What are you hoping for in the year ahead?",
+        "What surprised you most about this year?"
+      ],
+      "rawResponse": "If you could live one day from this year again, which day would you pick?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "Not proud, leave behind, hoping ahead or surprised; a new angle (a day worth reliving), not a new opener on a listed one."
+    },
+    {
+      "job": "RQ-opener-2",
+      "scenario": "RQ-opener",
+      "request": "Give me a question for a New Year's Eve dinner with friends.",
+      "recent_questions": [
+        {
+          "question": "What are you most proud of from this past year?",
+          "delivered_at": "2025-12-31",
+          "frame": "New Year's Eve, friends, dinner"
+        },
+        {
+          "question": "What do you want to leave behind in this year?",
+          "delivered_at": "2024-12-31",
+          "frame": "New Year's Eve, friends, dinner"
+        },
+        {
+          "question": "What are you hoping for in the year ahead?",
+          "delivered_at": "2023-12-31",
+          "frame": "New Year's Eve, friends, dinner"
+        },
+        {
+          "question": "What surprised you most about this year?",
+          "delivered_at": "2022-12-31",
+          "frame": "New Year's Eve, friends, dinner"
+        }
+      ],
+      "avoid": [
+        "What are you most proud of from this past year?",
+        "What do you want to leave behind in this year?",
+        "What are you hoping for in the year ahead?",
+        "What surprised you most about this year?"
+      ],
+      "rawResponse": "What moment from this year would you happily live again?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "Same new angle as sample 1 (a moment worth reliving); no listed angle behind a new opener."
+    },
+    {
+      "job": "RQ-empty-1",
+      "scenario": "RQ-empty",
+      "request": "Give me 3 questions for siblings on a long train ride.",
+      "recent_questions": [],
+      "avoid": [],
+      "rawResponse": "1. What's a memory from growing up together that you still think about?\n2. What have you always wanted to ask me?\n3. If this train could take us anywhere together, where would you want us to get off?\n",
+      "observedCount": 3,
+      "expectedCount": 3,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "Three questions, nothing else, no mention of history."
+    },
+    {
+      "job": "RQ-empty-2",
+      "scenario": "RQ-empty",
+      "request": "Give me 3 questions for siblings on a long train ride.",
+      "recent_questions": [],
+      "avoid": [],
+      "rawResponse": "1. Which family memory do you think the two of us would tell differently?\n2. What do you know about me that only a sibling would know?\n3. If we got off at the next stop and had the whole day there, what would we do?\n",
+      "observedCount": 3,
+      "expectedCount": 3,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "Three questions, nothing else, no mention of history."
+    }
+  ]
+}
