@@ -1,6 +1,6 @@
 /**
  * Tests for src/components/settings-modal.tsx (issue #176) — the one Settings
- * menu now reachable only from the home screen, replacing the old Library
+ * menu (home screen, and the play bar gear since #197), replacing the old Library
  * chips (Game, Theme) and the play-screen language sheet (Language, secondary
  * language, Tabletop mode).
  *
