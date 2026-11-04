@@ -53,8 +53,8 @@
       "oxlint --fix --no-error-on-unmatched-pattern",
       "oxfmt --write --no-error-on-unmatched-pattern"
     ],
-    "apps/website/**/*.{ts,tsx,js,jsx,mjs,cjs,astro}": [
-      "pnpm --filter website exec prettier --write --plugin=prettier-plugin-astro"
+    "**/*.astro": [
+      "oxfmt --write --no-error-on-unmatched-pattern"
     ],
     "*.{json,md,yaml,yml}": [
       "oxfmt --write --no-error-on-unmatched-pattern"

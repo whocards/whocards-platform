@@ -14,7 +14,6 @@
     "test:e2e": "playwright test",
     "test:e2e:ssr": "playwright test -c playwright.ssr.config.ts",
     "test:performance:lcp": "pnpm build && node scripts/mobile-lighthouse.mjs",
-    "pretty": "prettier --write . --plugin=prettier-plugin-astro",
     "analyze": "pnpx unlighthouse --site https://whocards.cc",
     "db:generate": "pnpm with-env drizzle-kit generate",
     "db:migrate": "pnpm with-env drizzle-kit migrate",
@@ -91,9 +90,6 @@
     "drizzle-kit": "^0.31.11",
     "lighthouse": "13.5.0",
     "pg": "^8.23.1",
-    "prettier": "^3.9.10",
-    "prettier-plugin-astro": "^0.14.1",
-    "prettier-plugin-tailwindcss": "^0.8.1",
     "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "vitest": "catalog:"

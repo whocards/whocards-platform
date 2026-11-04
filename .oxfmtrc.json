@@ -22,7 +22,19 @@
     "pnpm-lock.yaml",
     "**/drizzle/**",
     "packages/tokens/theme.css",
-    "apps/website/**",
     "**/routeTree.gen.ts"
+  ],
+  "overrides": [
+    {
+      "files": ["apps/website/**"],
+      "options": {
+        "jsxSingleQuote": true,
+        "astro": true,
+        "sortTailwindcss": {
+          "stylesheet": "./apps/website/src/styles/base.css",
+          "attributes": ["class:list"]
+        }
+      }
+    }
   ]
 }
