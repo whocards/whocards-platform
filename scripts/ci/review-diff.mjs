@@ -90,8 +90,8 @@ export function mapLine(patch, line) {
   return line + now - old
 }
 
-function ghJsonLines(path) {
-  const out = execFileSync('gh', ['api', '--paginate', path, '--jq', '.[]'], {encoding: 'utf8'})
+function ghJsonLines(path, jq = '.[]') {
+  const out = execFileSync('gh', ['api', '--paginate', path, '--jq', jq], {encoding: 'utf8'})
   return out
     .split('\n')
     .filter(Boolean)
@@ -157,7 +157,8 @@ function reviewPr(pr) {
   const commits = ghJsonLines(`repos/{owner}/{repo}/pulls/${pr}/commits`)
   const files = new Map()
   const filesBySha = (sha) => {
-    if (!files.has(sha)) files.set(sha, ghJson(`repos/{owner}/{repo}/commits/${sha}`).files ?? [])
+    if (!files.has(sha))
+      files.set(sha, ghJsonLines(`repos/{owner}/{repo}/commits/${sha}`, '.files[]'))
     return files.get(sha)
   }
   for (const g of result.greptileOnly) {
