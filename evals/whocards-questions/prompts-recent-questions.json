@@ -1,0 +1,122 @@
+[
+  {
+    "id": "RQ-exact",
+    "prompt": "Give me a question to help me process a difficult day.",
+    "recent_questions": [
+      {
+        "question": "What part of today is still asking for your attention?",
+        "delivered_at": "2026-11-03",
+        "frame": "difficult day, alone, processing"
+      },
+      {
+        "question": "What did you need today that you didn't get?",
+        "delivered_at": "2026-11-01",
+        "frame": "difficult day, alone, processing"
+      }
+    ],
+    "expect": {
+      "count": 1,
+      "format": "question",
+      "avoid": [
+        "What part of today is still asking for your attention?",
+        "What did you need today that you didn't get?"
+      ],
+      "note": "Exact repeat: the newest entry is the v0.1 answer to this same request in the 2026-09-08 single-question check."
+    }
+  },
+  {
+    "id": "RQ-paraphrase",
+    "prompt": "Give me a question to help me process a difficult day.",
+    "recent_questions": [
+      {
+        "question": "Which part of today is still pulling at your attention?",
+        "delivered_at": "2026-11-03",
+        "frame": "difficult day, alone, processing"
+      },
+      {
+        "question": "What from today are you still carrying?",
+        "delivered_at": "2026-11-02"
+      }
+    ],
+    "expect": {
+      "count": 1,
+      "format": "question",
+      "avoid": [
+        "Which part of today is still pulling at your attention?",
+        "What from today are you still carrying?"
+      ],
+      "note": "Close paraphrase: a new opener on the same angle (what from today still holds attention or weight) is a repeat."
+    }
+  },
+  {
+    "id": "RQ-unrelated",
+    "prompt": "Give me a question to help me process a difficult day.",
+    "recent_questions": [
+      {
+        "question": "If this train ride were a chapter in a book about us, what would it be called?",
+        "delivered_at": "2026-11-02",
+        "frame": "siblings, train ride, playful"
+      },
+      {
+        "question": "What is a small thing your partner does that you never thanked them for?",
+        "delivered_at": "2026-10-30",
+        "frame": "dinner with partner"
+      }
+    ],
+    "expect": {
+      "count": 1,
+      "format": "question",
+      "avoid": [],
+      "note": "Unrelated history: nothing to avoid; the answer should be as good as with no history, and should not drift towards the history's topics."
+    }
+  },
+  {
+    "id": "RQ-daily",
+    "prompt": "Give me an end-of-day journal question.",
+    "recent_questions": [
+      {
+        "question": "What did today ask of you?",
+        "delivered_at": "2026-11-03",
+        "frame": "end of day, alone, journal"
+      },
+      {
+        "question": "What moment from today would you keep if you could keep only one?",
+        "delivered_at": "2026-11-02",
+        "frame": "end of day, alone, journal"
+      },
+      {
+        "question": "Where did you feel most like yourself today?",
+        "delivered_at": "2026-11-01",
+        "frame": "end of day, alone, journal"
+      },
+      {
+        "question": "What are you still thinking about from today?",
+        "delivered_at": "2026-10-31",
+        "frame": "end of day, alone, journal"
+      },
+      {
+        "question": "What surprised you today?",
+        "delivered_at": "2026-10-30",
+        "frame": "end of day, alone, journal"
+      },
+      {
+        "question": "What gave you energy today, and what took it?",
+        "delivered_at": "2026-10-29",
+        "frame": "end of day, alone, journal"
+      }
+    ],
+    "expect": {
+      "count": 1,
+      "format": "question",
+      "avoid": [
+        "What did today ask of you?",
+        "What moment from today would you keep if you could keep only one?",
+        "Where did you feel most like yourself today?",
+        "What are you still thinking about from today?",
+        "What surprised you today?",
+        "What gave you energy today, and what took it?"
+      ],
+      "note": "Daily sequence: a seventh day of the same request. Returning to the broad theme of today is fine; repeating any listed angle is not."
+    }
+  }
+]
