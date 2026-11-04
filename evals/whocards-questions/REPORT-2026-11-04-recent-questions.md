@@ -1,6 +1,6 @@
 # recent_questions baseline · 2026-11-04
 
-8/8 responses avoided the supplied history: no exact repeats, no close paraphrases. The ticket expected the repeat cases to fail on v0.1; they did not. The likely cause is the `## Recent questions` section that [#384](https://github.com/whocards/whocards-platform/pull/384) added: it documents the input, and that alone was enough for this model to steer away. Raw results: [results/2026-11-04-recent-questions.json](results/2026-11-04-recent-questions.json).
+8/8 responses avoided the supplied history: no exact repeats, no close paraphrases. The ticket expected the repeat cases to fail on v0.1; they did not. One candidate cause is the `## Recent questions` section that [#384 🔀](https://github.com/whocards/whocards-platform/pull/384) added, which documents the input; no control run against the skill before that PR was done, so that is unconfirmed. Raw results: [results/2026-11-04-recent-questions.json](results/2026-11-04-recent-questions.json).
 
 ## Setup
 
@@ -29,3 +29,4 @@ All eight delivered one question and nothing else. The unrelated pair is the con
 - The daily sequence is a written history, not one built from the model's own earlier answers.
 - Single-question requests only. Multi-question requests with history, empty history and the 30-entry bound are not covered.
 - The paraphrase judgment is the reviewer's; no similarity measure was used.
+- The set does not yet tell v0.1 apart from [#376 📋](https://github.com/whocards/whocards-platform/issues/376)'s avoidance behaviour: both pass on this model. That ticket has to show its gain on multi-question requests or on other models.
