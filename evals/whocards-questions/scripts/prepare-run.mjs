@@ -96,6 +96,11 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   if (!output || !model) {
     throw new Error('Usage: node prepare-run.mjs NEW_DIRECTORY MODEL [REPEATS] [PROMPTS_FILE]')
   }
-  const manifest = await prepareRun(output, model, Number(repeats), promptsFile)
+  const manifest = await prepareRun(
+    output,
+    model,
+    Number(repeats),
+    promptsFile && resolve(promptsFile)
+  )
   console.log(`Prepared ${manifest.jobs.length} fresh-conversation jobs in ${resolve(output)}`)
 }
