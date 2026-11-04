@@ -290,6 +290,7 @@ function QuestionCard({
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
   const setCommentDraft = (key: string) => (draft: string) =>
     setCommentDrafts((drafts) => ({...drafts, [key]: draft}))
+  const hasVariants = Object.keys(question.variants).length > 1
   const questionText = question.review?.currentText ?? question.shippedText
 
   const variantsKey = ['questionReview.variants', deckSlug]
@@ -428,12 +429,12 @@ function QuestionCard({
                   </Button>
                 ) : null}
               </div>
-              {expanded ? (
+              {expanded && hasVariants ? (
                 <CommentThread
                   deckSlug={deckSlug}
                   questionId={question.questionId}
                   variant={slug}
-                  label={slug === 'current' ? 'Comment' : `Comment on ${slug}`}
+                  label={`Comment on ${slug}`}
                   comments={comments.data?.filter((c) => c.variant === slug) ?? []}
                   draft={commentDrafts[slug] ?? ''}
                   onDraftChange={setCommentDraft(slug)}
@@ -469,14 +470,18 @@ function QuestionCard({
 
       {expanded ? (
         <div className="mt-2">
-          <p className="mb-2 text-xs font-semibold tracking-wide text-gray-dark uppercase">
-            On the question
-          </p>
+          {hasVariants ? (
+            <p className="mb-2 text-xs font-semibold tracking-wide text-gray-dark uppercase">
+              On the question
+            </p>
+          ) : null}
           <CommentThread
             deckSlug={deckSlug}
             questionId={question.questionId}
-            label="Comment on the question"
-            comments={comments.data?.filter((c) => c.variant === null) ?? []}
+            label={hasVariants ? 'Comment on the question' : 'Comment'}
+            comments={
+              (hasVariants ? comments.data?.filter((c) => c.variant === null) : comments.data) ?? []
+            }
             draft={commentDrafts[''] ?? ''}
             onDraftChange={setCommentDraft('')}
           />
