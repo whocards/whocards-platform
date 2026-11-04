@@ -2,15 +2,7 @@
 # /// script
 # dependencies = ["fonttools[woff]==4.68.0"]
 # ///
-"""Regenerate the Noto Sans Chinese/Japanese woff2 subsets in public/fonts.
-
-Each subset keeps every character the committed file already covers (the site and
-Share Cards only set Pool questions in these fonts) and adds every character of the
-Pool's zh/jp questions. Run after adding Pool questions if cjk-font-coverage.test.ts
-fails:
-
-    apps/website/scripts/subset-cjk-fonts.py
-"""
+# Usage: apps/website/scripts/subset-cjk-fonts.py (rerun when cjk-font-coverage.test.ts fails)
 
 import json
 import tempfile
@@ -30,8 +22,6 @@ JP_VARIABLE = (
     "/ofl/notosansjp/NotoSansJP%5Bwght%5D.ttf"
 )
 
-# The sources the committed subsets were first cut from: static Noto Sans SC, and
-# Google Fonts' variable Noto Sans JP pinned to a weight (smaller than the static OTF).
 FONTS = [
     # (Pool language, file stem, source URL, wght for a variable source)
     ("zh", "noto-sans-chinese_regular", f"{NOTO_CJK}/NotoSansSC-Regular.otf", None),
@@ -59,7 +49,7 @@ def main() -> None:
             if missing:
                 raise SystemExit(f"{url} lacks {''.join(sorted(map(chr, missing)))}")
 
-            subsetter = subset.Subsetter(subset.Options())
+            subsetter = subset.Subsetter(subset.Options(notdef_outline=True))
             subsetter.populate(unicodes=unicodes)
             subsetter.subset(font)
             font.flavor = "woff2"
