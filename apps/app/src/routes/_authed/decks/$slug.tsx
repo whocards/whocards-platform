@@ -286,6 +286,10 @@ function QuestionCard({
   const [expanded, setExpanded] = useState(false)
   const [agentExpanded, setAgentExpanded] = useState(false)
   const [agentDraft, setAgentDraft] = useState('')
+  // Keyed by variant slug ('' = the whole question) so drafts outlive hiding the threads.
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
+  const setCommentDraft = (key: string) => (draft: string) =>
+    setCommentDrafts((drafts) => ({...drafts, [key]: draft}))
   const questionText = question.review?.currentText ?? question.shippedText
 
   const variantsKey = ['questionReview.variants', deckSlug]
@@ -431,6 +435,8 @@ function QuestionCard({
                   variant={slug}
                   label={slug === 'current' ? 'Comment' : `Comment on ${slug}`}
                   comments={comments.data?.filter((c) => c.variant === slug) ?? []}
+                  draft={commentDrafts[slug] ?? ''}
+                  onDraftChange={setCommentDraft(slug)}
                 />
               ) : null}
             </div>
@@ -471,6 +477,8 @@ function QuestionCard({
             questionId={question.questionId}
             label="Comment on the question"
             comments={comments.data?.filter((c) => c.variant === null) ?? []}
+            draft={commentDrafts[''] ?? ''}
+            onDraftChange={setCommentDraft('')}
           />
         </div>
       ) : null}
@@ -535,21 +543,24 @@ function CommentThread({
   variant,
   label,
   comments,
+  draft,
+  onDraftChange,
 }: {
   deckSlug: string
   questionId: string
   variant?: string
   label: string
   comments: Comment[]
+  draft: string
+  onDraftChange: (draft: string) => void
 }) {
   const queryClient = useQueryClient()
-  const [draft, setDraft] = useState('')
 
   const addComment = useMutation({
     mutationFn: () =>
       trpc.questionReview.comments.add.mutate({deckSlug, questionId, variant, body: draft}),
     onSuccess: () => {
-      setDraft('')
+      onDraftChange('')
       void queryClient.invalidateQueries({
         queryKey: ['questionReview.comments', deckSlug, questionId],
       })
@@ -574,7 +585,7 @@ function CommentThread({
         <Input
           aria-label={label}
           value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => onDraftChange(event.target.value)}
           placeholder="Add a comment…"
           className="min-w-0 flex-1 text-sm"
         />
