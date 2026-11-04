@@ -20,6 +20,7 @@ import type {QuestionSet} from '@whocards/decks'
 import {getInitialPick, pickReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
+import type {ShareEventName} from '@whocards/observability/events'
 
 import {PlayerBar} from '@/components/player-bar'
 import {PressableScale} from '@/components/pressable-scale'
@@ -350,10 +351,10 @@ export const PickPlayer = ({
     setShareModalOpen(true)
   }, [onCard, text])
 
-  const handleShareCompleted = useCallback(
-    (format: ShareFormat) => {
+  const handleShareEvent = useCallback(
+    (name: ShareEventName, format: ShareFormat) => {
       track({
-        name: EVENTS.SHARE_COMPLETED,
+        name,
         props: {deck_id: deckSlug, question_id: questionId, language, game: GAMES.PICK, format},
       })
     },
@@ -537,7 +538,7 @@ export const PickPlayer = ({
           shareUrl={buildShareUrl(deckSlug, language, questionId)}
           storyImageUrl={poolBacked ? buildShareCardUrl('story', language, questionId) : undefined}
           postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
-          onShare={handleShareCompleted}
+          onShareEvent={handleShareEvent}
           onClose={() => setShareModalOpen(false)}
         />
       </View>
