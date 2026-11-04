@@ -19,8 +19,8 @@ const state = await newsletterConfirm(db, {
   email,
   token,
   secret: env.RESEND_WEBHOOK_SECRET,
-  onConfirmed: () =>
-    syncConsentsBestEffort(new Resend(env.RESEND_API_KEY), email, 'newsletter-confirm'),
+  onConfirmed: (normalized) =>
+    syncConsentsBestEffort(new Resend(env.RESEND_API_KEY), normalized, 'newsletter-confirm'),
 })
 if (state === 'invalid') Astro.response.status = 400
 

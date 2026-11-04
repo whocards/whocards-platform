@@ -15,7 +15,7 @@ export const newsletterConfirm = async <T extends PgQueryResultHKT>(
     email: string
     token: string
     secret: string
-    onConfirmed: () => Promise<void>
+    onConfirmed: (email: string) => Promise<void>
   }
 ): Promise<NewsletterConfirmState> => {
   const email = normalizeEmail(opts.email)
@@ -36,6 +36,9 @@ export const newsletterConfirm = async <T extends PgQueryResultHKT>(
   if (!row) return 'not-subscribed'
   if (row.confirmedAt) return 'subscribed'
   if (!opts.post) return 'ask'
-  if ((await confirmNewsletterConsent(database, email)) > 0) await opts.onConfirmed()
+  if ((await confirmNewsletterConsent(database, email)) === 0)
+    // An unsubscribe or another confirm landed since the read above: report the row as it is now.
+    return newsletterConfirm(database, {...opts, post: false})
+  await opts.onConfirmed(email)
   return 'subscribed'
 }
