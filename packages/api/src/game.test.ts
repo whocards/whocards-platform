@@ -486,6 +486,24 @@ describe('game.round.response / game.me', () => {
     expect((await a.caller.game.me.get()).responses).toEqual([])
   })
 
+  it('gives both partners the same question once the host switches to questions only', async () => {
+    const {a, b, fake} = await pairedUp()
+    fake.advance(1000)
+    fake.snapshot.game.settings.answerModes = [{mode: 'none', at: fake.port.now()}]
+    fake.advance(1000)
+    const first = (await a.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
+    expect(first).toMatchObject({answerMode: 'none', questionText: expect.any(String)})
+    await a.caller.game.round.turn({action: 'finish'})
+
+    fake.port.random = () => 0.99
+    const second = (await b.caller.game.round.turn({action: 'claim'})).pair?.activeTurn
+    expect(second).toMatchObject({
+      answerMode: 'none',
+      questionId: first?.questionId,
+      questionText: first?.questionText,
+    })
+  })
+
   it('keeps a claim in the old mode when the switch is stamped at the same instant', async () => {
     const {a, fake} = await pairedUp()
     fake.snapshot.game.settings.answerModes = [{mode: 'none', at: fake.port.now()}]
