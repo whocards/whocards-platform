@@ -120,7 +120,11 @@ jest.mock('expo-splash-screen', () => ({
 // silently reconciles with the API. An empty manifest is the offline path, and
 // the one that doesn't depend on what the server happens to hold today.
 jest.mock('@/lib/trpc', () => ({
-  trpc: {decks: {manifest: {query: jest.fn().mockResolvedValue([])}}},
+  trpc: {
+    decks: {manifest: {query: jest.fn().mockResolvedValue([])}},
+    // offline, so the version gate lets the screens render
+    mobile: {compatibility: {query: jest.fn().mockRejectedValue(new Error('offline'))}},
+  },
 }))
 
 // The storage libs are mocked for the same reason settings-modal.test.tsx mocks
