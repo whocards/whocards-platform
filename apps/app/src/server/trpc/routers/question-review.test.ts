@@ -46,4 +46,10 @@ describe('question review comments', () => {
       {variant: null, body: 'on the Question'},
     ])
   })
+
+  it('refuses a variant slug longer than 64 characters', async () => {
+    await expect(
+      caller.comments.add({deckSlug, questionId, variant: 'v'.repeat(65), body: 'too long'})
+    ).rejects.toThrow('Too big')
+  })
 })

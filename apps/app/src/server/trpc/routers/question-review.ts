@@ -188,7 +188,7 @@ export const questionReviewRouter = createTRPCRouter({
         z.object({
           deckSlug: z.string().min(1),
           questionId: z.string().min(1),
-          variant: z.string().min(1).optional(),
+          variant: z.string().min(1).max(64).optional(),
           body: z.string().min(1).max(2000),
         })
       )
