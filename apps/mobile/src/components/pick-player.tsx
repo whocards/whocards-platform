@@ -37,6 +37,7 @@ import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
+import {getStoredTabletopMode} from '@/lib/tabletop-store'
 
 // Full card flip (deal → reveal) duration; DESIGN.md's 200–300 ms band applies to
 // interaction transitions — the deal is the one composed "moment of theatre" per card.
@@ -126,6 +127,8 @@ export const PickPlayer = ({
   // issue #176: at most one now, not up to two) — read-only here, same as
   // DeckPlayer: set from the home-screen Settings menu, not from this screen.
   const [secondary, setSecondary] = useState<string[]>([])
+  // Tabletop mode (issue #148, a Display setting): mirrors the revealed face, same as DeckPlayer.
+  const [tabletop, setTabletop] = useState(false)
   // gate the first reveal on the stored-language read, mirroring DeckPlayer
   const [languageReady, setLanguageReady] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
@@ -140,6 +143,7 @@ export const PickPlayer = ({
       getStoredSecondaryLanguages(deckSlug).then((stored) =>
         setSecondary(stored.filter((code) => languages.includes(code)))
       ),
+      getStoredTabletopMode().then(setTabletop),
     ]).then(() => setLanguageReady(true))
   }, [deckSlug, languages])
 
@@ -458,6 +462,7 @@ export const PickPlayer = ({
                                 language: code,
                                 text: questions[questionId]?.[code] ?? '',
                               }))}
+                            mirrored={tabletop}
                           />
                         </View>
                       </Animated.View>
