@@ -84,7 +84,7 @@ type SettingsModalProps = {
 /**
  * The one settings menu (issue #176): every setting that used to be scattered
  * across the Library chips (Game, Theme) and the play screens' language sheet
- * (Language, secondary language, Tabletop mode) now lives here, behind a
+ * (Language, secondary language, Tabletop mode) now lives here, behind
  * the home screen's `SecondaryButton` (`app/index.tsx`) and the play bar's
  * gear (issue #197, which hides the Game row).
  *

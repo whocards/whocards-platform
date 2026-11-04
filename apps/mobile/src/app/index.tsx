@@ -71,9 +71,9 @@ export default function LandingScreen() {
   const isDark = resolvedScheme !== 'light'
 
   // Every setting (Game, Theme, Language, Tabletop mode) now lives behind one
-  // Settings menu (issue #176); the play bar's gear opens it too, minus Game (#197). Game/Theme
-  // used to be their own Library chips, Language/Tabletop lived in the
-  // play-screen sheet. See settings-modal.tsx for the menu itself and the
+  // Settings menu (issue #176); the play bar's gear opens it too, minus Game
+  // (#197). Game/Theme used to be their own Library chips, Language/Tabletop
+  // lived in the play-screen sheet. See settings-modal.tsx for the menu itself and the
   // per-deck Language scoping decision.
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
