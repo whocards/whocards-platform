@@ -18,7 +18,7 @@ WhoCards is a conversation game: curated questions on Cards, played on the web, 
 
 - **Databases:** prod is Supabase Postgres; its URL is only in `.env.prod` and Netlify's production context. Netlify previews and branch deploys share the Neon `preview` branch. Local dev and worktrees use a local Docker Postgres (`.env`). Never point anything but production at the prod URL.
 - **Env:** one root `.env`, loaded by each app's `with-env` script; `ENV=prod pnpm …` swaps in `.env.prod`. The schemas are `packages/env` (one entry point per app). See [docs/agents/local-dev.md](docs/agents/local-dev.md).
-- **Migrations:** Drizzle, per app (`apps/app/src/server/db`, `apps/website/src/server/db`), both recorded in one `drizzle.__drizzle_migrations` table, so website migrations run before app ones. Prod is migrated by hand, never by a deploy.
+- **Migrations:** Drizzle, per app (`apps/app/src/server/db`, `apps/website/src/server/db`), both recorded in one `drizzle.__drizzle_migrations` table, so website migrations run before app ones. Prod is migrated by hand, never by a deploy. Never `drizzle-kit push`: it changes a database with nothing recorded or reviewable, so prod, preview and local drift apart; a migration is SQL a person reads before running it on prod, and every database replays the same history. Change the schema with `db:generate` and commit the SQL. A new migration's journal `when` must be later than every recorded one in either app, or `migrate` skips it silently: regenerate an old branch's migrations after rebasing.
 - **Content:** decks and the Pool are in `packages/decks`; strategy, growth and pricing docs are in the private `whocards/whocards` repo, never here (this repo is public).
 
 ## Decisions not to undo
