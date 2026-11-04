@@ -18,8 +18,13 @@ export const VersionGate = ({children}: {children: ReactNode}) => {
   const [compatibility, setCompatibility] = useState<Compatibility | null>(null)
 
   useEffect(() => {
-    const check = () =>
-      trpc.mobile.compatibility.query().then(setCompatibility, () => setCompatibility(null))
+    let latest = 0
+    const check = () => {
+      const id = ++latest
+      // A slower, older check must not overwrite a newer result.
+      const settle = (result: Compatibility | null) => id === latest && setCompatibility(result)
+      return trpc.mobile.compatibility.query().then(settle, () => settle(null))
+    }
     void check()
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') void check()

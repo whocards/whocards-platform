@@ -102,4 +102,15 @@ describe('VersionGate', () => {
     expect(screen.queryByText('Library')).toBeNull()
     expect(screen.getByText('Update WhoCards')).toBeTruthy()
   })
+
+  it('ignores an older check that fails after a newer one blocked the build', async () => {
+    const launch = Promise.withResolvers<never>()
+    mockQuery.mockReturnValueOnce(launch.promise)
+    const listen = jest.spyOn(AppState, 'addEventListener')
+    await renderGate()
+    mockQuery.mockResolvedValue({minVersion: '2.0.0', storeUrl})
+    await act(async () => listen.mock.calls.at(-1)?.[1]('active'))
+    await act(async () => launch.reject(new Error('offline')))
+    expect(screen.getByText('Update WhoCards')).toBeTruthy()
+  })
 })
