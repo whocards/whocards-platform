@@ -31,6 +31,25 @@ await test('freezes repeatable inputs, withholds answers, and refuses to replace
   await assert.rejects(prepareRun(join(parent, 'missing-model'), ''))
 })
 
+await test('passes a scenario history to the job and keeps what to avoid out of it', async (t) => {
+  const parent = await mkdtemp(join(tmpdir(), 'whocards-eval-test-'))
+  t.after(() => rm(parent, {recursive: true, force: true}))
+  const output = join(parent, 'run')
+  await prepareRun(output, 'test-model', 1, 'prompts-recent-questions.json')
+  const expectations = JSON.parse(await readFile(join(output, 'expectations.json'), 'utf8'))
+  for (const scenario of expectations) {
+    const job = await readFile(join(output, 'jobs', `${scenario.id}-1.txt`), 'utf8')
+    const history = JSON.stringify({recent_questions: scenario.recent_questions}, null, 2)
+    assert.ok(job.includes(`--- RECENT QUESTIONS (passed by the host) ---\n${history}`))
+    assert.ok(job.endsWith(`${scenario.prompt}\n`))
+    assert.ok(!job.includes(scenario.expect.note))
+  }
+  await prepareRun(join(parent, 'plain'), 'test-model')
+  assert.ok(
+    !(await readFile(join(parent, 'plain', 'jobs', 'A-1.txt'), 'utf8')).includes('RECENT QUESTIONS')
+  )
+})
+
 await test('rejects scenario ids that cannot safely name a job file', () => {
   assertUsableScenarioIds([{id: 'A'}, {id: 'B-2'}, {id: 'c_3'}])
   assert.throws(() => assertUsableScenarioIds([]), /non-empty array/)
