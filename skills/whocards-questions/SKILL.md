@@ -25,7 +25,7 @@ Each entry has:
 
 - `question` (required): the question text exactly as delivered.
 - `delivered_at` (optional): when it was delivered, as an ISO 8601 date or date-time.
-- `frame` (optional): the frame it was written for, in ordinary language.
+- `frame` (optional): the frame it was written for, in ordinary language: its dimensions (topic, time, situation and so on), never personal details from the conversation.
 
 ```json
 {
@@ -44,7 +44,7 @@ Order is newest first, and the list order holds even when dates are missing or d
 
 The skill keeps no memory between sessions. Persisting history is the host's job:
 
-- Record only delivered questions: the final question the user received, once. A set of ten is ten entries. Leave out drafts and discarded candidates, and do not log a retried delivery a second time.
+- Record only delivered questions: the final question the user received, once. A set of ten is ten entries. Leave out drafts and discarded candidates. A re-send of the same delivery, such as a network retry, is one entry; a replacement question the user receives is a new entry.
 - Store the question text and, at most, its delivery date and frame. Never store the user's answers or the conversation.
 - Keep each user's history separate, and pass a user only their own.
 - Keep history in the user's private host storage, outside the installed skill folder and this repository.
