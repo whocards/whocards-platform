@@ -10,7 +10,7 @@ import {colors} from '@whocards/tokens'
 import {ErrorBoundary} from '@/components/error-boundary'
 import {setColorScheme, useColorScheme} from '@/lib/color-scheme'
 import {getDeviceId} from '@/lib/device-id'
-import {askAfterLaunch} from '@/lib/notification-store'
+import {askAfterLaunch, listenForPromptTaps, refillDailyQuestions} from '@/lib/notification-store'
 import {initObservability, posthog} from '@/lib/observability'
 import {getStoredTheme} from '@/lib/theme-store'
 
@@ -42,9 +42,13 @@ export default function RootLayout() {
   useEffect(() => {
     const fallback = setTimeout(() => void SplashScreen.hideAsync(), 1500)
     const cancelAsk = askAfterLaunch()
+    const stopPromptTaps = listenForPromptTaps()
+    // Best-effort: a failed schedule must never break launch.
+    void refillDailyQuestions().catch(() => {})
     return () => {
       clearTimeout(fallback)
       cancelAsk()
+      stopPromptTaps()
     }
   }, [])
 
