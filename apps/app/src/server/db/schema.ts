@@ -353,5 +353,5 @@ export const deckQuestionRelations = relations(deckQuestion, ({one}) => ({
   creator: one(appUser, {fields: [deckQuestion.createdBy], references: [appUser.id]}),
 }))
 
-// Workshop game tables live with the game package; this app owns their migrations.
+// Workshop game tables live with the game package; this app pushes them.
 export * from '@whocards/game/db'
