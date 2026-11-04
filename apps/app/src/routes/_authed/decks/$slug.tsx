@@ -18,6 +18,9 @@ import type {DeckStatus} from '~/server/trpc/routers/decks-logic'
 type QuestionData = Awaited<
   ReturnType<(typeof trpc)['questionReview']['variants']['query']>
 >[number]
+type Comment = Awaited<
+  ReturnType<(typeof trpc)['questionReview']['comments']['list']['query']>
+>[number]
 
 export const Route = createFileRoute('/_authed/decks/$slug')({
   beforeLoad: ({context}) => {
@@ -78,7 +81,7 @@ function DeckDetail() {
 
   if (deckMeta.isError) {
     return (
-      <Page>
+      <Page className="max-w-7xl">
         <PageHeader back={{to: '/decks', label: 'All decks'}} title="Couldn’t load that deck" />
         <ErrorText>{deckMeta.error.message}</ErrorText>
       </Page>
@@ -89,7 +92,7 @@ function DeckDetail() {
   const status = deckMeta.data ? DECK_STATUS[deckMeta.data.status] : null
 
   return (
-    <Page>
+    <Page className="max-w-7xl">
       <PageHeader
         back={{to: '/decks', label: 'All decks'}}
         eyebrow={status && !canApprove ? <Badge tone={status.tone}>{status.label}</Badge> : null}
@@ -281,7 +284,6 @@ function QuestionCard({
 }) {
   const queryClient = useQueryClient()
   const [expanded, setExpanded] = useState(false)
-  const [comment, setComment] = useState('')
   const [agentExpanded, setAgentExpanded] = useState(false)
   const [agentDraft, setAgentDraft] = useState('')
   const questionText = question.review?.currentText ?? question.shippedText
@@ -348,21 +350,6 @@ function QuestionCard({
     enabled: expanded,
   })
 
-  const addComment = useMutation({
-    mutationFn: () =>
-      trpc.questionReview.comments.add.mutate({
-        deckSlug,
-        questionId: question.questionId,
-        body: comment,
-      }),
-    onSuccess: () => {
-      setComment('')
-      void queryClient.invalidateQueries({
-        queryKey: ['questionReview.comments', deckSlug, question.questionId],
-      })
-    },
-  })
-
   const agentMessages = useQuery({
     queryKey: ['discussionAgent.messages', deckSlug, question.questionId],
     queryFn: () =>
@@ -396,14 +383,14 @@ function QuestionCard({
         </Badge>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))] gap-3">
         {Object.entries(question.variants).map(([slug, text]) => {
           const isCurrent = question.review?.currentText === text
           return (
             <div
               key={slug}
               className={cn(
-                'flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center',
+                'flex flex-col gap-4 rounded-2xl border p-4',
                 isCurrent
                   ? 'border-yellow-400/40 bg-yellow-400/[0.06]'
                   : 'border-white/8 bg-darkest/40'
@@ -415,14 +402,14 @@ function QuestionCard({
                     {slug}
                   </p>
                 )}
-                <p className="text-base leading-relaxed text-pretty md:text-lg">{text}</p>
+                <p className="text-base leading-relaxed text-pretty">{text}</p>
               </div>
-              <div className="flex gap-2 sm:shrink-0">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant={myVote === slug ? 'selected' : 'secondary'}
                   aria-pressed={myVote === slug}
                   onClick={() => vote.mutate(slug)}
-                  className="flex-1 sm:w-28 sm:flex-none"
+                  className="flex-1"
                 >
                   Vote {question.voteTally[slug] ? `(${question.voteTally[slug]})` : ''}
                 </Button>
@@ -431,12 +418,21 @@ function QuestionCard({
                     variant={isCurrent ? 'primary' : 'accent'}
                     onClick={() => approve.mutate(text)}
                     disabled={approve.isPending}
-                    className="flex-1 sm:w-32 sm:flex-none"
+                    className="flex-1"
                   >
                     {approve.isPending ? 'Approving…' : isCurrent ? '✓ Approved' : 'Approve'}
                   </Button>
                 ) : null}
               </div>
+              {expanded ? (
+                <CommentThread
+                  deckSlug={deckSlug}
+                  questionId={question.questionId}
+                  variant={slug}
+                  label={slug === 'current' ? 'Comment' : `Comment on ${slug}`}
+                  comments={comments.data?.filter((c) => c.variant === slug) ?? []}
+                />
+              ) : null}
             </div>
           )
         })}
@@ -466,31 +462,16 @@ function QuestionCard({
       </div>
 
       {expanded ? (
-        <div className="mt-2 flex flex-col gap-3">
-          {comments.data?.map((c) => (
-            <div key={c.id} className="rounded-xl bg-white/[0.04] px-3.5 py-2.5">
-              <p className="text-xs text-gray-dark">{c.authorEmail}</p>
-              <p className="text-sm">{c.body}</p>
-            </div>
-          ))}
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              if (comment.trim()) addComment.mutate()
-            }}
-            className="flex gap-2"
-          >
-            <Input
-              aria-label="Comment"
-              value={comment}
-              onChange={(event) => setComment(event.target.value)}
-              placeholder="Add a comment…"
-              className="flex-1 text-sm"
-            />
-            <Button type="submit" disabled={addComment.isPending || !comment.trim()}>
-              {addComment.isPending ? 'Sending…' : 'Send'}
-            </Button>
-          </form>
+        <div className="mt-2">
+          <p className="mb-2 text-xs font-semibold tracking-wide text-gray-dark uppercase">
+            On the question
+          </p>
+          <CommentThread
+            deckSlug={deckSlug}
+            questionId={question.questionId}
+            label="Comment on the question"
+            comments={comments.data?.filter((c) => c.variant === null) ?? []}
+          />
         </div>
       ) : null}
 
@@ -545,5 +526,63 @@ function QuestionCard({
         </div>
       ) : null}
     </Card>
+  )
+}
+
+function CommentThread({
+  deckSlug,
+  questionId,
+  variant,
+  label,
+  comments,
+}: {
+  deckSlug: string
+  questionId: string
+  variant?: string
+  label: string
+  comments: Comment[]
+}) {
+  const queryClient = useQueryClient()
+  const [draft, setDraft] = useState('')
+
+  const addComment = useMutation({
+    mutationFn: () =>
+      trpc.questionReview.comments.add.mutate({deckSlug, questionId, variant, body: draft}),
+    onSuccess: () => {
+      setDraft('')
+      void queryClient.invalidateQueries({
+        queryKey: ['questionReview.comments', deckSlug, questionId],
+      })
+    },
+  })
+
+  return (
+    <div className="flex flex-col gap-2">
+      {comments.map((c) => (
+        <div key={c.id} className="rounded-xl bg-white/[0.04] px-3 py-2">
+          <p className="truncate text-xs text-gray-dark">{c.authorEmail}</p>
+          <p className="text-sm break-words">{c.body}</p>
+        </div>
+      ))}
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (draft.trim()) addComment.mutate()
+        }}
+        className="flex gap-2"
+      >
+        <Input
+          aria-label={label}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder="Add a comment…"
+          className="min-w-0 flex-1 text-sm"
+        />
+        <Button type="submit" disabled={addComment.isPending || !draft.trim()}>
+          {addComment.isPending ? 'Sending…' : 'Send'}
+        </Button>
+      </form>
+      {addComment.isError ? <ErrorText>{addComment.error.message}</ErrorText> : null}
+    </div>
   )
 }
