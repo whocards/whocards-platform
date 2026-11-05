@@ -47,3 +47,16 @@
   
 #   [plugin.inputs]
 #     enable = false
+
+# The Android Closed Test is over; send old tester links to the public download page.
+[[redirects]]
+  from = "/android-testers"
+  to = "/app"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/android-testers-birthday-present"
+  to = "/app"
+  status = 302
+  force = true

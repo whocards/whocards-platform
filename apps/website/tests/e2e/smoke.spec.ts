@@ -28,9 +28,7 @@ test('AI Check-In has intent-aligned metadata and links back to the conversation
 }) => {
   await page.goto('/ai-at-work')
 
-  await expect(page).toHaveTitle(
-    'WhoCards | AI Team Check-In Questions for Honest Conversations'
-  )
+  await expect(page).toHaveTitle('WhoCards | AI Team Check-In Questions for Honest Conversations')
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
     /Talk to your team about AI with a free set of AI team check-in questions/
@@ -70,12 +68,7 @@ test('unknown route serves the 404 page', async ({request}) => {
 })
 
 test('production HTML aligns robots metadata with temporary route policy', async ({page}) => {
-  for (const route of [
-    '/android-testers',
-    '/android-testers-birthday-present',
-    '/events/hajnalig/play',
-    '/events/hajnalig/2025/play',
-  ]) {
+  for (const route of ['/android-testers', '/events/hajnalig/play', '/events/hajnalig/2025/play']) {
     await page.goto(route)
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow')
   }

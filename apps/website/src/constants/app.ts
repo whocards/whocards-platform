@@ -3,8 +3,7 @@
  *
  * iOS and Android launch on separate timelines, so each store has its own flag:
  *   - PUBLIC_APP_IOS_LAUNCHED      iOS App Store listing is public (default true).
- *   - PUBLIC_APP_ANDROID_LAUNCHED  Google Play listing is public (default false —
- *     Android is still in Google's mandatory Closed Test).
+ *   - PUBLIC_APP_ANDROID_LAUNCHED  Google Play listing is public (default true).
  *
  * While Android is in testing, /app offers the real iOS download and routes
  * Android visitors to the /android-testers funnel instead of a Play badge.
@@ -25,9 +24,8 @@ import {computeAppVisible} from './app-visibility'
 export const APP_IOS_LAUNCHED: boolean = env.PUBLIC_APP_IOS_LAUNCHED
 
 /**
- * True once the Google Play listing is public. Flip via PUBLIC_APP_ANDROID_LAUNCHED
- * after Google grants production access. Until then Android visitors are sent to
- * the /android-testers Closed Test funnel.
+ * True when the Google Play listing is public. When false, Android visitors are
+ * sent to the /android-testers Closed Test funnel.
  */
 export const APP_ANDROID_LAUNCHED: boolean = env.PUBLIC_APP_ANDROID_LAUNCHED
 

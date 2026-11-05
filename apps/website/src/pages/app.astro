@@ -110,7 +110,9 @@ const features = [
 
 <Layout
   title='WhoCards — Get the App'
-  description='Download WhoCards on iOS today. Android is in testing — meaningful conversations in your pocket, wherever you go.'
+  description={APP_ANDROID_LAUNCHED
+    ? 'Download WhoCards on iOS and Android — meaningful conversations in your pocket, wherever you go.'
+    : 'Download WhoCards on iOS today. Android is in testing — meaningful conversations in your pocket, wherever you go.'}
   class='scrollbar-hide'
 >
   <section

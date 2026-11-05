@@ -15,7 +15,6 @@ export function isNoindexRoute(pathname: string): boolean {
   return (
     route === '/404' ||
     route === '/android-testers' ||
-    route === '/android-testers-birthday-present' ||
     route.endsWith('/images') ||
     route === '/events/hajnalig/play' ||
     /^\/events\/hajnalig\/[^/]+\/play$/.test(route) ||
