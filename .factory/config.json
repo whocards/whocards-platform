@@ -6,6 +6,9 @@
     "gate": "none",
     "merge": 2
   },
+  "paperTrail": {
+    "repo": "whocards/factory-log"
+  },
   "modules": {
     "reviewBots": {
       "bots": {
