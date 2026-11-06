@@ -24,16 +24,15 @@ export {ac}
 
 /** The app roles, lowest to highest. Keep in sync with `roles` above. */
 // translator ranks below member so every existing procedure shuts it out; it sees only /translate.
-export const ROLE_RANK = [
-  'translator',
-  'member',
-  'reviewer',
-  'facilitator',
-  'admin',
-  'owner',
-] as const
+export const STAFF_ROLES = ['member', 'reviewer', 'facilitator', 'admin', 'owner'] as const
+export const ROLE_RANK = ['translator', ...STAFF_ROLES] as const
 
 export type AppRole = (typeof ROLE_RANK)[number]
+export type StaffRole = (typeof STAFF_ROLES)[number]
+
+// Only approving a translator sign-up makes a translator, so People can never assign one.
+export const isStaffRole = (value: string): value is StaffRole =>
+  (STAFF_ROLES as readonly string[]).includes(value)
 
 export const isAppRole = (value: string): value is AppRole =>
   (ROLE_RANK as readonly string[]).includes(value)

@@ -102,7 +102,7 @@ function Translate() {
                 <ul className="flex flex-col gap-3">
                   {deck.questions.map((question) => (
                     <QuestionRow
-                      key={question.id}
+                      key={`${data.language}/${question.id}`}
                       language={data.language ?? ''}
                       lang={lang}
                       deckSlug={deck.slug}

@@ -50,46 +50,50 @@ const translationsSchema = z.object({
   translations: z.array(z.object({id: z.string(), text: z.string()})),
 })
 
-/** One Messages call translating `questions` into `language`; returns id -> translated text. */
 export async function translateQuestions(
   language: string,
-  questions: readonly SourceQuestion[]
+  questions: readonly SourceQuestion[],
+  signal: AbortSignal
 ): Promise<Map<string, string>> {
-  const {text, stopReason} = await createMessage({
-    model: TRANSLATION_MODEL,
-    max_tokens: 16000,
-    system: `${TRANSLATION_PROMPT}\n\nTarget language (BCP 47 tag): ${language}`,
-    messages: [{role: 'user', content: JSON.stringify(questions)}],
-    output_config: {
-      effort: 'medium',
-      format: {
-        type: 'json_schema',
-        schema: {
-          type: 'object',
-          properties: {
-            translations: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {id: {type: 'string'}, text: {type: 'string'}},
-                required: ['id', 'text'],
-                additionalProperties: false,
+  const {text, stopReason} = await createMessage(
+    {
+      model: TRANSLATION_MODEL,
+      max_tokens: 16000,
+      system: `${TRANSLATION_PROMPT}\n\nTarget language (BCP 47 tag): ${language}`,
+      messages: [{role: 'user', content: JSON.stringify(questions)}],
+      output_config: {
+        effort: 'medium',
+        format: {
+          type: 'json_schema',
+          schema: {
+            type: 'object',
+            properties: {
+              translations: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {id: {type: 'string'}, text: {type: 'string'}},
+                  required: ['id', 'text'],
+                  additionalProperties: false,
+                },
               },
             },
+            required: ['translations'],
+            additionalProperties: false,
           },
-          required: ['translations'],
-          additionalProperties: false,
         },
       },
     },
-  })
+    signal
+  )
   if (stopReason !== 'end_turn') throw new Error(`Translation stopped early (${stopReason}).`)
   const {translations} = translationsSchema.parse(JSON.parse(text))
   return new Map(translations.map((t) => [t.id, t.text]))
 }
 
 async function createMessage(
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
+  signal?: AbortSignal
 ): Promise<{text: string; stopReason: string | null}> {
   if (!env.ANTHROPIC_API_KEY) {
     throw new Error('ANTHROPIC_API_KEY is not configured.')
@@ -103,6 +107,7 @@ async function createMessage(
       'content-type': 'application/json',
     },
     body: JSON.stringify(body),
+    signal,
   })
 
   if (!response.ok) {

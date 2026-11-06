@@ -7,8 +7,8 @@ import {Button} from '~/components/ui/button'
 import {Card} from '~/components/ui/card'
 import {Input, Label, Select} from '~/components/ui/field'
 import {trpc} from '~/lib/trpc'
-import {isAppRole, ROLE_RANK, roleAtLeast} from '~/server/auth/permissions'
-import type {AppRole} from '~/server/auth/permissions'
+import {isStaffRole, roleAtLeast, STAFF_ROLES} from '~/server/auth/permissions'
+import type {StaffRole} from '~/server/auth/permissions'
 
 export const Route = createFileRoute('/_authed/admin/people')({
   beforeLoad: ({context}) => {
@@ -24,7 +24,7 @@ function People() {
   const people = useQuery({queryKey: ['people.list'], queryFn: () => trpc.people.list.query()})
 
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<AppRole>('reviewer')
+  const [role, setRole] = useState<StaffRole>('reviewer')
 
   const invite = useMutation({
     mutationFn: () => trpc.people.invite.mutate({email, role}),
@@ -35,7 +35,7 @@ function People() {
   })
 
   const updateRole = useMutation({
-    mutationFn: (input: {userId: string; role: AppRole}) => trpc.people.updateRole.mutate(input),
+    mutationFn: (input: {userId: string; role: StaffRole}) => trpc.people.updateRole.mutate(input),
     onSuccess: () => queryClient.invalidateQueries({queryKey: ['people.list']}),
   })
 
@@ -64,14 +64,12 @@ function People() {
             <Select
               value={role}
               onChange={(event) => {
-                // <option> values are always ROLE_RANK below, so this only fails on a
-                // tampered DOM value — bail rather than cast.
                 const {value} = event.target
-                if (isAppRole(value)) setRole(value)
+                if (isStaffRole(value)) setRole(value)
               }}
               className="capitalize"
             >
-              {ROLE_RANK.map((r) => (
+              {STAFF_ROLES.map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>
@@ -117,11 +115,16 @@ function People() {
               value={person.role}
               onChange={(event) => {
                 const {value} = event.target
-                if (isAppRole(value)) updateRole.mutate({userId: person.userId, role: value})
+                if (isStaffRole(value)) updateRole.mutate({userId: person.userId, role: value})
               }}
               className="w-auto shrink-0 text-sm capitalize"
             >
-              {ROLE_RANK.map((r) => (
+              {person.role === 'translator' ? (
+                <option value="translator" disabled>
+                  translator
+                </option>
+              ) : null}
+              {STAFF_ROLES.map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>
@@ -139,20 +142,24 @@ function TranslatorSignups() {
     queryKey: ['translation.signups'],
     queryFn: () => trpc.translation.signups.query(),
   })
-  if (!signups.data?.length) return null
+  const [approved, setApproved] = useState<string | null>(null)
+  if (!signups.data?.length && !approved) return null
 
   return (
     <section className="mb-10">
-      <SectionTitle aside={<span className="text-sm text-gray-dark">{signups.data.length}</span>}>
+      <SectionTitle
+        aside={<span className="text-sm text-gray-dark">{signups.data?.length ?? 0}</span>}
+      >
         Translator sign-ups
       </SectionTitle>
       <p className="mb-4 text-sm text-gray-lighter">
         Approving runs the AI first pass for that language, then invites them as a translator and
-        emails their login. It can take up to a minute.
+        emails their login. It takes up to 40 seconds.
       </p>
+      {approved ? <output className="mb-4 block text-sm">{approved}</output> : null}
       <ul className="flex flex-col gap-2">
-        {signups.data.map((signup) => (
-          <SignupRow key={signup.id} signup={signup} />
+        {signups.data?.map((signup) => (
+          <SignupRow key={signup.id} signup={signup} onApproved={setApproved} />
         ))}
       </ul>
     </section>
@@ -161,16 +168,25 @@ function TranslatorSignups() {
 
 type Signup = Awaited<ReturnType<(typeof trpc)['translation']['signups']['query']>>[number]
 
-function SignupRow({signup}: Readonly<{signup: Signup}>) {
+function SignupRow({
+  signup,
+  onApproved,
+}: Readonly<{signup: Signup; onApproved: (message: string) => void}>) {
   const queryClient = useQueryClient()
   const [language, setLanguage] = useState(signup.language ?? '')
   const approve = useMutation({
     mutationFn: () => trpc.translation.approveSignup.mutate({id: signup.id, language}),
-    onSuccess: () =>
-      Promise.all([
+    onSuccess: (result) => {
+      onApproved(
+        result.aiPass === 'ran'
+          ? `Invited ${signup.email}. ${result.drafted} Questions have AI drafts; ${result.needsDrafting} need drafting by hand.`
+          : `Invited ${signup.email}. No AI pass ran (no API key), so every Question needs drafting by hand.`
+      )
+      return Promise.all([
         queryClient.invalidateQueries({queryKey: ['translation.signups']}),
         queryClient.invalidateQueries({queryKey: ['people.list']}),
-      ]),
+      ])
+    },
   })
 
   return (

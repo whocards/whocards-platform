@@ -1,14 +1,21 @@
 import {createTwoFilesPatch} from 'diff'
-import {getAllDecks, pool} from '@whocards/decks'
+import {getAllDecks, LANGUAGE_CODES, languages, pool} from '@whocards/decks'
 import type {QuestionSet, ResolvedDeck} from '@whocards/decks'
 
 const SOURCE_LANGUAGE = 'en'
+const LANGUAGES_PATH = 'packages/decks/src/pool/languages.json'
+const DECK_LANGUAGES = /languages: \[([^\]]*)\]/g
+
+// Raw deck sources, bundled, because a deck's `languages` list lives in its .ts file.
+const deckSources = import.meta.glob<string>(
+  ['../../../../../../packages/decks/src/decks/*.ts', '!**/*.test.ts'],
+  {query: '?raw', import: 'default', eager: true}
+)
 
 /** Lowercase BCP 47-ish tag, e.g. `id`, `pt-br`. */
 export const LANGUAGE_PATTERN = /^[a-z]{2,3}(-[a-z0-9]{2,8})?$/
 
-/** The packages/decks file a deck's Questions live in, which the diff patches. */
-export const deckFile = (deck: ResolvedDeck): {path: string; questions: QuestionSet} =>
+const deckFile = (deck: ResolvedDeck): {path: string; questions: QuestionSet} =>
   deck.source.kind === 'library'
     ? {path: 'packages/decks/src/pool/questions.json', questions: pool}
     : {
@@ -16,13 +23,12 @@ export const deckFile = (deck: ResolvedDeck): {path: string; questions: Question
         questions: deck.source.questions,
       }
 
-export type UntranslatedDeck = {
+type UntranslatedDeck = {
   slug: string
   title: string
   questions: {id: string; source: string}[]
 }
 
-/** Every deck that doesn't ship `language`, with the Questions it lacks in it. */
 export const untranslatedDecks = (language: string): UntranslatedDeck[] =>
   getAllDecks()
     .filter((deck) => !deck.languages.includes(language))
@@ -42,23 +48,62 @@ export const chunk = <T>(items: readonly T[], size: number): T[][] =>
     items.slice(i * size, (i + 1) * size)
   )
 
-const json = (set: QuestionSet) => `${JSON.stringify(set, null, 2)}\n`
+const json = (value: object) => `${JSON.stringify(value, null, 2)}\n`
 
-export type ApprovedDraft = {deckSlug: string; questionId: string; text: string}
+// a/ b/ prefixes so the patch applies with plain `git apply` from the repo root.
+const filePatch = (path: string, before: string, after: string) =>
+  createTwoFilesPatch(`a/${path}`, `b/${path}`, before, after)
 
-/** A `git apply`-clean patch adding `language` to every Question with an approved draft. */
-export const translationPatch = (language: string, approved: readonly ApprovedDraft[]): string =>
-  getAllDecks()
-    .flatMap((deck) => {
-      const drafts = approved.filter((d) => d.deckSlug === deck.slug)
-      if (drafts.length === 0) return []
+type ApprovedDraft = {deckSlug: string; questionId: string; text: string}
+
+// A deck lists the language only when complete, and an inline deck only once the Pool ships it too.
+export const translationPatch = (language: string, approved: readonly ApprovedDraft[]): string => {
+  const decks = getAllDecks().map((deck) => {
+    const texts = new Map(
+      approved
+        .filter((d) => d.deckSlug === deck.slug && !deck.questions[d.questionId]?.[language])
+        .flatMap((d) => (deck.questions[d.questionId] ? [[d.questionId, d.text] as const] : []))
+    )
+    const complete = deck.questionIds.every((id) => deck.questions[id]?.[language] || texts.has(id))
+    return {deck, texts, complete}
+  })
+  const poolGainsLanguage =
+    !LANGUAGE_CODES.includes(language) &&
+    decks.some(({deck, complete}) => deck.source.kind === 'library' && complete)
+  const poolShips = LANGUAGE_CODES.includes(language) || poolGainsLanguage
+
+  const patches = decks.flatMap(({deck, texts, complete}) => {
+    const out: string[] = []
+    if (texts.size > 0) {
       const {path, questions} = deckFile(deck)
       const next = structuredClone(questions)
-      for (const draft of drafts) {
-        const question = next[draft.questionId]
-        if (question) question[language] = draft.text
-      }
-      // a/ b/ prefixes so the patch applies with plain `git apply` from the repo root.
-      return [createTwoFilesPatch(`a/${path}`, `b/${path}`, json(questions), json(next))]
-    })
-    .join('')
+      for (const [id, text] of texts) next[id] = {...next[id], [language]: text}
+      out.push(filePatch(path, json(questions), json(next)))
+    }
+    const source = Object.entries(deckSources).find(([key]) =>
+      key.endsWith(`/decks/${deck.slug}.ts`)
+    )
+    if (
+      deck.source.kind === 'inline' &&
+      complete &&
+      poolShips &&
+      !deck.languages.includes(language) &&
+      source &&
+      source[1].match(DECK_LANGUAGES)?.length === 1
+    ) {
+      const path = `packages/decks/src/decks/${deck.slug}.ts`
+      const after = source[1].replace(
+        DECK_LANGUAGES,
+        (_, list: string) => `languages: [${list}, '${language}']`
+      )
+      out.push(filePatch(path, source[1], after))
+    }
+    return out
+  })
+
+  if (poolGainsLanguage) {
+    const name = new Intl.DisplayNames(['en'], {type: 'language'}).of(language) ?? language
+    patches.push(filePatch(LANGUAGES_PATH, json(languages), json({...languages, [language]: name})))
+  }
+  return patches.join('')
+}

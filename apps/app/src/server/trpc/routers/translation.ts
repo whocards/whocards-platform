@@ -12,17 +12,26 @@ import {addMember} from './people'
 import {chunk, LANGUAGE_PATTERN, translationPatch, untranslatedDecks} from './translation-logic'
 // Website and app share one Postgres; the website owns this table.
 import {emailConsent} from '../../../../../website/src/server/db/schema'
+import {env} from '@whocards/env/app'
 
 export type TranslationDeps = {
   /** null when ANTHROPIC_API_KEY is unset: approval still invites, the AI pass is skipped. */
   translate:
-    | ((language: string, questions: SourceQuestion[]) => Promise<Map<string, string>>)
+    | ((
+        language: string,
+        questions: SourceQuestion[],
+        signal: AbortSignal
+      ) => Promise<Map<string, string>>)
     | null
   sendLogin: (email: string) => Promise<void>
+  aiDeadlineMs?: number
 }
 
-// Small enough that each call, run in parallel, finishes inside Netlify's 60s function limit.
+// Small enough that each call, run in parallel, finishes well inside the AI deadline.
 const QUESTIONS_PER_CALL = 20
+// Netlify's synchronous function limit is 60s and not configurable; this leaves room to invite.
+const AI_DEADLINE_MS = 40_000
+const MAX_TEXT = 2000
 
 const languageSchema = z
   .string()
@@ -63,33 +72,70 @@ async function workingLanguage(ctx: Ctx, requested: string | undefined): Promise
   return requested ?? null
 }
 
-/** One AI pass per deck per language: decks that already have drafts are left alone. */
-async function firstPass(translate: NonNullable<TranslationDeps['translate']>, language: string) {
+async function refuseStaff(email: string) {
+  const [existing] = await db
+    .select({role: appMember.role})
+    .from(appMember)
+    .innerJoin(appUser, eq(appMember.userId, appUser.id))
+    .where(eq(appUser.email, email))
+    .limit(1)
+  if (existing && existing.role !== 'translator') {
+    throw new TRPCError({
+      code: 'CONFLICT',
+      message: `${email} is already on the team as ${existing.role}.`,
+    })
+  }
+}
+
+/** Drafts each Question with no draft yet; whatever finishes before the deadline is kept. */
+async function firstPass(
+  translate: NonNullable<TranslationDeps['translate']>,
+  language: string,
+  deadlineMs: number
+) {
   const drafted = new Set(
     (
       await db
-        .selectDistinct({deckSlug: translationDraft.deckSlug})
+        .select({deckSlug: translationDraft.deckSlug, questionId: translationDraft.questionId})
         .from(translationDraft)
         .where(eq(translationDraft.language, language))
-    ).map((row) => row.deckSlug)
+    ).map((row) => `${row.deckSlug}/${row.questionId}`)
   )
-  const calls = untranslatedDecks(language)
-    .filter((deck) => !drafted.has(deck.slug))
-    .flatMap((deck) =>
-      chunk(deck.questions, QUESTIONS_PER_CALL).map(async (questions) => {
-        const texts = await translate(language, questions)
-        return questions.flatMap(({id}) => {
-          const text = texts.get(id)?.trim()
+  const decks = untranslatedDecks(language).map((deck) => ({
+    slug: deck.slug,
+    total: deck.questions.length,
+    todo: deck.questions.filter((q) => !drafted.has(`${deck.slug}/${q.id}`)),
+  }))
+  const signal = AbortSignal.timeout(deadlineMs)
+  const results = await Promise.allSettled(
+    decks.flatMap((deck) =>
+      chunk(deck.todo, QUESTIONS_PER_CALL).map(async (questions) => {
+        const texts = await translate(language, questions, signal)
+        const rows = questions.flatMap(({id}) => {
+          const text = texts.get(id)?.trim().slice(0, MAX_TEXT)
           return text ? [{deckSlug: deck.slug, questionId: id, language, text}] : []
         })
+        if (rows.length === 0) return 0
+        return (
+          await db
+            .insert(translationDraft)
+            .values(rows)
+            .onConflictDoNothing()
+            .returning({id: translationDraft.id})
+        ).length
       })
     )
-  const rows = (await Promise.all(calls)).flat()
-  if (rows.length > 0) await db.insert(translationDraft).values(rows).onConflictDoNothing()
-  return rows.length
+  )
+  const added = results.reduce((n, r) => n + (r.status === 'fulfilled' ? r.value : 0), 0)
+  const needsDrafting = decks.reduce((n, deck) => n + deck.todo.length, 0) - added
+  return {drafted: decks.reduce((n, deck) => n + deck.total, 0) - needsDrafting, needsDrafting}
 }
 
-export const createTranslationRouter = ({translate, sendLogin}: TranslationDeps) =>
+export const createTranslationRouter = ({
+  translate,
+  sendLogin,
+  aiDeadlineMs = AI_DEADLINE_MS,
+}: TranslationDeps) =>
   createTRPCRouter({
     signups: roleProcedure('admin').query(() =>
       db
@@ -105,7 +151,7 @@ export const createTranslationRouter = ({translate, sendLogin}: TranslationDeps)
         .orderBy(emailConsent.confirmedAt)
     ),
 
-    /** The only way an AI pass runs: approve → first pass → `translator` user → login email. */
+    /** The only way an AI pass runs: claim → first pass → `translator` user → login email. */
     approveSignup: roleProcedure('admin')
       .input(z.object({id: z.number().int(), language: languageSchema}))
       .mutation(async ({input}) => {
@@ -117,27 +163,40 @@ export const createTranslationRouter = ({translate, sendLogin}: TranslationDeps)
         if (!signup) throw new TRPCError({code: 'NOT_FOUND', message: 'No pending sign-up.'})
 
         const email = signup.email.toLowerCase().trim()
-        const [existing] = await db
-          .select({role: appMember.role})
-          .from(appMember)
-          .innerJoin(appUser, eq(appMember.userId, appUser.id))
-          .where(eq(appUser.email, email))
-          .limit(1)
-        if (existing && existing.role !== 'translator') {
+        if (email === env.OWNER_EMAIL.toLowerCase()) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `${env.OWNER_EMAIL} is the seeded owner and can't be made a translator.`,
+          })
+        }
+        await refuseStaff(email)
+
+        const [claimed] = await db
+          .update(emailConsent)
+          .set({fulfilledAt: new Date().toISOString()})
+          .where(and(eq(emailConsent.id, signup.id), pendingSignup))
+          .returning({id: emailConsent.id})
+        if (!claimed) {
           throw new TRPCError({
             code: 'CONFLICT',
-            message: `${email} is already on the team as ${existing.role}.`,
+            message: 'This sign-up is already being approved.',
           })
         }
 
-        const drafted = translate ? await firstPass(translate, input.language) : null
-        await addMember({email, role: 'translator', language: input.language})
-        await sendLogin(email)
-        await db
-          .update(emailConsent)
-          .set({fulfilledAt: new Date().toISOString()})
-          .where(eq(emailConsent.id, signup.id))
-        return {aiPass: drafted === null ? ('skipped' as const) : ('ran' as const), drafted}
+        try {
+          const pass = translate ? await firstPass(translate, input.language, aiDeadlineMs) : null
+          // Again: another admin may have invited them while the AI pass ran.
+          await refuseStaff(email)
+          await addMember({email, role: 'translator', language: input.language})
+          await sendLogin(email)
+          return pass ? {aiPass: 'ran' as const, ...pass} : {aiPass: 'skipped' as const}
+        } catch (error) {
+          await db
+            .update(emailConsent)
+            .set({fulfilledAt: null})
+            .where(eq(emailConsent.id, signup.id))
+          throw error
+        }
       }),
 
     workspace: roleProcedure('translator')
@@ -183,7 +242,7 @@ export const createTranslationRouter = ({translate, sendLogin}: TranslationDeps)
           language: languageSchema.optional(),
           deckSlug: z.string().min(1),
           questionId: z.string().min(1),
-          text: z.string().trim().min(1).max(2000),
+          text: z.string().trim().min(1).max(MAX_TEXT),
           status: z.enum(['draft', 'approved']),
         })
       )

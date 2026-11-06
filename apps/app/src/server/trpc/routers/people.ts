@@ -3,24 +3,24 @@ import {TRPCError} from '@trpc/server'
 import {z} from 'zod'
 
 import {ensureDefaultOrganization} from '../../auth/bootstrap'
-import {canAssignRole, ROLE_RANK} from '../../auth/permissions'
+import {canAssignRole, STAFF_ROLES} from '../../auth/permissions'
 import type {AppRole} from '../../auth/permissions'
 import {db} from '../../db'
 import {appMember, appUser} from '../../db/schema'
 import {env} from '@whocards/env/app'
 import {createTRPCRouter, roleProcedure} from '../trpc'
 
-const roleSchema = z.enum(ROLE_RANK)
+const roleSchema = z.enum(STAFF_ROLES)
 
 /** Pre-provisions the app_user + app_member rows, so the person just signs in and lands with access. */
 export async function addMember({
   email: rawEmail,
   role,
-  language = null,
+  language,
 }: {
   email: string
   role: AppRole
-  language?: string | null
+  language?: string
 }) {
   const org = await ensureDefaultOrganization()
   const email = rawEmail.toLowerCase().trim()
@@ -46,7 +46,7 @@ export async function addMember({
   if (existingMember) {
     const [updated] = await db
       .update(appMember)
-      .set({role, language})
+      .set(language === undefined ? {role} : {role, language})
       .where(eq(appMember.id, existingMember.id))
       .returning()
     return updated
@@ -59,7 +59,7 @@ export async function addMember({
       organizationId: org.id,
       userId: user.id,
       role,
-      language,
+      language: language ?? null,
       createdAt: new Date(),
     })
     .returning()
