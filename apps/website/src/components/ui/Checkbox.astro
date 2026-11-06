@@ -13,7 +13,7 @@ const id = `checkbox-${name}`
 
 <label
   for={id}
-  class='text-start capitalize text-base font-medium cursor-pointer flex gap-4 py-2.5'
+  class='flex cursor-pointer gap-4 py-2.5 text-start text-base font-medium capitalize'
   class:list={[classes]}
 >
   <input
@@ -21,11 +21,14 @@ const id = `checkbox-${name}`
     {...props}
     id={id}
     name={name}
-    class='checkbox checkbox-md rounded-md border-2 mt-2 xl:mt-0 border-white checked:border-[#A6ADBA]'
+    class='checkbox mt-2 rounded-md border-2 border-white checkbox-md checked:border-[#A6ADBA] xl:mt-0'
     class:list={{'border-red': error}}
   />
   <span class='flex flex-col'>
-    <span class='basis-full'>{required ? '* ' : ''}<slot /></span>
+    <span class='basis-full'>
+      {required ? '* ' : ''}
+      <slot />
+    </span>
     <p class='flex flex-1 text-xs text-red'>{error?.message ?? <>&nbsp;</>}</p>
   </span>
 </label>

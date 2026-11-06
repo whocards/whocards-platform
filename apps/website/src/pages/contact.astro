@@ -77,73 +77,61 @@ if (Astro.request.method === 'POST') {
   description='Get in touch with the WhoCards team. We are here to help with app support, general questions, and anything else you need.'
   class='pt-28 lg:pt-32'
 >
-  <div
-    class='grid grid-flow-row md:grid-flow-col md:grid-cols-2 md:px-[2vw] lg:max-w-7xl px-5 xl:px-0 w-full justify-between items-start'
-  >
-    <div
-      class='flex text-lg lg:text-xl text-gray-dark flex-col items-center md:items-start md:justify-start justify-center text-center md:text-start gap-4 md:gap-5 pb-14'
-    >
-      <h1
-        class='text-3xl lg:text-5xl text-white md:pb-2 font-bold font-title tracking-tight leading-tight'
-      >
+  <div class='grid w-full grid-flow-row items-start justify-between px-5 md:grid-flow-col md:grid-cols-2 md:px-[2vw] lg:max-w-7xl xl:px-0'>
+    <div class='flex flex-col items-center justify-center gap-4 pb-14 text-center text-lg text-gray-dark md:items-start md:justify-start md:gap-5 md:text-start lg:text-xl'>
+      <h1 class='font-title text-3xl leading-tight font-bold tracking-tight text-white md:pb-2 lg:text-5xl'>
         Contact Us
       </h1>
-      <Icon name='chat' class='w-16 h-16' />
-      <p class='md:text-lg font-semibold'>We would love to hear from you.</p>
+      <Icon name='chat' class='h-16 w-16' />
+      <p class='font-semibold md:text-lg'>We would love to hear from you.</p>
       <p class='text-base'>
         Reach out for app support, general questions, or anything else — we read every message.
       </p>
       <Icon name='divider' class='w-64 py-2 md:hidden' />
-      <Icon name='divider-left' class='w-3/4 py-4 hidden md:block' />
-      <div class='grid grid-cols-2 lg:grid-cols-1 gap-3'>
-        {
-          contactLinks.map((link) => (
-            <a
-              href={link.href}
-              target='_blank'
-              rel='noopener noreferrer'
-              class='flex items-center text-gray-dark hover:text-primary-light active:text-primary-dark gap-3'
-            >
-              <>
-                <Icon name={link.icon as string} class='h-6 w-6' />
-                <span class='block'>{link.title}</span>
-              </>
-            </a>
-          ))
-        }
+      <Icon name='divider-left' class='hidden w-3/4 py-4 md:block' />
+      <div class='grid grid-cols-2 gap-3 lg:grid-cols-1'>
+        {contactLinks.map((link) => (
+          <a
+            href={link.href}
+            target='_blank'
+            rel='noopener noreferrer'
+            class='flex items-center gap-3 text-gray-dark hover:text-primary-light active:text-primary-dark'
+          >
+            <>
+              <Icon name={link.icon as string} class='h-6 w-6' />
+              <span class='block'>{link.title}</span>
+            </>
+          </a>
+        ))}
       </div>
-      <p class='text-sm text-gray-dark mt-2'>
-        Looking to order WhoCards? <a
-          href='/request-cards'
-          class='underline text-primary-light hover:text-primary-dark'>Request cards here.</a
-        >
+      <p class='mt-2 text-sm text-gray-dark'>
+        Looking to order WhoCards?{' '}
+        <a href='/request-cards' class='text-primary-light underline hover:text-primary-dark'>
+          Request cards here.
+        </a>
       </p>
     </div>
 
-    {
-      confirmed ? (
-        <FormSuccess
-          class='h-full'
-          type='message'
-          href='/contact'
-          title='Message sent!'
-          message="Thanks for reaching out. We'll get back to you soon."
-          buttonLabel='Send another message'
-        />
-      ) : (
-        <ContactForm
-          formData={formData}
-          errors={errors}
-          serverError={serverError}
-          siteKey={siteKey}
-        />
-      )
-    }
+    {confirmed ? (
+      <FormSuccess
+        class='h-full'
+        type='message'
+        href='/contact'
+        title='Message sent!'
+        message="Thanks for reaching out. We'll get back to you soon."
+        buttonLabel='Send another message'
+      />
+    ) : (
+      <ContactForm
+        formData={formData}
+        errors={errors}
+        serverError={serverError}
+        siteKey={siteKey}
+      />
+    )}
   </div>
 </Layout>
 
-{
-  siteKey && (
-    <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
-  )
-}
+{siteKey && (
+  <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
+)}

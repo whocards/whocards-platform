@@ -85,52 +85,42 @@ if (Astro.request.method === 'POST') {
   description='Use this form to request WhoCards for yourself or your organization. Tell us what you need and our team will follow up with you.'
   class='pt-28 lg:pt-32'
 >
-  <div
-    class='grid grid-flow-row md:grid-flow-col md:grid-cols-2 md:px-[2vw] lg:max-w-7xl px-5 xl:px-0 w-full justify-between items-start'
-  >
-    <div
-      class='flex text-lg lg:text-xl text-gray-dark flex-col items-center md:items-start md:justify-start justify-center text-center md:text-start gap-4 md:gap-5 pb-14'
-    >
-      <h1
-        class='text-3xl lg:text-5xl text-white md:pb-2 font-bold font-title tracking-tight leading-tight'
-      >
+  <div class='grid w-full grid-flow-row items-start justify-between px-5 md:grid-flow-col md:grid-cols-2 md:px-[2vw] lg:max-w-7xl xl:px-0'>
+    <div class='flex flex-col items-center justify-center gap-4 pb-14 text-center text-lg text-gray-dark md:items-start md:justify-start md:gap-5 md:text-start lg:text-xl'>
+      <h1 class='font-title text-3xl leading-tight font-bold tracking-tight text-white md:pb-2 lg:text-5xl'>
         Request WhoCards
       </h1>
-      <Icon name='chat' class='w-16 h-16' />
-      <p class='md:text-lg font-semibold'>Tell us what you need and we will follow up.</p>
+      <Icon name='chat' class='h-16 w-16' />
+      <p class='font-semibold md:text-lg'>Tell us what you need and we will follow up.</p>
       <Icon name='divider' class='w-64 py-2 md:hidden' />
-      <Icon name='divider-left' class='w-3/4 py-4 hidden md:block' />
-      <div class='grid grid-cols-2 lg:grid-cols-1 gap-3'>
-        {
-          contactLinks.map((link) => (
-            <a
-              href={link.href}
-              target='_blank'
-              rel='noopener noreferrer'
-              class='flex items-center text-gray-dark hover:text-primary-light active:text-primary-dark gap-3'
-            >
-              <>
-                <Icon name={link.icon as IconName} class='h-6 w-6' />
-                <span class='block'>{link.title}</span>
-              </>
-            </a>
-          ))
-        }
+      <Icon name='divider-left' class='hidden w-3/4 py-4 md:block' />
+      <div class='grid grid-cols-2 gap-3 lg:grid-cols-1'>
+        {contactLinks.map((link) => (
+          <a
+            href={link.href}
+            target='_blank'
+            rel='noopener noreferrer'
+            class='flex items-center gap-3 text-gray-dark hover:text-primary-light active:text-primary-dark'
+          >
+            <>
+              <Icon name={link.icon as IconName} class='h-6 w-6' />
+              <span class='block'>{link.title}</span>
+            </>
+          </a>
+        ))}
       </div>
     </div>
-    {
-      confirmed ? (
-        <FormSuccess
-          class='h-full'
-          type='request'
-          href='/request-cards'
-          title='Your card request has been submitted'
-          message='Thanks for reaching out. We will get back to you shortly.'
-          buttonLabel='Submit another request'
-        />
-      ) : (
-        <EmailForm mode='request' formData={formData} errors={errors} siteKey={siteKey} />
-      )
-    }
+    {confirmed ? (
+      <FormSuccess
+        class='h-full'
+        type='request'
+        href='/request-cards'
+        title='Your card request has been submitted'
+        message='Thanks for reaching out. We will get back to you shortly.'
+        buttonLabel='Submit another request'
+      />
+    ) : (
+      <EmailForm mode='request' formData={formData} errors={errors} siteKey={siteKey} />
+    )}
   </div>
 </Layout>

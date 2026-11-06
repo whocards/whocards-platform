@@ -10,14 +10,14 @@ export type Props = {
 const {name, title, image} = Astro.props
 ---
 
-<div class='border border-dark rounded-[1.25rem] h-full min-w-[314px] w-[314px] lg:w-full p-4'>
-  <div class='flex gap-4 pb-4 border-b border-dark'>
-    <div class='rounded-full w-12 h-12'>
-      <Image src={image} alt={title} class='rounded-full h-12 w-12' />
+<div class='h-full w-[314px] min-w-[314px] rounded-[1.25rem] border border-dark p-4 lg:w-full'>
+  <div class='flex gap-4 border-b border-dark pb-4'>
+    <div class='h-12 w-12 rounded-full'>
+      <Image src={image} alt={title} class='h-12 w-12 rounded-full' />
     </div>
     <div class='flex flex-col gap-0.5'>
-      <h5 class='font-medium leading-relaxed'>{name}</h5>
-      <h6 class='text-sm text-gray-dark leading-snug'>{title}</h6>
+      <h5 class='leading-relaxed font-medium'>{name}</h5>
+      <h6 class='text-sm leading-snug text-gray-dark'>{title}</h6>
     </div>
   </div>
   <p class='pt-4'>

@@ -65,10 +65,10 @@ export function Print() {
   return (
     <>
       <div className='flex flex-col items-center gap-1.5 text-center lg:gap-2'>
-        <h1 className='text-gradient font-title text-balance text-4xl font-extrabold uppercase leading-tight tracking-tight text-white lg:text-5xl'>
+        <h1 className='text-gradient font-title text-4xl leading-tight font-extrabold tracking-tight text-balance text-white uppercase lg:text-5xl'>
           Print It Yourself
         </h1>
-        <p className='text-pretty max-w-xl text-base text-slate-300'>
+        <p className='max-w-xl text-base text-pretty text-slate-300'>
           Free, perfectly aligned PDFs for your precut business-card sheets.
         </p>
       </div>
@@ -95,7 +95,7 @@ export function Print() {
           <div className='flex flex-col gap-2'>
             <h2 className={SECTION_LABEL_CLASS}>Language</h2>
             <button
-              className='border-primary-light flex h-11 w-full items-center justify-center rounded-lg border-2 px-3 font-bold tracking-wider'
+              className='flex h-11 w-full items-center justify-center rounded-lg border-2 border-primary-light px-3 font-bold tracking-wider'
               onClick={() => window.langsModal.showModal()}
             >
               <div className='flex-1 text-left'>{LANGUAGES[store.lang]}</div>
@@ -108,7 +108,7 @@ export function Print() {
               />
             </button>
             {!langSupported && (
-              <p className='text-pretty text-sm text-amber-300'>
+              <p className='text-sm text-pretty text-amber-300'>
                 {LANGUAGES[store.lang]} printing is coming soon — pick another language to download.
               </p>
             )}
@@ -121,7 +121,7 @@ export function Print() {
             disabled={!preset}
           />
 
-          <p className='text-pretty text-xs font-semibold text-amber-300'>
+          <p className='text-xs font-semibold text-pretty text-amber-300'>
             Print at 100% — turn off &ldquo;Fit to page&rdquo;.
           </p>
 
@@ -180,12 +180,12 @@ function AlignmentSection({offsetX, offsetY, onChangeOffset, disabled}: Alignmen
           onChange={(value) => onChangeOffset('offsetY', value)}
         />
       </div>
-      <p className='text-pretty text-xs text-slate-400'>Cards off by a hair? Nudge X/Y here.</p>
+      <p className='text-xs text-pretty text-slate-400'>Cards off by a hair? Nudge X/Y here.</p>
       <details className='text-xs text-slate-400'>
         <summary className='cursor-pointer font-semibold text-slate-300 hover:text-primary-light'>
           How does alignment &amp; test print work?
         </summary>
-        <p className='text-pretty mt-2 leading-relaxed'>
+        <p className='mt-2 leading-relaxed text-pretty'>
           Test print downloads a single plain-paper page with card outlines and corner marks. Print
           it at 100% (no &ldquo;Fit to page&rdquo;), hold it over your precut sheet or up to the
           light, and nudge X/Y here in mm until the outlines land on the perforations — the offset
@@ -216,7 +216,7 @@ function OffsetInput({label, value, onChange, disabled}: OffsetInputProps) {
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.valueAsNumber)}
-        className='border-primary-light disabled:opacity-40 w-20 rounded-lg border-2 bg-transparent px-2 py-1.5 text-center text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-light'
+        className='w-20 rounded-lg border-2 border-primary-light bg-transparent px-2 py-1.5 text-center text-sm font-semibold text-white focus-visible:ring-2 focus-visible:ring-primary-light focus-visible:outline-none disabled:opacity-40'
       />
     </label>
   )
@@ -245,9 +245,9 @@ function PresetTile({layout, selected, onSelect}: PresetTileProps) {
     >
       <PresetDiagram layout={layout} />
       <div className='text-sm font-bold'>{layout.label}</div>
-      {layout.note && <div className='text-pretty text-xs text-slate-400'>{layout.note}</div>}
+      {layout.note && <div className='text-xs text-pretty text-slate-400'>{layout.note}</div>}
       {disabled && (
-        <div className='text-xs font-bold uppercase tracking-wide text-amber-300'>Coming soon</div>
+        <div className='text-xs font-bold tracking-wide text-amber-300 uppercase'>Coming soon</div>
       )}
     </button>
   )

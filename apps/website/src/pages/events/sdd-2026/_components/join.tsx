@@ -164,7 +164,7 @@ export const Join = ({initialCode, standbyKey, onJoin, lookup}: JoinProps) => {
         ) : (
           <span>
             {mode === 'type' ? copy.consent.typed : copy.consent.transcript}
-            <span className='text-gray-dark block text-sm'>
+            <span className='block text-sm text-gray-dark'>
               {mode === 'type' ? copy.consent.typedHint : copy.consent.transcriptHint}
             </span>
           </span>
@@ -213,7 +213,7 @@ export const Join = ({initialCode, standbyKey, onJoin, lookup}: JoinProps) => {
       <button
         type='button'
         disabled={busy !== null}
-        className='text-gray-lighter cursor-pointer underline underline-offset-4 disabled:opacity-50'
+        className='cursor-pointer text-gray-lighter underline underline-offset-4 disabled:opacity-50'
         onClick={() => setStep('details')}
       >
         {copy.consent.back}
@@ -226,7 +226,7 @@ const WorkshopHeading = ({workshop, hostedBy}: {workshop: Workshop; hostedBy: st
   <div className='text-center'>
     <p className='font-title text-xl font-bold text-yellow-300'>{workshop.title}</p>
     {workshop.organizer && (
-      <p className='text-gray-dark text-sm'>
+      <p className='text-sm text-gray-dark'>
         {hostedBy} {workshop.organizer}
       </p>
     )}
@@ -236,7 +236,7 @@ const WorkshopHeading = ({workshop, hostedBy}: {workshop: Workshop; hostedBy: st
 const Privacy = ({language}: {language: GameLanguage}) => {
   const {privacy} = playerCopyFor(language)
   return (
-    <section className='text-gray-lighter w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm'>
+    <section className='w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-lighter'>
       <h2 className='font-semibold text-white'>{privacy.title}</h2>
       <ul className='mt-2 flex list-disc flex-col gap-1 pl-4'>
         {privacy.lines.map((line) => (

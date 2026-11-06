@@ -75,7 +75,7 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
       case 'waiting':
         return (
           <Screen>
-            <p className='font-title py-10 text-center text-3xl font-bold text-balance'>
+            <p className='py-10 text-center font-title text-3xl font-bold text-balance'>
               {state.round === null ? copy.waiting.firstRound : copyFor(language).phases.waiting}
             </p>
           </Screen>
@@ -95,7 +95,7 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
       case 'sitting_out':
         return (
           <Screen>
-            <p className='font-title py-10 text-center text-3xl font-bold text-balance'>
+            <p className='py-10 text-center font-title text-3xl font-bold text-balance'>
               {copyFor(language).phases.sitting_out}
             </p>
           </Screen>
@@ -123,7 +123,7 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
         )}
       </header>
       {(saving > 0 || unsaved > 0) && (
-        <a href={mine} className='text-gray-lighter flex items-center gap-2 text-sm'>
+        <a href={mine} className='flex items-center gap-2 text-sm text-gray-lighter'>
           {saving > 0 ? (
             <>
               <Spinner className='size-3.5 border' />
@@ -139,7 +139,7 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
         </a>
       )}
       {partners && (
-        <p className='text-gray-dark text-sm'>
+        <p className='text-sm text-gray-dark'>
           {copy.pairing.partner} <span className='text-white'>{partners}</span>
         </p>
       )}
@@ -149,7 +149,7 @@ const Game = ({session, state, tokens, code, candidates}: GameProps) => {
       {body()}
       <a
         href={mine}
-        className='text-gray-lighter mx-auto py-4 underline underline-offset-4 hover:text-white'
+        className='mx-auto py-4 text-gray-lighter underline underline-offset-4 hover:text-white'
       >
         {copy.mine.link}
       </a>

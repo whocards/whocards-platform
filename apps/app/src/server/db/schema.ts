@@ -225,6 +225,8 @@ export const questionComment = pgTable(
     authorId: text('author_id')
       .notNull()
       .references(() => appUser.id),
+    // The variant slug this comment is on; null for one on the Question as a whole.
+    variant: text('variant'),
     body: text('body').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
@@ -353,5 +355,5 @@ export const deckQuestionRelations = relations(deckQuestion, ({one}) => ({
   creator: one(appUser, {fields: [deckQuestion.createdBy], references: [appUser.id]}),
 }))
 
-// Workshop game tables live with the game package; this app owns their migrations.
+// Workshop game tables live with the game package; this app pushes them.
 export * from '@whocards/game/db'

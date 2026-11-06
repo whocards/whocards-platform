@@ -23,23 +23,21 @@ const links = [{title: 'Images', href: '/images'}]
 ---
 
 <Layout title='Images' links={links} noindex>
-  <h1 class='text-center font-title font-bold text-gradient text-4xl lg:text-7xl pb-2 xs:text-2xl'>
+  <h1 class='text-gradient pb-2 text-center font-title text-4xl font-bold lg:text-7xl xs:text-2xl'>
     {name}
   </h1>
   <div class='flex flex-wrap gap-5 p-5'>
-    {
-      ids.map((qid) => (
-        <div class='flex flex-col gap-3'>
-          <p>{qid}</p>
-          <img
-            src={`/og/${language}/${qid}.png`}
-            alt={`question ${qid}`}
-            width={270}
-            height={142}
-            loading='lazy'
-          />
-        </div>
-      ))
-    }
+    {ids.map((qid) => (
+      <div class='flex flex-col gap-3'>
+        <p>{qid}</p>
+        <img
+          src={`/og/${language}/${qid}.png`}
+          alt={`question ${qid}`}
+          width={270}
+          height={142}
+          loading='lazy'
+        />
+      </div>
+    ))}
   </div>
 </Layout>

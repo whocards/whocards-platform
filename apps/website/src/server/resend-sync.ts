@@ -41,7 +41,8 @@ export const makeSegmentIdResolver =
 
 /** Selecting shape for get/update — mirrors the SDK's SelectingField. */
 export type ResendSelectingField =
-  {id: string; email?: undefined | null} | {email: string; id?: undefined | null}
+  | {id: string; email?: undefined | null}
+  | {email: string; id?: undefined | null}
 
 export type ResendContactsPort = {
   /** Create a contact (with optional segment membership). Returns {data: {id}, error}. */

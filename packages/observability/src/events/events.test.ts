@@ -248,6 +248,10 @@ describe('catalog — Share sheet additions', () => {
     expect(EVENTS.SHARE_COMPLETED).toBe('share_completed')
   })
 
+  it('exposes share_sheet_opened, distinct from share_completed (issue #200)', () => {
+    expect(EVENTS.SHARE_SHEET_OPENED).toBe('share_sheet_opened')
+  })
+
   it('track() emits share_completed with the chosen format', () => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     configureObservability({dev: true})
