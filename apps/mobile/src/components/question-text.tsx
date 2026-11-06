@@ -24,10 +24,6 @@ const CHAR_WIDTH_RATIO = 0.54
 const FILL = 0.5
 const MIN_FONT = 22
 const MAX_FONT = 96
-// hard floors the overflow backstop may shrink to when the soft floors above still overflow
-const ABS_MIN_FONT = 12
-const ABS_MIN_FONT_MIRRORED = 10
-const ABS_MIN_SECONDARY = 8
 
 /**
  * Largest font that lets `text` fill — without overflowing — a `width`×`height` box.
@@ -58,10 +54,7 @@ export const fitFontSize = (
 const CJK_CHAR_WIDTH_RATIO = 1
 const CJK_RE = /[\u3000-\u30ff\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]/
 
-/**
- * Estimated rendered height of one text block: a greedy word-wrap at fitFontSize's
- * glyph metrics, counting explicit \n breaks (raw text, as LanguageBlock renders it).
- */
+/** Greedy word-wrap height at fitFontSize's glyph metrics, on the raw text LanguageBlock renders. */
 export const estimateBlockHeight = (text: string, fontSize: number, width: number) => {
   let lines = 0
   for (const paragraph of text.split('\n')) {
@@ -133,7 +126,6 @@ export const fitSecondaryFontSize = (primaryFontSize: number, primaryMinFont: nu
 // (minus MIRROR_GAP), so it fits against a lower floor than a full face.
 const MIN_FONT_MIRRORED = 16
 export const MIRROR_GAP = 28
-// the mt-4 above each secondary block
 export const SECONDARY_GAP = 16
 
 type LanguageText = {language: string; text: string}
@@ -141,6 +133,8 @@ type LanguageText = {language: string; text: string}
 // iOS' largest accessibility text size is ~3.1×, so 4 is effectively uncapped
 const MAX_FONT_SCALE = 4
 const FONT_SCALE_STEP = 0.05
+// real fonts render taller than the estimate (see FILL), so the cap leaves 15% of the box spare
+const CAP_HEADROOM = 0.85
 
 const estimateStackHeight = (
   text: string,
@@ -155,15 +149,7 @@ const estimateStackHeight = (
     0
   )
 
-/**
- * Font sizes for one question face, plus the OS text-scaling cap that keeps it in its box.
- *
- * fitFontSize's area estimate and soft floors can still overflow a small box, so the whole
- * stack is wrap-estimated and both sizes walk down together to the hard floors. RN Text
- * scales with the OS text size by default, so `maxFontSizeMultiplier` is the largest scale
- * (never below 1) at which the fitted stack still fits: Dynamic Type stays on, but can't
- * push a question off the card.
- */
+/** main's font sizes for one face, plus the largest OS text scale (never below 1) that still fits its box. */
 export const fitStack = ({
   text,
   secondaries,
@@ -178,20 +164,12 @@ export const fitStack = ({
   compact?: boolean
 }) => {
   const minFont = compact ? MIN_FONT_MIRRORED : MIN_FONT
-  const absMinFont = compact ? ABS_MIN_FONT_MIRRORED : ABS_MIN_FONT
   const share = PRIMARY_SHARE[Math.min(secondaries.length, PRIMARY_SHARE.length - 1)] ?? 1
-  let fontSize = fitFontSize(text, width, height * share, minFont)
-  let secondaryFont = fitSecondaryFontSize(fontSize, minFont)
-  if (width <= 0 || height <= 0) return {fontSize, secondaryFont, maxFontSizeMultiplier: 1}
-
-  const ratio = secondaryFont / fontSize
+  const fontSize = fitFontSize(text, width, height * share, minFont)
+  const secondaryFont = fitSecondaryFontSize(fontSize, minFont)
   const fits = (scale: number) =>
-    estimateStackHeight(text, secondaries, fontSize * scale, secondaryFont * scale, width) <= height
-  while (fontSize > absMinFont && !fits(1)) {
-    fontSize -= 1
-    secondaryFont = Math.max(ABS_MIN_SECONDARY, Math.round(fontSize * ratio))
-  }
-
+    estimateStackHeight(text, secondaries, fontSize * scale, secondaryFont * scale, width) <=
+    height * CAP_HEADROOM
   let scale = MAX_FONT_SCALE
   while (scale > 1 && !fits(scale)) scale = Math.round((scale - FONT_SCALE_STEP) * 100) / 100
   return {fontSize, secondaryFont, maxFontSizeMultiplier: Math.max(1, scale)}
@@ -314,7 +292,7 @@ const QuestionFace = ({
     <View>
       {primary}
       {shown.map((entry) => (
-        <View key={entry.language} className="mt-4">
+        <View key={entry.language} style={{marginTop: SECONDARY_GAP}}>
           <LanguageBlock
             text={entry.text}
             language={entry.language}

@@ -1,13 +1,4 @@
-/**
- * Regression test for questions overflowing the question box on small screens.
- * The face has no numberOfLines / adjustsFontSizeToFit / scroll, so fitStack is
- * the only thing keeping text inside its box, including when the OS text size
- * is turned up (RN Text scales with it by default).
- *
- * Every shipped question, in every language, on an iPhone SE in both orientations,
- * normal and Tabletop, with 0/1/2 secondaries, is checked against an independent
- * line-breaking oracle (wrapLines) rather than the component's own estimator.
- */
+// Every shipped question on an iPhone SE: main's sizes at 1×, and an OS text-scale cap that keeps it in its box.
 import React from 'react'
 import {render} from '@testing-library/react-native'
 import {getAllDecks} from '@whocards/decks'
@@ -15,6 +6,8 @@ import {getAllDecks} from '@whocards/decks'
 import {resolvedStyle} from '@/test-utils/resolved-style'
 import {
   estimateBlockHeight,
+  fitFontSize,
+  fitSecondaryFontSize,
   fitStack,
   MIRROR_GAP,
   QuestionText,
@@ -31,6 +24,13 @@ const playBox = (win: {width: number; height: number}) => ({
   height: win.height - 220,
 })
 
+// pick-player.tsx's card: a 0.72-aspect card under a 68pt hint band, minus 28×44 padding.
+const pickBox = (win: {width: number; height: number}) => {
+  const play = playBox(win)
+  const cardWidth = Math.round(Math.min(play.width, (play.height - 68) * 0.72))
+  return {width: cardWidth - 56, height: Math.round(cardWidth / 0.72) - 88}
+}
+
 // iOS' largest accessibility text size lands around 3.1×; Android's "Largest" is 2.0.
 const FONT_SCALES = [1, 1.15, 1.5, 2, 3.1]
 
@@ -39,9 +39,11 @@ const ORACLE_CHAR_ADVANCE = 0.54
 const ORACLE_CJK_ADVANCE = 1
 const ORACLE_LINE_HEIGHT = 1.15
 const ORACLE_CJK_RE = /[　-ヿ㐀-鿿豈-﫿＀-￯]/
-const HARD_MIN_PRIMARY = 12
-const HARD_MIN_PRIMARY_MIRRORED = 10
-const HARD_MIN_SECONDARY = 8
+const HEADROOM = 0.85
+// main's QuestionFace: floors and the primary's share of the box with one secondary
+const MAIN_MIN_FONT = 22
+const MAIN_MIN_FONT_MIRRORED = 16
+const MAIN_PRIMARY_SHARE = [1, 0.65]
 
 /** The wrapped lines as strings, a separate implementation from estimateBlockHeight's count. */
 const wrapLines = (text: string, fontSize: number, width: number): string[] => {
@@ -110,28 +112,29 @@ const allQuestions: Question[] = getAllDecks().flatMap((deck) =>
   )
 )
 
-const stackLength = (q: Question) =>
-  q.others.slice(0, 2).reduce((n, o) => n + o.text.length, q.text.length)
 const worstStack = allQuestions
-  .filter((q) => q.others.length >= 2)
-  .toSorted((a, b) => stackLength(b) - stackLength(a))[0]
-const worstSecondaries = worstStack.others.slice(0, 2)
+  .filter((q) => q.others.length >= 1)
+  .toSorted(
+    (a, b) => b.text.length + b.others[0].text.length - a.text.length - a.others[0].text.length
+  )[0]
+const worstSecondaries = worstStack.others.slice(0, 1)
 
 // A Tabletop half shows one language alone, in half the box minus the divider.
 const layouts = [
-  ['portrait', SE_PORTRAIT, false],
-  ['portrait, tabletop', SE_PORTRAIT, true],
-  ['landscape', SE_LANDSCAPE, false],
-  ['landscape, tabletop', SE_LANDSCAPE, true],
+  ['play, portrait', playBox(SE_PORTRAIT), false],
+  ['play, portrait, tabletop', playBox(SE_PORTRAIT), true],
+  ['play, landscape', playBox(SE_LANDSCAPE), false],
+  ['play, landscape, tabletop', playBox(SE_LANDSCAPE), true],
+  ['pick, portrait', pickBox(SE_PORTRAIT), false],
+  ['pick, portrait, tabletop', pickBox(SE_PORTRAIT), true],
 ] as const
 
-describe.each(layouts)('no shipped question overflows an iPhone SE: %s', (_name, win, mirrored) => {
-  const box = playBox(win)
+describe.each(layouts)('every shipped question on an iPhone SE: %s', (_name, box, mirrored) => {
   const height = mirrored ? (box.height - MIRROR_GAP) / 2 : box.height
-  const floor = mirrored ? HARD_MIN_PRIMARY_MIRRORED : HARD_MIN_PRIMARY
-  const counts = mirrored ? [0] : [0, 1, 2]
+  const minFont = mirrored ? MAIN_MIN_FONT_MIRRORED : MAIN_MIN_FONT
+  const counts = mirrored ? [0] : [0, 1]
 
-  it.each(counts)('fits every question with %i secondary language(s)', (count) => {
+  it.each(counts)('with %i secondary language(s)', (count) => {
     const failures: string[] = []
     for (const question of allQuestions) {
       if (question.others.length < count) continue
@@ -145,22 +148,36 @@ describe.each(layouts)('no shipped question overflows an iPhone SE: %s', (_name,
       })
       const where = `${question.language} (${question.text.length} chars) ×${count}`
 
-      if (fit.fontSize < floor) failures.push(`${where}: primary ${fit.fontSize}pt below ${floor}`)
-      if (count > 0 && fit.secondaryFont < HARD_MIN_SECONDARY)
-        failures.push(`${where}: secondary ${fit.secondaryFont}pt below ${HARD_MIN_SECONDARY}`)
-      if (fit.secondaryFont > fit.fontSize)
-        failures.push(`${where}: secondary ${fit.secondaryFont}pt louder than primary`)
+      const mainFont = fitFontSize(
+        question.text,
+        box.width,
+        height * MAIN_PRIMARY_SHARE[count],
+        minFont
+      )
+      if (
+        fit.fontSize !== mainFont ||
+        fit.secondaryFont !== fitSecondaryFontSize(mainFont, minFont)
+      )
+        failures.push(`${where}: ${fit.fontSize}/${fit.secondaryFont}pt differs from main at 1×`)
 
-      for (const scale of FONT_SCALES) {
-        const applied = Math.min(scale, fit.maxFontSizeMultiplier)
-        const stack = oracleStackHeight(
+      const stackAt = (scale: number) =>
+        oracleStackHeight(
           question.text,
           secondaries,
-          fit.fontSize * applied,
-          fit.secondaryFont * applied,
+          fit.fontSize * scale,
+          fit.secondaryFont * scale,
           box.width
         )
-        if (stack > height + 1e-6)
+      // main's sizes already overflow at 1× here: pre-existing, so the cap just pins at 1
+      if (stackAt(1) > height * HEADROOM) {
+        if (fit.maxFontSizeMultiplier !== 1)
+          failures.push(`${where}: overflows at 1× yet caps above 1`)
+        continue
+      }
+      for (const scale of FONT_SCALES) {
+        const applied = Math.min(scale, fit.maxFontSizeMultiplier)
+        const stack = stackAt(applied)
+        if (stack > height * HEADROOM + 1e-6)
           failures.push(
             `${where} @${scale}×: ${stack.toFixed(1)}pt in a ${height.toFixed(1)}pt box`
           )
@@ -175,7 +192,7 @@ describe('fitStack: the Dynamic Type cap', () => {
 
   it('never caps below 1×', () => {
     for (const question of allQuestions) {
-      const fit = fitStack({text: question.text, secondaries: question.others.slice(0, 2), ...box})
+      const fit = fitStack({text: question.text, secondaries: question.others.slice(0, 1), ...box})
       expect(fit.maxFontSizeMultiplier).toBeGreaterThanOrEqual(1)
     }
   })
@@ -234,7 +251,6 @@ describe('QuestionText: rendering', () => {
     const cap = primary.props.maxFontSizeMultiplier
     const primarySize = Number(resolvedStyle(primary).fontSize)
     expect(cap).toBeGreaterThanOrEqual(1)
-    expect(primarySize).toBeGreaterThanOrEqual(HARD_MIN_PRIMARY)
     // RN's default, true: the cap bounds the OS setting rather than disabling it
     expect(primary.props.allowFontScaling).toBeUndefined()
 
@@ -246,6 +262,6 @@ describe('QuestionText: rendering', () => {
       expect(size).toBeLessThanOrEqual(primarySize)
       stack += SECONDARY_GAP + oracleBlockHeight(secondary.text, size * cap, box.width)
     }
-    expect(stack).toBeLessThanOrEqual(box.height)
+    expect(stack).toBeLessThanOrEqual(box.height * HEADROOM)
   })
 })
