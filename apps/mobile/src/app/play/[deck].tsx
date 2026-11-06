@@ -234,11 +234,7 @@ const DeckPlayer = ({
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   const {theme, select: selectTheme} = useThemeSetting()
 
-  // Read secondaries + tabletop mode (and language, unless `keepLanguage`) from
-  // storage: on mount, and again when the in-play Settings sheet closes (issue
-  // #197). Display settings only; draws and progress are untouched. Only apply
-  // stored languages still present in this deck's languages list (guard against
-  // decks dropping one).
+  // Stored languages are applied only if this deck still offers them.
   const readSettings = useCallback(
     (keepLanguage: boolean) =>
       Promise.all([
@@ -261,8 +257,7 @@ const DeckPlayer = ({
     void readSettings(linkLanguage !== undefined).then(() => setLanguageReady(true))
   }, [readSettings, linkLanguage])
 
-  // Storage can't tell a pick of the stored language from no pick, so the sheet
-  // reports picks and only a pick replaces the language on screen (a link's included).
+  // Storage can't tell a pick of the stored language from no pick, so the sheet reports each pick.
   const pickedLanguageRef = useRef<string | undefined>(undefined)
 
   // A deep link that arrives while this deck is already open can't ride the route

@@ -137,8 +137,6 @@ export const PickPlayer = ({
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   const {theme, select: selectTheme} = useThemeSetting()
 
-  // On mount, and again when the in-play Settings sheet closes (issue #197);
-  // display settings only, so the deal and its progress stay as they are.
   const readSettings = useCallback(
     () =>
       Promise.all([
