@@ -1,9 +1,10 @@
 /** iOS installs from App Store Connect Sales Reports. Setup: docs/STATS-ENV.md. */
+import {gunzipSync} from 'node:zlib'
 import {APP_STORE_APP_ID} from '@whocards/app-store'
-import jwt from 'jsonwebtoken'
 
 import type {MetricResult} from '../types'
 import {live, needsCredentials, unavailable} from '../types'
+import {signJwt} from './jwt'
 import {reportWindowDates} from './report-window'
 
 export type AppStoreConnectCredentials = {
@@ -21,14 +22,15 @@ const TOKEN_TTL_SECONDS = 20 * 60 // Apple caps this token at 20 minutes.
 const FETCH_TIMEOUT_MS = 8_000
 const CONCURRENCY = 10
 
-export const buildAppStoreConnectToken = (creds: AppStoreConnectCredentials): string =>
-  jwt.sign({}, creds.privateKey, {
-    algorithm: 'ES256',
-    keyid: creds.keyId,
-    issuer: creds.issuerId,
-    audience: AUDIENCE,
-    expiresIn: TOKEN_TTL_SECONDS,
-  })
+export const buildAppStoreConnectToken = (creds: AppStoreConnectCredentials): string => {
+  const now = Math.floor(Date.now() / 1000)
+  return signJwt(
+    'ES256',
+    {kid: creds.keyId},
+    {iss: creds.issuerId, aud: AUDIENCE, iat: now, exp: now + TOKEN_TTL_SECONDS},
+    creds.privateKey
+  )
+}
 
 const fetchDailyInstalls = async (
   creds: AppStoreConnectCredentials,
@@ -51,8 +53,7 @@ const fetchDailyInstalls = async (
   if (!response.ok) throw new Error(`Apple returned ${response.status}`)
 
   const buffer = await response.arrayBuffer()
-  const zlib = await import('node:zlib')
-  const tsv = zlib.gunzipSync(Buffer.from(buffer)).toString('utf-8')
+  const tsv = gunzipSync(Buffer.from(buffer)).toString('utf-8')
   return parseSalesReportInstalls(tsv)
 }
 

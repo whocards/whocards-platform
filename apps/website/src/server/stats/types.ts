@@ -1,6 +1,6 @@
 import type {AnswerPlatform} from '@whocards/api/platform'
 
-export type MetricStatus = 'live' | 'needs-credentials' | 'needs-instrumentation' | 'unavailable'
+export type MetricStatus = 'live' | 'needs-credentials' | 'unavailable'
 
 export type MetricResult<T> =
   | {status: 'live'; value: T; source: string}
@@ -22,16 +22,13 @@ export const unavailable = (source: string, reason?: string): MetricResult<never
   reason,
 })
 
-export type Platform = AnswerPlatform
-
-export type PlatformCountRow = {platform: Platform | null; count: number}
+export type PlatformCountRow = {platform: AnswerPlatform | null; count: number}
 
 export type PlatformBreakdown = {
   web: number
   ios: number
   android: number
   unattributed: number
-  total: number
 }
 
 export const TREND_PERIODS = ['week', 'month', 'year'] as const

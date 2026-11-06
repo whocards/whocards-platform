@@ -8,13 +8,13 @@ import {
 } from './rollups'
 
 describe('platformBreakdown', () => {
-  it('buckets known platforms and sums a total', () => {
+  it('buckets known platforms', () => {
     const result = platformBreakdown([
       {platform: 'web', count: 10},
       {platform: 'ios', count: 5},
       {platform: 'android', count: 3},
     ])
-    expect(result).toEqual({web: 10, ios: 5, android: 3, unattributed: 0, total: 18})
+    expect(result).toEqual({web: 10, ios: 5, android: 3, unattributed: 0})
   })
 
   it('buckets null (legacy rows) as unattributed', () => {
@@ -23,7 +23,6 @@ describe('platformBreakdown', () => {
       {platform: null, count: 7},
     ])
     expect(result.unattributed).toBe(7)
-    expect(result.total).toBe(17)
   })
 
   it('folds an unrecognized platform string into unattributed rather than dropping it', () => {
@@ -32,11 +31,10 @@ describe('platformBreakdown', () => {
       {platform: 'smart-fridge', count: 2},
     ])
     expect(result.unattributed).toBe(2)
-    expect(result.total).toBe(2)
   })
 
   it('empty input yields all zeros', () => {
-    expect(platformBreakdown([])).toEqual({web: 0, ios: 0, android: 0, unattributed: 0, total: 0})
+    expect(platformBreakdown([])).toEqual({web: 0, ios: 0, android: 0, unattributed: 0})
   })
 })
 

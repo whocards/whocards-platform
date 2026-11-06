@@ -19,7 +19,6 @@ export const readLatestSnapshot = async <T extends PgQueryResultHKT>(
   return row?.snapshot
 }
 
-/** Inserts the snapshot and prunes everything but the newest KEEP_SNAPSHOTS rows. */
 export const writeSnapshot = async <T extends PgQueryResultHKT>(
   database: Db<T>,
   snapshot: StatsSnapshot

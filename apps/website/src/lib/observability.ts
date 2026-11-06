@@ -20,5 +20,4 @@ const provider: ObservabilityProvider = {
 
 export const initObservability = (): void => {
   configureObservability({dev: import.meta.env.DEV, provider})
-  window.posthog?.register({platform: 'web'})
 }

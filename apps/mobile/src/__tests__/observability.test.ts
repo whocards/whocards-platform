@@ -75,8 +75,7 @@ describe('observability — auto-flag non-real hardware', () => {
 
   it('does NOT register is_internal on a real device', () => {
     freshObservability(true)
-    // register is still called for `platform`.
-    expect(mockRegister).not.toHaveBeenCalledWith({is_internal: true})
+    expect(mockRegister).not.toHaveBeenCalled()
   })
 
   it('does nothing when no PostHog key is configured, real hardware or not', () => {

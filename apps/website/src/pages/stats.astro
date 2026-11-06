@@ -24,7 +24,6 @@ function isLive<T>(result: MetricResult<T>): result is Extract<MetricResult<T>, 
 
 const notConnectedMessage = (result: MetricResult<unknown>): string => {
   if (result.status === 'needs-credentials') return 'Not connected yet.'
-  if (result.status === 'needs-instrumentation') return 'Coming soon.'
   return 'Temporarily unavailable.'
 }
 
@@ -297,7 +296,7 @@ const updatedLabel = new Date(snapshot.generatedAt).toLocaleString('en-US', {
         A question counts as answered when its card is served — no minimum viewing time.
         {dataSinceLabel && ` Numbers reflect data recorded since ${dataSinceLabel}.`} Devices,
         decks, languages and countries all come from the same answers, played on the website or in
-        the app, live events included. Countries and languages with fewer than five devices are left
+        the app. Live events aren't counted yet. Countries with fewer than five devices are left
         out. Counts are aggregate totals only; WhoCards does not track or publish anything about an
         individual person or device.
       </p>

@@ -25,6 +25,12 @@ const envMock: Record<string, string | undefined> = {
 vi.mock('~env', () => ({env: envMock}))
 vi.mock('~server/db', () => ({db: {}}))
 
+const observability = vi.hoisted(() => ({
+  logError: vi.fn<(message: string, error?: unknown) => void>(),
+  logWarn: vi.fn<(message: string, error?: unknown, context?: object) => void>(),
+}))
+vi.mock('@whocards/observability', () => observability)
+
 const query = vi.hoisted(() => ({
   getAnswerTotals: vi.fn<() => Promise<AnswerTotals>>(),
   getPlatformCounts: vi.fn<() => Promise<PlatformCountRow[]>>(),
@@ -177,6 +183,35 @@ describe('getStatsSnapshot — countries come from the Answer record, privacy-th
   })
 })
 
+describe('getStatsSnapshot — languages count every language played', () => {
+  it('counts languages below the 5-Device floor, since only the count is shown', async () => {
+    query.getLanguageCounts.mockResolvedValue([
+      {name: 'en', count: 10},
+      {name: 'hu', count: 1},
+    ])
+    const {getStatsSnapshot} = await freshIndex()
+    const snapshot = await getStatsSnapshot()
+    expect(snapshot.languages).toMatchObject({status: 'live', value: {spoken: 2}})
+  })
+})
+
+describe('getStatsSnapshot — Google Play credentials', () => {
+  it('shows unavailable, not needs-credentials, when the service account JSON is set but malformed', async () => {
+    envMock.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON = '{not json'
+    envMock.GOOGLE_PLAY_REPORTS_BUCKET = 'pubsite_prod_rev_123'
+    const {getStatsSnapshot} = await freshIndex()
+    const snapshot = await getStatsSnapshot()
+    expect(snapshot.installsAndroid).toMatchObject({status: 'unavailable', source: 'google-play'})
+    expect(sources.fetchGooglePlayInstalls).not.toHaveBeenCalled()
+  })
+
+  it('passes undefined credentials through when the vars are unset', async () => {
+    const {getStatsSnapshot} = await freshIndex()
+    await getStatsSnapshot()
+    expect(sources.fetchGooglePlayInstalls).toHaveBeenCalledWith(undefined, expect.any(String))
+  })
+})
+
 describe('getStatsSnapshot — one failing DB query degrades only its own field(s)', () => {
   it('degrades the totals-backed fields when the totals query rejects, leaving every other field live', async () => {
     query.getAnswerTotals.mockRejectedValue(new Error('connection terminated'))
@@ -221,7 +256,7 @@ const storedAt = (generatedAt: string): StatsSnapshot => {
   }
 }
 
-describe('getStatsSnapshot — serves the stored snapshot, rebuilds inline only when missing or stale', () => {
+describe('getStatsSnapshot — serves the stored snapshot, rebuilds inline only when there is none', () => {
   it('returns a fresh stored snapshot without touching the source queries', async () => {
     const stored = storedAt(new Date().toISOString())
     store.readLatestSnapshot.mockResolvedValue(stored)
@@ -231,22 +266,39 @@ describe('getStatsSnapshot — serves the stored snapshot, rebuilds inline only 
     expect(store.writeSnapshot).not.toHaveBeenCalled()
   })
 
-  it('rebuilds and stores when the newest snapshot is older than MAX_SNAPSHOT_AGE_MS', async () => {
+  it('serves a stale snapshot and warns, rather than rebuilding inline', async () => {
     const {getStatsSnapshot, MAX_SNAPSHOT_AGE_MS} = await freshIndex()
-    store.readLatestSnapshot.mockResolvedValue(
-      storedAt(new Date(Date.now() - MAX_SNAPSHOT_AGE_MS - 1000).toISOString())
-    )
+    const stored = storedAt(new Date(Date.now() - MAX_SNAPSHOT_AGE_MS - 1000).toISOString())
+    store.readLatestSnapshot.mockResolvedValue(stored)
+    expect(await getStatsSnapshot()).toBe(stored)
+    expect(query.getAnswerTotals).not.toHaveBeenCalled()
+    expect(observability.logWarn).toHaveBeenCalled()
+  })
+
+  it('rebuilds and stores when there is no snapshot', async () => {
+    const {getStatsSnapshot} = await freshIndex()
     const snapshot = await getStatsSnapshot()
     expect(query.getAnswerTotals).toHaveBeenCalledTimes(1)
     expect(snapshot.questionsAnswered).toMatchObject({value: {total: 100}})
     expect(store.writeSnapshot).toHaveBeenCalledWith(expect.anything(), snapshot)
   })
 
-  it('still returns the inline build when storing it fails', async () => {
-    store.writeSnapshot.mockRejectedValue(new Error('read-only replica'))
+  it('still returns the inline build when storing it fails, and logs the failure', async () => {
+    const failure = new Error('read-only replica')
+    store.writeSnapshot.mockRejectedValue(failure)
     const {getStatsSnapshot} = await freshIndex()
     const snapshot = await getStatsSnapshot()
     expect(snapshot.questionsAnswered.status).toBe('live')
+    expect(observability.logError).toHaveBeenCalledWith(expect.any(String), failure)
+  })
+
+  it('logs a failed snapshot read and builds inline', async () => {
+    const failure = new Error('connection refused')
+    store.readLatestSnapshot.mockRejectedValue(failure)
+    const {getStatsSnapshot} = await freshIndex()
+    const snapshot = await getStatsSnapshot()
+    expect(snapshot.questionsAnswered.status).toBe('live')
+    expect(observability.logError).toHaveBeenCalledWith(expect.any(String), failure)
   })
 
   it('stamps generatedAt on every build', async () => {

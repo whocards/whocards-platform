@@ -1,5 +1,6 @@
 import {ANDROID_PACKAGE_ID} from '@whocards/app-store'
 import {LANGUAGE_CODES} from '@whocards/decks'
+import {logError, logWarn} from '@whocards/observability'
 import {env} from '~env'
 import {db} from '~server/db'
 import {
@@ -14,18 +15,15 @@ import {applyPrivacyThreshold, buildTrend, platformBreakdown} from './rollups'
 import {readLatestSnapshot, writeSnapshot} from './snapshot-store'
 import type {AppStoreConnectCredentials} from './sources/app-store-connect'
 import {fetchAppStoreInstalls} from './sources/app-store-connect'
-import type {GooglePlayCredentials} from './sources/google-play'
+import type {GooglePlayServiceAccount} from './sources/google-play'
 import {fetchGooglePlayInstalls} from './sources/google-play'
-import type {StatsSnapshot} from './types'
+import type {MetricResult, StatsSnapshot} from './types'
 import {live, unavailable} from './types'
 
-/**
- * The scheduled refresh runs hourly. A stored snapshot older than this means the cron is
- * broken, so the page rebuilds inline (and stores the result) rather than serving stale data.
- */
+// The refresh runs hourly, so a snapshot older than this means the cron is broken.
 export const MAX_SNAPSHOT_AGE_MS = 3 * 60 * 60 * 1000
 
-/** Shared by concurrent inline rebuilds, so a missing snapshot triggers one build instead of one per request. */
+// Concurrent requests with no snapshot share one build.
 let inFlight: Promise<StatsSnapshot> | undefined
 
 const appStoreConnectCredentials = (): AppStoreConnectCredentials | undefined => {
@@ -39,9 +37,7 @@ const appStoreConnectCredentials = (): AppStoreConnectCredentials | undefined =>
   return {keyId, issuerId, privateKey, vendorNumber}
 }
 
-const isServiceAccountShape = (
-  value: unknown
-): value is {client_email: string; private_key: string} =>
+const isServiceAccount = (value: unknown): value is {client_email: string; private_key: string} =>
   typeof value === 'object' &&
   value !== null &&
   'client_email' in value &&
@@ -49,19 +45,27 @@ const isServiceAccountShape = (
   typeof value.client_email === 'string' &&
   typeof value.private_key === 'string'
 
-const googlePlayCredentials = (): GooglePlayCredentials | undefined => {
-  const {GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: json, GOOGLE_PLAY_REPORTS_BUCKET: bucket} = env
-  if (!json || !bucket) return undefined
+const parseServiceAccount = (json: string): GooglePlayServiceAccount | undefined => {
   try {
     const parsed: unknown = JSON.parse(json)
-    if (!isServiceAccountShape(parsed)) return undefined
-    return {
-      serviceAccount: {client_email: parsed.client_email, private_key: parsed.private_key},
-      bucket,
-    }
+    if (!isServiceAccount(parsed)) return undefined
+    return {client_email: parsed.client_email, private_key: parsed.private_key}
   } catch {
     return undefined
   }
+}
+
+const fetchAndroidInstalls = async (): Promise<MetricResult<number>> => {
+  const {GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: json, GOOGLE_PLAY_REPORTS_BUCKET: bucket} = env
+  if (!json || !bucket) return fetchGooglePlayInstalls(undefined, ANDROID_PACKAGE_ID)
+  const serviceAccount = parseServiceAccount(json)
+  if (!serviceAccount) {
+    return unavailable(
+      'google-play',
+      'GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is not a service account key'
+    )
+  }
+  return fetchGooglePlayInstalls({serviceAccount, bucket}, ANDROID_PACKAGE_ID)
 }
 
 type DbResult<T> = {ok: true; value: T} | {ok: false; error: unknown}
@@ -99,15 +103,12 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
     runDbQuery(() => getLanguageCounts(db)),
     runDbQuery(() => getCountryCounts(db)),
     fetchAppStoreInstalls(appStoreConnectCredentials()),
-    fetchGooglePlayInstalls(googlePlayCredentials(), ANDROID_PACKAGE_ID),
+    fetchAndroidInstalls(),
   ])
-
-  const spokenLanguages = languageRows.ok ? applyPrivacyThreshold(languageRows.value) : []
 
   return {
     generatedAt: now.toISOString(),
-    // Answer record only. Live events (conference tracking) aren't counted until
-    // they fold into the Answer record — today they can't be attributed or de-duplicated.
+    // Answer record only: Live events would double-count (see CONTEXT.md).
     questionsAnswered: totals.ok
       ? live(
           {total: totals.value.answers, thisWeek: totals.value.answersThisWeek},
@@ -131,7 +132,7 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
       ? live({total: totals.value.decks}, 'postgres:answer')
       : unavailable('postgres:answer', dbFailureReason(totals)),
     languages: languageRows.ok
-      ? live({spoken: spokenLanguages.length, ofTotal: LANGUAGE_CODES.length}, 'postgres:answer')
+      ? live({spoken: languageRows.value.length, ofTotal: LANGUAGE_CODES.length}, 'postgres:answer')
       : unavailable('postgres:answer', dbFailureReason(languageRows)),
     countries: countryRows.ok
       ? live(applyPrivacyThreshold(countryRows.value), 'postgres:answer')
@@ -152,7 +153,6 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
   }
 }
 
-/** Builds a fresh snapshot and stores it. Used by the scheduled refresh (POST /api/stats/refresh). */
 export const refreshStatsSnapshot = async (): Promise<StatsSnapshot> => {
   const snapshot = await buildStatsSnapshot()
   await writeSnapshot(db, snapshot)
@@ -162,19 +162,25 @@ export const refreshStatsSnapshot = async (): Promise<StatsSnapshot> => {
 const isFresh = (snapshot: StatsSnapshot, now: number): boolean =>
   now - Date.parse(snapshot.generatedAt) < MAX_SNAPSHOT_AGE_MS
 
-/**
- * What the page renders: the newest stored snapshot (one small query). Falls back to an
- * inline build when there is none yet or it is stale; the inline build still stores its
- * result on a best-effort basis so the next request is cheap again.
- */
+// A stale snapshot is still served: rebuilding per request would let cache-busting hammer the store APIs.
 export const getStatsSnapshot = async (): Promise<StatsSnapshot> => {
-  const stored = await readLatestSnapshot(db).catch(() => undefined)
-  if (stored && isFresh(stored, Date.now())) return stored
+  const stored = await readLatestSnapshot(db).catch((error: unknown) => {
+    logError('stats: reading the snapshot failed', error)
+    return undefined
+  })
+  if (stored) {
+    if (!isFresh(stored, Date.now())) {
+      logWarn('stats: serving a stale snapshot', undefined, {generatedAt: stored.generatedAt})
+    }
+    return stored
+  }
   if (inFlight) return inFlight
 
   inFlight = buildStatsSnapshot()
     .then(async (snapshot) => {
-      await writeSnapshot(db, snapshot).catch(() => undefined)
+      await writeSnapshot(db, snapshot).catch((error: unknown) => {
+        logError('stats: storing the inline snapshot failed', error)
+      })
       return snapshot
     })
     .finally(() => {

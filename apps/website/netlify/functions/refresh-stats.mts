@@ -1,8 +1,6 @@
 import type {Config} from '@netlify/functions'
 
-// Hourly: ask the site to rebuild its /stats snapshot. The work itself lives in the
-// Astro route so it shares the app's env validation and DB client; this function only
-// holds the schedule. `URL` is the production origin Netlify injects at runtime.
+// Only the schedule lives here; the work is in /api/stats/refresh so it shares the site's env and DB.
 export default async () => {
   const secret = process.env.STATS_REFRESH_SECRET
   if (!secret) {

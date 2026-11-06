@@ -67,7 +67,7 @@ describe('fetchGooglePlayInstalls — request timeouts', () => {
     vi.restoreAllMocks()
   })
 
-  it('sets an AbortSignal on the OAuth2 token exchange and both Cloud Storage fetches', async () => {
+  it('shares one AbortSignal deadline across the OAuth2 token exchange and both Cloud Storage fetches', async () => {
     const csv = ['"Date","Daily User Installs"', '"2026-01-01","4"'].join('\n')
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
@@ -83,10 +83,9 @@ describe('fetchGooglePlayInstalls — request timeouts', () => {
 
     expect(result.status).toBe('live')
     expect(fetchSpy).toHaveBeenCalledTimes(3)
-    for (const call of fetchSpy.mock.calls) {
-      const [, init] = call
-      expect(init?.signal).toBeInstanceOf(AbortSignal)
-    }
+    const signals = fetchSpy.mock.calls.map(([, init]) => init?.signal)
+    expect(signals[0]).toBeInstanceOf(AbortSignal)
+    expect(new Set(signals).size).toBe(1)
   })
 })
 

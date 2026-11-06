@@ -1,11 +1,5 @@
 #!/usr/bin/env node
-// Trigger a /stats snapshot rebuild by hand (the same call the hourly Netlify function makes).
-//
-// Usage:
-//   pnpm --filter website stats:refresh                       # against https://whocards.cc
-//   pnpm --filter website stats:refresh -- http://localhost:4321
-//
-// Reads STATS_REFRESH_SECRET from the root .env (via with-env).
+// Usage: pnpm --filter website stats:refresh [-- <origin>]  (default https://whocards.cc)
 
 const base = process.argv[2] ?? 'https://whocards.cc'
 const secret = process.env.STATS_REFRESH_SECRET

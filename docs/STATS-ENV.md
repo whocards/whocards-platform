@@ -108,8 +108,7 @@ In the local `.env`, wrap it in **single** quotes. Double quotes would turn the 
 `private_key` into real line breaks, and then `JSON.parse` fails.
 
 The code only reads `client_email` and `private_key`. If the file doesn't parse, or either field
-is missing, the source counts as not configured and the card shows "Not connected yet", not an
-error.
+is missing, the card shows "Temporarily unavailable".
 
 What it counts: "Daily User Installs" from Google's monthly installs overview CSVs (current and
 previous month, for package `com.whocards.mobile`), summed over the same 30 days as iOS.
@@ -119,6 +118,7 @@ previous month, for package `com.whocards.mobile`), summed over the same 30 days
 - `403` from Cloud Storage: the Play Console permission hasn't propagated. **This can take up
   to 24 hours** after the invite. Also check that it was granted under _Account_ permissions,
   not only on the app.
+- The JSON doesn't parse or lacks `client_email` / `private_key` (check the quoting above).
 - A token exchange failure: the key was deleted or the JSON was mangled.
 - A Cloud Storage API error naming the project: enable the **Cloud Storage JSON API** in the
   service account's project (new projects usually have it on).
@@ -128,9 +128,9 @@ previous month, for package `com.whocards.mobile`), summed over the same 30 days
 The page doesn't compute anything per request. A Netlify scheduled function
 (`apps/website/netlify/functions/refresh-stats.mts`, `@hourly`) calls
 `POST /api/stats/refresh`, which runs every query and store fetch once and stores the result
-in `stats_snapshot`. The page reads the newest row. Without a fresh row (none yet, or older
-than 3 hours because the schedule is broken) the page computes inline and stores that, so the
-schedule is an optimisation, not a dependency.
+in `stats_snapshot`. The page reads the newest row, however old (a row older than 3 hours logs a
+warning, since the schedule is broken). Only when there is no row at all does the page compute
+inline and store that.
 
 The route needs a bearer token so nobody else can make the site hammer Apple and Google:
 
@@ -138,9 +138,9 @@ The route needs a bearer token so nobody else can make the site hammer Apple and
 openssl rand -hex 32
 ```
 
-| Var                    | Value                                           |
-| ---------------------- | ----------------------------------------------- |
-| `STATS_REFRESH_SECRET` | The random string. At least 16 characters long. |
+| Var                    | Value                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| `STATS_REFRESH_SECRET` | The random string. At least 16 characters; a shorter one counts as unset (the route 503s). |
 
 Set it on Netlify (next section) **and** in `.env.prod`, so you can trigger a refresh by hand
 after connecting a source instead of waiting for the hour. The script sends the secret only over
@@ -212,8 +212,8 @@ node -e 'const k=require(process.argv[1]);process.stdout.write(JSON.stringify({c
 Open <https://whocards.cc/stats> after the deploy finishes:
 
 - A number means the source is live.
-- **"Not connected yet."** means a var is missing on this deploy, or the Google JSON didn't
-  parse. Check the var names and scopes, then redeploy.
+- **"Not connected yet."** means a var is missing on this deploy. Check the var names and
+  scopes, then redeploy.
 - **"Temporarily unavailable."** means the vars are there but the call failed. See the
   troubleshooting list for that source above.
 

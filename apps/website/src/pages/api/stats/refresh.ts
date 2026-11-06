@@ -4,9 +4,10 @@ import type {APIRoute} from 'astro'
 import {env} from '~env'
 import {refreshStatsSnapshot} from '~server/stats'
 
-// Rebuilds the /stats snapshot and stores it. Called hourly by the Netlify scheduled
-// function (netlify/functions/refresh-stats.mts) and by `pnpm --filter website stats:refresh`.
 export const prerender = false
+
+// Enforced here, not in the env schema, so a short secret disables refresh instead of the whole site.
+const MIN_SECRET_LENGTH = 16
 
 const isAuthorized = (request: Request, secret: string): boolean => {
   const presented = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? ''
@@ -17,7 +18,9 @@ const isAuthorized = (request: Request, secret: string): boolean => {
 
 export const POST: APIRoute = async ({request}) => {
   const secret = env.STATS_REFRESH_SECRET
-  if (!secret) return new Response('STATS_REFRESH_SECRET is not set', {status: 503})
+  if (!secret || secret.length < MIN_SECRET_LENGTH) {
+    return new Response('STATS_REFRESH_SECRET is not set', {status: 503})
+  }
   if (!isAuthorized(request, secret)) return new Response('Unauthorized', {status: 401})
 
   try {

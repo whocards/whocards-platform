@@ -13,8 +13,6 @@ export type {GamePort, WriteResult} from './game/port'
 export {saveAnswer} from './game/answer'
 export {cacheControlFor} from './cache'
 export type {AppRouter}
-export {ANSWER_PLATFORMS} from './platform'
-export type {AnswerPlatform} from './platform'
 
 /** Inference helpers for end-to-end typed clients. */
 export type RouterInputs = inferRouterInputs<AppRouter>

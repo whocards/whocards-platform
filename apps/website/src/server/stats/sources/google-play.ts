@@ -1,8 +1,7 @@
 /** Android installs from the monthly CSVs in the Play Console reports bucket. Setup: docs/STATS-ENV.md. */
-import jwt from 'jsonwebtoken'
-
 import type {MetricResult} from '../types'
 import {live, needsCredentials, unavailable} from '../types'
+import {signJwt} from './jwt'
 import {reportWindowDates} from './report-window'
 
 export type GooglePlayServiceAccount = {
@@ -18,11 +17,14 @@ export type GooglePlayCredentials = {
 const SOURCE = 'google-play'
 const STORAGE_SCOPE = 'https://www.googleapis.com/auth/devstorage.read_only'
 const TOKEN_TTL_SECONDS = 60 * 60
-const FETCH_TIMEOUT_MS = 10_000
+// One deadline for the token exchange and every monthly CSV, inside the 10s function budget.
+const FETCH_TIMEOUT_MS = 8_000
 
 export const buildGooglePlayAssertion = (account: GooglePlayServiceAccount): string => {
   const now = Math.floor(Date.now() / 1000)
-  return jwt.sign(
+  return signJwt(
+    'RS256',
+    {},
     {
       iss: account.client_email,
       scope: STORAGE_SCOPE,
@@ -30,12 +32,14 @@ export const buildGooglePlayAssertion = (account: GooglePlayServiceAccount): str
       iat: now,
       exp: now + TOKEN_TTL_SECONDS,
     },
-    account.private_key,
-    {algorithm: 'RS256'}
+    account.private_key
   )
 }
 
-const fetchAccessToken = async (account: GooglePlayServiceAccount): Promise<string> => {
+const fetchAccessToken = async (
+  account: GooglePlayServiceAccount,
+  signal: AbortSignal
+): Promise<string> => {
   const assertion = buildGooglePlayAssertion(account)
   const response = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -44,7 +48,7 @@ const fetchAccessToken = async (account: GooglePlayServiceAccount): Promise<stri
       grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
       assertion,
     }),
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    signal,
   })
   if (!response.ok) throw new Error(`Google OAuth2 token exchange failed: ${response.status}`)
   const json: unknown = await response.json()
@@ -61,13 +65,14 @@ const fetchMonthlyInstallRows = async (
   creds: GooglePlayCredentials,
   accessToken: string,
   packageId: string,
-  yyyymm: string
+  yyyymm: string,
+  signal: AbortSignal
 ): Promise<InstallRow[]> => {
   const objectPath = `stats/installs/installs_${packageId}_${yyyymm}_overview.csv`
   const url = `https://storage.googleapis.com/storage/v1/b/${creds.bucket}/o/${encodeURIComponent(objectPath)}?alt=media`
   const response = await fetch(url, {
     headers: {Authorization: `Bearer ${accessToken}`},
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    signal,
   })
   if (response.status === 404) return [] // No report for that month yet.
   if (!response.ok) throw new Error(`Cloud Storage returned ${response.status}`)
@@ -91,11 +96,12 @@ export const fetchGooglePlayInstalls = async (
   }
 
   try {
-    const accessToken = await fetchAccessToken(creds.serviceAccount)
+    const signal = AbortSignal.timeout(FETCH_TIMEOUT_MS)
+    const accessToken = await fetchAccessToken(creds.serviceAccount, signal)
     const windowDates = reportWindowDates(now)
     const months = [...new Set(windowDates.map((date) => date.slice(0, 7).replace('-', '')))]
     const monthlyRows = await Promise.all(
-      months.map((month) => fetchMonthlyInstallRows(creds, accessToken, packageId, month))
+      months.map((month) => fetchMonthlyInstallRows(creds, accessToken, packageId, month, signal))
     )
     const inWindow = new Set(windowDates)
     const installs = monthlyRows

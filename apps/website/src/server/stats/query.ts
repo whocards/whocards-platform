@@ -3,7 +3,8 @@ import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import {ANSWER_PLATFORMS} from '@whocards/api/platform'
 import {addPeriods, currentWeekStart, weekStartOf} from './date-utils'
 import {TREND_BARS} from './rollups'
-import type {AnswerTotals, NamedCount, PeriodCountRow, Platform, PlatformCountRow} from './types'
+import type {AnswerPlatform} from '@whocards/api/platform'
+import type {AnswerTotals, NamedCount, PeriodCountRow, PlatformCountRow} from './types'
 import * as schema from '../db/schema'
 
 type Db<T extends PgQueryResultHKT> = PgDatabase<T, typeof schema>
@@ -11,10 +12,7 @@ type Db<T extends PgQueryResultHKT> = PgDatabase<T, typeof schema>
 const DAY_MS = 24 * 60 * 60 * 1000
 const ACTIVE_WINDOW_DAYS = 30
 
-/**
- * One aggregate pass over the Answer record: hero total, "this week" (Monday 00:00 UTC,
- * matching the weekly chart's last bar), Devices, Decks, and the earliest Answer.
- */
+// "This week" starts Monday 00:00 UTC, matching the weekly chart's last bar.
 export const getAnswerTotals = async <T extends PgQueryResultHKT>(
   database: Db<T>,
   now: Date = new Date()
@@ -44,7 +42,7 @@ export const getAnswerTotals = async <T extends PgQueryResultHKT>(
   }
 }
 
-const isPlatform = (value: string | null): value is Platform =>
+const isPlatform = (value: string | null): value is AnswerPlatform =>
   value !== null && (ANSWER_PLATFORMS as readonly string[]).includes(value)
 
 export const getPlatformCounts = async <T extends PgQueryResultHKT>(
@@ -66,8 +64,7 @@ const periodCounts = async <T extends PgQueryResultHKT>(
   period: 'week' | 'month',
   since?: string
 ): Promise<PeriodCountRow[]> => {
-  // date_trunc('week') is Monday-based, matching weekStartOf(). `at time zone 'UTC'` makes the
-  // bucket independent of the connection's TimeZone setting.
+  // `at time zone 'UTC'` keeps buckets independent of the connection's TimeZone; week is Monday-based like weekStartOf().
   const bucket = sql<string>`to_char(date_trunc(${sql.raw(`'${period}'`)}, ${schema.answer.createdAt} at time zone 'UTC'), 'YYYY-MM-DD')`
   const rows = await database
     .select({periodStart: bucket, count: sql<string>`count(*)`})
@@ -106,7 +103,7 @@ const distinctDevicesBy = async <T extends PgQueryResultHKT>(
     .map((row) => ({name: row.name, count: Number(row.count)}))
 }
 
-/** Distinct Devices per language, unfiltered — the caller applies the privacy threshold. */
+/** Distinct Devices per language, unfiltered. */
 export const getLanguageCounts = <T extends PgQueryResultHKT>(database: Db<T>) =>
   distinctDevicesBy(database, schema.answer.language)
 

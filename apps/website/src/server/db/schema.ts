@@ -453,8 +453,7 @@ export const answer = pgTable(
     type: text('type').notNull().default('answered'),
     // NULL = Unattributed (rows from before this column, or old clients).
     platform: text('platform'),
-    // ISO 3166-1 alpha-2, stamped server-side from Netlify's geo header at record
-    // time. NULL for rows from before this column or requests without geo data.
+    // ISO 3166-1 alpha-2 from Netlify's geo header; NULL when unknown.
     country: text('country'),
   },
   (table) => {
@@ -468,10 +467,7 @@ export const answer = pgTable(
   }
 )
 
-/**
- * Pre-computed /stats payloads. A scheduled refresh (netlify/functions/refresh-stats.mts →
- * POST /api/stats/refresh) inserts one row per run; the page reads only the newest.
- */
+// One row per /stats refresh; the page reads only the newest.
 export const statsSnapshot = pgTable('stats_snapshot', {
   id: bigint('id', {mode: 'number'}).primaryKey().generatedByDefaultAsIdentity({
     name: 'stats_snapshot_id_seq',
