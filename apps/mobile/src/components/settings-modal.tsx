@@ -592,7 +592,7 @@ export const SettingsModal = ({
                 <Pressable
                   onPress={() => void allowNotifications().catch(() => {})}
                   accessibilityRole="button"
-                  accessibilityLabel="Notifications are off: open notification settings"
+                  accessibilityLabel="Allow notifications"
                   className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-t px-5 py-4"
                 >
                   <View className="flex-1 pr-3">
@@ -600,7 +600,7 @@ export const SettingsModal = ({
                       Allow notifications
                     </Text>
                     <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-                      Notifications are off for WhoCards in your phone's settings.
+                      WhoCards can't send you notifications yet.
                     </Text>
                   </View>
                   <Ionicons name="open-outline" size={16} color={chevronColor} />

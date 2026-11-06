@@ -60,7 +60,7 @@ export const getDailySetting = async (): Promise<DailySetting> => {
     AsyncStorage.getItem(KEY_DAILY_OFF),
     AsyncStorage.getItem(KEY_DAILY_HOUR),
   ])
-  const hour = Number(stored ?? DAILY_HOUR)
+  const hour = stored ? Number(stored) : DAILY_HOUR
   return {
     enabled: !off,
     hour: Number.isInteger(hour) && hour >= 0 && hour < 24 ? hour : DAILY_HOUR,
@@ -73,7 +73,10 @@ export const setDailySetting = async ({enabled, hour}: DailySetting): Promise<vo
     ? AsyncStorage.removeItem(KEY_DAILY_OFF)
     : AsyncStorage.setItem(KEY_DAILY_OFF, '1'))
   await AsyncStorage.setItem(KEY_DAILY_HOUR, String(hour))
-  await refillDailyQuestions()
+  const {status, canAskAgain} = await Notifications.getPermissionsAsync()
+  await (enabled && status === Notifications.PermissionStatus.UNDETERMINED && canAskAgain
+    ? requestPermission()
+    : refillDailyQuestions())
 }
 
 export const notificationsAllowed = async (): Promise<boolean> =>
@@ -136,7 +139,7 @@ const requestPermission = async () => {
 
 // "Not now" is final: the app never asks again; Settings opens the OS setting instead.
 export const recordOpenAndMaybeAsk = async (): Promise<void> => {
-  if (await AsyncStorage.getItem(KEY_ASKED)) return
+  if ((await AsyncStorage.getItem(KEY_ASKED)) || (await AsyncStorage.getItem(KEY_DAILY_OFF))) return
   const count = Number(await AsyncStorage.getItem(KEY_OPEN_COUNT)) + 1
   await AsyncStorage.setItem(KEY_OPEN_COUNT, String(count))
   if (count < ASK_ON_OPEN) return

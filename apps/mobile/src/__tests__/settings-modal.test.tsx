@@ -306,15 +306,11 @@ describe('SettingsModal — Notifications (issues #361, #364)', () => {
   it('links to the OS setting only while notifications are not allowed', async () => {
     jest.mocked(notificationsAllowed).mockResolvedValue(false)
     await renderModal()
-    const allow = await screen.findByLabelText('Notifications are off: open notification settings')
+    const allow = await screen.findByLabelText('Allow notifications')
     jest.mocked(notificationsAllowed).mockResolvedValue(true)
     await fireEvent.press(allow)
     expect(openNotificationSetting).toHaveBeenCalledTimes(1)
-    await waitFor(() =>
-      expect(
-        screen.queryByLabelText('Notifications are off: open notification settings')
-      ).toBeNull()
-    )
+    await waitFor(() => expect(screen.queryByLabelText('Allow notifications')).toBeNull())
   })
 
   it('does not nag about OS permission while the daily question is off', async () => {
@@ -326,7 +322,7 @@ describe('SettingsModal — Notifications (issues #361, #364)', () => {
         checked: false,
       })
     )
-    expect(screen.queryByLabelText('Notifications are off: open notification settings')).toBeNull()
+    expect(screen.queryByLabelText('Allow notifications')).toBeNull()
   })
 })
 

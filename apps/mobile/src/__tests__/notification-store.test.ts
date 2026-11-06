@@ -288,9 +288,27 @@ describe('daily question setting', () => {
     )
   })
 
-  it('falls back to 18:00 on a corrupt stored hour', async () => {
+  it('falls back to 18:00 on a corrupt or empty stored hour', async () => {
     await AsyncStorage.setItem('whocards-notifications:daily-hour', 'soon')
     expect((await getDailySetting()).hour).toBe(DAILY_HOUR)
+    await AsyncStorage.setItem('whocards-notifications:daily-hour', '')
+    expect((await getDailySetting()).hour).toBe(DAILY_HOUR)
+  })
+
+  it('asks the OS when turned on before it ever asked', async () => {
+    getPermissions.mockResolvedValue(permission('undetermined'))
+    await setDailySetting({enabled: false, hour: DAILY_HOUR})
+    expect(requestPermissions).not.toHaveBeenCalled()
+    await setDailySetting({enabled: true, hour: DAILY_HOUR})
+    expect(requestPermissions).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips the second-open ask while the daily question is off', async () => {
+    getPermissions.mockResolvedValue(permission('undetermined'))
+    await setDailySetting({enabled: false, hour: DAILY_HOUR})
+    await recordOpenAndMaybeAsk()
+    await recordOpenAndMaybeAsk()
+    expect(alert).not.toHaveBeenCalled()
   })
 })
 
