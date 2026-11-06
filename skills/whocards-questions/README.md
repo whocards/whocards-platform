@@ -32,6 +32,8 @@ A **frame** is the combination of topic, time, situation, intention, audience, f
 
 The default is one question, or ten for a plural ask or a deck, pack, or list with no stated count. A table is a setting, not a count: "questions for a team lunch" is still a plural ask, but "a question for the table" is one. An explicit count and requested format take precedence.
 
+A host app or agent can pass the optional `recent_questions` input with the questions a user has already received. The skill keeps no history itself; [SKILL.md](SKILL.md#recent-questions) defines the input and what the host stores.
+
 ## What's included
 
 - `SKILL.md`: generation and editing instructions.

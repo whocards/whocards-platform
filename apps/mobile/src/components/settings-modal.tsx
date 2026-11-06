@@ -38,6 +38,7 @@ import {
   setStoredLanguage,
   setStoredSecondaryLanguages,
 } from '@/lib/language-store'
+import {openNotificationSetting} from '@/lib/notification-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '@/lib/tabletop-store'
 import type {ThemeSetting} from '@/lib/theme-store'
 
@@ -495,6 +496,22 @@ export const SettingsModal = ({
                   </Text>
                   <Ionicons name="chevron-forward" size={16} color={chevronColor} />
                 </View>
+              </Pressable>
+
+              {/* The app asks once (issue #361); after that the OS setting is the switch. */}
+              <Text className="text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide">
+                Notifications
+              </Text>
+              <Pressable
+                onPress={() => void openNotificationSetting().catch(() => {})}
+                accessibilityRole="button"
+                accessibilityLabel="Daily question: open notification settings"
+                className="flex-row items-center justify-between px-5 py-4"
+              >
+                <Text className="text-darker dark:text-white font-sans text-lg">
+                  Daily question
+                </Text>
+                <Ionicons name="open-outline" size={16} color={chevronColor} />
               </Pressable>
             </ScrollView>
           </View>
