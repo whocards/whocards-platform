@@ -26,7 +26,7 @@
     "@whocards/typescript-config": "workspace:*",
     "drizzle-orm": "^0.45.4",
     "react": "catalog:",
-    "react-test-renderer": "19.2.3",
+    "react-test-renderer": "19.2.9",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
