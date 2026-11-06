@@ -37,7 +37,7 @@
  * of the removed `UNSAFE_*` queries appear.
  */
 import React from 'react'
-import {act, render, screen} from '@testing-library/react-native'
+import {act, fireEvent, render, screen} from '@testing-library/react-native'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
 import {setColorScheme} from '@/lib/color-scheme'
 
@@ -188,7 +188,10 @@ jest.mock('@whocards/observability/events', () => {
   return {...actual, track: jest.fn()}
 })
 
+import {getDeck, getLanguageName} from '@whocards/decks'
 import {getStoredGame} from '@/lib/game-store'
+import {getStoredLanguage} from '@/lib/language-store'
+import {getStoredTabletopMode} from '@/lib/tabletop-store'
 import {getStoredTheme} from '@/lib/theme-store'
 
 import RootLayout from '../app/_layout'
@@ -263,7 +266,7 @@ describe('Play screen', () => {
 
   it('renders a Question in the Dark Theme Display setting', async () => {
     mockParams = {deck: 'library', q: '1'}
-    await act(() => setColorScheme('dark'))
+    jest.mocked(getStoredTheme).mockResolvedValueOnce('dark')
     await renderUi(<PlayScreen />)
     await screen.findByLabelText('exit deck')
     await settle()
@@ -277,6 +280,55 @@ describe('Play screen', () => {
     await screen.findByLabelText('exit deck')
     await settle()
     expect(uiSnapshot(screen)).toMatchSnapshot()
+  })
+
+  it('applies a Tabletop mode change from the in-play Settings sheet on close, keeping the Question (issue #197)', async () => {
+    mockParams = {deck: 'library', q: '1'}
+    const question = getDeck('library')?.questions['1']?.en ?? ''
+    await renderUi(<PlayScreen />)
+    await settle()
+    // The mirrored half is hidden from screen readers, so count hidden nodes too.
+    expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(1)
+    await fireEvent.press(screen.getByLabelText('open settings'))
+    expect(screen.queryByLabelText(/^Game:/)).toBeNull()
+    jest.mocked(getStoredTabletopMode).mockResolvedValueOnce(true)
+    await fireEvent.press(screen.getByLabelText('close'))
+    await settle()
+    expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(2)
+  })
+
+  it("keeps a link's language when the in-play Settings sheet closes unchanged (issue #197)", async () => {
+    const deck = getDeck('library')
+    const [stored = '', linked = ''] = deck?.languages ?? []
+    mockParams = {deck: 'library', q: '1', lang: linked}
+    jest.mocked(getStoredLanguage).mockResolvedValue(stored)
+    await renderUi(<PlayScreen />)
+    await settle()
+    const linkedQuestion = deck?.questions['1']?.[linked] ?? ''
+    expect(screen.getByText(linkedQuestion)).toBeTruthy()
+    await fireEvent.press(screen.getByLabelText('open settings'))
+    await settle()
+    await fireEvent.press(screen.getByLabelText('close'))
+    await settle()
+    expect(screen.getByText(linkedQuestion)).toBeTruthy()
+  })
+
+  it("applies a pick of the stored language over a link's language (issue #197)", async () => {
+    const deck = getDeck('library')
+    const [stored = '', linked = ''] = deck?.languages ?? []
+    mockParams = {deck: 'library', q: '1', lang: linked}
+    jest.mocked(getStoredLanguage).mockResolvedValue(stored)
+    await renderUi(<PlayScreen />)
+    await settle()
+    await fireEvent.press(screen.getByLabelText('open settings'))
+    await fireEvent.press(
+      await screen.findByLabelText(`Language: ${getLanguageName(linked) ?? linked}`)
+    )
+    await fireEvent.press(await screen.findByText(getLanguageName(stored) ?? stored))
+    await settle()
+    await fireEvent.press(screen.getByLabelText('close'))
+    await settle()
+    expect(screen.getByText(deck?.questions['1']?.[stored] ?? '')).toBeTruthy()
   })
 
   it('renders the unknown-Deck message', async () => {

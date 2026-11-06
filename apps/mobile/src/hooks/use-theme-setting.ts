@@ -1,7 +1,7 @@
-import {useCallback, useEffect, useState} from 'react'
+import {useCallback, useEffect} from 'react'
 import {EVENTS, track} from '@whocards/observability/events'
 
-import {setColorScheme, useColorScheme} from '@/lib/color-scheme'
+import {setColorScheme, useColorScheme, useThemeSettingValue} from '@/lib/color-scheme'
 import {getStoredTheme, setStoredTheme} from '@/lib/theme-store'
 import type {ThemeSetting} from '@/lib/theme-store'
 
@@ -22,19 +22,15 @@ import type {ThemeSetting} from '@/lib/theme-store'
  * right now."
  */
 export const useThemeSetting = () => {
-  const [theme, setTheme] = useState<ThemeSetting>('system')
+  const theme = useThemeSettingValue()
   const resolvedScheme = useColorScheme()
 
   useEffect(() => {
-    void getStoredTheme().then((stored) => {
-      setColorScheme(stored)
-      setTheme(stored)
-    })
+    void getStoredTheme().then(setColorScheme)
   }, [])
 
   const select = useCallback((next: ThemeSetting) => {
     setColorScheme(next)
-    setTheme(next)
     void setStoredTheme(next)
     track({name: EVENTS.THEME_CHANGED, props: {theme: next}})
   }, [])

@@ -51,5 +51,6 @@ export const contactLinks: Link[] = [
 export const legalLinks: Link[] = [
   {title: 'Contact', href: '/contact'},
   {title: 'Privacy Policy', href: '/legal/pp'},
+  {title: 'Stats', href: '/stats'},
   {title: 'Login', href: websiteNextUrl},
 ]

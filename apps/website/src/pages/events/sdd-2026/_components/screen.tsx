@@ -21,24 +21,23 @@ const Board = ({code}: {code: string}) => {
   const joinUrl = `${location.origin}${joinPath(code)}`
 
   useEffect(() => {
-    let alive = true
-    let timeout: ReturnType<typeof setTimeout> | undefined
+    const run: {alive: boolean; timer?: ReturnType<typeof setTimeout>} = {alive: true}
     const poll = async () => {
       const sentAt = Date.now()
       try {
         const next = await api.screen()
-        if (!alive) return
+        if (!run.alive) return
         setScreen(next)
         setOffsetMs(clockOffset({serverNow: next.serverNow, sentAt, receivedAt: Date.now()}))
       } catch {
         // A missed poll just keeps the last board up.
       }
-      if (alive) timeout = setTimeout(() => void poll(), POLL_MS)
+      if (run.alive) run.timer = setTimeout(() => void poll(), POLL_MS)
     }
     void poll()
     return () => {
-      alive = false
-      clearTimeout(timeout)
+      run.alive = false
+      clearTimeout(run.timer)
     }
   }, [api])
 

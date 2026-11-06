@@ -25,10 +25,12 @@ import {PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
 import {QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
+import {SettingsModal} from '@/components/settings-modal'
 import type {ShareFormat} from '@/components/share-modal'
 import {ShareModal} from '@/components/share-modal'
 import {usePlayerChrome} from '@/hooks/use-player-chrome'
 import {useReviewPrompt} from '@/hooks/use-review-prompt'
+import {useThemeSetting} from '@/hooks/use-theme-setting'
 import {enqueue, flush} from '@/lib/answer-queue'
 import {send} from '@/lib/answer-transport'
 import {useIsDark} from '@/lib/color-scheme'
@@ -229,27 +231,34 @@ const DeckPlayer = ({
   const [languageReady, setLanguageReady] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
 
-  // Seed language + secondaries + tabletop mode from storage on mount — READ
-  // only. Issue #176 moved every setting into the home-screen Settings menu;
-  // this screen just applies whatever was last chosen there (or on a previous
-  // visit, before #176), it doesn't offer a way to change them anymore. Only
-  // apply stored languages still present in this deck's languages list (guard
-  // against decks dropping one).
-  useEffect(() => {
-    const secondaries = getStoredSecondaryLanguages(deckSlug).then((stored) =>
-      setSecondary(stored.filter((code) => languages.includes(code)))
-    )
-    const tabletopMode = getStoredTabletopMode().then((stored) => setTabletop(stored))
-    // A shared link's language takes precedence — skip the stored value entirely.
-    const primary = linkLanguage
-      ? Promise.resolve(setLanguage(linkLanguage))
-      : getStoredLanguage(deckSlug).then((stored) => {
-          if (stored && languages.includes(stored)) {
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+  const {theme, select: selectTheme} = useThemeSetting()
+
+  // Stored languages are applied only if this deck still offers them.
+  const readSettings = useCallback(
+    (keepLanguage: boolean) =>
+      Promise.all([
+        getStoredLanguage(deckSlug).then((stored) => {
+          if (stored && languages.includes(stored) && !keepLanguage) {
             setLanguage(stored)
           }
-        })
-    void Promise.all([primary, secondaries, tabletopMode]).then(() => setLanguageReady(true))
-  }, [deckSlug, languages, linkLanguage])
+        }),
+        getStoredSecondaryLanguages(deckSlug).then((stored) =>
+          setSecondary(stored.filter((code) => languages.includes(code)))
+        ),
+        getStoredTabletopMode().then(setTabletop),
+      ]),
+    [deckSlug, languages]
+  )
+
+  // A shared link's language takes precedence on open — skip the stored value.
+  useEffect(() => {
+    if (linkLanguage) setLanguage(linkLanguage)
+    void readSettings(linkLanguage !== undefined).then(() => setLanguageReady(true))
+  }, [readSettings, linkLanguage])
+
+  // Storage can't tell a pick of the stored language from no pick, so the sheet reports each pick.
+  const pickedLanguageRef = useRef<string | undefined>(undefined)
 
   // A deep link that arrives while this deck is already open can't ride the route
   // params: expo-router de-dupes a same-route link (e.g. `play/library?q=5` while
@@ -648,6 +657,7 @@ const DeckPlayer = ({
             onPrevious={goPrevious}
             onNext={goNext}
             onShare={handleShare}
+            onSettings={() => setSettingsModalOpen(true)}
             onExit={handleExit}
           />
         </Animated.View>
@@ -660,6 +670,25 @@ const DeckPlayer = ({
           postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
           onShareEvent={handleShareEvent}
           onClose={() => setShareModalOpen(false)}
+        />
+
+        <SettingsModal
+          visible={settingsModalOpen}
+          onClose={() => {
+            setSettingsModalOpen(false)
+            if (pickedLanguageRef.current) setLanguage(pickedLanguageRef.current)
+            pickedLanguageRef.current = undefined
+            void readSettings(true)
+          }}
+          deckSlug={deckSlug}
+          languages={languages}
+          currentLanguage={language}
+          onSelectLanguage={(code) => {
+            pickedLanguageRef.current = code
+          }}
+          theme={theme}
+          onSelectTheme={selectTheme}
+          showGame={false}
         />
       </View>
     </ScreenBackground>

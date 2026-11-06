@@ -12,7 +12,13 @@ export const prerender = false
 
 const game = createDrizzleGamePort(db)
 
-const handler: APIRoute = ({request}) =>
+// Netlify geo, not a request header, so clients cannot pick their country. Absent in local dev.
+const countryFrom = (locals: App.Locals): string | null => {
+  const code = locals.netlify?.context.geo.country?.code?.toUpperCase() ?? ''
+  return /^[A-Z]{2}$/.test(code) ? code : null
+}
+
+const handler: APIRoute = ({request, locals}) =>
   fetchRequestHandler({
     endpoint: '/api/trpc',
     req: request,
@@ -27,6 +33,8 @@ const handler: APIRoute = ({request}) =>
           questionId: input.questionId,
           language: input.language,
           type: input.type,
+          platform: input.platform ?? null,
+          country: countryFrom(locals),
         })
       },
       game,

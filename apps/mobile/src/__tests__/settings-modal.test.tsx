@@ -1,6 +1,6 @@
 /**
  * Tests for src/components/settings-modal.tsx (issue #176) — the one Settings
- * menu now reachable only from the home screen, replacing the old Library
+ * menu (home screen, and the play bar gear since #197), replacing the old Library
  * chips (Game, Theme) and the play-screen language sheet (Language, secondary
  * language, Tabletop mode).
  *
@@ -213,6 +213,59 @@ describe('SettingsModal — menu', () => {
     await fireEvent.press(row)
     // No page opened — "back" only ever renders on a pushed page's header.
     expect(screen.queryByLabelText('back')).toBeNull()
+  })
+})
+
+describe('SettingsModal — in-play sheet (issue #197)', () => {
+  it('hides the Game row when showGame is false, keeping every other setting', async () => {
+    await renderModal({showGame: false})
+    await screen.findByText('Settings')
+    expect(screen.queryByText('Game')).toBeNull()
+    expect(screen.queryByLabelText(/^Game:/)).toBeNull()
+    expect(screen.getByText('Language')).toBeTruthy()
+    expect(screen.getByText('Second language')).toBeTruthy()
+    expect(screen.getByText('Tabletop mode')).toBeTruthy()
+    expect(screen.getByText('Theme')).toBeTruthy()
+    expect(screen.getByLabelText('Daily question: open notification settings')).toBeTruthy()
+  })
+
+  it("shows a shared link's language over the stored one and reports a pick of the stored one", async () => {
+    mockedGetStoredLanguage.mockResolvedValue('en')
+    const onSelectLanguage = jest.fn()
+    await renderModal({showGame: false, currentLanguage: 'he', onSelectLanguage})
+    await fireEvent.press(await screen.findByLabelText('Language: Hebrew'))
+    await fireEvent.press(await screen.findByText('English'))
+    expect(onSelectLanguage).toHaveBeenCalledWith('en')
+  })
+
+  it('never offers the language on screen as the Second language', async () => {
+    mockedGetStoredLanguage.mockResolvedValue('en')
+    await renderModal({currentLanguage: 'he'})
+    await fireEvent.press(await screen.findByLabelText('Second language: None'))
+    await screen.findByText('English')
+    expect(screen.queryByText('Hebrew')).toBeNull()
+  })
+})
+
+describe('SettingsModal — reopening (issue #197)', () => {
+  it('re-reads stored settings on every open, so a change made in another sheet shows', async () => {
+    const {rerender} = await renderModal({visible: false})
+    mockedGetStoredTabletopMode.mockResolvedValue(true)
+    mockedGetStoredLanguage.mockResolvedValue('he')
+    const props = {
+      onClose: () => {},
+      deckSlug: 'library',
+      languages: ['en', 'he'],
+      theme: 'system' as const,
+      onSelectTheme: () => {},
+    }
+    await rerender(<SettingsModal visible {...props} />)
+    await waitFor(() =>
+      expect(screen.getByLabelText('Tabletop mode').props.accessibilityState).toMatchObject({
+        checked: true,
+      })
+    )
+    expect(screen.getByLabelText('Language: Hebrew')).toBeTruthy()
   })
 })
 

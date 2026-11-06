@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`Player bar renders Prev / Exit / Share / Next 1`] = `
+exports[`Player bar renders Prev / Exit / Settings / Share / Next 1`] = `
 <View>
   | flex: 1
   <View>
@@ -55,6 +55,27 @@ exports[`Player bar renders Prev / Exit / Share / Next 1`] = `
         | fontSize: 10.5
         | lineHeight: 14
         "Exit"
+    <View accessibilityRole="button" accessibilityLabel="open settings">
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | gap: 3.5
+      | paddingBlock: 3.5
+      | transform: [{"scale":1}]
+      <Text>
+        | color: "#111516"
+        | fontFamily: "ionicons"
+        | fontSize: 24
+        | fontStyle: "normal"
+        | fontWeight: "normal"
+        ""
+      <Text>
+        | color: "#6b6d82"
+        | fontFamily: "golos-text"
+        | fontSize: 10.5
+        | lineHeight: 14
+        "Settings"
     <View accessibilityRole="button" accessibilityLabel="share question">
       | alignItems: "center"
       | flexBasis: "0%"
@@ -154,6 +175,27 @@ exports[`Player bar renders without Share (the pick screen before a deal) 1`] = 
         | fontSize: 10.5
         | lineHeight: 14
         "Exit"
+    <View accessibilityRole="button" accessibilityLabel="open settings">
+      | alignItems: "center"
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | gap: 3.5
+      | paddingBlock: 3.5
+      | transform: [{"scale":1}]
+      <Text>
+        | color: "#111516"
+        | fontFamily: "ionicons"
+        | fontSize: 24
+        | fontStyle: "normal"
+        | fontWeight: "normal"
+        ""
+      <Text>
+        | color: "#6b6d82"
+        | fontFamily: "golos-text"
+        | fontSize: 10.5
+        | lineHeight: 14
+        "Settings"
     <View accessibilityRole="button" accessibilityLabel="next question">
       | alignItems: "center"
       | flexBasis: "0%"
@@ -918,6 +960,244 @@ exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
                       | fontSize: 12.25
                       | lineHeight: 17.5
                       "Draw each card yourself — a fresh deal for every question."
+`;
+
+exports[`Settings sheet renders the in-play menu, without the Game row (issue #197) 1`] = `
+<View>
+  | flex: 1
+  <Modal>
+    <View>
+      | flexBasis: "0%"
+      | flexGrow: 1
+      | flexShrink: 1
+      | justifyContent: "flex-end"
+      <View accessibilityLabel="dismiss" accessibilityState={}>
+        | inset: 0
+        | position: "absolute"
+      <View accessibilityState={}>
+        | backgroundColor: "#f5f5f5"
+        | borderTopLeftRadius: 21
+        | borderTopRightRadius: 21
+        | paddingBottom: 24
+        <View>
+          <View>
+            | alignItems: "center"
+            | borderBottomStyle: "solid"
+            | borderBottomWidth: 1
+            | borderColor: "#dcdee9"
+            | flexDirection: "row"
+            | justifyContent: "space-between"
+            | paddingBlock: 14
+            | paddingInline: 17.5
+            | paddingTop: 16
+            <Text>
+              | color: "#111516"
+              | fontFamily: "aptly"
+              | fontSize: 21
+              | lineHeight: 28
+              "Settings"
+            <View accessibilityLabel="close" accessibilityState={}>
+              <Text>
+                | color: "#111516"
+                | fontFamily: "ionicons"
+                | fontSize: 24
+                | fontStyle: "normal"
+                | fontWeight: "normal"
+                ""
+          <RCTScrollView>
+            | maxHeight: 1067.2
+            <View>
+              <Text>
+                | color: "#6b6d82"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 14
+                | textTransform: "uppercase"
+                "Gameplay"
+              <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Language"
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
+                    "English"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Second language"
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
+                    "None"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <View>
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "aptly"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Tabletop mode"
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 12.25
+                  | lineHeight: 17.5
+                  "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
+              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 10.5
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Two-way readable"
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "ionicons"
+                  | fontSize: 20
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+              <Text>
+                | borderColor: "#dcdee9"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | color: "#6b6d82"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | marginTop: 7
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
+                | textTransform: "uppercase"
+                "Appearance"
+              <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={}>
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Theme"
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
+                    "System"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+              <Text>
+                | borderColor: "#dcdee9"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | color: "#6b6d82"
+                | fontFamily: "golos-text"
+                | fontSize: 10.5
+                | fontWeight: 700
+                | letterSpacing: 0.26
+                | lineHeight: 14
+                | marginTop: 7
+                | paddingBottom: 3.5
+                | paddingInline: 17.5
+                | paddingTop: 17.5
+                | textTransform: "uppercase"
+                "Notifications"
+              <View accessibilityRole="button" accessibilityLabel="Daily question: open notification settings" accessibilityState={}>
+                | alignItems: "center"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Daily question"
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "ionicons"
+                  | fontSize: 16
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
 `;
 
 exports[`Settings sheet renders the menu 1`] = `
