@@ -331,6 +331,27 @@ exports[`Play screen renders a Question 1`] = `
               | fontSize: 10.5
               | lineHeight: 14
               "Exit"
+          <View accessibilityRole="button" accessibilityLabel="open settings">
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
+            | transform: [{"scale":1}]
+            <Text>
+              | color: "#111516"
+              | fontFamily: "ionicons"
+              | fontSize: 24
+              | fontStyle: "normal"
+              | fontWeight: "normal"
+              ""
+            <Text>
+              | color: "#6b6d82"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
+              "Settings"
           <View accessibilityRole="button" accessibilityLabel="share question">
             | alignItems: "center"
             | flexBasis: "0%"
@@ -478,6 +499,27 @@ exports[`Play screen renders a Question in the Dark Theme Display setting 1`] = 
               | fontSize: 10.5
               | lineHeight: 14
               "Exit"
+          <View accessibilityRole="button" accessibilityLabel="open settings">
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
+            | transform: [{"scale":1}]
+            <Text>
+              | color: "#f5f5f5"
+              | fontFamily: "ionicons"
+              | fontSize: 24
+              | fontStyle: "normal"
+              | fontWeight: "normal"
+              ""
+            <Text>
+              | color: "#9698af"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
+              "Settings"
           <View accessibilityRole="button" accessibilityLabel="share question">
             | alignItems: "center"
             | flexBasis: "0%"
@@ -681,6 +723,27 @@ exports[`Play screen renders the Pick a Card deck before a deal 1`] = `
               | fontSize: 10.5
               | lineHeight: 14
               "Exit"
+          <View accessibilityRole="button" accessibilityLabel="open settings">
+            | alignItems: "center"
+            | flexBasis: "0%"
+            | flexGrow: 1
+            | flexShrink: 1
+            | gap: 3.5
+            | paddingBlock: 3.5
+            | transform: [{"scale":1}]
+            <Text>
+              | color: "#111516"
+              | fontFamily: "ionicons"
+              | fontSize: 24
+              | fontStyle: "normal"
+              | fontWeight: "normal"
+              ""
+            <Text>
+              | color: "#6b6d82"
+              | fontFamily: "golos-text"
+              | fontSize: 10.5
+              | lineHeight: 14
+              "Settings"
           <View accessibilityRole="button" accessibilityLabel="next question">
             | alignItems: "center"
             | flexBasis: "0%"

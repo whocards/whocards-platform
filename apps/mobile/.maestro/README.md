@@ -248,12 +248,11 @@ several sims booted, Maestro's iOS driver otherwise attaches to whichever booted
 
 ## Notes
 
-- Selectors use accessibility labels (`exit deck`, `next question`, `share question`,
+- Selectors use accessibility labels (`exit deck`, `open settings`, `next question`, `share question`,
   `Game: <title>`, `Theme: <label>`, `Language: <name>`) because these buttons/rows
   collapse their inner text — match the label. Issue #176 moved Game/Theme/Language/
-  Tabletop mode into one Settings menu reachable only from the home screen (tap
-  `Settings`) — the play screens' bottom bar is back down to Back/Share/Next, no
-  settings button of its own.
+  Tabletop mode into one Settings menu (tap `Settings` on the home screen); issue
+  #197 added the play bar's gear (`open settings`), which opens it without the Game row.
 - Settings is a single Modal with sliding internal pages (issue #189, third pass), not
   a stack of separate Modals: only the root menu page has a `close` (X) icon; every
   pushed page (Game/Theme/Language) has a `back` (chevron) icon instead, which returns
