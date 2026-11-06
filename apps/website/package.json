@@ -64,7 +64,7 @@
     "object-to-formdata": "^5.0.0",
     "pdf-lib": "^1.17.1",
     "postgres": "^3.4.9",
-    "posthog-js": "^1.445.1",
+    "posthog-js": "^1.446.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "resend": "^6.37.0",

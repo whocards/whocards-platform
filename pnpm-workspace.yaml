@@ -32,7 +32,7 @@ catalog:
   # tRPC (in-app router — see ADR-0002)
   '@trpc/server': ^11.24.0
   '@trpc/client': ^11.24.0
-  '@tanstack/react-query': ^5.105.3
+  '@tanstack/react-query': ^5.106.0
 
   # react (shared major across web React-DOM islands + React Native)
   react: ^19.2.1
