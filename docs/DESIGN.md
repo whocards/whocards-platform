@@ -137,7 +137,7 @@ and legibility over web decoration; never scale calibration-sensitive output to 
 ## Mobile v1 launch alignment
 
 For the first mobile release, this specification is subordinate to `docs/RELEASE.md` and
-`docs/growth/04-app-launch-plan.md`. Agents must preserve these product and launch constraints:
+`whocards/whocards:docs/growth/04-app-launch-plan.md` (private). Agents must preserve these product and launch constraints:
 
 - The v1 journey is landing → the single WhoCards Deck → Global Game. Do not imply that Library
   browsing, accounts, purchases, Custom Decks, Personal Game, or Facilitation already exist.

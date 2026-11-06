@@ -35,14 +35,11 @@ export const initGame = action(gameStore, 'initGame', () => {
   }
 })
 
-export const idsStore = computed(
-  gameStore,
-  (store): GameStatus => ({
-    next: store.ids[store.idx + 1],
-    prev: store.ids[store.idx - 1],
-    current: store.idx < 0 ? store.ids[store.idx + 1] : store.ids[store.idx],
-  })
-)
+export const idsStore = computed(gameStore, (store): GameStatus => ({
+  next: store.ids[store.idx + 1],
+  prev: store.ids[store.idx - 1],
+  current: store.idx < 0 ? store.ids[store.idx + 1] : store.ids[store.idx],
+}))
 
 export const initPage = action(gameStore, 'initPage', (store, currentId: QuestionId) => {
   if (store.get().ids.length) {

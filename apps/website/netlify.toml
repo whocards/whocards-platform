@@ -3,47 +3,46 @@
 # relative paths from the repo root — `publish` points at the wrong dist, `pnpm build`
 # runs the root `turbo build`, and the local plugin path 404s. See issue #20.
 [build.environment]
-  NODE_VERSION = "24"
+NODE_VERSION = "24"
 
 [build]
-  command = "pnpm build"
-  publish = "dist"
+command = "pnpm build"
+publish = "dist"
 
 # Preserve external links to the retired English wide-format PDF by sending
 # visitors directly to the current print flow. With no query parameters in the
 # destination, Netlify forwards the request's original query string.
 [[redirects]]
-  from = "/cards/en-wide.pdf"
-  to = "/print"
-  status = 301
-  force = true
+from = "/cards/en-wide.pdf"
+to = "/print"
+status = 301
+force = true
 
 # Persist the content-addressed OG card render cache across deploys so the build
 # only renders new/changed cards (see netlify/plugins/og-cache + src/server/card-image.ts).
 [[plugins]]
-  package = "/netlify/plugins/og-cache"
+package = "/netlify/plugins/og-cache"
 
 # Keep the retired calmly hostname working, but consolidate every request onto
 # the canonical production domain. Netlify preserves the original query string.
 [[redirects]]
-  from = "https://calmly.whocards.cc/*"
-  to = "https://whocards.cc/:splat"
-  status = 301
-  force = true
+from = "https://calmly.whocards.cc/*"
+to = "https://whocards.cc/:splat"
+status = 301
+force = true
 
 # Universal Links (iOS) need the association file served as application/json over
 # https with no redirect. It has no file extension, so Netlify would otherwise guess
 # the content type. assetlinks.json already gets the right type from its extension.
 [[headers]]
-  for = "/.well-known/apple-app-site-association"
-  [headers.values]
-    Content-Type = "application/json"
+for = "/.well-known/apple-app-site-association"
+[headers.values]
+Content-Type = "application/json"
 
 # [[plugins]]
 #   package = "netlify-plugin-cypress"
 
 #   [plugins.inputs.postBuild]
 #     enable = true
-  
 #   [plugin.inputs]
 #     enable = false

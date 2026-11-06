@@ -38,41 +38,39 @@ const {
 <Element
   type={type}
   class:list={cn([
-    'cursor-pointer text-center flex justify-center items-center transition-all duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed',
+    'flex cursor-pointer items-center justify-center text-center transition-all duration-300 ease-in-out disabled:cursor-not-allowed disabled:opacity-50',
     variant === 'primary' &&
       !dark &&
-      'bg-primary-light hover:bg-yellow-500 active:bg-yellow-300 text-dark',
+      'bg-primary-light text-dark hover:bg-yellow-500 active:bg-yellow-300',
     variant === 'primary' &&
       dark &&
-      'bg-primary-dark hover:bg-opacity-50 active:bg-opacity-75 text-white',
+      'hover:bg-opacity-50 active:bg-opacity-75 bg-primary-dark text-white',
     variant === 'secondary' &&
-      'border rounded-[14px] hover:bg-gray-100 active:bg-gray-200 hover:bg-opacity-25 active:bg-opacity-10',
+      'hover:bg-opacity-25 active:bg-opacity-10 rounded-[14px] border hover:bg-gray-100 active:bg-gray-200',
     size === 'lg' &&
-      'py-2.5 px-5 rounded-xl md:py-3.5 md:px-8 md:rounded-2xl md:text-lg md:font-semibold',
-    size === 'md' && 'py-2.5 px-5 rounded-xl',
-    size === 'sm' && 'text-sm min-w-fit rounded-xl',
+      'rounded-xl px-5 py-2.5 md:rounded-2xl md:px-8 md:py-3.5 md:text-lg md:font-semibold',
+    size === 'md' && 'rounded-xl px-5 py-2.5',
+    size === 'sm' && 'min-w-fit rounded-xl text-sm',
     variant === 'secondary'
       ? light
-        ? 'text-white border-white'
-        : 'text-primary-dark border-primary-dark'
+        ? 'border-white text-white'
+        : 'border-primary-dark text-primary-dark'
       : '',
     full === undefined && 'w-full lg:w-fit',
     full !== undefined && full && 'w-full',
     classes,
   ])}
   {...props}
-  {...Element === 'a' && {target}}
+  {...(Element === 'a' && {target})}
 >
   <span class='pointer-events-none'>
     <slot />
   </span>
-  {
-    !hideIcon && (
-      <Icon
-        class='inline-block ml-1.5'
-        class:list={target === '_blank' ? 'h-3 w-3' : 'mt-1 h-6 w-6'}
-        name={target === '_blank' ? 'fa-solid:external-link-alt' : 'chevron'}
-      />
-    )
-  }
+  {!hideIcon && (
+    <Icon
+      class='ml-1.5 inline-block'
+      class:list={target === '_blank' ? 'h-3 w-3' : 'mt-1 h-6 w-6'}
+      name={target === '_blank' ? 'fa-solid:external-link-alt' : 'chevron'}
+    />
+  )}
 </Element>

@@ -63,7 +63,7 @@ const Board = ({code}: {code: string}) => {
             {game.title}
           </h1>
           {game.organizer && (
-            <p className='text-gray-dark text-[1.6em]'>
+            <p className='text-[1.6em] text-gray-dark'>
               {copy.join.hostedBy} {game.organizer}
             </p>
           )}
@@ -71,13 +71,13 @@ const Board = ({code}: {code: string}) => {
         <Status screen={screen} offsetMs={offsetMs} />
         {game.status !== 'ended' && (
           <section className='flex flex-col gap-[0.6em]'>
-            <h2 className='text-gray-dark text-[1.2em] font-semibold tracking-wider uppercase'>
+            <h2 className='text-[1.2em] font-semibold tracking-wider text-gray-dark uppercase'>
               {copy.screen.howTo.title}
             </h2>
             <ol className='flex flex-col gap-[0.5em] text-[1.6em]'>
               {howTo.map((step, i) => (
                 <li key={step} className='flex items-baseline gap-[0.6em]'>
-                  <span className='bg-yellow-400 text-darkest inline-flex size-[1.5em] shrink-0 items-center justify-center rounded-full text-[0.8em] font-bold'>
+                  <span className='inline-flex size-[1.5em] shrink-0 items-center justify-center rounded-full bg-yellow-400 text-[0.8em] font-bold text-darkest'>
                     {i + 1}
                   </span>
                   {step}
@@ -92,7 +92,7 @@ const Board = ({code}: {code: string}) => {
               key={key}
               className='flex flex-col rounded-2xl border border-white/10 bg-white/5 px-[1em] py-[0.6em]'
             >
-              <dt className='text-gray-dark order-2 text-[1.2em]'>{copy.screen.counts[key]}</dt>
+              <dt className='order-2 text-[1.2em] text-gray-dark'>{copy.screen.counts[key]}</dt>
               <dd className='font-title text-[2.8em] leading-none font-bold tabular-nums'>
                 {counts[key]}
               </dd>
@@ -100,15 +100,15 @@ const Board = ({code}: {code: string}) => {
           ))}
         </dl>
       </div>
-      <aside className='bg-background/80 flex min-h-0 flex-col items-center justify-center gap-[1em] self-center rounded-3xl border border-white/10 p-[2em] shadow-2xl shadow-black/40 backdrop-blur-md'>
+      <aside className='flex min-h-0 flex-col items-center justify-center gap-[1em] self-center rounded-3xl border border-white/10 bg-background/80 p-[2em] shadow-2xl shadow-black/40 backdrop-blur-md'>
         {/* Shown in the lobby too: the join page waits on a draft game and lets people in once it opens. */}
         <span className='font-title text-[2em] font-bold'>{copy.screen.joinAt}</span>
         <QrCode value={joinUrl} className='w-[min(40vh,28vw)]' />
-        <span className='text-gray-dark text-[1.2em]'>
+        <span className='text-[1.2em] text-gray-dark'>
           {copy.screen.orVisit} <span className='text-white'>{host}</span>
         </span>
         <div className='flex flex-col items-center'>
-          <span className='text-gray-dark text-[1.1em] tracking-wider uppercase'>
+          <span className='text-[1.1em] tracking-wider text-gray-dark uppercase'>
             {copy.screen.code}
           </span>
           <span className='font-mono text-[3.2em] leading-none font-semibold tracking-[0.2em] text-yellow-300'>

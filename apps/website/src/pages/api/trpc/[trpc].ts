@@ -2,6 +2,7 @@ import type {APIRoute} from 'astro'
 import {fetchRequestHandler} from '@trpc/server/adapters/fetch'
 import {appRouter, cacheControlFor} from '@whocards/api'
 import {PLAYER_TOKEN_HEADER} from '@whocards/game'
+import {env} from '~env'
 import {db} from '~server/db'
 import {answer} from '~server/db/schema'
 import {createDrizzleGamePort} from '~server/game/drizzle-port'
@@ -30,6 +31,7 @@ const handler: APIRoute = ({request}) =>
       },
       game,
       playerToken: request.headers.get(PLAYER_TOKEN_HEADER),
+      mobileMinVersion: env.MOBILE_MIN_VERSION ?? null,
     }),
     responseMeta: ({info, type, errors}) => {
       const paths = info?.calls.map((call) => call.path)

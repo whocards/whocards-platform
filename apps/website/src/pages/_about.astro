@@ -4,24 +4,22 @@ import HeaderLink from '~components/Buttons/HeaderLink.astro'
 import {Icon} from 'astro-icon/components'
 ---
 
-<Layout class='text-xl text-slate-300 md:text-2xl lg:text-4xl container mx-auto px-5'>
+<Layout class='container mx-auto px-5 text-xl text-slate-300 md:text-2xl lg:text-4xl'>
   <!-- home section -->
   <section
     id='home'
     class='flex min-h-screen flex-col items-center justify-center gap-6 text-center md:max-w-3xl md:gap-8 lg:gap-12'
   >
-    <h1
-      class='text-gradient font-title text-7xl font-extrabold uppercase leading-none tracking-tight text-white md:text-8xl xl:text-9xl'
-    >
+    <h1 class='text-gradient font-title text-7xl leading-none font-extrabold tracking-tight text-white uppercase md:text-8xl xl:text-9xl'>
       who we are?
     </h1>
-    <div
-      class='grid grid-rows-4 items-center justify-between gap-4 px-2 text-3xl md:h-20 md:grid-cols-7 md:grid-rows-1 md:gap-0'
-    >
+    <div class='grid grid-rows-4 items-center justify-between gap-4 px-2 text-3xl md:h-20 md:grid-cols-7 md:grid-rows-1 md:gap-0'>
       <HeaderLink href='#story'>Story</HeaderLink>
       <HeaderLink href='#mission'>Mission</HeaderLink>
       <HeaderLink href='#values'>Values</HeaderLink>
-      <HeaderLink href='#humans' noBorder>Humans</HeaderLink>
+      <HeaderLink href='#humans' noBorder>
+        Humans
+      </HeaderLink>
     </div>
   </section>
 
@@ -30,22 +28,23 @@ import {Icon} from 'astro-icon/components'
     id='story'
     class='flex min-h-screen flex-col justify-center gap-6 pt-16 text-left md:gap-8 lg:gap-12'
   >
-    <h2
-      class='text-gradient text-center font-title text-7xl font-extrabold uppercase leading-none tracking-tight text-white md:text-8xl xl:text-9xl'
-    >
+    <h2 class='text-gradient text-center font-title text-7xl leading-none font-extrabold tracking-tight text-white uppercase md:text-8xl xl:text-9xl'>
       story
     </h2>
     <div class='grid grid-cols-2 gap-16'>
       <p>
-        In 2016, a dynamic, self-organised laboratory called <a
+        In 2016, a dynamic, self-organised laboratory called{' '}
+        <a
           class='text-primary-dark opacity-80 hover:underline hover:opacity-50 active:opacity-100'
           href='https://www.amanitas.cc/'
-          target='_blank'>Amanitas</a
-        > was born in order to explore radical collaboration and emergence for our future humanity. Amanitas
-        was inspired by the superpowers and patterns of the natural world. Throughout a series of retreats,
-        a community house and co-created events, we learnt, played and experimented around a core belief:
-        That positive change does not originate from any single individual, rather it ebbs and flows as
-        a force which guides a living system.
+          target='_blank'
+          set:text='Amanitas'
+        />{' '}
+        was born in order to explore radical collaboration and emergence for our future humanity.
+        Amanitas was inspired by the superpowers and patterns of the natural world. Throughout a
+        series of retreats, a community house and co-created events, we learnt, played and
+        experimented around a core belief: That positive change does not originate from any single
+        individual, rather it ebbs and flows as a force which guides a living system.
       </p>
       <div class='flex items-center justify-center'>img</div>
       <div class='flex items-center justify-center'>img</div>
@@ -76,9 +75,7 @@ import {Icon} from 'astro-icon/components'
     id='mission'
     class='flex min-h-screen flex-col justify-center gap-6 pt-28 pb-16 text-center md:gap-8 lg:gap-12'
   >
-    <h2
-      class='text-gradient font-title text-7xl font-extrabold uppercase leading-none tracking-tight text-white md:text-8xl xl:text-9xl'
-    >
+    <h2 class='text-gradient font-title text-7xl leading-none font-extrabold tracking-tight text-white uppercase md:text-8xl xl:text-9xl'>
       mission
     </h2>
     <p>
@@ -106,15 +103,13 @@ import {Icon} from 'astro-icon/components'
     id='values'
     class='flex min-h-screen flex-col justify-center gap-6 pt-16 text-center md:gap-8 lg:gap-12'
   >
-    <h2
-      class='text-gradient font-title text-7xl font-extrabold uppercase leading-none tracking-tight text-white md:text-8xl xl:text-9xl'
-    >
+    <h2 class='text-gradient font-title text-7xl leading-none font-extrabold tracking-tight text-white uppercase md:text-8xl xl:text-9xl'>
       Core Values
     </h2>
     <p>Our core DNA is inspired by the values of the Amanitas experience.</p>
     <div class='flex flex-wrap text-left text-lg'>
       <div class='p-4 md:w-1/2 xl:w-1/4'>
-        <div class='relative h-full overflow-hidden rounded-lg bg-gray bg-opacity-20 p-8'>
+        <div class='bg-opacity-20 relative h-full overflow-hidden rounded-lg bg-gray p-8'>
           <h4 class='mb-6 font-title text-2xl font-medium text-white md:text-3xl'>
             The Magic of Nature
           </h4>
@@ -127,7 +122,7 @@ import {Icon} from 'astro-icon/components'
         </div>
       </div>
       <div class='p-4 md:w-1/2 xl:w-1/4'>
-        <div class='relative h-full overflow-hidden rounded-lg bg-gray bg-opacity-20 p-8'>
+        <div class='bg-opacity-20 relative h-full overflow-hidden rounded-lg bg-gray p-8'>
           <h4 class='mb-6 font-title text-2xl font-medium text-white md:text-3xl'>
             Courageous Curiosity
           </h4>
@@ -141,7 +136,7 @@ import {Icon} from 'astro-icon/components'
         </div>
       </div>
       <div class='p-4 md:w-1/2 xl:w-1/4'>
-        <div class='relative h-full overflow-hidden rounded-lg bg-gray bg-opacity-20 p-8'>
+        <div class='bg-opacity-20 relative h-full overflow-hidden rounded-lg bg-gray p-8'>
           <h4 class='mb-6 font-title text-2xl font-medium text-white md:text-3xl'>Whole Beings</h4>
           <p class='leading-relaxed'>
             We start from our core selves with openness, kindness and care; uncovering who we are as
@@ -153,7 +148,7 @@ import {Icon} from 'astro-icon/components'
         </div>
       </div>
       <div class='p-4 md:w-1/2 xl:w-1/4'>
-        <div class='relative h-full overflow-hidden rounded-lg bg-gray bg-opacity-20 p-8'>
+        <div class='bg-opacity-20 relative h-full overflow-hidden rounded-lg bg-gray p-8'>
           <h4 class='mb-6 font-title text-2xl font-medium text-white md:text-3xl'>
             Creation of Commons
           </h4>
@@ -172,9 +167,7 @@ import {Icon} from 'astro-icon/components'
     id='humans'
     class='flex min-h-screen flex-col justify-center gap-6 pt-16 text-center md:gap-8 lg:gap-12'
   >
-    <h2
-      class='text-gradient font-title text-7xl font-extrabold uppercase leading-none tracking-tight text-white md:text-8xl xl:text-9xl'
-    >
+    <h2 class='text-gradient font-title text-7xl leading-none font-extrabold tracking-tight text-white uppercase md:text-8xl xl:text-9xl'>
       Humans of WhoCards
     </h2>
     <p>
@@ -189,9 +182,7 @@ import {Icon} from 'astro-icon/components'
             class='absolute inset-0 h-full w-full object-cover object-center group-hover:opacity-50'
             src='https://dummyimage.com/600x360'
           />
-          <div
-            class='border-gray-800 bg-gray-900 relative z-10 w-full border-4 px-8 py-10 opacity-0 hover:opacity-100'
-          >
+          <div class='relative z-10 w-full border-4 border-gray-800 bg-gray-900 px-8 py-10 opacity-0 hover:opacity-100'>
             <h2 class='title-font mb-1 text-sm font-medium tracking-widest text-indigo-400'>
               THE SUBTITLE
             </h2>
@@ -206,7 +197,7 @@ import {Icon} from 'astro-icon/components'
     </div>
   </section>
   <!-- scroll to top button -->
-  <div class='btn-circle btn fixed -bottom-14 right-4 transition-all' id='btn-back-to-top'>
+  <div class='btn fixed right-4 -bottom-14 btn-circle transition-all' id='btn-back-to-top'>
     <Icon name='mdi:arrow-up' class='h-6 w-6' />
   </div>
 </Layout>

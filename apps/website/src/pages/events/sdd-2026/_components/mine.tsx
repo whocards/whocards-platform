@@ -16,7 +16,7 @@ type Response = MyData['responses'][number]
 
 const Entry = ({meta, children}: {meta: string; children: ReactNode}) => (
   <li className='flex flex-col gap-2 rounded-2xl border border-white/10 bg-background/80 p-4'>
-    <span className='text-gray-dark text-sm'>{meta}</span>
+    <span className='text-sm text-gray-dark'>{meta}</span>
     {children}
   </li>
 )
@@ -93,7 +93,7 @@ export const SddMine = () => {
   const response = (r: Response) => {
     const meta = metaOf(r.createdAt, r.durationMs)
     const physical = r.questionId === PHYSICAL_QUESTION_ID && (
-      <span className='text-yellow-300 text-sm font-semibold'>{copy.mine.physical}</span>
+      <span className='text-sm font-semibold text-yellow-300'>{copy.mine.physical}</span>
     )
     if (editing?.id === r.id)
       return (
@@ -180,7 +180,7 @@ export const SddMine = () => {
                 </span>
               </>
             ) : (
-              <p className='text-gray-lighter flex items-center gap-2'>
+              <p className='flex items-center gap-2 text-gray-lighter'>
                 <Spinner className='size-4' />
                 {copy.mine.processing}
               </p>

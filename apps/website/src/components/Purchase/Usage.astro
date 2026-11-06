@@ -6,63 +6,59 @@ const {class: classes} = Astro.props
 ---
 
 <div class='flex flex-col lg:pt-16' class:list={[classes]} data-usage-timeline>
-  {
-    usage.map((item, index) => (
-      <div class='flex gap-4'>
-        <div class='flex flex-col items-center'>
-          <div
-            class='relative z-10 flex justify-center items-center h-10 w-10 lg:h-14 lg:w-14'
-            class:list={[index === 0 ? 'text-primary-dark' : 'text-dark']}
-            data-usage-step
-          >
-            {index === 0 ? (
+  {usage.map((item, index) => (
+    <div class='flex gap-4'>
+      <div class='flex flex-col items-center'>
+        <div
+          class='relative z-10 flex h-10 w-10 items-center justify-center lg:h-14 lg:w-14'
+          class:list={[index === 0 ? 'text-primary-dark' : 'text-dark']}
+          data-usage-step
+        >
+          {index === 0 ? (
+            <Icon
+              name='usage-ring'
+              class='absolute inset-0 h-full w-full stroke-primary-dark'
+              aria-hidden='true'
+            />
+          ) : (
+            <>
               <Icon
                 name='usage-ring'
-                class='absolute inset-0 h-full w-full stroke-primary-dark'
+                class='absolute inset-0 h-full w-full stroke-dark'
                 aria-hidden='true'
               />
-            ) : (
-              <>
-                <Icon
-                  name='usage-ring'
-                  class='absolute inset-0 h-full w-full stroke-dark'
-                  aria-hidden='true'
-                />
-                <Icon
-                  name='usage-ring'
-                  data-usage-ring
-                  class='absolute inset-0 h-full w-full stroke-primary-dark'
-                  aria-hidden='true'
-                  style='opacity: 0;'
-                />
-              </>
-            )}
-            <Icon name='card' class='relative z-10 h-[23px] w-[23px] lg:h-8 lg:w-8' />
-          </div>
-          {item.line && (
-            <div class='relative z-0 w-0.5 flex-1 bg-dark overflow-hidden -mt-[1px]'>
-              <div
-                data-usage-line
-                class='absolute left-0 top-0 w-full bg-primary-dark'
-                style='height: 0;'
+              <Icon
+                name='usage-ring'
+                data-usage-ring
+                class='absolute inset-0 h-full w-full stroke-primary-dark'
+                aria-hidden='true'
+                style='opacity: 0;'
               />
-            </div>
+            </>
           )}
+          <Icon name='card' class='relative z-10 h-[23px] w-[23px] lg:h-8 lg:w-8' />
         </div>
-        <div class='flex flex-col gap-3'>
-          <h4 class='text-lg lg:text-2xl font-semibold leading-7 lg:leading-normal'>
-            {item.title}
-          </h4>
-          <p
-            class='text-gray-dark leading-snug pb-6 lg:text-lg'
-            class:list={[item.line && 'lg:pb-16']}
-          >
-            {item.contents}
-          </p>
-        </div>
+        {item.line && (
+          <div class='relative z-0 -mt-[1px] w-0.5 flex-1 overflow-hidden bg-dark'>
+            <div
+              data-usage-line
+              class='absolute top-0 left-0 w-full bg-primary-dark'
+              style='height: 0;'
+            />
+          </div>
+        )}
       </div>
-    ))
-  }
+      <div class='flex flex-col gap-3'>
+        <h4 class='text-lg leading-7 font-semibold lg:text-2xl lg:leading-normal'>{item.title}</h4>
+        <p
+          class='pb-6 leading-snug text-gray-dark lg:text-lg'
+          class:list={[item.line && 'lg:pb-16']}
+        >
+          {item.contents}
+        </p>
+      </div>
+    </div>
+  ))}
 </div>
 
 <script>

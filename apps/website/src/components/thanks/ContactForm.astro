@@ -14,17 +14,15 @@ export type Props = {
 const {formData, errors, serverError, siteKey} = Astro.props
 ---
 
-<div class='flex flex-col items-center text-center md:text-start md:items-start gap-4 md:gap-5'>
-  <h2 class='text-3xl lg:text-5xl text-gradient font-bold font-title tracking-tight leading-tight'>
+<div class='flex flex-col items-center gap-4 text-center md:items-start md:gap-5 md:text-start'>
+  <h2 class='text-gradient font-title text-3xl leading-tight font-bold tracking-tight lg:text-5xl'>
     Send us a message
   </h2>
-  {serverError && <p class='lg:text-base text-red-500'>{serverError}</p>}
-  {
-    errors && !serverError && (
-      <p class='lg:text-base text-red-500'>Please check the form and try again.</p>
-    )
-  }
-  <form method='POST' class='flex flex-col w-full pb-14'>
+  {serverError && <p class='text-red-500 lg:text-base'>{serverError}</p>}
+  {errors && !serverError && (
+    <p class='text-red-500 lg:text-base'>Please check the form and try again.</p>
+  )}
+  <form method='POST' class='flex w-full flex-col pb-14'>
     <Input
       name='name'
       minlength={2}
@@ -43,7 +41,7 @@ const {formData, errors, serverError, siteKey} = Astro.props
     />
     <label
       for='contact-message'
-      class='text-start text-base font-medium flex flex-col gap-2 pb-2.5'
+      class='flex flex-col gap-2 pb-2.5 text-start text-base font-medium'
     >
       <div>message *</div>
       <textarea
@@ -53,7 +51,7 @@ const {formData, errors, serverError, siteKey} = Astro.props
         required
         minlength={10}
         maxlength={2000}
-        class='w-full bg-transparent py-3 px-4.5 border placeholder:text-gray-dark rounded-xl'
+        class='w-full rounded-xl border bg-transparent px-4.5 py-3 placeholder:text-gray-dark'
         class:list={[errors?.message ? 'border-red' : 'border-gray']}
         placeholder='How can we help?'
         set:text={formData?.message ?? ''}
@@ -61,22 +59,20 @@ const {formData, errors, serverError, siteKey} = Astro.props
       <p class='text-xs text-red'>{errors?.message?.message ?? <>&nbsp;</>}</p>
     </label>
 
-    {
-      siteKey ? (
-        <div
-          class='cf-turnstile mb-4'
-          data-sitekey={siteKey}
-          data-action={TURNSTILE_ACTION.contact}
-          data-theme='dark'
-        />
-      ) : null
-    }
-    {
-      errors?.['cf-turnstile-response'] && (
-        <p class='text-xs text-red mb-4'>{errors['cf-turnstile-response'].message}</p>
-      )
-    }
+    {siteKey ? (
+      <div
+        class='cf-turnstile mb-4'
+        data-sitekey={siteKey}
+        data-action={TURNSTILE_ACTION.contact}
+        data-theme='dark'
+      />
+    ) : null}
+    {errors?.['cf-turnstile-response'] && (
+      <p class='mb-4 text-xs text-red'>{errors['cf-turnstile-response'].message}</p>
+    )}
 
-    <Button type='submit' class='mt-4 capitalize lg:max-w-xs' full>Send message</Button>
+    <Button type='submit' class='mt-4 capitalize lg:max-w-xs' full>
+      Send message
+    </Button>
   </form>
 </div>

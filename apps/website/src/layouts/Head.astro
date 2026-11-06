@@ -172,11 +172,9 @@ const title = titles.join(' | ')
 <link rel='canonical' href={canonicalUrl} />
 
 <!-- hreflang alternates (question pages only — see hreflangAlternates above) -->
-{
-  hreflangAlternates.map(({hreflang, href}) => (
-    <link rel='alternate' hreflang={hreflang} href={href} />
-  ))
-}
+{hreflangAlternates.map(({hreflang, href}) => (
+  <link rel='alternate' hreflang={hreflang} href={href} />
+))}
 {xDefaultHref && <link rel='alternate' hreflang='x-default' href={xDefaultHref} />}
 
 <!-- Favicon -->
@@ -216,11 +214,9 @@ const title = titles.join(' | ')
 <meta name='generator' content={Astro.generator} />
 
 <!-- fonts -->
-{
-  fonts.map((font) => (
-    <link rel='preload' href={`/fonts/${font}.woff2`} as='font' type='font/woff2' crossorigin />
-  ))
-}
+{fonts.map((font) => (
+  <link rel='preload' href={`/fonts/${font}.woff2`} as='font' type='font/woff2' crossorigin />
+))}
 
 <!-- JSON-LD structured data -->
 <script

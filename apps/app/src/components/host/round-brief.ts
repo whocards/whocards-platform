@@ -56,7 +56,9 @@ export const roundBrief = (
   return [
     round.n === 1 ? 'Pair up with someone.' : 'Pair with someone new.',
     `Each of you gets ${spokenDuration(round.turnSeconds)} to answer.`,
-    QUESTIONS[round.questionPlan.mode],
+    round.questionPlan.mode === 'random' && o.answerMode === 'none'
+      ? 'You and your partner answer the same question.'
+      : QUESTIONS[round.questionPlan.mode],
     ANSWERS[o.answerMode],
     overtime,
     odd,

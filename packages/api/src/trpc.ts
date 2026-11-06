@@ -21,6 +21,8 @@ export type Context = {
   game: GamePort
   /** From the PLAYER_TOKEN_HEADER request header; null when absent. */
   playerToken: string | null
+  /** MOBILE_MIN_VERSION (x.y.z); null when the version gate is off. */
+  mobileMinVersion: string | null
 }
 
 const t = initTRPC.context<Context>().create({
