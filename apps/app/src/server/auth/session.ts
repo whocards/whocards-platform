@@ -24,7 +24,7 @@ export const getCurrentMember = createServerFn({method: 'GET'}).handler(
     if (!authSession) return null
 
     const membership = await ensureMembership(authSession.user)
-    // Defensive: a role that somehow isn't one of the five known roles is treated
+    // Defensive: a role that somehow isn't one of the known roles is treated
     // as unprovisioned rather than trusted — should only happen if the DB was
     // edited by hand outside this app.
     const validMembership =

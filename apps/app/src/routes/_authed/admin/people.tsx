@@ -7,8 +7,8 @@ import {Button} from '~/components/ui/button'
 import {Card} from '~/components/ui/card'
 import {Input, Label, Select} from '~/components/ui/field'
 import {trpc} from '~/lib/trpc'
-import {isAppRole, ROLE_RANK, roleAtLeast} from '~/server/auth/permissions'
-import type {AppRole} from '~/server/auth/permissions'
+import {isStaffRole, roleAtLeast, STAFF_ROLES} from '~/server/auth/permissions'
+import type {StaffRole} from '~/server/auth/permissions'
 
 export const Route = createFileRoute('/_authed/admin/people')({
   beforeLoad: ({context}) => {
@@ -24,7 +24,7 @@ function People() {
   const people = useQuery({queryKey: ['people.list'], queryFn: () => trpc.people.list.query()})
 
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<AppRole>('reviewer')
+  const [role, setRole] = useState<StaffRole>('reviewer')
 
   const invite = useMutation({
     mutationFn: () => trpc.people.invite.mutate({email, role}),
@@ -35,7 +35,7 @@ function People() {
   })
 
   const updateRole = useMutation({
-    mutationFn: (input: {userId: string; role: AppRole}) => trpc.people.updateRole.mutate(input),
+    mutationFn: (input: {userId: string; role: StaffRole}) => trpc.people.updateRole.mutate(input),
     onSuccess: () => queryClient.invalidateQueries({queryKey: ['people.list']}),
   })
 
@@ -64,14 +64,12 @@ function People() {
             <Select
               value={role}
               onChange={(event) => {
-                // <option> values are always ROLE_RANK below, so this only fails on a
-                // tampered DOM value — bail rather than cast.
                 const {value} = event.target
-                if (isAppRole(value)) setRole(value)
+                if (isStaffRole(value)) setRole(value)
               }}
               className="capitalize"
             >
-              {ROLE_RANK.map((r) => (
+              {STAFF_ROLES.map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>
@@ -84,6 +82,8 @@ function People() {
         </form>
         {invite.isError ? <ErrorText className="mt-3">{invite.error.message}</ErrorText> : null}
       </Card>
+
+      <TranslatorSignups />
 
       <SectionTitle
         aside={
@@ -115,11 +115,16 @@ function People() {
               value={person.role}
               onChange={(event) => {
                 const {value} = event.target
-                if (isAppRole(value)) updateRole.mutate({userId: person.userId, role: value})
+                if (isStaffRole(value)) updateRole.mutate({userId: person.userId, role: value})
               }}
               className="w-auto shrink-0 text-sm capitalize"
             >
-              {ROLE_RANK.map((r) => (
+              {person.role === 'translator' ? (
+                <option value="translator" disabled>
+                  translator
+                </option>
+              ) : null}
+              {STAFF_ROLES.map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>
@@ -129,5 +134,87 @@ function People() {
         ))}
       </ul>
     </Page>
+  )
+}
+
+function TranslatorSignups() {
+  const signups = useQuery({
+    queryKey: ['translation.signups'],
+    queryFn: () => trpc.translation.signups.query(),
+  })
+  const [approved, setApproved] = useState<string | null>(null)
+  if (!signups.data?.length && !approved) return null
+
+  return (
+    <section className="mb-10">
+      <SectionTitle
+        aside={<span className="text-sm text-gray-dark">{signups.data?.length ?? 0}</span>}
+      >
+        Translator sign-ups
+      </SectionTitle>
+      <p className="mb-4 text-sm text-gray-lighter">
+        Approving runs the AI first pass for that language, then invites them as a translator and
+        emails their login. It takes up to 40 seconds.
+      </p>
+      {approved ? <output className="mb-4 block text-sm">{approved}</output> : null}
+      <ul className="flex flex-col gap-2">
+        {signups.data?.map((signup) => (
+          <SignupRow key={signup.id} signup={signup} onApproved={setApproved} />
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+type Signup = Awaited<ReturnType<(typeof trpc)['translation']['signups']['query']>>[number]
+
+function SignupRow({
+  signup,
+  onApproved,
+}: Readonly<{signup: Signup; onApproved: (message: string) => void}>) {
+  const queryClient = useQueryClient()
+  const [language, setLanguage] = useState(signup.language ?? '')
+  const approve = useMutation({
+    mutationFn: () => trpc.translation.approveSignup.mutate({id: signup.id, language}),
+    onSuccess: (result) => {
+      onApproved(
+        result.aiPass === 'ran'
+          ? `Invited ${signup.email}. ${result.drafted} Questions have AI drafts; ${result.needsDrafting} need drafting by hand.`
+          : `Invited ${signup.email}. No AI pass ran (no API key), so every Question needs drafting by hand.`
+      )
+      return Promise.all([
+        queryClient.invalidateQueries({queryKey: ['translation.signups']}),
+        queryClient.invalidateQueries({queryKey: ['people.list']}),
+      ])
+    },
+  })
+
+  return (
+    <li className="rounded-2xl border border-white/8 bg-white/[0.035] py-2.5 pr-2.5 pl-3">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          approve.mutate()
+        }}
+        className="flex flex-wrap items-center gap-3"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold wrap-anywhere">{signup.name ?? signup.email}</p>
+          {signup.name ? <p className="text-xs text-gray-dark">{signup.email}</p> : null}
+        </div>
+        <Input
+          aria-label={`Language for ${signup.email}`}
+          required
+          value={language}
+          onChange={(event) => setLanguage(event.target.value)}
+          placeholder="id"
+          className="w-28 text-sm"
+        />
+        <Button type="submit" variant="primary" size="sm" disabled={approve.isPending}>
+          {approve.isPending ? 'Translating…' : 'Approve'}
+        </Button>
+      </form>
+      {approve.isError ? <ErrorText className="mt-2">{approve.error.message}</ErrorText> : null}
+    </li>
   )
 }

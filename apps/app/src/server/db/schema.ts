@@ -124,6 +124,8 @@ export const appMember = pgTable(
       .notNull()
       .references(() => appUser.id, {onDelete: 'cascade'}),
     role: text('role').default('member').notNull(),
+    // The one language a `translator` may translate into; null for every other role.
+    language: text('language'),
     createdAt: timestamp('created_at').notNull(),
   },
   (table) => [
@@ -354,6 +356,32 @@ export const deckQuestionRelations = relations(deckQuestion, ({one}) => ({
   deck: one(deck, {fields: [deckQuestion.deckSlug], references: [deck.slug]}),
   creator: one(appUser, {fields: [deckQuestion.createdBy], references: [appUser.id]}),
 }))
+
+/** A Question's draft translation into one language, seeded by the AI first pass and edited by a translator. */
+export const translationDraft = pgTable(
+  'translation_draft',
+  {
+    id: serial('id').primaryKey(),
+    deckSlug: text('deck_slug').notNull(),
+    questionId: text('question_id').notNull(),
+    language: text('language').notNull(),
+    text: text('text').notNull(),
+    status: text('status').default('draft').notNull(), // draft | approved
+    updatedBy: text('updated_by').references(() => appUser.id),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique('translation_draft_deck_question_language_unique').on(
+      table.deckSlug,
+      table.questionId,
+      table.language
+    ),
+  ]
+)
 
 // Workshop game tables live with the game package; this app pushes them.
 export * from '@whocards/game/db'
