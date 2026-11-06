@@ -1,4 +1,8 @@
+import {execFileSync} from 'node:child_process'
+import {readFileSync} from 'node:fs'
+
 import {PGlite} from '@electric-sql/pglite'
+import {applyPatch} from 'diff'
 import {generateDrizzleJson, generateMigration} from 'drizzle-kit/api'
 import {drizzle} from 'drizzle-orm/pglite'
 import {beforeAll, describe, expect, it, vi} from 'vitest'
@@ -18,6 +22,11 @@ const reviewer: TRPCContext = {
   membership: {organizationId: 'org', role: 'reviewer'},
 }
 const caller = createCallerFactory(questionReviewRouter)(reviewer)
+const facilitator = createCallerFactory(questionReviewRouter)({
+  ...reviewer,
+  membership: {organizationId: 'org', role: 'facilitator'},
+})
+const repoRoot = new URL('../../../../../../', import.meta.url)
 const deckSlug = 'ai-at-work'
 const questionId = 'ai-1'
 
@@ -51,5 +60,34 @@ describe('question review comments', () => {
     await expect(
       caller.comments.add({deckSlug, questionId, variant: 'v'.repeat(65), body: 'too long'})
     ).rejects.toThrow('Too big')
+  })
+})
+
+describe('approving a variant', () => {
+  it('yields a diff that applies cleanly to packages/decks', async () => {
+    const variant = 'ai-at-work-human'
+    await facilitator.approve({deckSlug, questionId, variant})
+
+    const [question] = await caller.variants({deckSlug})
+    const approvedText = question?.variants[variant]
+    expect(question?.review).toMatchObject({status: 'approved', currentText: approvedText})
+
+    const {patch} = await facilitator.emitDiff()
+    execFileSync('git', ['apply', '--check', '-'], {cwd: repoRoot, input: patch})
+
+    const shipped = readFileSync(
+      new URL('packages/decks/src/decks/ai-at-work.questions.json', repoRoot),
+      'utf8'
+    )
+    const applied = applyPatch(shipped, patch)
+    if (applied === false) throw new Error('patch did not apply')
+    expect(JSON.parse(applied)[questionId]).toEqual({en: approvedText})
+    expect(approvedText).not.toBe(JSON.parse(shipped)[questionId].en)
+  })
+
+  it('refuses a variant the Question does not have', async () => {
+    await expect(
+      facilitator.approve({deckSlug, questionId, variant: 'constructor'})
+    ).rejects.toThrow('No variant')
   })
 })
