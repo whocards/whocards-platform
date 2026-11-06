@@ -7,7 +7,7 @@ import {eq} from 'drizzle-orm'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import * as schema from './db/schema'
-import {confirmNewsletterConsent, upsertConsent, upsertUser} from './db/upsert'
+import {confirmConsent, upsertConsent, upsertUser} from './db/upsert'
 import {resetTestDb} from './db/test-helpers'
 import type {TestDb} from './db/test-helpers'
 import {
@@ -294,8 +294,8 @@ describe('double opt-in', () => {
     expect(fakeContacts.createCalls).toHaveLength(0)
     expect(await db.select().from(schema.emailConsent).where(buildNeedsSyncWhere())).toEqual([])
 
-    expect(await confirmNewsletterConsent(db, 'OptIn@example.com')).toBe(1)
-    expect(await confirmNewsletterConsent(db, 'optin@example.com')).toBe(0)
+    expect(await confirmConsent(db, 'OptIn@example.com')).toBe(1)
+    expect(await confirmConsent(db, 'optin@example.com')).toBe(0)
 
     const summaries = await syncEmailConsents(db, 'optin@example.com', deps)
     expect(summaries.map((s) => s.result.status)).toEqual(['synced'])

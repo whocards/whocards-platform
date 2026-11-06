@@ -343,8 +343,8 @@ function QuestionCard({
   })
 
   const approve = useMutation({
-    mutationFn: (text: string) =>
-      trpc.questionReview.approve.mutate({deckSlug, questionId: question.questionId, text}),
+    mutationFn: (variant: string) =>
+      trpc.questionReview.approve.mutate({deckSlug, questionId: question.questionId, variant}),
     onSuccess: invalidateQuestions,
   })
 
@@ -421,7 +421,7 @@ function QuestionCard({
                 {canApprove ? (
                   <Button
                     variant={isCurrent ? 'primary' : 'accent'}
-                    onClick={() => approve.mutate(text)}
+                    onClick={() => approve.mutate(slug)}
                     disabled={approve.isPending}
                     className="flex-1"
                   >

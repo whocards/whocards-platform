@@ -18,7 +18,8 @@
     "db:push": "pnpm with-env drizzle-kit push",
     "db:studio": "pnpm with-env drizzle-kit studio",
     "reconcile:resend": "pnpm with-env tsx scripts/reconcile-resend.ts",
-    "game:retention": "pnpm with-env tsx scripts/game-retention.ts"
+    "game:retention": "pnpm with-env tsx scripts/game-retention.ts",
+    "stats:refresh": "pnpm with-env node scripts/refresh-stats.mjs"
   },
   "dependencies": {
     "@whocards/api": "workspace:*",
