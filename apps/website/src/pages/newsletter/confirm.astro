@@ -49,20 +49,18 @@ const copy = {
   <div class='flex w-full flex-col items-center gap-6 self-start px-4 pt-12 text-center text-white'>
     <h1 class='font-title text-4xl md:text-6xl'>{copy[0]}</h1>
     <p class='md:text-2xl'>{copy[1]}</p>
-    {
-      state === 'ask' ? (
-        <form method='post'>
-          <input type='hidden' name='email' value={email} />
-          <input type='hidden' name='token' value={token} />
-          <button class='btn-primary btn' type='submit'>
-            Confirm
-          </button>
-        </form>
-      ) : (
-        <a class='btn-primary btn' href='/'>
-          Go to homepage
-        </a>
-      )
-    }
+    {state === 'ask' ? (
+      <form method='post'>
+        <input type='hidden' name='email' value={email} />
+        <input type='hidden' name='token' value={token} />
+        <button class='btn btn-primary' type='submit'>
+          Confirm
+        </button>
+      </form>
+    ) : (
+      <a class='btn btn-primary' href='/'>
+        Go to homepage
+      </a>
+    )}
   </div>
 </Layout>
