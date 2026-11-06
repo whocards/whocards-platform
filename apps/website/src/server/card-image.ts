@@ -683,7 +683,7 @@ const buildTree = (
 // because Netlify restores .cache/og (netlify/plugins/og-cache). That's why all
 // four are ignored in .github/dependabot.yml rather than left to bump on their
 // own; upgrading one on purpose means bumping this line in the same commit.
-const RENDERER_VERSION = '1'
+const RENDERER_VERSION = '2'
 
 // Persisted, content-addressed render cache. A card is a pure function of its
 // (text, language, RENDERER_VERSION), so we cache the rendered PNG under a

@@ -41,6 +41,7 @@ jest.mock('@/lib/game-store', () => ({
   setStoredGame: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock('@/lib/notification-store', () => ({openNotificationSetting: jest.fn()}))
 jest.mock('@/lib/tabletop-store', () => ({
   getStoredTabletopMode: jest.fn().mockResolvedValue(false),
   setStoredTabletopMode: jest.fn().mockResolvedValue(undefined),
@@ -166,7 +167,7 @@ describe('Share sheet', () => {
     visible: true,
     questionText: 'What is your favorite memory?',
     shareUrl: 'https://whocards.cc/play?lang=en&q=q-1',
-    onShare: noop,
+    onShareEvent: noop,
     onClose: noop,
   }
 

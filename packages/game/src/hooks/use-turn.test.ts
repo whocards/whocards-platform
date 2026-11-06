@@ -6,7 +6,7 @@ import type {GameClient, GamePlatform} from './client'
 import {flush, renderHook} from './render-hook.test-utils'
 import {deferred, playerState, speakingState, trpcError} from './state.test-utils'
 import {useHostedGame} from './use-hosted-game'
-import {useTurn} from './use-turn'
+import {STOP_TIMEOUT_MS, useTurn} from './use-turn'
 
 type Props = {clock: TurnClock | null; recording: boolean}
 
@@ -198,6 +198,21 @@ describe('useTurn', () => {
     expect(recorder.stop).toHaveBeenCalledOnce()
     expect(client.turn).toHaveBeenCalledWith('finish')
     expect(answers.add).toHaveBeenCalledWith('t1', take)
+    expect(hook.current.turn.stage).toBe('idle')
+    await hook.unmount()
+  })
+
+  it('ends the turn without the take when the recorder stop hangs', async () => {
+    const {client, recorder, wakeLock, answers, hook} = await setup()
+    recorder.stop.mockReturnValueOnce(new Promise(() => undefined))
+    await flush(() => hook.current.turn.record())
+    void hook.current.turn.finish()
+    await flush(STOP_TIMEOUT_MS - 1)
+    expect(client.turn).not.toHaveBeenCalledWith('finish')
+    await flush(1)
+    expect(wakeLock.release).toHaveBeenCalledOnce()
+    expect(answers.add).not.toHaveBeenCalled()
+    expect(client.turn).toHaveBeenCalledWith('finish')
     expect(hook.current.turn.stage).toBe('idle')
     await hook.unmount()
   })

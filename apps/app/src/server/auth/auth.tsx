@@ -6,12 +6,12 @@ import {sendEmail} from '@whocards/emails/resend'
 
 import {db, schema} from '../db'
 import {env} from '@whocards/env/app'
-import {MAGIC_LINK_DISABLE_SIGNUP} from './magic-link-policy'
+import {MAGIC_LINK_DISABLE_SIGNUP, knownUsersOnly} from './magic-link-policy'
 import {roles} from './permissions'
 
 const googleProvider =
   env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
-    ? {clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET}
+    ? {clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET, disableSignUp: true}
     : undefined
 
 // The Drizzle adapter looks up each model by the STRING key it's configured
@@ -39,9 +39,6 @@ export const auth = betterAuth({
     schema: adapterSchema,
     usePlural: false,
   }),
-  // No email+password or Google-only-required flow — magic link is the primary
-  // (and, tonight, only guaranteed-working) sign-in method. Google is scaffolded
-  // and env-gated (see googleAuthEnabled) per the overnight build plan.
   emailAndPassword: {enabled: false},
   ...(googleProvider ? {socialProviders: {google: googleProvider}} : {}),
   user: {modelName: 'app_user'},
@@ -54,7 +51,7 @@ export const auth = betterAuth({
       // lock out the seeded owner or anyone people.ts's invite already added.
       disableSignUp: MAGIC_LINK_DISABLE_SIGNUP,
       expiresIn: 60 * 15,
-      sendMagicLink: async ({email, url}) => {
+      sendMagicLink: knownUsersOnly(async ({email, url}) => {
         // Build-time flag: Netlify's function runtime doesn't set NODE_ENV, so a runtime check leaks links to prod logs.
         if (import.meta.env.DEV) {
           // oxlint-disable-next-line no-console -- deliberate dev-only sign-in log, not an error
@@ -68,7 +65,7 @@ export const auth = betterAuth({
           html: <MagicLinkEmail url={url} />,
           text: magicLinkText({url}),
         })
-      },
+      }),
     }),
     organization({
       schema: {

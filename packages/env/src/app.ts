@@ -20,7 +20,11 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
   },
-  runtimeEnv: process.env,
+  // Previews have no BETTER_AUTH_URL; apps/app/vite.config.ts inlines their deploy URL.
+  runtimeEnv: {
+    ...process.env,
+    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL || process.env.DEPLOY_PRIME_URL,
+  },
   emptyStringAsUndefined: true,
 })
 
