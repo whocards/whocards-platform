@@ -73,6 +73,10 @@ updates:
         update-types: [version-update:semver-minor]
       # Pinned with a removal condition; see the override note in pnpm-workspace.yaml.
       - dependency-name: lightningcss
+      # react-start 1.169 needs vite 8 and the app stays on vite 7; react-router must match the router react-start pins.
+      - dependency-name: '@tanstack/react-start'
+        versions: ['>=1.169.0']
+      - dependency-name: '@tanstack/react-router'
     groups:
       # One PR per week for all non-breaking bumps.
       minor-and-patch:

@@ -1,6 +1,6 @@
 ---
 import {Icon} from 'astro-icon/components'
-import type {HTMLAttributes, HTMLTag} from 'astro/types'
+import type {HTMLAttributes} from 'astro/types'
 import {cn} from '~utils'
 
 // TODO Polymorphic component https://docs.astro.build/en/guides/typescript/#polymorphic-type
@@ -13,7 +13,7 @@ export type Props<T> = HTMLAttributes<'button' | 'a'> & {
   light?: boolean
   dark?: boolean
   href?: string
-  tag?: HTMLTag
+  tag?: 'button' | 'a'
   full?: boolean
   disabled?: boolean
   target?: string

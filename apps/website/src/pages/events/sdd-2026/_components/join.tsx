@@ -25,23 +25,22 @@ const useWorkshop = (code: string, lookup: JoinProps['lookup']): Workshop | null
   const [found, setFound] = useState<Workshop | null>(null)
   const valid = readPairCode(code)
   useEffect(() => {
-    let alive = true
-    let timeout: ReturnType<typeof setTimeout> | undefined
+    const run: {alive: boolean; timer?: ReturnType<typeof setTimeout>} = {alive: true}
     const check = async () => {
       if (!valid) return
       try {
         const {game} = await lookup(valid)
-        if (!alive) return
+        if (!run.alive) return
         setFound(game)
-        if (game.status === 'lobby') timeout = setTimeout(() => void check(), DRAFT_POLL_MS)
+        if (game.status === 'lobby') run.timer = setTimeout(() => void check(), DRAFT_POLL_MS)
       } catch {
         // No preview is fine; joining reports a bad code itself.
       }
     }
     void check()
     return () => {
-      alive = false
-      clearTimeout(timeout)
+      run.alive = false
+      clearTimeout(run.timer)
     }
   }, [valid, lookup])
   return found && found.code === valid ? found : null
