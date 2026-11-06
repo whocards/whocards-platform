@@ -20,6 +20,7 @@ import type {QuestionSet} from '@whocards/decks'
 import {getInitialPick, pickReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
+import type {ShareEventName} from '@whocards/observability/events'
 
 import {PlayerBar} from '@/components/player-bar'
 import {PressableScale} from '@/components/pressable-scale'
@@ -36,6 +37,7 @@ import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
+import {getStoredTabletopMode} from '@/lib/tabletop-store'
 
 // Full card flip (deal → reveal) duration; DESIGN.md's 200–300 ms band applies to
 // interaction transitions — the deal is the one composed "moment of theatre" per card.
@@ -125,6 +127,8 @@ export const PickPlayer = ({
   // issue #176: at most one now, not up to two) — read-only here, same as
   // DeckPlayer: set from the home-screen Settings menu, not from this screen.
   const [secondary, setSecondary] = useState<string[]>([])
+  // Tabletop mode (issue #148, a Display setting): mirrors the revealed face, same as DeckPlayer.
+  const [tabletop, setTabletop] = useState(false)
   // gate the first reveal on the stored-language read, mirroring DeckPlayer
   const [languageReady, setLanguageReady] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
@@ -139,6 +143,7 @@ export const PickPlayer = ({
       getStoredSecondaryLanguages(deckSlug).then((stored) =>
         setSecondary(stored.filter((code) => languages.includes(code)))
       ),
+      getStoredTabletopMode().then(setTabletop),
     ]).then(() => setLanguageReady(true))
   }, [deckSlug, languages])
 
@@ -350,10 +355,10 @@ export const PickPlayer = ({
     setShareModalOpen(true)
   }, [onCard, text])
 
-  const handleShareCompleted = useCallback(
-    (format: ShareFormat) => {
+  const handleShareEvent = useCallback(
+    (name: ShareEventName, format: ShareFormat) => {
       track({
-        name: EVENTS.SHARE_COMPLETED,
+        name,
         props: {deck_id: deckSlug, question_id: questionId, language, game: GAMES.PICK, format},
       })
     },
@@ -457,6 +462,7 @@ export const PickPlayer = ({
                                 language: code,
                                 text: questions[questionId]?.[code] ?? '',
                               }))}
+                            mirrored={tabletop}
                           />
                         </View>
                       </Animated.View>
@@ -537,7 +543,7 @@ export const PickPlayer = ({
           shareUrl={buildShareUrl(deckSlug, language, questionId)}
           storyImageUrl={poolBacked ? buildShareCardUrl('story', language, questionId) : undefined}
           postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
-          onShare={handleShareCompleted}
+          onShareEvent={handleShareEvent}
           onClose={() => setShareModalOpen(false)}
         />
       </View>

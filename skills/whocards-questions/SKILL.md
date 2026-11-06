@@ -17,6 +17,38 @@ Read [references/mission.md](references/mission.md) for what the questions serve
 
 Check candidates against the existing deck in [assets/pool-en.json](assets/pool-en.json), the English pool that ships with this skill. If the working directory contains `packages/decks/src/pool/questions.json`, that file is authoritative and may be newer; extract just the language you are working in rather than reading the whole multilingual file. For English: `node -e "const p=require('./packages/decks/src/pool/questions.json'); for (const [id, q] of Object.entries(p)) console.log(id, JSON.stringify(q.en))"`. For a named deck, another language, or a list the user supplies, use that content too.
 
+## Recent questions
+
+A host app or agent may pass `recent_questions`: the questions this user has already received. The input is optional. With no history or an empty list, write as this skill describes; there is no freshness guarantee across sessions.
+
+Each entry has:
+
+- `question` (required): the question text exactly as delivered.
+- `delivered_at` (optional): when it was delivered, as an ISO 8601 date or date-time.
+- `frame` (optional): the frame it was written for, in ordinary language: its dimensions (topic, time, situation and so on), never personal details from the conversation.
+
+```json
+{
+  "recent_questions": [
+    {
+      "question": "What did today ask of you?",
+      "delivered_at": "2026-11-03",
+      "frame": "end of day, alone, journal"
+    },
+    {"question": "What has been on your mind this week?"}
+  ]
+}
+```
+
+Order is newest first, and the list order holds even when dates are missing or disagree. The window is the last 30 delivered questions: the host drops older entries before passing the list, and when more than 30 arrive, use the first 30 and ignore the rest.
+
+The skill keeps no memory between sessions. Persisting history is the host's job:
+
+- Record only delivered questions: the final question the user received, once. A set of ten is ten entries. Leave out drafts and discarded candidates. A re-send of the same delivery, such as a network retry, is one entry; a replacement question the user receives is a new entry.
+- Store the question text and, at most, its delivery date and frame. Never store the user's answers or the conversation.
+- Keep each user's history separate, and pass a user only their own.
+- Keep history in the user's private host storage, outside the installed skill folder and this repository.
+
 ## Understand the frame
 
 A **frame** combines any of these dimensions, expressed in ordinary language. The values below are illustrations, not a menu:

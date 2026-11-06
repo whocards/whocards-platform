@@ -13,7 +13,7 @@ A new worktree runs `pnpm wt:setup`: it copies the main checkout's `.env` and re
 
 - `.env`: local dev. `DB_URL` is the Docker Postgres `whocards-pg` on `localhost:5435`.
 - `.env.prod`: production, used only with `ENV=prod pnpm …`, by a person.
-- `.env.preview`: the Neon preview branch, for migrating it: `ENV=preview pnpm --filter website db:migrate`, then the same for `app`.
+- `.env.preview`: the Neon preview branch, for pushing schema to it: `ENV=preview pnpm --filter app db:push`.
 - `.env.example` lists every variable and which app needs it.
 
 A new variable goes in `packages/env` for its app. For the website, also add it to the explicit list in `apps/website/src/env.ts`: Astro inlines only private vars named in the same file as `import.meta.env`.
@@ -22,10 +22,8 @@ A new variable goes in `packages/env` for its app. For the website, also add it 
 
 ```sh
 docker start whocards-pg                      # created once; data in the whocards-pg volume
-pnpm --filter website db:migrate && pnpm --filter app db:migrate
+pnpm --filter app db:push
 ```
-
-Website migrations first: both apps share one migrations table, and a migration dated before the newest recorded one is skipped.
 
 ## Netlify
 
