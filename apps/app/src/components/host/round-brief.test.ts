@@ -69,6 +69,13 @@ describe('roundBrief', () => {
     ])
   })
 
+  it('tells partners they share a question when nothing is recorded', () => {
+    const random = round({questionPlan: {mode: 'random', source: 'library'}})
+    const lines = roundBrief(random, {answerMode: 'none', standby: false})
+    expect(lines).toContain('You and your partner answer the same question.')
+    expect(lines).not.toContain('Each of you draws your own question on your phone.')
+  })
+
   it('treats a zero grace period as a hard stop', () => {
     expect(roundBrief(round({overtimeSeconds: 0}), {answerMode: 'none', standby: false})).toContain(
       'When time is up, the turn ends.'

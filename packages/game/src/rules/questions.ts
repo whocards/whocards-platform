@@ -89,17 +89,21 @@ export const questionForTurn = ({
   used,
   random,
   sources,
+  pairQuestion,
 }: {
   plan: QuestionPlan
   turnIndex: number
   used: ReadonlySet<string>
   random: () => number
   sources: QuestionSources
+  /** The pair's earlier question, which a random draw repeats so both partners answer the same one. */
+  pairQuestion?: string
 }): string | null => {
   if (plan.mode === 'physical') return PHYSICAL_QUESTION_ID
   if (plan.mode === 'same') return plan.question
   // A trio's third turn wraps back to the first question.
   if (plan.mode === 'per-turn') return plan.questions[turnIndex % 2 === 0 ? 0 : 1]
+  if (pairQuestion) return pairQuestion
   return drawQuestion(sourceRefs(plan.source, sources), used, random)
 }
 

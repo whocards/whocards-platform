@@ -38,6 +38,20 @@ describe('questionForTurn', () => {
     expect(next({mode: 'random', source: 'nope'}, 0)).toBeNull()
   })
 
+  it('repeats the pair question on a random draw, never on a fixed plan', () => {
+    const shared = {used: new Set<string>(), random: () => 0, sources, pairQuestion: 'library:2'}
+    expect(
+      questionForTurn({...shared, plan: {mode: 'random', source: 'library'}, turnIndex: 1})
+    ).toBe('library:2')
+    expect(
+      questionForTurn({
+        ...shared,
+        plan: {mode: 'per-turn', questions: ['c:aaaa', 'c:bbbb']},
+        turnIndex: 1,
+      })
+    ).toBe('c:bbbb')
+  })
+
   it('gives everyone the same question', () => {
     const plan: QuestionPlan = {mode: 'same', question: 'c:aaaa'}
     expect([0, 1, 2].map((i) => next(plan, i, new Set(['c:aaaa'])))).toEqual([

@@ -4,7 +4,8 @@
  * Covers Tabletop mode (issue #148, a Display setting): with `mirrored`, the
  * Question renders twice — a normal bottom half and a 180°-rotated top half —
  * and the rotated copy must be hidden from the accessibility tree so a screen
- * reader announces the Question once, not twice. Also covers the `fitFontSize`
+ * reader announces the Question once, not twice; with a second language each
+ * side shows one language (issue #366). Also covers the `fitFontSize`
  * `minFont` override that gives the mirrored halves a lower font floor, and
  * `fitSecondaryFontSize`'s headroom growth (issue #189).
  */
@@ -34,44 +35,37 @@ describe('fitFontSize — minFont override', () => {
 })
 
 describe('fitSecondaryFontSize — headroom growth (issue #189)', () => {
-  // secondaryMin=10 throughout (below every computed value here) so the floor
-  // clamp doesn't mask the ratio math being asserted — the floor itself gets
-  // its own dedicated test below.
-
   it('uses exactly the base 0.5 ratio when the primary is at its floor (no headroom)', () => {
-    // primaryFontSize === primaryMinFont → headroom is 0 → the pre-#189 ratio,
-    // unchanged from before this issue.
-    expect(fitSecondaryFontSize(22, 22, 10)).toBe(11)
+    // primaryFontSize === primaryMinFont → headroom is 0 → the pre-#189 ratio.
+    expect(fitSecondaryFontSize(40, 40)).toBe(20)
   })
 
   it('grows past the base ratio as the primary sizes further above its floor', () => {
-    const atFloor = fitSecondaryFontSize(22, 22, 10)
-    const midHeadroom = fitSecondaryFontSize(40, 22, 10)
-    const moreHeadroom = fitSecondaryFontSize(50, 22, 10)
-    // Monotonic: more headroom under the primary's own fit → a bigger secondary,
-    // for the same primary floor and secondary floor — never a static bump.
+    const atFloor = fitSecondaryFontSize(40, 40)
+    const midHeadroom = fitSecondaryFontSize(50, 22)
+    const moreHeadroom = fitSecondaryFontSize(60, 22)
     expect(midHeadroom).toBeGreaterThan(atFloor)
     expect(moreHeadroom).toBeGreaterThan(midHeadroom)
   })
 
   it('caps the ratio at 0.65 (base 0.5 + the 0.15 headroom bonus), never more', () => {
-    // primaryFontSize === MAX_FONT (96) → maximum possible headroom (1.0) → the
-    // ratio tops out at 0.65 — but SECONDARY_MAX (34) is reached first here, so
-    // this also exercises that cap; see the next test for the cap in isolation.
-    expect(fitSecondaryFontSize(96, 22, 10)).toBe(34)
+    // MAX_FONT (96) → full headroom → ratio 0.65, but SECONDARY_MAX (34) is reached first.
+    expect(fitSecondaryFontSize(96, 22)).toBe(34)
   })
 
   it('caps at SECONDARY_MAX (34) regardless of how large the primary is', () => {
-    expect(fitSecondaryFontSize(200, 22, 10)).toBe(34)
+    expect(fitSecondaryFontSize(200, 22)).toBe(34)
   })
 
-  it('floors at the caller-supplied secondaryMin, honoring the Tabletop-mirrored floor', () => {
-    // A tiny primary right at the mirrored floor (16) computes well under the
-    // mirrored secondary floor (11) on the base ratio (16 * 0.5 = 8) — the
-    // floor wins, same as it always did.
-    expect(fitSecondaryFontSize(16, 16, 11)).toBe(11)
+  it('floors at SECONDARY_MIN (16)', () => {
+    // A primary at the mirrored floor (16) computes 8 on the base ratio; the floor wins.
+    expect(fitSecondaryFontSize(16, 16)).toBe(16)
   })
 })
+
+type Node = ReturnType<typeof screen.getByText>
+const isRotated = (node: Node | null | undefined): boolean =>
+  !!node && (JSON.stringify(node.props.style ?? null).includes('180deg') || isRotated(node.parent))
 
 describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
   const box = {width: 300, height: 400}
@@ -99,20 +93,86 @@ describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
     expect(screen.getAllByText(question)).toHaveLength(1)
   })
 
-  it('renders secondaries in both mirrored halves, one hidden from accessibility', async () => {
+  // issue #366: each side reads its own language — near = primary, far (rotated) = secondary
+  const secondary = '¿Qué te importa ahora mismo?'
+  it('shows only the primary near and only the secondary on the rotated far side', async () => {
     await render(
       <QuestionText
         text={question}
         language="en"
         box={box}
-        secondaries={[{language: 'es', text: '¿Qué te importa ahora mismo?'}]}
+        secondaries={[{language: 'es', text: secondary}]}
         mirrored
       />
     )
-    expect(
-      screen.getAllByText('¿Qué te importa ahora mismo?', {includeHiddenElements: true})
-    ).toHaveLength(2)
-    expect(screen.getAllByText('¿Qué te importa ahora mismo?')).toHaveLength(1)
+    const primaries = screen.getAllByText(question, {includeHiddenElements: true})
+    const secondaries = screen.getAllByText(secondary, {includeHiddenElements: true})
+    expect(primaries).toHaveLength(1)
+    expect(secondaries).toHaveLength(1)
+    expect(isRotated(primaries[0])).toBe(false)
+    expect(isRotated(secondaries[0])).toBe(true)
+  })
+
+  it('gives both halves the same height, each language centred, so the divider stays put', async () => {
+    await render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[
+          {language: 'es', text: 'Una pregunta mucho más larga que ocupa varias líneas'},
+        ]}
+        mirrored
+      />
+    )
+    const halfHeight = (box.height - 28) / 2
+    for (const text of [question, 'Una pregunta mucho más larga que ocupa varias líneas']) {
+      const half = resolvedStyle(screen.getByText(text).parent ?? {props: {}})
+      expect(half.height).toBe(halfHeight)
+      expect(half.justifyContent).toBe('center')
+    }
+  })
+
+  it('keeps the rotated second language readable by a screen reader', async () => {
+    await render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[{language: 'es', text: secondary}]}
+        mirrored
+      />
+    )
+    // the far side is no longer a duplicate, so hiding it would drop the second language
+    expect(screen.getByText(question)).toBeTruthy()
+    expect(screen.getByText(secondary)).toBeTruthy()
+  })
+
+  it('falls back to the primary on both sides when the secondary has no translation', async () => {
+    await render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[{language: 'es', text: ''}]}
+        mirrored
+      />
+    )
+    expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(2)
+    expect(screen.getAllByText(question)).toHaveLength(1)
+  })
+
+  it('stacks both languages when not mirrored', async () => {
+    await render(
+      <QuestionText
+        text={question}
+        language="en"
+        box={box}
+        secondaries={[{language: 'es', text: secondary}]}
+      />
+    )
+    expect(screen.getAllByText(question)).toHaveLength(1)
+    expect(screen.getAllByText(secondary)).toHaveLength(1)
   })
 })
 

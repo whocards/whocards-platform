@@ -152,16 +152,19 @@ const claim = async (port: GamePort, player: Player): Promise<void> => {
   if (!myPair) throw refuse('not_paired')
 
   const now = port.now()
-  const check = checkClaim(round, myPair, turnsOf(snapshot, myPair.id), player.id, now)
+  const turns = turnsOf(snapshot, myPair.id)
+  const check = checkClaim(round, myPair, turns, player.id, now)
   if (!check.ok) throw refuse(check.reason)
   if (!check.start) return
 
+  const questionsOnly = answerModeAt(snapshot.game.settings, now) === 'none'
   const questionId = questionForTurn({
     plan: planOf(round),
-    turnIndex: turnsOf(snapshot, myPair.id).length,
+    turnIndex: turns.length,
     used: usedRefs(snapshot, player.id),
     random: port.random,
     sources: sourcesOf(snapshot),
+    pairQuestion: questionsOnly ? turns[0]?.questionId : undefined,
   })
   if (!questionId) {
     throw new TRPCError({

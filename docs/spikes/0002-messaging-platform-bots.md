@@ -245,7 +245,7 @@ Netlify feature already available on the current plan, not a new service to stan
 
 ## 4. Fit with the AI-at-Work funnel
 
-`docs/growth/03-growth-strategy.md` names the AI-at-Work B2B wedge (Lever 5) as "the most likely
+`whocards/whocards:docs/growth/03-growth-strategy.md` (private) names the AI-at-Work B2B wedge (Lever 5) as "the most likely
 first revenue" and Lever 1 (plug the retention bucket via identity capture) as the precondition
 that gates everything else. A workplace bot is a natural distribution channel for exactly the
 audience Lever 5 targets — a team already living in Slack or Teams can run
