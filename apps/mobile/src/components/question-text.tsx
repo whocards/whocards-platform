@@ -126,7 +126,7 @@ export const fitSecondaryFontSize = (primaryFontSize: number, primaryMinFont: nu
 // (minus MIRROR_GAP), so it fits against a lower floor than a full face.
 const MIN_FONT_MIRRORED = 16
 export const MIRROR_GAP = 28
-export const SECONDARY_GAP = 16
+export const SECONDARY_GAP = 14 // main's mt-4 at this app's 14px rem, so 1× spacing is unchanged
 
 type LanguageText = {language: string; text: string}
 
