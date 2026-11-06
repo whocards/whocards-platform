@@ -147,12 +147,12 @@ export const useTurn = <TAudio>({
     go('finishing')
     let recording: Recording<TAudio> | null = null
     if (from === 'recording' && recorder) {
-      let cancelTimeout: (() => void) | undefined
+      const timeout: {cancel?: () => void} = {}
       const timedOut = new Promise<null>((resolve) => {
-        cancelTimeout = after(STOP_TIMEOUT_MS, () => resolve(null))
+        timeout.cancel = after(STOP_TIMEOUT_MS, () => resolve(null))
       })
       recording = await Promise.race([recorder.stop(), timedOut]).catch(() => null)
-      cancelTimeout?.()
+      timeout.cancel?.()
       await wakeLock?.release()
     }
     // Queued before the finish call so a tab closed mid-request still keeps the take.

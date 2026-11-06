@@ -75,6 +75,7 @@
     "@tailwindcss/postcss": "^4.3.4",
     "@testing-library/react-native": "^14.1.0",
     "@types/jest": "^30.0.0",
+    "@types/node": "catalog:",
     "@types/react": "~19.2.18",
     "babel-plugin-react-compiler": "1.0.0",
     "babel-preset-expo": "~57.0.14",
