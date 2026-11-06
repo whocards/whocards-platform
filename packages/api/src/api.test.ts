@@ -1,3 +1,4 @@
+import {ANDROID_PACKAGE_ID, APP_STORE_APP_ID} from '@whocards/app-store'
 import {describe, expect, it, vi} from 'vitest'
 
 import {createFakeGamePort} from './game/fake-port.test-utils'
@@ -11,6 +12,7 @@ const base: Context = {
     game: {id: 'g', code: 'GAME', title: '', status: 'lobby', settings: {round: {}}},
   }).port,
   playerToken: null,
+  mobileMinVersion: null,
 }
 const caller = createCaller(base)
 
@@ -71,5 +73,18 @@ describe('answers router', () => {
       })
     ).rejects.toThrow(/too_small/)
     expect(recordAnswer).not.toHaveBeenCalled()
+  })
+})
+
+describe('mobile router', () => {
+  it('compatibility returns the minimum version and a store link per platform', async () => {
+    const result = await createCaller({...base, mobileMinVersion: '1.2.0'}).mobile.compatibility()
+    expect(result.minVersion).toBe('1.2.0')
+    expect(result.storeUrl.ios).toContain(`id${APP_STORE_APP_ID}`)
+    expect(result.storeUrl.android).toContain(`id=${ANDROID_PACKAGE_ID}`)
+  })
+
+  it('compatibility returns a null minimum when the gate is off', async () => {
+    expect((await caller.mobile.compatibility()).minVersion).toBeNull()
   })
 })

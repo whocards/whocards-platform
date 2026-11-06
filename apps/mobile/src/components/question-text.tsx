@@ -63,7 +63,7 @@ const SECONDARY_MAX = 34
 // fill its share of the box, so a size well below MAX_FONT — while still well
 // above the floor — means there was headroom to spare). A question sized at (or
 // near) its floor gets exactly the base ratio — the same value this always used
-// — so long questions, and the tighter Tabletop-mirrored floors, are unaffected.
+// — so long questions, and the Tabletop-mirrored floor, are unaffected.
 const SECONDARY_RATIO = 0.5
 const SECONDARY_RATIO_HEADROOM_BONUS = 0.15
 
@@ -75,28 +75,20 @@ const SECONDARY_RATIO_HEADROOM_BONUS = 0.15
  * was fit against, so headroom is measured from the floor that was actually in
  * play.
  */
-export const fitSecondaryFontSize = (
-  primaryFontSize: number,
-  primaryMinFont: number,
-  secondaryMin: number
-) => {
+export const fitSecondaryFontSize = (primaryFontSize: number, primaryMinFont: number) => {
   const headroom = Math.max(
     0,
     Math.min(1, (primaryFontSize - primaryMinFont) / (MAX_FONT - primaryMinFont))
   )
   const ratio = SECONDARY_RATIO + headroom * SECONDARY_RATIO_HEADROOM_BONUS
-  return Math.round(Math.max(secondaryMin, Math.min(SECONDARY_MAX, primaryFontSize * ratio)))
+  return Math.round(Math.max(SECONDARY_MIN, Math.min(SECONDARY_MAX, primaryFontSize * ratio)))
 }
 
-// --- Tabletop mode (issue #148, a Display setting): the Card renders the Question
-// twice, split horizontally, the top half rotated 180° so the two sides of a phone
-// lying flat on the table can both read it. Each half only gets ~50% of the box
-// height (minus MIRROR_GAP), so the normal floors would too often force an
-// unreadable-small primary on a long question with 2 secondaries. Degradation
-// order: secondaries compress first (a much lower floor) before the primary gives
-// up more than a few points, since the Question stays the hero (soul.md test 3).
+// --- Tabletop mode (issue #148, a Display setting): the Card splits horizontally,
+// the top half rotated 180° so the two sides of a phone lying flat on the table
+// each read one language (issue #366). Each half only gets ~50% of the box height
+// (minus MIRROR_GAP), so it fits against a lower floor than a full face.
 const MIN_FONT_MIRRORED = 16
-const SECONDARY_MIN_MIRRORED = 11
 const MIRROR_GAP = 28
 
 type LanguageText = {language: string; text: string}
@@ -113,9 +105,9 @@ type QuestionTextProps = {
    */
   secondaries?: LanguageText[]
   /**
-   * Tabletop mode (issue #148, a Display setting): render the primary+secondaries
-   * stack twice, split horizontally — normal on the bottom half, rotated 180° on
-   * the top half — so players on both sides of a flat phone read simultaneously.
+   * Tabletop mode (issue #148, a Display setting): split the box horizontally —
+   * the primary on the bottom half, the first secondary (or the primary again)
+   * rotated 180° on the top half — so each side of a flat phone reads its own.
    * Never changes which Card is drawn, only how this one looks (CONTEXT.md).
    */
   mirrored?: boolean
@@ -173,11 +165,7 @@ type QuestionFaceProps = {
   language: string
   box: {width: number; height: number}
   shown: LanguageText[]
-  /**
-   * Tighter font floors for a Tabletop-mirrored half (see MIN_FONT_MIRRORED /
-   * SECONDARY_MIN_MIRRORED above) and a tighter gap between the primary and
-   * secondary blocks to give long questions more room in half the box.
-   */
+  /** The lower font floor of a Tabletop-mirrored half (see MIN_FONT_MIRRORED). */
   compact?: boolean
   /** See QuestionTextProps.themedText. */
   themedText?: boolean
@@ -198,8 +186,7 @@ const QuestionFace = ({
     () => fitFontSize(text, box.width, box.height * share, minFont),
     [text, box.width, box.height, share, minFont]
   )
-  const secondaryMin = compact ? SECONDARY_MIN_MIRRORED : SECONDARY_MIN
-  const secondaryFont = fitSecondaryFontSize(fontSize, minFont, secondaryMin)
+  const secondaryFont = fitSecondaryFontSize(fontSize, minFont)
 
   if (shown.length === 0) {
     return (
@@ -211,7 +198,7 @@ const QuestionFace = ({
     <View>
       <LanguageBlock text={text} language={language} fontSize={fontSize} themedText={themedText} />
       {shown.map((entry) => (
-        <View key={entry.language} className={compact ? 'mt-2' : 'mt-4'}>
+        <View key={entry.language} className="mt-4">
           <LanguageBlock
             text={entry.text}
             language={entry.language}
@@ -241,9 +228,7 @@ const QuestionFace = ({
  * `linear-gradient()` string — a web-only value, not something an RN `View`
  * can render without an SVG/gradient dependency this two-line polish item
  * doesn't justify pulling in. Purely decorative, so it carries no
- * accessibility role; the rotated half's `accessibilityElementsHidden` (the
- * actual a11y-sensitive part of Tabletop mode) lives on the sibling view above
- * this one and is untouched.
+ * accessibility role.
  */
 const TabletopDivider = () => (
   <View style={{height: MIRROR_GAP}} className="items-center justify-center">
@@ -261,11 +246,11 @@ const TabletopDivider = () => (
  * every player so all Games render a Card identically. A secondary missing a
  * translation renders nothing.
  *
- * With `mirrored` (Tabletop mode), the same face renders twice in a box split
- * in half: normal on the bottom, rotated 180° on top. The rotated copy is
- * hidden from screen readers (`accessibilityElementsHidden` /
- * `importantForAccessibility="no-hide-descendants"`) so the Question is
- * announced once, not twice.
+ * With `mirrored` (Tabletop mode), the box splits in half: the primary alone on
+ * the bottom, and on top, rotated 180°, the first secondary alone (issue #366),
+ * or the primary again when there is none. A rotated copy of the primary is
+ * hidden from screen readers so it is announced once; a rotated secondary stays
+ * readable, so the second language is still heard.
  */
 export const QuestionText = ({
   text,
@@ -290,32 +275,37 @@ export const QuestionText = ({
   }
 
   const halfBox = {width: box.width, height: Math.max(0, (box.height - MIRROR_GAP) / 2)}
+  const far = shown[0]
+  // both halves take the same height so the divider stays centred whatever each language wraps to
+  const half = {height: halfBox.height, justifyContent: 'center'} as const
 
   return (
     <View>
       <View
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        style={{transform: [{rotate: '180deg'}]}}
+        accessibilityElementsHidden={!far}
+        importantForAccessibility={far ? 'auto' : 'no-hide-descendants'}
+        style={[half, {transform: [{rotate: '180deg'}]}]}
       >
         <QuestionFace
-          text={text}
-          language={language}
+          text={far?.text ?? text}
+          language={far?.language ?? language}
           box={halfBox}
-          shown={shown}
+          shown={[]}
           compact
           themedText={themedText}
         />
       </View>
       <TabletopDivider />
-      <QuestionFace
-        text={text}
-        language={language}
-        box={halfBox}
-        shown={shown}
-        compact
-        themedText={themedText}
-      />
+      <View style={half}>
+        <QuestionFace
+          text={text}
+          language={language}
+          box={halfBox}
+          shown={[]}
+          compact
+          themedText={themedText}
+        />
+      </View>
     </View>
   )
 }
