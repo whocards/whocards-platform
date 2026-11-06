@@ -42,9 +42,7 @@ describe('legacy English printable deck URL', () => {
 
   it('preserves queries through Netlify destination passthrough semantics', () => {
     const redirect = redirects.find(({from}) => from === '/cards/en-wide.pdf')
-    const request = new URL(
-      'https://whocards.cc/cards/en-wide.pdf?utm_source=legacy&ref=partner'
-    )
+    const request = new URL('https://whocards.cc/cards/en-wide.pdf?utm_source=legacy&ref=partner')
     const destination = new URL(redirect?.to ?? '', request)
 
     // Netlify forwards the incoming query when the configured destination does

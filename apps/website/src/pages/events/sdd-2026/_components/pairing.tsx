@@ -79,7 +79,7 @@ export const Pairing = ({state, act, candidates, hint}: PairingProps) => {
   return (
     <Screen>
       {hint && <p className='text-center text-2xl'>{hint}</p>}
-      <div className='bg-background/80 flex w-full flex-col items-center gap-3 rounded-3xl border border-white/10 p-5 shadow-2xl shadow-black/40 backdrop-blur-md'>
+      <div className='flex w-full flex-col items-center gap-3 rounded-3xl border border-white/10 bg-background/80 p-5 shadow-2xl shadow-black/40 backdrop-blur-md'>
         <span className='text-gray-dark'>{copy.pairing.myCode}</span>
         <QrCode value={pairCode} className='w-56' />
         <span className='font-mono text-4xl font-semibold tracking-[0.3em] text-yellow-300'>
@@ -133,7 +133,7 @@ export const Pairing = ({state, act, candidates, hint}: PairingProps) => {
               onClick={() => void send({partnerId: choice.id})}
             >
               {choice.name}
-              <span className='text-gray-dark text-sm font-normal'>
+              <span className='text-sm font-normal text-gray-dark'>
                 {[
                   mixedLanguages && copy.join.languages[choice.language],
                   `${copy.pairing.joined} ${joinedTime(choice.joinedAt)}`,

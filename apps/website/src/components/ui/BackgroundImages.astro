@@ -10,10 +10,10 @@ export type Props = {
 }
 ---
 
-<span class='absolute top-0 left-0 right-0 bottom-0 z-0'>
+<span class='absolute top-0 right-0 bottom-0 left-0 z-0'>
   <Image
     src={bgSmall}
-    class='absolute top-0 left-0 w-screen -z-10 lg:hidden'
+    class='absolute top-0 left-0 -z-10 w-screen lg:hidden'
     alt='background'
     loading='eager'
     fetchpriority='high'
@@ -25,7 +25,7 @@ export type Props = {
   />
   <Image
     src={bgLeftImage}
-    class='absolute top-0 left-0 bottom-10 -z-10 hidden lg:block'
+    class='absolute top-0 bottom-10 left-0 -z-10 hidden lg:block'
     alt='background'
   />
 </span>

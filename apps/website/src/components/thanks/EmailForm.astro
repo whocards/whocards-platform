@@ -23,26 +23,22 @@ const newsletterChecked =
   formData?.newsletter === 'on' || formData?.newsletter === true || user?.newsletter === true
 ---
 
-<div class='flex flex-col items-center text-center md:text-start md:items-start gap-4 md:gap-5'>
-  <h2 class='text-3xl lg:text-5xl text-gradient font-bold font-title tracking-tight leading-tight'>
-    {
-      heading.split('\n').map((line, index) => (
-        <>
-          {line}
-          {index === 0 && !isRequest && <br class='hidden md:block' />}
-        </>
-      ))
-    }
+<div class='flex flex-col items-center gap-4 text-center md:items-start md:gap-5 md:text-start'>
+  <h2 class='text-gradient font-title text-3xl leading-tight font-bold tracking-tight lg:text-5xl'>
+    {heading.split('\n').map((line, index) => (
+      <>
+        {line}
+        {index === 0 && !isRequest && <br class='hidden md:block' />}
+      </>
+    ))}
   </h2>
-  {subheading && <p class='lg:text-xl text-gray-dark font-semibold'>{subheading}</p>}
-  {
-    errors && (
-      <p class='lg:text-xl text-red-500'>
-        There were some errors with your submission. Please check the form and try again.
-      </p>
-    )
-  }
-  <form id='email-form' method='POST' class='flex flex-col w-full pb-14'>
+  {subheading && <p class='font-semibold text-gray-dark lg:text-xl'>{subheading}</p>}
+  {errors && (
+    <p class='text-red-500 lg:text-xl'>
+      There were some errors with your submission. Please check the form and try again.
+    </p>
+  )}
+  <form id='email-form' method='POST' class='flex w-full flex-col pb-14'>
     <Input
       name='name'
       minlength={2}
@@ -59,122 +55,115 @@ const newsletterChecked =
       value={formData?.email ?? user?.email}
       error={errors?.email}
     />
-    {
-      isRequest && (
-        <>
-          <Input
-            name='quantity'
-            title='Number of decks'
-            type='number'
-            min={1}
-            required
-            value={formData?.quantity ?? ''}
-            error={errors?.quantity}
+    {isRequest && (
+      <>
+        <Input
+          name='quantity'
+          title='Number of decks'
+          type='number'
+          min={1}
+          required
+          value={formData?.quantity ?? ''}
+          error={errors?.quantity}
+        />
+        <Input
+          name='organization'
+          title='Organization (optional)'
+          autocomplete='organization'
+          value={formData?.organization ?? ''}
+          error={errors?.organization}
+        />
+        <Input
+          name='phone'
+          type='tel'
+          autocomplete='tel'
+          required
+          value={formData?.phone ?? ''}
+          error={errors?.phone}
+        />
+        <Input
+          name='address'
+          title='street 1'
+          autocomplete='address-line1'
+          required
+          value={formData?.address ?? ''}
+          error={errors?.address}
+        />
+        <Input
+          name='address2'
+          title='street 2'
+          autocomplete='address-line2'
+          value={formData?.address2 ?? ''}
+          error={errors?.address2}
+        />
+        <Input
+          name='zip'
+          title='zip code'
+          autocomplete='postal-code'
+          required
+          value={formData?.zip ?? ''}
+          error={errors?.zip}
+        />
+        <Input
+          name='city'
+          autocomplete='address-level2'
+          required
+          value={formData?.city ?? ''}
+          error={errors?.city}
+        />
+        <Input
+          name='region'
+          autocomplete='address-level1'
+          value={formData?.region ?? ''}
+          error={errors?.region}
+        />
+        <Input
+          name='country'
+          title='Country'
+          autocomplete='country'
+          required
+          value={formData?.country ?? ''}
+          error={errors?.country}
+        />
+        <label
+          for='request-message'
+          class='flex flex-col gap-2 pb-2.5 text-start text-base font-medium'
+        >
+          <div>Message (optional)</div>
+          <textarea
+            id='request-message'
+            name='message'
+            rows={4}
+            class='w-full rounded-xl border bg-transparent px-4.5 py-3 placeholder:text-gray-dark'
+            class:list={[errors?.message ? 'border-red' : 'border-gray']}
+            placeholder='Share any delivery notes or details'
+            set:text={formData?.message ?? ''}
           />
-          <Input
-            name='organization'
-            title='Organization (optional)'
-            autocomplete='organization'
-            value={formData?.organization ?? ''}
-            error={errors?.organization}
-          />
-          <Input
-            name='phone'
-            type='tel'
-            autocomplete='tel'
-            required
-            value={formData?.phone ?? ''}
-            error={errors?.phone}
-          />
-          <Input
-            name='address'
-            title='street 1'
-            autocomplete='address-line1'
-            required
-            value={formData?.address ?? ''}
-            error={errors?.address}
-          />
-          <Input
-            name='address2'
-            title='street 2'
-            autocomplete='address-line2'
-            value={formData?.address2 ?? ''}
-            error={errors?.address2}
-          />
-          <Input
-            name='zip'
-            title='zip code'
-            autocomplete='postal-code'
-            required
-            value={formData?.zip ?? ''}
-            error={errors?.zip}
-          />
-          <Input
-            name='city'
-            autocomplete='address-level2'
-            required
-            value={formData?.city ?? ''}
-            error={errors?.city}
-          />
-          <Input
-            name='region'
-            autocomplete='address-level1'
-            value={formData?.region ?? ''}
-            error={errors?.region}
-          />
-          <Input
-            name='country'
-            title='Country'
-            autocomplete='country'
-            required
-            value={formData?.country ?? ''}
-            error={errors?.country}
-          />
-          <label
-            for='request-message'
-            class='text-start text-base font-medium flex flex-col gap-2 pb-2.5'
-          >
-            <div>Message (optional)</div>
-            <textarea
-              id='request-message'
-              name='message'
-              rows={4}
-              class='w-full bg-transparent py-3 px-4.5 border placeholder:text-gray-dark rounded-xl'
-              class:list={[errors?.message ? 'border-red' : 'border-gray']}
-              placeholder='Share any delivery notes or details'
-              set:text={formData?.message ?? ''}
-            />
-            <p class='text-xs text-red'>{errors?.message?.message ?? <>&nbsp;</>}</p>
-          </label>
-        </>
-      )
-    }
+          <p class='text-xs text-red'>{errors?.message?.message ?? <>&nbsp;</>}</p>
+        </label>
+      </>
+    )}
     <Checkbox name='privacy' required checked error={errors?.privacy}>
-      Yes, I have read and agree to WhoCards' <a
-        href='/legal/pp'
-        target='_blank'
-        class='underline text-primary-light'>Privacy Policy</a
-      >
+      Yes, I have read and agree to WhoCards'{' '}
+      <a href='/legal/pp' target='_blank' class='text-primary-light underline'>
+        Privacy Policy
+      </a>
     </Checkbox>
     <Checkbox name='newsletter' required={!isRequest} checked={newsletterChecked}>
       Yes, I would like to sign up for occasional newsletters from WhoCards.
     </Checkbox>
 
-    {
-      siteKey ? (
-        <div
-          class='cf-turnstile mt-2 mb-4'
-          data-sitekey={siteKey}
-          data-action={TURNSTILE_ACTION.requestCards}
-          data-theme='dark'
-        />
-      ) : null
-    }
-    {
-      errors?.['cf-turnstile-response'] && (
-        <p class='text-xs text-red mb-4'>{errors['cf-turnstile-response'].message}</p>
-      )
-    }
+    {siteKey ? (
+      <div
+        class='cf-turnstile mt-2 mb-4'
+        data-sitekey={siteKey}
+        data-action={TURNSTILE_ACTION.requestCards}
+        data-theme='dark'
+      />
+    ) : null}
+    {errors?.['cf-turnstile-response'] && (
+      <p class='mb-4 text-xs text-red'>{errors['cf-turnstile-response'].message}</p>
+    )}
     <Button type='submit' class='mt-4 capitalize lg:max-w-xs' full>
       {submitted ? 'update' : isRequest ? 'request cards' : 'submit'}
     </Button>
@@ -200,8 +189,6 @@ const newsletterChecked =
   })
 </script>
 
-{
-  siteKey && (
-    <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
-  )
-}
+{siteKey && (
+  <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
+)}

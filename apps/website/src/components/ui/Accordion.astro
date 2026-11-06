@@ -14,17 +14,15 @@ const {name, contents, class: classes} = Astro.props
 ---
 
 <div class:list={['flex flex-col gap-3 lg:gap-5', classes]}>
-  {
-    contents?.map(({title, content}) => (
-      <div class='collapse collapse-arrow border border-gray-dark'>
-        <input type='radio' name={name} class='peer' />
-        <div class='collapse-title font-medium lg:text-lg leading-relaxed p-4 lg:p-5 peer-checked:border-gray-dark peer-checked:border-b  pr-8'>
-          {title}
-        </div>
-        <div class='collapse-content text-sm lg:text-base leading-snug lg:leading-normal text-gray-dark peer-checked:pt-4 lg:peer-checked:p-5'>
-          <p>{content}</p>
-        </div>
+  {contents?.map(({title, content}) => (
+    <div class='collapse-arrow collapse border border-gray-dark'>
+      <input type='radio' name={name} class='peer' />
+      <div class='collapse-title p-4 pr-8 leading-relaxed font-medium peer-checked:border-b peer-checked:border-gray-dark lg:p-5 lg:text-lg'>
+        {title}
       </div>
-    ))
-  }
+      <div class='collapse-content text-sm leading-snug text-gray-dark peer-checked:pt-4 lg:text-base lg:leading-normal lg:peer-checked:p-5'>
+        <p>{content}</p>
+      </div>
+    </div>
+  ))}
 </div>

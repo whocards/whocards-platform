@@ -33,7 +33,7 @@ const Card = ({
       locked && 'opacity-50'
     )}
   >
-    <span className='text-yellow-300 text-sm font-semibold uppercase tracking-wider'>{label}</span>
+    <span className='text-sm font-semibold tracking-wider text-yellow-300 uppercase'>{label}</span>
     {children}
   </div>
 )
@@ -54,18 +54,18 @@ const Question = ({
         ? physical.physicalPartner
         : physical.physical
       : turn.questionText
-  return <p className='text-2xl font-semibold leading-snug'>{text ?? ''}</p>
+  return <p className='text-2xl leading-snug font-semibold'>{text ?? ''}</p>
 }
 
 const Clock = ({timer, language}: {timer: TimerView; language: PlayerState['me']['language']}) => {
   if (!timer.turn) return null
   const copy = playerCopyFor(language)
   return timer.turn.phase === 'talking' ? (
-    <span className='text-gray-lighter font-mono text-xl tabular-nums'>
+    <span className='font-mono text-xl text-gray-lighter tabular-nums'>
       {formatClock(timer.turn.remainingMs)}
     </span>
   ) : (
-    <span className='text-primary-light text-xl font-semibold'>{copy.turn.overtime}</span>
+    <span className='text-xl font-semibold text-primary-light'>{copy.turn.overtime}</span>
   )
 }
 
@@ -88,7 +88,7 @@ const CopyLink = ({code, language}: {code: string; language: PlayerState['me']['
         {copied === 'yes' ? copy.turn.linkCopied : copy.turn.copyLink}
       </Button>
       {copied === 'failed' && (
-        <p className='bg-white text-darkest select-all break-all rounded-2xl p-3 font-mono text-sm'>
+        <p className='rounded-2xl bg-white p-3 font-mono text-sm break-all text-darkest select-all'>
           {url}
         </p>
       )}
@@ -113,7 +113,7 @@ export const Turn = ({state, timer, turn, act}: TurnProps) => {
         <Card label={copy.turn.me}>
           <Question turn={mine} language={me.language} />
           <Clock timer={timer} language={me.language} />
-          <p className='text-primary-light text-xl font-semibold'>{copy.turn.micBlocked}</p>
+          <p className='text-xl font-semibold text-primary-light'>{copy.turn.micBlocked}</p>
           <p>{copy.turn.micBlockedHint}</p>
           <CopyLink code={state.game.code} language={me.language} />
           <Button
@@ -138,7 +138,7 @@ export const Turn = ({state, timer, turn, act}: TurnProps) => {
           )}
           {turn.stage === 'recording' && (
             <span className='flex items-center gap-2 text-lg'>
-              <span className='bg-red size-3 animate-pulse rounded-full' />
+              <span className='size-3 animate-pulse rounded-full bg-red' />
               {copy.turn.recording}
             </span>
           )}
@@ -178,7 +178,7 @@ export const Turn = ({state, timer, turn, act}: TurnProps) => {
         onClick={() => void turn.claim()}
       >
         <Card label={copy.turn.me}>
-          <span className='font-title flex items-center gap-3 text-4xl font-bold text-yellow-300'>
+          <span className='flex items-center gap-3 font-title text-4xl font-bold text-yellow-300'>
             {turn.stage === 'claiming' && <Spinner className='size-7' />}
             {rules.actions.claim}
           </span>

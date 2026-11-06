@@ -44,17 +44,17 @@ const playHref = `/play?lang=${language}&q=${id}`
 
 <Layout lang={language}>
   <div
-    class='flex flex-col items-center gap-8 px-6 py-16 max-w-2xl mx-auto text-center'
+    class='mx-auto flex max-w-2xl flex-col items-center gap-8 px-6 py-16 text-center'
     dir={direction}
   >
-    <h1
-      class='font-title font-bold text-gradient text-3xl lg:text-5xl whitespace-pre-line leading-tight'
-    >
+    <h1 class='text-gradient font-title text-3xl leading-tight font-bold whitespace-pre-line lg:text-5xl'>
       {main}
     </h1>
-    {context && <p class='text-base lg:text-lg text-gray-lighter whitespace-pre-line'>{context}</p>}
+    {context && <p class='text-base whitespace-pre-line text-gray-lighter lg:text-lg'>{context}</p>}
     <WhoCard lang={language} id={id} class='mx-auto' />
-    <Button tag='a' href={playHref} size='lg'>Play this question</Button>
+    <Button tag='a' href={playHref} size='lg'>
+      Play this question
+    </Button>
     <a
       href='/'
       class='text-sm font-semibold text-gray-lighter underline-offset-4 transition-colors hover:text-primary-light hover:underline'
