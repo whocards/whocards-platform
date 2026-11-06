@@ -1,6 +1,6 @@
 import {Ionicons} from '@expo/vector-icons'
 import {StatusBar} from 'expo-status-bar'
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {
   Modal,
   Pressable,
@@ -77,14 +77,19 @@ type SettingsModalProps = {
   languages: string[]
   theme: ThemeSetting
   onSelectTheme: (theme: ThemeSetting) => void
+  /** False in the play screens (issue #197): the Game never changes mid-session. */
+  showGame?: boolean
+  /** The language on screen, when it can differ from the stored one (a shared link's). */
+  currentLanguage?: string
+  /** Every Language pick, even one equal to the stored value. */
+  onSelectLanguage?: (language: string) => void
 }
 
 /**
  * The one settings menu (issue #176): every setting that used to be scattered
  * across the Library chips (Game, Theme) and the play screens' language sheet
- * (Language, secondary language, Tabletop mode) now lives here, behind a
- * single entry point on the home screen (the `SecondaryButton` in
- * `app/index.tsx`).
+ * (Language, secondary language, Tabletop mode) now lives here, behind
+ * the home screen's `SecondaryButton` (`app/index.tsx`) and the play bar's gear.
  *
  * Two sections (issue #189, owner on-device feedback — see "Second language"
  * below): **Gameplay** (Game, Language, Second language, Tabletop mode) and
@@ -217,6 +222,9 @@ export const SettingsModal = ({
   languages,
   theme,
   onSelectTheme,
+  showGame = true,
+  currentLanguage,
+  onSelectLanguage,
 }: SettingsModalProps) => {
   const insets = useSafeAreaInsets()
   const isDark = useIsDark()
@@ -228,6 +236,7 @@ export const SettingsModal = ({
   const [secondary, setSecondary] = useState<string[]>([])
   const [tabletop, setTabletop] = useState(false)
   const [page, setPage] = useState<Page>('menu')
+  const mounted = useRef(false)
   // Touch-lock (review finding on issue #189, third pass): true while a rise
   // or fall is in flight, so a fast tap mid-animation can't fire a second,
   // conflicting transition (e.g. double-tapping a menu row before the state
@@ -287,20 +296,23 @@ export const SettingsModal = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
 
-  // Load every setting once on mount, same as the old Library/DeckPlayer
-  // effects this replaces — so the rows never pop from a default value to the
-  // real one while the sheet is already open.
+  // Reload on every open: another screen's sheet may have changed them since.
   useEffect(() => {
+    if (currentLanguage) setLanguage(currentLanguage)
+    if (mounted.current && !visible) return
+    mounted.current = true
     void getStoredGame().then(setGame)
     void getStoredTabletopMode().then(setTabletop)
-    void getStoredLanguage(deckSlug).then((stored) => {
-      if (stored && languages.includes(stored)) setLanguage(stored)
-    })
+    if (!currentLanguage) {
+      void getStoredLanguage(deckSlug).then((stored) => {
+        if (stored && languages.includes(stored)) setLanguage(stored)
+      })
+    }
     void getStoredSecondaryLanguages(deckSlug).then((stored) =>
       setSecondary(stored.filter((code) => languages.includes(code)))
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deckSlug])
+  }, [deckSlug, visible, currentLanguage])
 
   const gameTitle = GAME_CATALOG.find((entry) => entry.id === game)?.title ?? game
   const languageLabel = getLanguageName(language) ?? language
@@ -373,20 +385,22 @@ export const SettingsModal = ({
               {/* label mirrors the visible text so tests and screen readers see the
                   current value (a button's children collapse behind its label in
                   the iOS a11y tree) — same pattern as the old Library chips. */}
-              <Pressable
-                onPress={() => goToPage('game')}
-                accessibilityRole="button"
-                accessibilityLabel={`Game: ${gameTitle}`}
-                className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
-              >
-                <Text className="text-darker dark:text-white font-sans text-lg">Game</Text>
-                <View className="flex-row items-center gap-1.5">
-                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                    {gameTitle}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={16} color={chevronColor} />
-                </View>
-              </Pressable>
+              {showGame ? (
+                <Pressable
+                  onPress={() => goToPage('game')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Game: ${gameTitle}`}
+                  className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
+                >
+                  <Text className="text-darker dark:text-white font-sans text-lg">Game</Text>
+                  <View className="flex-row items-center gap-1.5">
+                    <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
+                      {gameTitle}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={16} color={chevronColor} />
+                  </View>
+                </Pressable>
+              ) : null}
 
               <Pressable
                 onPress={() => hasLanguageChoice && goToPage('language')}
@@ -586,6 +600,7 @@ export const SettingsModal = ({
                       }
                       setLanguage(next)
                       void setStoredLanguage(deckSlug, next)
+                      onSelectLanguage?.(next)
                       // the new primary can't also be a secondary
                       if (secondary.includes(next)) setSecondaryLanguages([])
                       goBack()
