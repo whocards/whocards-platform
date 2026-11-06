@@ -2,6 +2,7 @@
 import {LanguageSwitcher} from '~components/Modal/LanguageSwitcher'
 import Navigation from '~components/Navigation.astro'
 import PostHog from '~components/PostHog.astro'
+import TranslatePrompt from '~components/TranslatePrompt.astro'
 import BackgroundImages from '~components/ui/BackgroundImages.astro'
 import {APP_IOS_LAUNCHED, APP_STORE_APP_ID} from '~constants/app'
 import {mainLinks} from '~constants/navigation'
@@ -78,6 +79,7 @@ const noindex = noindexProp || isNoindexRoute(Astro.url.pathname)
       {!noFooter && <Footer />}
     </Navigation>
     {showLangModal && <LanguageSwitcher client:only />}
+    <TranslatePrompt />
     <style is:global></style>
   </body>
 </html>

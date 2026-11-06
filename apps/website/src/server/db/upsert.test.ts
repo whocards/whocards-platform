@@ -139,6 +139,23 @@ describe('upsertConsent — email_consent table (#119)', () => {
     expect((await upsertConsent(db, backfill)).confirmedAt).toBeNull()
   })
 
+  it("keeps a confirmed translator's language; a pending row takes the latest (#391)", async () => {
+    const consent = {
+      email: 'translator@example.com',
+      consentType: 'translator',
+      consentSource: 'translate_prompt',
+      confirmed: false,
+    } as const
+    await upsertConsent(db, {...consent, language: 'id'})
+    expect((await upsertConsent(db, {...consent, language: 'ms'})).language).toBe('ms')
+
+    await db
+      .update(schema.emailConsent)
+      .set({confirmedAt: '2025-01-01T00:00:00Z'})
+      .where(eq(schema.emailConsent.email, consent.email))
+    expect((await upsertConsent(db, {...consent, language: 'xx'})).language).toBe('ms')
+  })
+
   it('keeps an active confirmation, but a resubscribe after unsubscribing must confirm again (#360)', async () => {
     const consent = {
       email: 'again@example.com',
