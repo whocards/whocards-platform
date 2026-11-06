@@ -47,6 +47,16 @@ const shippedTextFor = (questionId: string): string =>
 const hasLegacyVariants = (questionId: string): boolean =>
   (QUESTION_IDS as readonly string[]).includes(questionId)
 
+const variantTextsFor = (questionId: string, currentText: string): Record<string, string> =>
+  hasLegacyVariants(questionId)
+    ? Object.fromEntries(
+        Object.entries(VARIANTS).map(([slug, deckData]): [string, string] => [
+          slug,
+          (deckData as Record<string, {en: string}>)[questionId]?.en ?? '',
+        ])
+      )
+    : {current: currentText}
+
 /**
  * Guards vote/comments.add/approve against a client-supplied (deckSlug,
  * questionId) that isn't real. Both became free-form strings (not the old
@@ -96,20 +106,11 @@ export const questionReviewRouter = createTRPCRouter({
 
       return roster.map((entry) => {
         const review = reviewByQuestion.get(entry.questionId)
-        const variantTexts: Record<string, string> = hasLegacyVariants(entry.questionId)
-          ? Object.fromEntries(
-              Object.entries(VARIANTS).map(([slug, deckData]): [string, string] => [
-                slug,
-                (deckData as Record<string, {en: string}>)[entry.questionId]?.en ?? '',
-              ])
-            )
-          : {current: review?.currentText ?? ''}
-
         return {
           questionId: entry.questionId,
           actLabel: entry.actLabel,
           shippedText: shippedTextFor(entry.questionId),
-          variants: variantTexts,
+          variants: variantTextsFor(entry.questionId, review?.currentText ?? ''),
           voteTally: tallyVotesForQuestion(votes, entry.questionId),
           review: review
             ? {
@@ -205,13 +206,13 @@ export const questionReviewRouter = createTRPCRouter({
       }),
   }),
 
-  /** facilitator+ finalizes a question's text (the plan's "approve one"). */
+  /** facilitator+ picks one of a Question's variants as its text; emitDiff turns it into a patch. */
   approve: roleProcedure('facilitator')
     .input(
       z.object({
         deckSlug: z.string().min(1),
         questionId: z.string().min(1),
-        text: z.string().min(1),
+        variant: z.string().min(1).max(64),
       })
     )
     .mutation(async ({ctx, input}) => {
@@ -228,12 +229,21 @@ export const questionReviewRouter = createTRPCRouter({
         )
         .limit(1)
 
+      const texts = variantTextsFor(input.questionId, existing?.currentText ?? '')
+      const text = Object.hasOwn(texts, input.variant) ? texts[input.variant] : undefined
+      if (!text) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `No variant "${input.variant}" for question "${input.questionId}".`,
+        })
+      }
+
       if (existing) {
         const [updated] = await db
           .update(questionReview)
           .set({
             status: 'approved',
-            currentText: input.text,
+            currentText: text,
             decidedBy: ctx.user.id,
             decidedAt: new Date(),
             updatedAt: new Date(),
@@ -249,7 +259,7 @@ export const questionReviewRouter = createTRPCRouter({
           deckSlug: input.deckSlug,
           questionId: input.questionId,
           status: 'approved',
-          currentText: input.text,
+          currentText: text,
           decidedBy: ctx.user.id,
           decidedAt: new Date(),
         })
@@ -283,9 +293,10 @@ export const questionReviewRouter = createTRPCRouter({
     const assembled = assembleDeck(shippedTextFor, approvedText, questionIds)
 
     const targetPath = 'packages/decks/src/decks/ai-at-work.questions.json'
+    // a/ b/ prefixes so the patch applies with plain `git apply` from the repo root.
     const patch = createTwoFilesPatch(
-      targetPath,
-      targetPath,
+      `a/${targetPath}`,
+      `b/${targetPath}`,
       `${JSON.stringify(shippedDeck, null, 2)}\n`,
       `${JSON.stringify(assembled, null, 2)}\n`
     )

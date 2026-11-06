@@ -1,10 +1,8 @@
 /**
  * Tests for src/components/player-bar.tsx
  *
- * Issue #176 removed the Language/Display button from this bar entirely — every
- * setting (Language, Tabletop mode, Game, Theme) now lives behind the home
- * screen's Settings menu, so the play screens have no settings entry of their
- * own. This bar is back down to just navigation (Back/Next) + Share.
+ * Issue #176 removed the Language/Display button from this bar entirely; issue
+ * #197 adds a Settings gear that opens the shared Settings sheet instead.
  *
  * Still covers the Theme Display setting reaching this bar (issue #173): this
  * bar is chrome around the always-dark Card, not the Card itself, so its icon
@@ -50,7 +48,14 @@ const noop = () => {}
 
 const renderBar = async (props: Partial<React.ComponentProps<typeof PlayerBar>> = {}) =>
   await render(
-    <PlayerBar onPrevious={noop} onNext={noop} onShare={noop} onExit={noop} {...props} />
+    <PlayerBar
+      onPrevious={noop}
+      onNext={noop}
+      onShare={noop}
+      onSettings={noop}
+      onExit={noop}
+      {...props}
+    />
   )
 
 /**
@@ -110,6 +115,29 @@ describe('PlayerBar — Exit button (issue #186)', () => {
   it('is present regardless of showShare — Exit is the only exit once the top chip is gone', async () => {
     await renderBar({showShare: false})
     expect(screen.getByLabelText('exit deck')).toBeTruthy()
+  })
+})
+
+describe('PlayerBar — Settings gear (issue #197)', () => {
+  it('renders a Settings action between Exit and Share, and calls onSettings when pressed', async () => {
+    const onSettings = jest.fn()
+    await renderBar({onSettings})
+    const labels = screen.getAllByRole('button').map((node) => node.props.accessibilityLabel)
+    expect(labels).toEqual([
+      'previous question',
+      'exit deck',
+      'open settings',
+      'share question',
+      'next question',
+    ])
+    expect(screen.getByText('Settings')).toBeTruthy()
+    await fireEvent.press(screen.getByLabelText('open settings'))
+    expect(onSettings).toHaveBeenCalledTimes(1)
+  })
+
+  it('stays when Share is hidden (Pick a Card before a deal)', async () => {
+    await renderBar({showShare: false})
+    expect(screen.getByLabelText('open settings')).toBeTruthy()
   })
 })
 

@@ -33,8 +33,8 @@ appId: ${APP_ID}
     point: '50%,45%'
 - takeScreenshot: .maestro/artifacts/en-ltr
 
-# Exit back to the home screen, switch to Hebrew via the Settings menu (the
-# play screen has no settings entry of its own anymore), then reopen Play.
+# Exit back to the home screen, switch to Hebrew via the home Settings menu,
+# then reopen Play.
 - tapOn: 'exit deck'
 - tapOn: 'Settings'
 - assertVisible: 'Language: English'
