@@ -24,6 +24,10 @@ const CHAR_WIDTH_RATIO = 0.54
 const FILL = 0.5
 const MIN_FONT = 22
 const MAX_FONT = 96
+// hard floors the overflow backstop may shrink to when the soft floors above still overflow
+const ABS_MIN_FONT = 12
+const ABS_MIN_FONT_MIRRORED = 10
+const ABS_MIN_SECONDARY = 8
 
 /**
  * Largest font that lets `text` fill — without overflowing — a `width`×`height` box.
@@ -48,6 +52,45 @@ export const fitFontSize = (
   const longestWord = trimmed.split(/\s+/).reduce((max, word) => Math.max(max, word.length), 1)
   const widthCap = (width * 0.9) / (longestWord * CHAR_WIDTH_RATIO)
   return Math.round(Math.max(minFont, Math.min(MAX_FONT, raw, widthCap)))
+}
+
+// CJK has no spaces (a sentence wraps glyph by glyph) and its glyphs are full-width
+const CJK_CHAR_WIDTH_RATIO = 1
+const CJK_RE = /[\u3000-\u30ff\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]/
+
+/**
+ * Estimated rendered height of one text block: a greedy word-wrap at fitFontSize's
+ * glyph metrics, counting explicit \n breaks (raw text, as LanguageBlock renders it).
+ */
+export const estimateBlockHeight = (text: string, fontSize: number, width: number) => {
+  let lines = 0
+  for (const paragraph of text.split('\n')) {
+    const ratio = CJK_RE.test(paragraph) ? CJK_CHAR_WIDTH_RATIO : CHAR_WIDTH_RATIO
+    const maxChars = Math.max(1, Math.floor(width / (fontSize * ratio)))
+    const words = paragraph.split(/\s+/).filter(Boolean)
+    if (words.length === 0) {
+      lines += 1
+      continue
+    }
+    let lineLen = 0
+    for (const word of words) {
+      if (word.length > maxChars) {
+        if (lineLen > 0) lines += 1
+        lines += Math.floor(word.length / maxChars)
+        lineLen = word.length % maxChars
+        continue
+      }
+      const needed = lineLen === 0 ? word.length : lineLen + 1 + word.length
+      if (needed <= maxChars) {
+        lineLen = needed
+      } else {
+        lines += 1
+        lineLen = word.length
+      }
+    }
+    if (lineLen > 0) lines += 1
+  }
+  return lines * fontSize * LINE_HEIGHT_RATIO
 }
 
 // The primary's share of the box height when secondaries are shown — the
@@ -89,9 +132,70 @@ export const fitSecondaryFontSize = (primaryFontSize: number, primaryMinFont: nu
 // each read one language (issue #366). Each half only gets ~50% of the box height
 // (minus MIRROR_GAP), so it fits against a lower floor than a full face.
 const MIN_FONT_MIRRORED = 16
-const MIRROR_GAP = 28
+export const MIRROR_GAP = 28
+// the mt-4 above each secondary block
+export const SECONDARY_GAP = 16
 
 type LanguageText = {language: string; text: string}
+
+// iOS' largest accessibility text size is ~3.1×, so 4 is effectively uncapped
+const MAX_FONT_SCALE = 4
+const FONT_SCALE_STEP = 0.05
+
+const estimateStackHeight = (
+  text: string,
+  shown: LanguageText[],
+  fontSize: number,
+  secondaryFont: number,
+  width: number
+) =>
+  estimateBlockHeight(text, fontSize, width) +
+  shown.reduce(
+    (sum, s) => sum + SECONDARY_GAP + estimateBlockHeight(s.text, secondaryFont, width),
+    0
+  )
+
+/**
+ * Font sizes for one question face, plus the OS text-scaling cap that keeps it in its box.
+ *
+ * fitFontSize's area estimate and soft floors can still overflow a small box, so the whole
+ * stack is wrap-estimated and both sizes walk down together to the hard floors. RN Text
+ * scales with the OS text size by default, so `maxFontSizeMultiplier` is the largest scale
+ * (never below 1) at which the fitted stack still fits: Dynamic Type stays on, but can't
+ * push a question off the card.
+ */
+export const fitStack = ({
+  text,
+  secondaries,
+  width,
+  height,
+  compact = false,
+}: {
+  text: string
+  secondaries: LanguageText[]
+  width: number
+  height: number
+  compact?: boolean
+}) => {
+  const minFont = compact ? MIN_FONT_MIRRORED : MIN_FONT
+  const absMinFont = compact ? ABS_MIN_FONT_MIRRORED : ABS_MIN_FONT
+  const share = PRIMARY_SHARE[Math.min(secondaries.length, PRIMARY_SHARE.length - 1)] ?? 1
+  let fontSize = fitFontSize(text, width, height * share, minFont)
+  let secondaryFont = fitSecondaryFontSize(fontSize, minFont)
+  if (width <= 0 || height <= 0) return {fontSize, secondaryFont, maxFontSizeMultiplier: 1}
+
+  const ratio = secondaryFont / fontSize
+  const fits = (scale: number) =>
+    estimateStackHeight(text, secondaries, fontSize * scale, secondaryFont * scale, width) <= height
+  while (fontSize > absMinFont && !fits(1)) {
+    fontSize -= 1
+    secondaryFont = Math.max(ABS_MIN_SECONDARY, Math.round(fontSize * ratio))
+  }
+
+  let scale = MAX_FONT_SCALE
+  while (scale > 1 && !fits(scale)) scale = Math.round((scale - FONT_SCALE_STEP) * 100) / 100
+  return {fontSize, secondaryFont, maxFontSizeMultiplier: Math.max(1, scale)}
+}
 
 type QuestionTextProps = {
   text: string
@@ -127,15 +231,22 @@ const LanguageBlock = ({
   text,
   language,
   fontSize,
+  maxFontSizeMultiplier,
   muted,
   themedText,
-}: LanguageText & {fontSize: number; muted?: boolean; themedText?: boolean}) => {
+}: LanguageText & {
+  fontSize: number
+  maxFontSizeMultiplier: number
+  muted?: boolean
+  themedText?: boolean
+}) => {
   const direction = getDirection(language)
   // brand/script face where one exists; system font (with a weight) otherwise
   const font = questionFontFamily(language)
 
   return (
     <Text
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
       className={
         themedText
           ? muted
@@ -180,29 +291,35 @@ const QuestionFace = ({
   compact = false,
   themedText,
 }: QuestionFaceProps) => {
-  const share = PRIMARY_SHARE[Math.min(shown.length, PRIMARY_SHARE.length - 1)] ?? 1
-  const minFont = compact ? MIN_FONT_MIRRORED : MIN_FONT
-  const fontSize = useMemo(
-    () => fitFontSize(text, box.width, box.height * share, minFont),
-    [text, box.width, box.height, share, minFont]
+  // `shown` is a fresh array every render, so the memo keys on its content
+  const shownKey = shown.map((s) => `${s.language}:${s.text}`).join('\n')
+  const {fontSize, secondaryFont, maxFontSizeMultiplier} = useMemo(
+    () => fitStack({text, secondaries: shown, width: box.width, height: box.height, compact}),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shownKey stands in for shown
+    [text, box.width, box.height, compact, shownKey]
   )
-  const secondaryFont = fitSecondaryFontSize(fontSize, minFont)
+  const primary = (
+    <LanguageBlock
+      text={text}
+      language={language}
+      fontSize={fontSize}
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
+      themedText={themedText}
+    />
+  )
 
-  if (shown.length === 0) {
-    return (
-      <LanguageBlock text={text} language={language} fontSize={fontSize} themedText={themedText} />
-    )
-  }
+  if (shown.length === 0) return primary
 
   return (
     <View>
-      <LanguageBlock text={text} language={language} fontSize={fontSize} themedText={themedText} />
+      {primary}
       {shown.map((entry) => (
         <View key={entry.language} className="mt-4">
           <LanguageBlock
             text={entry.text}
             language={entry.language}
             fontSize={secondaryFont}
+            maxFontSizeMultiplier={maxFontSizeMultiplier}
             muted
             themedText={themedText}
           />
