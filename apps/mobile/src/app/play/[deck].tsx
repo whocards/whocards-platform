@@ -19,6 +19,7 @@ import type {GameId, NavAction, QuestionSet} from '@whocards/decks'
 import {DEFAULT_GAME, getDeck, getInitialNav, isPoolBacked, navReducer} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {EVENTS, GAMES, eventsFor, createViewTracker, track} from '@whocards/observability/events'
+import type {ShareEventName} from '@whocards/observability/events'
 
 import {PickPlayer} from '@/components/pick-player'
 import {PlayerBar} from '@/components/player-bar'
@@ -36,6 +37,7 @@ import {getDeviceId} from '@/lib/device-id'
 import {getStoredGame} from '@/lib/game-store'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
+import {notePromptShown} from '@/lib/notification-store'
 import {parsePlayLink} from '@/lib/play-link'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 import {getStoredTabletopMode} from '@/lib/tabletop-store'
@@ -384,6 +386,7 @@ const DeckPlayer = ({
       name: EVENTS.QUESTION_SHOWN,
       props: {deck_id: deckSlug, question_id: questionId, language, source: 'nav'},
     })
+    notePromptShown({deck_id: deckSlug, question_id: questionId, language})
     viewTracker.startView({deck_id: deckSlug, question_id: questionId, language})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionId])
@@ -493,10 +496,10 @@ const DeckPlayer = ({
     setShareModalOpen(true)
   }, [text])
 
-  const handleShareCompleted = useCallback(
-    (format: ShareFormat) => {
+  const handleShareEvent = useCallback(
+    (name: ShareEventName, format: ShareFormat) => {
       track({
-        name: EVENTS.SHARE_COMPLETED,
+        name,
         props: {deck_id: deckSlug, question_id: questionId, language, game: GAMES.WH, format},
       })
     },
@@ -655,7 +658,7 @@ const DeckPlayer = ({
           shareUrl={buildShareUrl(deckSlug, language, questionId)}
           storyImageUrl={poolBacked ? buildShareCardUrl('story', language, questionId) : undefined}
           postImageUrl={poolBacked ? buildShareCardUrl('post', language, questionId) : undefined}
-          onShare={handleShareCompleted}
+          onShareEvent={handleShareEvent}
           onClose={() => setShareModalOpen(false)}
         />
       </View>

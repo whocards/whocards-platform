@@ -93,6 +93,9 @@ jest.mock('@/lib/game-store', () => ({
   setStoredGame: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock('@/lib/notification-store', () => ({
+  openNotificationSetting: jest.fn().mockResolvedValue(undefined),
+}))
 jest.mock('@/lib/tabletop-store', () => ({
   getStoredTabletopMode: jest.fn().mockResolvedValue(false),
   setStoredTabletopMode: jest.fn().mockResolvedValue(undefined),
@@ -118,6 +121,7 @@ import {
   getStoredSecondaryLanguages,
   setStoredLanguage,
 } from '../lib/language-store'
+import {openNotificationSetting} from '../lib/notification-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '../lib/tabletop-store'
 
 const mockedGetStoredGame = jest.mocked(getStoredGame)
@@ -209,6 +213,16 @@ describe('SettingsModal — menu', () => {
     await fireEvent.press(row)
     // No page opened — "back" only ever renders on a pushed page's header.
     expect(screen.queryByLabelText('back')).toBeNull()
+  })
+})
+
+describe('SettingsModal — Notifications (issue #361)', () => {
+  it('opens the notification setting from the Daily question row', async () => {
+    await renderModal()
+    await fireEvent.press(
+      await screen.findByLabelText('Daily question: open notification settings')
+    )
+    expect(openNotificationSetting).toHaveBeenCalledTimes(1)
   })
 })
 

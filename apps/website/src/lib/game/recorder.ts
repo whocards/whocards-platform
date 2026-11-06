@@ -62,7 +62,6 @@ export const createWebRecorder = (): Recorder<Blob> => {
         current.recorder.addEventListener(
           'stop',
           () => {
-            stopTracks(current.stream)
             const type = current.recorder.mimeType || current.chunks[0]?.type || 'audio/webm'
             resolve({
               audio: new Blob(current.chunks, {type}),
@@ -73,6 +72,8 @@ export const createWebRecorder = (): Recorder<Blob> => {
           {once: true}
         )
         current.recorder.stop()
+        // Freed here, not on 'stop': a stop event that never fires must not hold the mic.
+        stopTracks(current.stream)
       })
     },
 

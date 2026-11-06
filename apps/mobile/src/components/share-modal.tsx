@@ -1,11 +1,13 @@
 import {Ionicons} from '@expo/vector-icons'
 import {StatusBar} from 'expo-status-bar'
 import {logWarn} from '@whocards/observability'
-import type {ShareFormat} from '@whocards/observability/events'
+import {EVENTS} from '@whocards/observability/events'
+import type {ShareEventName, ShareFormat} from '@whocards/observability/events'
 import {useCallback, useEffect, useMemo, useState} from 'react'
 import {
   ActivityIndicator,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -55,8 +57,8 @@ type ShareModalProps = {
    */
   storyImageUrl?: string
   postImageUrl?: string
-  /** Fired once a row's OS share sheet has been successfully invoked. */
-  onShare: (format: ShareFormat) => void
+  /** Opened on every OS share sheet; completed only when the OS confirms it (an iOS link share). */
+  onShareEvent: (name: ShareEventName, format: ShareFormat) => void
   onClose: () => void
 }
 
@@ -135,7 +137,7 @@ export const ShareModal = ({
   shareUrl,
   storyImageUrl,
   postImageUrl,
-  onShare,
+  onShareEvent,
   onClose,
 }: ShareModalProps) => {
   const insets = useSafeAreaInsets()
@@ -186,15 +188,11 @@ export const ShareModal = ({
     // — exactly today's payload, no network involved.
     Share.share({message: `${questionText}\n\n${shareUrl}`, url: shareUrl})
       .then((result) => {
-        // iOS reports an explicit cancel here; Android's Share.share
-        // (ShareModule.kt) calls `startActivity(chooser)` then resolves the
-        // promise with `sharedAction` *unconditionally* the instant the chooser
-        // *opens* — before the user has so much as seen it, let alone chosen or
-        // cancelled — so it can never mean "cancelled" there. This check still
-        // earns its keep on iOS, where it skips the completion analytics below
-        // on a genuine cancel; on Android it's a no-op (the branch is never true).
-        if (result.action === Share.dismissedAction) return
-        onShare('link')
+        onShareEvent(EVENTS.SHARE_SHEET_OPENED, 'link')
+        // Android's Share.share (ShareModule.kt) resolves `sharedAction` the instant the chooser opens (issue #200).
+        if (Platform.OS === 'ios' && result.action === Share.sharedAction) {
+          onShareEvent(EVENTS.SHARE_COMPLETED, 'link')
+        }
         // Owner decision, 2026-07-03 (issue #192): this sheet no longer closes
         // itself as a side effect of a share — on either platform. Two reasons.
         // (1) Android has no trustworthy "the user actually shared" signal to
@@ -217,7 +215,7 @@ export const ShareModal = ({
       .catch((err: unknown) => {
         logWarn('[share-modal] link share failed', err)
       })
-  }, [questionText, shareUrl, onShare])
+  }, [questionText, shareUrl, onShareEvent])
 
   const shareImage = useCallback(
     (format: Exclude<ShareFormat, 'link'>, url: string) => {
@@ -226,7 +224,8 @@ export const ShareModal = ({
       downloadAndShareImage(url)
         .then(() => {
           setPending(null)
-          onShare(format)
+          // expo-sharing resolves on any dismissal, so an image share never reports completion (issue #200).
+          onShareEvent(EVENTS.SHARE_SHEET_OPENED, format)
           // Owner decision, 2026-07-03 (issue #192): stays open here too — see
           // shareLink's comment. `Sharing.shareAsync`'s promise resolves once the
           // OS chooser is dismissed *for any reason* (completed, backed out,
@@ -244,7 +243,7 @@ export const ShareModal = ({
           setError("Couldn't load the image — check your connection and try again.")
         })
     },
-    [onShare]
+    [onShareEvent]
   )
 
   const handlePress = useCallback(

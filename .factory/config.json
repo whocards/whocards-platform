@@ -1,10 +1,13 @@
 {
-  "$schema": "./schema.json",
+  "$schema": "https://gist.githubusercontent.com/acharlop/231a74058cbcb56fe3dce2d354f4d3a4/raw/v1.json",
   "configVersion": 1,
   "departments": ["app", "mobile", "website"],
   "steps": {
     "gate": "none",
     "merge": 2
+  },
+  "paperTrail": {
+    "repo": "whocards/factory-log"
   },
   "modules": {
     "reviewBots": {
@@ -45,11 +48,6 @@
       "apps/website/src/server/db/schema.ts",
       "packages/game/src/db/schema.ts"
     ],
-    "migrationFiles": [
-      "apps/app/src/server/db/migrations/*.sql",
-      "apps/website/src/server/db/migrations/*.sql"
-    ],
-    "generate": "pnpm --filter app --filter website db:generate",
     "schemaChanges": "pr"
   }
 }
