@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import {createHash} from 'node:crypto'
 import {mkdir, readFile, writeFile} from 'node:fs/promises'
-import {dirname, join, resolve} from 'node:path'
+import {dirname, join, relative, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 const evalRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -18,7 +18,7 @@ const runtimeFiles = [
 // expectations, which makes the evidence it did write unusable.
 export function assertUsableScenarioIds(prompts) {
   if (!Array.isArray(prompts) || prompts.length === 0) {
-    throw new Error('prompts.json must be a non-empty array of scenarios.')
+    throw new Error('The prompts file must be a non-empty array of scenarios.')
   }
   const seen = new Set()
   for (const scenario of prompts) {
@@ -32,13 +32,13 @@ export function assertUsableScenarioIds(prompts) {
 }
 
 // Freeze exactly what the generator sees; keep reviewer expectations separate.
-export async function prepareRun(output, model, repeats = 1) {
+export async function prepareRun(output, model, repeats = 1, promptsFile = 'prompts.json') {
   if (!model?.trim()) throw new Error('Supply the model identifier used for generation.')
   if (!Number.isSafeInteger(repeats) || repeats < 1 || repeats > 10) {
     throw new Error('Repeats must be an integer from 1 to 10.')
   }
   const root = resolve(output)
-  const prompts = JSON.parse(await readFile(join(evalRoot, 'prompts.json'), 'utf8'))
+  const prompts = JSON.parse(await readFile(resolve(evalRoot, promptsFile), 'utf8'))
   assertUsableScenarioIds(prompts)
   const files = await Promise.all(
     runtimeFiles.map(async (path) => ({
@@ -67,6 +67,11 @@ export async function prepareRun(output, model, repeats = 1) {
         'Use the WhoCards question skill supplied below to answer the request at the end.',
         'Its referenced resources are included in full. Use this bundled pool for this standalone run.',
         ...files.map((file) => `\n--- FILE: ${file.path} ---\n${file.text}`),
+        ...(scenario.recent_questions
+          ? [
+              `\n--- RECENT QUESTIONS (passed by the host) ---\n${JSON.stringify({recent_questions: scenario.recent_questions}, null, 2)}`,
+            ]
+          : []),
         `\n--- USER REQUEST ---\n${scenario.prompt}\n`,
       ].join('\n')
       await writeFile(join(root, 'jobs', `${id}.txt`), request, {flag: 'wx'})
@@ -77,6 +82,7 @@ export async function prepareRun(output, model, repeats = 1) {
     requestedModel: model,
     mode: 'explicit skill, bundled resources, fresh conversation per job',
     repeats,
+    prompts: relative(evalRoot, resolve(evalRoot, promptsFile)),
     hashes,
     jobs,
   }
@@ -86,10 +92,15 @@ export async function prepareRun(output, model, repeats = 1) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const [, , output, model, repeats = '1'] = process.argv
+  const [, , output, model, repeats = '1', promptsFile] = process.argv
   if (!output || !model) {
-    throw new Error('Usage: node prepare-run.mjs NEW_DIRECTORY MODEL [REPEATS]')
+    throw new Error('Usage: node prepare-run.mjs NEW_DIRECTORY MODEL [REPEATS] [PROMPTS_FILE]')
   }
-  const manifest = await prepareRun(output, model, Number(repeats))
+  const manifest = await prepareRun(
+    output,
+    model,
+    Number(repeats),
+    promptsFile && resolve(promptsFile)
+  )
   console.log(`Prepared ${manifest.jobs.length} fresh-conversation jobs in ${resolve(output)}`)
 }

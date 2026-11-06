@@ -1,0 +1,315 @@
+{
+  "manifest": {
+    "run": "recent_questions baseline",
+    "date": "2026-11-04",
+    "model": "claude-opus-5-5 (Opus 5.5)",
+    "reasoningEffort": "not set by the run; agent default",
+    "method": "Claude Code Agent tool, general-purpose subagent, one fresh agent per job launched in parallel. Each agent was told to read its job file (copied to /tmp) and answer it as its only task, with no other reads and no skills. Agents inherit the Claude Code system prompt, so the job text was not the only context.",
+    "createdAt": "2026-11-04T00:16:56.974Z",
+    "sourceExperiment": "experiments/whocards-questions/rq-01 (gitignored working directory)",
+    "prompts": "prompts-recent-questions.json",
+    "repeats": 2,
+    "skillHashes": {
+      "SKILL.md": "44c3bb84f6a51f25d966e57cf919df36baed0c5e54733592bd1818c17934c555",
+      "references/mission.md": "e324f5d2bc3fe7da7b92e2ec59906a909fe0829a8a8ff629dc204d8b9ee0ee0b",
+      "references/editorial-calibration.md": "7496de9d98a00c0d2347fd8509946d7b7b371e7f3a77144836d518be8a3c1b81",
+      "assets/pool-en.json": "6e2d8f4682df4c45211fb862bbef8d7cda9c93d48f66d121908bf074543344e6"
+    },
+    "skillVersion": "0.1",
+    "snapshotRelationToShippedSkill": "SKILL.md at main ec6ff98: v0.1 with the documented recent_questions input contract and no avoidance instruction."
+  },
+  "purpose": "Baseline for recent_questions before the avoidance behavior is built: do responses repeat or closely paraphrase supplied history, and does unrelated history leave the answer alone?",
+  "reviewer": "the building agent (claude-opus-5-5); assistant judgments, not maintainer ratings",
+  "results": [
+    {
+      "job": "RQ-exact-1",
+      "scenario": "RQ-exact",
+      "request": "Give me a question to help me process a difficult day.",
+      "recent_questions": [
+        {
+          "question": "What part of today is still asking for your attention?",
+          "delivered_at": "2026-11-03",
+          "frame": "difficult day, alone, processing"
+        },
+        {
+          "question": "What did you need today that you didn't get?",
+          "delivered_at": "2026-11-01",
+          "frame": "difficult day, alone, processing"
+        }
+      ],
+      "avoid": [
+        "What part of today is still asking for your attention?",
+        "What did you need today that you didn't get?"
+      ],
+      "rawResponse": "What do you wish someone understood about your day today?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "New angle (being understood), not the supplied question or a reworded one."
+    },
+    {
+      "job": "RQ-exact-2",
+      "scenario": "RQ-exact",
+      "request": "Give me a question to help me process a difficult day.",
+      "recent_questions": [
+        {
+          "question": "What part of today is still asking for your attention?",
+          "delivered_at": "2026-11-03",
+          "frame": "difficult day, alone, processing"
+        },
+        {
+          "question": "What did you need today that you didn't get?",
+          "delivered_at": "2026-11-01",
+          "frame": "difficult day, alone, processing"
+        }
+      ],
+      "avoid": [
+        "What part of today is still asking for your attention?",
+        "What did you need today that you didn't get?"
+      ],
+      "rawResponse": "What was the hardest moment of today? What do you notice about it now?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [
+        "Two-sentence card; assumes a single hardest moment, which a difficult-day request allows."
+      ],
+      "reviewerNotes": "Different angle (the hardest moment, seen now) from both history entries."
+    },
+    {
+      "job": "RQ-paraphrase-1",
+      "scenario": "RQ-paraphrase",
+      "request": "Give me a question to help me process a difficult day.",
+      "recent_questions": [
+        {
+          "question": "Which part of today is still pulling at your attention?",
+          "delivered_at": "2026-11-03",
+          "frame": "difficult day, alone, processing"
+        },
+        {
+          "question": "What from today are you still carrying?",
+          "delivered_at": "2026-11-02"
+        }
+      ],
+      "avoid": [
+        "Which part of today is still pulling at your attention?",
+        "What from today are you still carrying?"
+      ],
+      "rawResponse": "After a day like this, what do you need right now?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "Moves from what still holds attention to what the person needs now; not a reworded history entry."
+    },
+    {
+      "job": "RQ-paraphrase-2",
+      "scenario": "RQ-paraphrase",
+      "request": "Give me a question to help me process a difficult day.",
+      "recent_questions": [
+        {
+          "question": "Which part of today is still pulling at your attention?",
+          "delivered_at": "2026-11-03",
+          "frame": "difficult day, alone, processing"
+        },
+        {
+          "question": "What from today are you still carrying?",
+          "delivered_at": "2026-11-02"
+        }
+      ],
+      "avoid": [
+        "Which part of today is still pulling at your attention?",
+        "What from today are you still carrying?"
+      ],
+      "rawResponse": "What happened today that you haven't said out loud yet?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "New angle (what has not been said aloud)."
+    },
+    {
+      "job": "RQ-unrelated-1",
+      "scenario": "RQ-unrelated",
+      "request": "Give me a question to help me process a difficult day.",
+      "recent_questions": [
+        {
+          "question": "If this train ride were a chapter in a book about us, what would it be called?",
+          "delivered_at": "2026-11-02",
+          "frame": "siblings, train ride, playful"
+        },
+        {
+          "question": "What is a small thing your partner does that you never thanked them for?",
+          "delivered_at": "2026-10-30",
+          "frame": "dinner with partner"
+        }
+      ],
+      "avoid": [],
+      "rawResponse": "What from today is still with you right now?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "Nothing to avoid. Lands on the same angle as the v0.1 single-question check, which shows the default this request pulls towards; no drift towards the history's topics."
+    },
+    {
+      "job": "RQ-unrelated-2",
+      "scenario": "RQ-unrelated",
+      "request": "Give me a question to help me process a difficult day.",
+      "recent_questions": [
+        {
+          "question": "If this train ride were a chapter in a book about us, what would it be called?",
+          "delivered_at": "2026-11-02",
+          "frame": "siblings, train ride, playful"
+        },
+        {
+          "question": "What is a small thing your partner does that you never thanked them for?",
+          "delivered_at": "2026-10-30",
+          "frame": "dinner with partner"
+        }
+      ],
+      "avoid": [],
+      "rawResponse": "What part of today is still with you right now?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "Nothing to avoid. Near-identical to RQ-unrelated-1 and to the v0.1 single-question check answer: the default angle, no drift towards the history's topics."
+    },
+    {
+      "job": "RQ-daily-1",
+      "scenario": "RQ-daily",
+      "request": "Give me an end-of-day journal question.",
+      "recent_questions": [
+        {
+          "question": "What did today ask of you?",
+          "delivered_at": "2026-11-03",
+          "frame": "end of day, alone, journal"
+        },
+        {
+          "question": "What moment from today would you keep if you could keep only one?",
+          "delivered_at": "2026-11-02",
+          "frame": "end of day, alone, journal"
+        },
+        {
+          "question": "Where did you feel most like yourself today?",
+          "delivered_at": "2026-11-01",
+          "frame": "end of day, alone, journal"
+        },
+        {
+          "question": "What are you still thinking about from today?",
+          "delivered_at": "2026-10-31",
+          "frame": "end of day, alone, journal"
+        },
+        {
+          "question": "What surprised you today?",
+          "delivered_at": "2026-10-30",
+          "frame": "end of day, alone, journal"
+        },
+        {
+          "question": "What gave you energy today, and what took it?",
+          "delivered_at": "2026-10-29",
+          "frame": "end of day, alone, journal"
+        }
+      ],
+      "avoid": [
+        "What did today ask of you?",
+        "What moment from today would you keep if you could keep only one?",
+        "Where did you feel most like yourself today?",
+        "What are you still thinking about from today?",
+        "What surprised you today?",
+        "What gave you energy today, and what took it?"
+      ],
+      "rawResponse": "Who was on your mind today?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "A seventh end-of-day question on a new angle (people) that keeps the broad theme of today."
+    },
+    {
+      "job": "RQ-daily-2",
+      "scenario": "RQ-daily",
+      "request": "Give me an end-of-day journal question.",
+      "recent_questions": [
+        {
+          "question": "What did today ask of you?",
+          "delivered_at": "2026-11-03",
+          "frame": "end of day, alone, journal"
+        },
+        {
+          "question": "What moment from today would you keep if you could keep only one?",
+          "delivered_at": "2026-11-02",
+          "frame": "end of day, alone, journal"
+        },
+        {
+          "question": "Where did you feel most like yourself today?",
+          "delivered_at": "2026-11-01",
+          "frame": "end of day, alone, journal"
+        },
+        {
+          "question": "What are you still thinking about from today?",
+          "delivered_at": "2026-10-31",
+          "frame": "end of day, alone, journal"
+        },
+        {
+          "question": "What surprised you today?",
+          "delivered_at": "2026-10-30",
+          "frame": "end of day, alone, journal"
+        },
+        {
+          "question": "What gave you energy today, and what took it?",
+          "delivered_at": "2026-10-29",
+          "frame": "end of day, alone, journal"
+        }
+      ],
+      "avoid": [
+        "What did today ask of you?",
+        "What moment from today would you keep if you could keep only one?",
+        "Where did you feel most like yourself today?",
+        "What are you still thinking about from today?",
+        "What surprised you today?",
+        "What gave you energy today, and what took it?"
+      ],
+      "rawResponse": "What did you need today?\n",
+      "observedCount": 1,
+      "expectedCount": 1,
+      "countPass": true,
+      "formatPass": true,
+      "exactRepeat": false,
+      "closeParaphrase": false,
+      "repeatPass": true,
+      "issues": [],
+      "reviewerNotes": "New angle for this history (need); short and plain, not more elaborate than earlier days."
+    }
+  ]
+}
