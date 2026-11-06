@@ -3,6 +3,7 @@ import {
   appWaitlistSchema,
   confirmationEmail,
   confirmationMessage,
+  newsletterConfirmationEmail,
   resolveConsent,
 } from './app-waitlist'
 
@@ -40,17 +41,22 @@ describe('app waitlist consent (#87)', () => {
   describe('confirmation copy reflects the selected consent', () => {
     it('an app-only subscriber is not promised newsletter content', () => {
       const message = confirmationMessage({newsletter: false})
-      const {html} = confirmationEmail({newsletter: false})
+      const {html} = confirmationEmail({})
       expect(message).toContain('Nothing else')
       expect(html).toContain('no newsletter')
-      expect(html).not.toContain('opted in')
+      expect(html).not.toContain('Confirm')
     })
 
-    it('an opted-in subscriber is told they will get occasional emails', () => {
+    it('an opted-in subscriber gets the link that confirms occasional emails (#360)', () => {
       const message = confirmationMessage({newsletter: true})
-      const {html} = confirmationEmail({newsletter: true})
-      expect(message).toContain('occasional')
-      expect(html).toContain('opted in')
+      const {html} = confirmationEmail({confirmUrl: 'https://whocards.cc/newsletter/confirm?x'})
+      expect(message).toContain('Confirm')
+      expect(html).toContain('href="https://whocards.cc/newsletter/confirm?x"')
+    })
+
+    it('the newsletter confirmation email carries its confirm link', () => {
+      const {html} = newsletterConfirmationEmail({confirmUrl: 'https://whocards.cc/c'})
+      expect(html).toContain('href="https://whocards.cc/c"')
     })
   })
 })
