@@ -28,3 +28,15 @@ describe('newsletter confirm token (#360)', () => {
     expect(isValidNewsletterConfirmToken('ann@example.com', token, secret)).toBe(true)
   })
 })
+
+describe('translator confirm link (#391)', () => {
+  it('carries its type and a token that only the translator type accepts', () => {
+    const url = new URL(
+      newsletterConfirmUrl('https://whocards.cc', 'ann@example.com', secret, 'translator')
+    )
+    expect(url.searchParams.get('type')).toBe('translator')
+    const token = url.searchParams.get('token') ?? ''
+    expect(isValidNewsletterConfirmToken('ann@example.com', token, secret, 'translator')).toBe(true)
+    expect(isValidNewsletterConfirmToken('ann@example.com', token, secret)).toBe(false)
+  })
+})

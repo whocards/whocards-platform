@@ -20,21 +20,6 @@ export const getLangName = (key?: string): string => {
 }
 
 /**
- * Unsused
- */
-export const getBrowserLang = (): Language => {
-  const key = ((navigator.languages && navigator.languages[0]) || navigator.language).toLowerCase()
-
-  let res = ''
-
-  if (LANG_KEYS.includes(key)) res = key
-  if (LANG_KEYS.includes(key.split('-')[0])) res = key.split('-')[0]
-  if (LANG_KEYS.includes(key.split('_')[0])) res = key.split('_')[0]
-
-  return isLanguage(res) ? res : DEFAULT_LANGUAGE
-}
-
-/**
  * get current language from url with fallback to default language
  */
 export const getCurrentLanguage = (url: string): Language => {
@@ -57,4 +42,10 @@ const BCP47_OVERRIDES: Record<string, string> = {jp: 'ja'}
 export const toBCP47LanguageTag = (lang: string): string => {
   const [primary, region] = (BCP47_OVERRIDES[lang] ?? lang).split('-')
   return region ? `${primary}-${region.toUpperCase()}` : primary
+}
+
+/** True when a browser language tag (e.g. `ja-JP`, `pt_BR`) has a WhoCards deck. */
+export const hasDeckLanguage = (tag: string): boolean => {
+  const primary = tag.toLowerCase().split(/[-_]/)[0]
+  return LANG_KEYS.some((key) => toBCP47LanguageTag(key).toLowerCase().split('-')[0] === primary)
 }

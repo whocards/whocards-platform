@@ -31,6 +31,7 @@ const CREATE_TABLES = `
     "consent_type" text NOT NULL,
     "consented_at" timestamptz DEFAULT now() NOT NULL,
     "consent_source" text NOT NULL,
+    "language" text,
     "confirmed_at" timestamptz,
     "unsubscribed_at" timestamptz,
     "unsubscribe_source" text,
