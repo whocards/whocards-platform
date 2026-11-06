@@ -16,5 +16,5 @@ import {trpc} from './trpc'
 export const sendAnswer: Send = async (event: AnswerEvent): Promise<void> => {
   const optIn = import.meta.env.PUBLIC_RECORD_ANSWERS === 'true'
   if (!shouldRecordAnswers({dev: import.meta.env.DEV, optIn})) return
-  await trpc.answers.record.mutate(event)
+  await trpc.answers.record.mutate({...event, platform: 'web'})
 }

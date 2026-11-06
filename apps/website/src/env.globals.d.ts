@@ -37,3 +37,10 @@ declare module 'wawoff2' {
 declare module 'virtual:astro-icon' {
   export type Icon = string
 }
+
+declare namespace App {
+  interface Locals {
+    // Set by @astrojs/netlify on deployed functions only.
+    netlify?: import('@astrojs/netlify').NetlifyLocals['netlify']
+  }
+}
