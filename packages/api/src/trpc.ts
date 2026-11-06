@@ -3,6 +3,8 @@ import {initTRPC, TRPCError} from '@trpc/server'
 import type {GamePort} from './game/port'
 import {GameRefusalError} from './game/refusal'
 
+import type {AnswerPlatform} from './platform'
+
 /**
  * The API context. The content router is public and stateless, but the host
  * supplies ports (`recordAnswer`, `game`) so routers can persist without
@@ -17,6 +19,7 @@ export type Context = {
     questionId: string
     language: string
     type: string
+    platform?: AnswerPlatform
   }) => Promise<void>
   game: GamePort
   /** From the PLAYER_TOKEN_HEADER request header; null when absent. */

@@ -60,6 +60,15 @@
       }
     },
     {
+      // Netlify functions run outside the app: default export required, only process.env, console logging.
+      "files": ["**/netlify/functions/**"],
+      "rules": {
+        "no-console": "off",
+        "import/no-default-export": "off",
+        "node/no-process-env": "off"
+      }
+    },
+    {
       "files": ["**/env.ts", "**/env.node.ts", "**/env.test.ts", "packages/env/src/**"],
       "rules": {
         "node/no-process-env": "off"
