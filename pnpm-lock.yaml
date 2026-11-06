@@ -652,8 +652,8 @@ importers:
         specifier: ^0.9.1
         version: 0.9.1(nanostores@0.9.5)
       '@nanostores/react':
-        specifier: ^0.7.1
-        version: 0.7.3(nanostores@0.9.5)(react@19.2.3)
+        specifier: ^2.0.1
+        version: 2.0.1(nanostores@0.9.5)(react@19.2.3)
       '@pdf-lib/fontkit':
         specifier: ^1.1.1
         version: 1.1.1
@@ -3267,11 +3267,11 @@ packages:
     peerDependencies:
       nanostores: ^0.9.0
 
-  '@nanostores/react@0.7.3':
-    resolution: {integrity: sha512-/XuLAMENRu/Q71biW4AZ4qmU070vkZgiQ28gaTSNRPm2SZF5zGAR81zPE1MaMB4SeOp6ZTst92NBaG75XSspNg==}
-    engines: {node: ^18.0.0 || >=20.0.0}
+  '@nanostores/react@2.0.1':
+    resolution: {integrity: sha512-txbZTd+7/hnO7FhtF8Pmr+cu0ThdCuCnOyEEh0DsEM2Hp9PfOa5EY4uj3wpZpypSzp5BuqDgf2AxVAKoUIWOFQ==}
+    engines: {node: ^22.0.0 || ^24.0.0 || >=26.0.0}
     peerDependencies:
-      nanostores: ^0.9.0 || ^0.10.0 || ^0.11.0
+      nanostores: ^1.2.0
       react: '>=18.0.0'
 
   '@napi-rs/wasm-runtime@1.1.6':
@@ -15998,7 +15998,7 @@ snapshots:
     dependencies:
       nanostores: 0.9.5
 
-  '@nanostores/react@0.7.3(nanostores@0.9.5)(react@19.2.3)':
+  '@nanostores/react@2.0.1(nanostores@0.9.5)(react@19.2.3)':
     dependencies:
       nanostores: 0.9.5
       react: 19.2.3
