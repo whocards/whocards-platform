@@ -88,6 +88,10 @@ _Avoid_: post, send (unqualified), invite
 A person who helps validate the Android app before public launch. An Android Tester is part of the beta cohort, not a public app waitlist subscriber or general newsletter subscriber.
 _Avoid_: beta tester (too vague), app waitlist subscriber
 
+**Translator**:
+A volunteer who signed up on the website to bring the Decks into a language they don't ship in yet. Once an admin approves them, they get a WhoCards @ Work login that shows only their language: AI-drafted translations of each Question to edit and approve.
+_Avoid_: localizer, volunteer (unqualified)
+
 **Hosted Game**:
 A live, in-room session of the SDD workshop game: a host runs it on a big screen under a short code, and players join from their own phones. It has a lifecycle (`lobby` → `live` → `ended`) and is made of numbered Rounds. Not a Game: a Game is a draw policy for a Deck, a Hosted Game is an event people attend.
 _Avoid_: game (unqualified, that is the draw policy), session, room, event

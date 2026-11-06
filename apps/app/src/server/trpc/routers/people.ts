@@ -4,12 +4,67 @@ import {z} from 'zod'
 
 import {ensureDefaultOrganization} from '../../auth/bootstrap'
 import {canAssignRole, ROLE_RANK} from '../../auth/permissions'
+import type {AppRole} from '../../auth/permissions'
 import {db} from '../../db'
 import {appMember, appUser} from '../../db/schema'
 import {env} from '@whocards/env/app'
 import {createTRPCRouter, roleProcedure} from '../trpc'
 
 const roleSchema = z.enum(ROLE_RANK)
+
+/** Pre-provisions the app_user + app_member rows, so the person just signs in and lands with access. */
+export async function addMember({
+  email: rawEmail,
+  role,
+  language = null,
+}: {
+  email: string
+  role: AppRole
+  language?: string | null
+}) {
+  const org = await ensureDefaultOrganization()
+  const email = rawEmail.toLowerCase().trim()
+
+  const [existingUser] = await db.select().from(appUser).where(eq(appUser.email, email)).limit(1)
+  const user =
+    existingUser ??
+    (
+      await db
+        .insert(appUser)
+        .values({id: crypto.randomUUID(), email, name: email.split('@')[0] ?? email})
+        .onConflictDoNothing()
+        .returning()
+    )[0]
+  if (!user) throw new Error(`Failed to create or find user "${email}"`)
+
+  const [existingMember] = await db
+    .select()
+    .from(appMember)
+    .where(and(eq(appMember.organizationId, org.id), eq(appMember.userId, user.id)))
+    .limit(1)
+
+  if (existingMember) {
+    const [updated] = await db
+      .update(appMember)
+      .set({role, language})
+      .where(eq(appMember.id, existingMember.id))
+      .returning()
+    return updated
+  }
+
+  const [created] = await db
+    .insert(appMember)
+    .values({
+      id: crypto.randomUUID(),
+      organizationId: org.id,
+      userId: user.id,
+      role,
+      language,
+      createdAt: new Date(),
+    })
+    .returning()
+  return created
+}
 
 /** `admin+` manages people (route+action guard from the overnight build plan). */
 export const peopleRouter = createTRPCRouter({
@@ -43,51 +98,7 @@ export const peopleRouter = createTRPCRouter({
         })
       }
 
-      const org = await ensureDefaultOrganization()
-      const email = input.email.toLowerCase().trim()
-
-      const [existingUser] = await db
-        .select()
-        .from(appUser)
-        .where(eq(appUser.email, email))
-        .limit(1)
-      const user =
-        existingUser ??
-        (
-          await db
-            .insert(appUser)
-            .values({id: crypto.randomUUID(), email, name: email.split('@')[0] ?? email})
-            .onConflictDoNothing()
-            .returning()
-        )[0]
-      if (!user) throw new Error(`Failed to create or find user "${email}"`)
-
-      const [existingMember] = await db
-        .select()
-        .from(appMember)
-        .where(and(eq(appMember.organizationId, org.id), eq(appMember.userId, user.id)))
-        .limit(1)
-
-      if (existingMember) {
-        const [updated] = await db
-          .update(appMember)
-          .set({role: input.role})
-          .where(eq(appMember.id, existingMember.id))
-          .returning()
-        return updated
-      }
-
-      const [created] = await db
-        .insert(appMember)
-        .values({
-          id: crypto.randomUUID(),
-          organizationId: org.id,
-          userId: user.id,
-          role: input.role,
-          createdAt: new Date(),
-        })
-        .returning()
-      return created
+      return addMember({email: input.email, role: input.role})
     }),
 
   updateRole: roleProcedure('admin')

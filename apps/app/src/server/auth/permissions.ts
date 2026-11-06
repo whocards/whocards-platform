@@ -12,6 +12,7 @@ import {defaultStatements} from 'better-auth/plugins/organization/access'
 const ac = createAccessControl(defaultStatements)
 
 export const roles = {
+  translator: ac.newRole({}),
   owner: ac.newRole({}),
   admin: ac.newRole({}),
   facilitator: ac.newRole({}),
@@ -21,8 +22,16 @@ export const roles = {
 
 export {ac}
 
-/** The five app roles, lowest to highest. Keep in sync with `roles` above. */
-export const ROLE_RANK = ['member', 'reviewer', 'facilitator', 'admin', 'owner'] as const
+/** The app roles, lowest to highest. Keep in sync with `roles` above. */
+// translator ranks below member so every existing procedure shuts it out; it sees only /translate.
+export const ROLE_RANK = [
+  'translator',
+  'member',
+  'reviewer',
+  'facilitator',
+  'admin',
+  'owner',
+] as const
 
 export type AppRole = (typeof ROLE_RANK)[number]
 

@@ -85,6 +85,8 @@ function People() {
         {invite.isError ? <ErrorText className="mt-3">{invite.error.message}</ErrorText> : null}
       </Card>
 
+      <TranslatorSignups />
+
       <SectionTitle
         aside={
           people.data ? <span className="text-sm text-gray-dark">{people.data.length}</span> : null
@@ -129,5 +131,74 @@ function People() {
         ))}
       </ul>
     </Page>
+  )
+}
+
+function TranslatorSignups() {
+  const signups = useQuery({
+    queryKey: ['translation.signups'],
+    queryFn: () => trpc.translation.signups.query(),
+  })
+  if (!signups.data?.length) return null
+
+  return (
+    <section className="mb-10">
+      <SectionTitle aside={<span className="text-sm text-gray-dark">{signups.data.length}</span>}>
+        Translator sign-ups
+      </SectionTitle>
+      <p className="mb-4 text-sm text-gray-lighter">
+        Approving runs the AI first pass for that language, then invites them as a translator and
+        emails their login. It can take up to a minute.
+      </p>
+      <ul className="flex flex-col gap-2">
+        {signups.data.map((signup) => (
+          <SignupRow key={signup.id} signup={signup} />
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+type Signup = Awaited<ReturnType<(typeof trpc)['translation']['signups']['query']>>[number]
+
+function SignupRow({signup}: Readonly<{signup: Signup}>) {
+  const queryClient = useQueryClient()
+  const [language, setLanguage] = useState(signup.language ?? '')
+  const approve = useMutation({
+    mutationFn: () => trpc.translation.approveSignup.mutate({id: signup.id, language}),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({queryKey: ['translation.signups']}),
+        queryClient.invalidateQueries({queryKey: ['people.list']}),
+      ]),
+  })
+
+  return (
+    <li className="rounded-2xl border border-white/8 bg-white/[0.035] py-2.5 pr-2.5 pl-3">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          approve.mutate()
+        }}
+        className="flex flex-wrap items-center gap-3"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold wrap-anywhere">{signup.name ?? signup.email}</p>
+          {signup.name ? <p className="text-xs text-gray-dark">{signup.email}</p> : null}
+        </div>
+        <Input
+          aria-label={`Language for ${signup.email}`}
+          required
+          value={language}
+          onChange={(event) => setLanguage(event.target.value)}
+          placeholder="id"
+          className="w-28 text-sm"
+        />
+        <Button type="submit" variant="primary" size="sm" disabled={approve.isPending}>
+          {approve.isPending ? 'Translating…' : 'Approve'}
+        </Button>
+      </form>
+      {approve.isError ? <ErrorText className="mt-2">{approve.error.message}</ErrorText> : null}
+    </li>
   )
 }

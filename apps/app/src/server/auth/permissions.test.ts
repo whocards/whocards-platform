@@ -3,13 +3,13 @@ import {describe, expect, it} from 'vitest'
 import {canAssignRole, isAppRole, ROLE_RANK, roleAtLeast} from './permissions'
 
 describe('ROLE_RANK', () => {
-  it('is the five roles, lowest to highest', () => {
-    expect(ROLE_RANK).toEqual(['member', 'reviewer', 'facilitator', 'admin', 'owner'])
+  it('is the roles, lowest to highest', () => {
+    expect(ROLE_RANK).toEqual(['translator', 'member', 'reviewer', 'facilitator', 'admin', 'owner'])
   })
 })
 
 describe('isAppRole', () => {
-  it('accepts each of the five known roles', () => {
+  it('accepts each known role', () => {
     for (const role of ROLE_RANK) expect(isAppRole(role)).toBe(true)
   })
 
@@ -32,6 +32,7 @@ describe('roleAtLeast', () => {
   })
 
   it('is false when role is below the minimum', () => {
+    expect(roleAtLeast('translator', 'member')).toBe(false)
     expect(roleAtLeast('member', 'reviewer')).toBe(false)
     expect(roleAtLeast('reviewer', 'facilitator')).toBe(false)
     expect(roleAtLeast('facilitator', 'admin')).toBe(false)
