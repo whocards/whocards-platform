@@ -104,9 +104,18 @@ export const confirmationEmail = ({confirmUrl}: {confirmUrl?: string}) => {
   }
 }
 
-/** Double opt-in email for a newsletter signup (#360); nothing else is sent until it is confirmed. */
-export const newsletterConfirmationEmail = ({confirmUrl}: {confirmUrl: string}) => ({
-  subject: 'Confirm your WhoCards emails',
+const doubleOptInEmail = ({
+  subject,
+  heading,
+  body,
+  confirmUrl,
+}: {
+  subject: string
+  heading: string
+  body: string
+  confirmUrl: string
+}) => ({
+  subject,
   html: `<!doctype html>
   <html lang="en">
     <body style="background:#08001a;margin:0;padding:32px 12px;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;">
@@ -115,9 +124,9 @@ export const newsletterConfirmationEmail = ({confirmUrl}: {confirmUrl: string}) 
           WhoCards<span style="color:#c058d2;">?</span>
         </div>
         <div style="background:#262432;border-radius:24px;padding:32px 28px;color:#f5f5f5;">
-          <h1 style="font-size:30px;line-height:1.2;margin:0 0 20px;">One click and you're in.</h1>
+          <h1 style="font-size:30px;line-height:1.2;margin:0 0 20px;">${heading}</h1>
           <p style="font-size:17px;line-height:1.6;margin:0 0 24px;">
-            Confirm you want the occasional WhoCards email — a good question now and then, plus the odd bit of product news.
+            ${body}
           </p>
           <p style="margin:0 0 24px;text-align:center;">
             <a href="${confirmUrl}" style="background:#f9d75f;border-radius:999px;color:#111516;display:inline-block;font-size:17px;font-weight:700;padding:15px 28px;text-decoration:none;">Confirm my email</a>
@@ -130,3 +139,21 @@ export const newsletterConfirmationEmail = ({confirmUrl}: {confirmUrl: string}) 
     </body>
   </html>`,
 })
+
+/** Double opt-in email for a newsletter signup (#360); nothing else is sent until it is confirmed. */
+export const newsletterConfirmationEmail = ({confirmUrl}: {confirmUrl: string}) =>
+  doubleOptInEmail({
+    subject: 'Confirm your WhoCards emails',
+    heading: "One click and you're in.",
+    body: 'Confirm you want the occasional WhoCards email — a good question now and then, plus the odd bit of product news.',
+    confirmUrl,
+  })
+
+/** Double opt-in email for a translator sign-up (#391). */
+export const translatorConfirmationEmail = ({confirmUrl}: {confirmUrl: string}) =>
+  doubleOptInEmail({
+    subject: 'Confirm you want to help translate WhoCards',
+    heading: 'Thanks for offering to help.',
+    body: "Confirm your email and we'll be in touch when translating WhoCards into your language opens up.",
+    confirmUrl,
+  })

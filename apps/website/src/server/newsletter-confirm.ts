@@ -1,7 +1,8 @@
 import {and, eq, isNull} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import {normalizeEmail} from './consent'
-import {confirmNewsletterConsent} from './db/upsert'
+import type {ConfirmableConsentType} from './consent'
+import {confirmConsent} from './db/upsert'
 import * as schema from './db/schema'
 import {isValidNewsletterConfirmToken} from './newsletter-token'
 
@@ -12,6 +13,7 @@ export const newsletterConfirm = async <T extends PgQueryResultHKT>(
   database: PgDatabase<T, typeof schema>,
   opts: {
     post: boolean
+    consentType?: ConfirmableConsentType
     email: string
     token: string
     secret: string
@@ -19,7 +21,8 @@ export const newsletterConfirm = async <T extends PgQueryResultHKT>(
   }
 ): Promise<NewsletterConfirmState> => {
   const email = normalizeEmail(opts.email)
-  if (email === '' || !isValidNewsletterConfirmToken(email, opts.token, opts.secret))
+  const consentType = opts.consentType ?? 'newsletter'
+  if (email === '' || !isValidNewsletterConfirmToken(email, opts.token, opts.secret, consentType))
     return 'invalid'
 
   const {emailConsent} = schema
@@ -29,14 +32,14 @@ export const newsletterConfirm = async <T extends PgQueryResultHKT>(
     .where(
       and(
         eq(emailConsent.email, email),
-        eq(emailConsent.consentType, 'newsletter'),
+        eq(emailConsent.consentType, consentType),
         isNull(emailConsent.unsubscribedAt)
       )
     )
   if (!row) return 'not-subscribed'
   if (row.confirmedAt) return 'subscribed'
   if (!opts.post) return 'ask'
-  if ((await confirmNewsletterConsent(database, email)) === 0)
+  if ((await confirmConsent(database, email, consentType)) === 0)
     // An unsubscribe or another confirm landed since the read above: report the row as it is now.
     return newsletterConfirm(database, {...opts, post: false})
   await opts.onConfirmed(email)

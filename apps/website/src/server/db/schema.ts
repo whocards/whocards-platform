@@ -44,6 +44,8 @@ export const emailConsent = pgTable(
       .defaultNow()
       .notNull(),
     consentSource: text('consent_source').notNull(),
+    // The language a translator offers to help with (#391); null for other consent types.
+    language: text('language'),
     // Null until the double opt-in link is clicked; Resend sync skips unconfirmed rows (#360).
     confirmedAt: timestamp('confirmed_at', {withTimezone: true, mode: 'string'}),
     unsubscribedAt: timestamp('unsubscribed_at', {withTimezone: true, mode: 'string'}),

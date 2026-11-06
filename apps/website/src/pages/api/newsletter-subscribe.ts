@@ -1,16 +1,12 @@
-import {logError} from '@whocards/observability'
 import type {APIRoute} from 'astro'
-import {Resend} from 'resend'
 import {z} from 'zod'
 import {env} from '~env'
 import {newsletterConfirmationEmail} from '~server/app-waitlist'
 import {CONSENT_SOURCE, normalizeEmail} from '~server/consent'
-import {insertConsent} from '~server/db'
-import {newsletterConfirmUrl} from '~server/newsletter-token'
+import {startDoubleOptIn} from '~server/double-opt-in'
 import {TURNSTILE_ACTION, turnstileMessageFor, verifyTurnstile} from '~server/turnstile'
 
-// Footer newsletter signup (#360): records an unconfirmed newsletter consent and emails
-// the double opt-in link; the address reaches Resend only once /newsletter/confirm runs.
+// Footer newsletter signup (#360).
 export const prerender = false
 
 const schema = z.object({
@@ -36,37 +32,14 @@ export const POST: APIRoute = async ({request, clientAddress, url}) => {
     return json({message: turnstileMessageFor(turnstile.reason)}, 403)
   }
 
-  const email = normalizeEmail(parsed.data.email)
-  try {
-    await insertConsent({
-      email,
+  return startDoubleOptIn({
+    consent: {
+      email: normalizeEmail(parsed.data.email),
       consentType: 'newsletter',
       consentSource: CONSENT_SOURCE.footer,
-      confirmed: false,
-    })
-  } catch (error) {
-    logError('newsletter-subscribe: failed to store consent', error)
-    return json({message: "We couldn't save your signup. Please try again."}, 503)
-  }
-
-  const {subject, html} = newsletterConfirmationEmail({
-    confirmUrl: newsletterConfirmUrl(url.origin, email, env.RESEND_WEBHOOK_SECRET),
+    },
+    origin: url.origin,
+    confirmationEmail: newsletterConfirmationEmail,
+    caller: 'newsletter-subscribe',
   })
-  try {
-    const {error} = await new Resend(env.RESEND_API_KEY).emails.send({
-      from: env.RESEND_FROM_EMAIL,
-      to: email,
-      subject,
-      html,
-    })
-    if (error) {
-      logError('newsletter-subscribe: resend error', error)
-      return json({message: "We couldn't send the confirmation email. Please try again."}, 502)
-    }
-  } catch (error) {
-    logError('newsletter-subscribe: send threw', error)
-    return json({message: "We couldn't send the confirmation email. Please try again."}, 502)
-  }
-
-  return json({message: 'Check your inbox and click the link to confirm.'}, 200)
 }
