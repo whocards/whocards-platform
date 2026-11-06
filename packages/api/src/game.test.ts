@@ -35,7 +35,12 @@ const liveRound: Round = {
 const setup = (rounds: Round[] = [liveRound], settings: GameSettings = game.settings) => {
   const fake = createFakeGamePort({game: {...game, settings}, rounds})
   const as = (playerToken: string | null) =>
-    createCaller({recordAnswer: async () => {}, game: fake.port, playerToken})
+    createCaller({
+      recordAnswer: async () => {},
+      game: fake.port,
+      playerToken,
+      mobileMinVersion: null,
+    })
   const join = async (name: string, language: GameLanguage = 'en', consentTranscript = true) => {
     const {token, state} = await as(null).game.join({
       code: 'abcd',
@@ -79,6 +84,7 @@ describe('game.join / game.state', () => {
         recordAnswer: async () => {},
         game: fake.port,
         playerToken: null,
+        mobileMinVersion: null,
       })
       return refusalOf(caller.game.join({code: 'ABCD', name: 'A', language: 'en'}))
     }
@@ -608,7 +614,12 @@ describe('game.screen', () => {
     const fake = createFakeGamePort({
       game: {...game, status: 'lobby', settings: {round: {}, organizer: 'SDD Conf'}},
     })
-    const caller = createCaller({recordAnswer: async () => {}, game: fake.port, playerToken: null})
+    const caller = createCaller({
+      recordAnswer: async () => {},
+      game: fake.port,
+      playerToken: null,
+      mobileMinVersion: null,
+    })
     expect((await caller.game.screen({code: 'ABCD'})).game).toEqual({
       code: 'ABCD',
       title: 'Workshop',
@@ -622,7 +633,12 @@ describe('game.screen', () => {
     const fake = createFakeGamePort({
       game: {...game, settings: {round: {}, answerModes: [{mode: 'none', at: 0}]}},
     })
-    const caller = createCaller({recordAnswer: async () => {}, game: fake.port, playerToken: null})
+    const caller = createCaller({
+      recordAnswer: async () => {},
+      game: fake.port,
+      playerToken: null,
+      mobileMinVersion: null,
+    })
     expect((await caller.game.screen({code: 'ABCD'})).game.answerMode).toBe('none')
   })
 })
@@ -644,7 +660,12 @@ describe('refusals over HTTP', () => {
         body: JSON.stringify({action: 'claim'}),
       }),
       router: appRouter,
-      createContext: () => ({recordAnswer: async () => {}, game: fake.port, playerToken: b.token}),
+      createContext: () => ({
+        recordAnswer: async () => {},
+        game: fake.port,
+        playerToken: b.token,
+        mobileMinVersion: null,
+      }),
     })
     const body = z
       .object({error: z.object({message: z.string(), data: z.object({refusal: z.string()})})})
