@@ -41,7 +41,6 @@ const input =
         type='email'
         name='email'
         required
-        autofocus
         autocomplete='email'
         inputmode='email'
         placeholder='you@example.com'
@@ -71,7 +70,7 @@ const input =
 </dialog>
 
 <script>
-  import {takeTranslatePrompt} from '~utils/translate-prompt'
+  import {languageName, signupLanguage, takeTranslatePrompt} from '~utils/translate-prompt'
 
   type Turnstile = {
     render: (el: HTMLElement, opts: Record<string, string | (() => void)>) => string
@@ -98,15 +97,6 @@ const input =
     status.classList.toggle('text-red-400', !ok)
   }
 
-  const languageName = (tag: string) => {
-    const primary = tag.split(/[-_]/)[0]
-    try {
-      return new Intl.DisplayNames(['en'], {type: 'language'}).of(primary) ?? primary
-    } catch {
-      return primary
-    }
-  }
-
   const renderWidget = () => {
     if (!form || !widget) return
     const opts = {
@@ -131,7 +121,7 @@ const input =
 
   let due = false
   try {
-    due = takeTranslatePrompt(navigator.language, localStorage)
+    due = takeTranslatePrompt(navigator.language, localStorage, location.pathname)
   } catch {
     // Storage blocked (private mode, cookies off): without a session count, never show.
   }
@@ -146,8 +136,9 @@ const input =
     event.preventDefault()
     const data = new FormData(form)
     const email = data.get('email')?.toString().trim()
-    const lang = data.get('language')?.toString().trim()
-    if (!email || !lang) return
+    const typed = data.get('language')?.toString().trim()
+    if (!email || !typed) return
+    const lang = signupLanguage(typed, navigator.language)
     const turnstileToken = (widgetId && turnstile()?.getResponse(widgetId)) || ''
 
     if (submit) submit.disabled = true

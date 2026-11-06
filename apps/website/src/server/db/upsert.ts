@@ -53,6 +53,7 @@ export type ConsentCreate = {
 // On conflict (same email + consent_type):
 //   - Updates name when a new value is provided.
 //   - Coalesces userId and language so we never null an existing value.
+//   - Keeps an active confirmed row's language, so a fresh sign-up can't rewrite it.
 //   - Clears unsubscribe fields on resubscribe.
 //   - Resets provider sync state on resubscribe so reconciliation re-adds the
 //     contact to Resend (a previously-synced-then-unsubscribed row would
@@ -84,7 +85,7 @@ export const upsertConsent = <T extends PgQueryResultHKT>(
       set: {
         name: sql`CASE WHEN excluded.name IS NOT NULL THEN excluded.name ELSE ${schema.emailConsent.name} END`,
         userId: sql`COALESCE(excluded.user_id, ${schema.emailConsent.userId})`,
-        language: sql`COALESCE(excluded.language, ${schema.emailConsent.language})`,
+        language: sql`CASE WHEN ${schema.emailConsent.confirmedAt} IS NOT NULL AND ${schema.emailConsent.unsubscribedAt} IS NULL THEN ${schema.emailConsent.language} ELSE COALESCE(excluded.language, ${schema.emailConsent.language}) END`,
         confirmedAt: sql`CASE WHEN ${schema.emailConsent.unsubscribedAt} IS NULL THEN ${schema.emailConsent.confirmedAt} ELSE excluded.confirmed_at END`,
         unsubscribedAt: null,
         unsubscribeSource: null,

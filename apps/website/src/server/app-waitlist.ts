@@ -149,7 +149,6 @@ export const newsletterConfirmationEmail = ({confirmUrl}: {confirmUrl: string}) 
     confirmUrl,
   })
 
-/** Double opt-in email for a translator sign-up (#391). */
 export const translatorConfirmationEmail = ({confirmUrl}: {confirmUrl: string}) =>
   doubleOptInEmail({
     subject: 'Confirm you want to help translate WhoCards',

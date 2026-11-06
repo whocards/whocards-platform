@@ -6,7 +6,6 @@ import {CONSENT_SOURCE, normalizeEmail} from '~server/consent'
 import {startDoubleOptIn} from '~server/double-opt-in'
 import {TURNSTILE_ACTION, turnstileMessageFor, verifyTurnstile} from '~server/turnstile'
 
-// Footer newsletter signup (#360).
 export const prerender = false
 
 const schema = z.object({

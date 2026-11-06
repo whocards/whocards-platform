@@ -9,8 +9,7 @@ import {newsletterConfirmUrl} from '~server/newsletter-token'
 const json = (body: unknown, status: number) =>
   new Response(JSON.stringify(body), {status, headers: {'Content-Type': 'application/json'}})
 
-// Records an unconfirmed consent and emails its double opt-in link (#360, #391); the address
-// reaches Resend only once /newsletter/confirm runs.
+// The address reaches Resend only once /newsletter/confirm runs.
 export const startDoubleOptIn = async ({
   consent,
   origin,
