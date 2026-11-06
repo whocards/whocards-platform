@@ -5,7 +5,6 @@
 // `gameStore`, just keyed by preset instead of a single value.
 
 import {persistentAtom} from '@nanostores/persistent'
-import {action} from 'nanostores'
 import type {LayoutId} from '~server/print/presets'
 
 export type CalibrationOffset = {offsetX: number; offsetY: number}
@@ -29,10 +28,6 @@ export const getCalibrationOffset = (
   preset: LayoutId | undefined
 ): CalibrationOffset => (preset ? (offsets[preset] ?? ZERO_OFFSET) : ZERO_OFFSET)
 
-export const setCalibrationOffset = action(
-  $calibrationOffsets,
-  'setCalibrationOffset',
-  (store, preset: LayoutId, offset: CalibrationOffset) => {
-    store.set({...store.get(), [preset]: offset})
-  }
-)
+export const setCalibrationOffset = (preset: LayoutId, offset: CalibrationOffset) => {
+  $calibrationOffsets.set({...$calibrationOffsets.get(), [preset]: offset})
+}

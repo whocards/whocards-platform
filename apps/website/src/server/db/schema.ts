@@ -1,4 +1,5 @@
 import {relations, sql} from 'drizzle-orm'
+import type {StatsSnapshot} from '../stats/types'
 import {
   bigint,
   boolean,
@@ -6,6 +7,7 @@ import {
   foreignKey,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -451,6 +453,10 @@ export const answer = pgTable(
     questionId: text('question_id').notNull(),
     language: text('language'),
     type: text('type').notNull().default('answered'),
+    // NULL = Unattributed (rows from before this column, or old clients).
+    platform: text('platform'),
+    // ISO 3166-1 alpha-2 from Netlify's geo header; NULL when unknown.
+    country: text('country'),
   },
   (table) => {
     return {
@@ -462,3 +468,16 @@ export const answer = pgTable(
     }
   }
 )
+
+// One row per /stats refresh; the page reads only the newest.
+export const statsSnapshot = pgTable('stats_snapshot', {
+  id: bigint('id', {mode: 'number'}).primaryKey().generatedByDefaultAsIdentity({
+    name: 'stats_snapshot_id_seq',
+    startWith: 1,
+    increment: 1,
+    minValue: 1,
+    cache: 1,
+  }),
+  createdAt: timestamp('created_at', {withTimezone: true, mode: 'string'}).defaultNow().notNull(),
+  snapshot: jsonb('snapshot').$type<StatsSnapshot>().notNull(),
+})

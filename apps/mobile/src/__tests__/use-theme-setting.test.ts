@@ -106,4 +106,15 @@ describe('useThemeSetting', () => {
     expect(result.current.theme).toBe('system')
     expect(await getStoredTheme()).toBe('system')
   })
+
+  it("one screen's select() reaches every other screen's theme (issue #197)", async () => {
+    await setStoredTheme('system')
+    const home = await renderHook(() => useThemeSetting())
+    const play = await renderHook(() => useThemeSetting())
+    await waitFor(() => expect(home.result.current.theme).toBe('system'))
+
+    await act(() => play.result.current.select('dark'))
+
+    expect(home.result.current.theme).toBe('dark')
+  })
 })

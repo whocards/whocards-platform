@@ -29,6 +29,15 @@ export function createWebsiteEnv(runtimeEnv: RuntimeEnv) {
         .string()
         .regex(/^\d+\.\d+\.\d+$/)
         .optional(),
+      // Public stats page; each store source is skipped while its creds are unset. Setup: docs/STATS-ENV.md
+      APP_STORE_CONNECT_KEY_ID: z.string().optional(),
+      APP_STORE_CONNECT_ISSUER_ID: z.string().optional(),
+      APP_STORE_CONNECT_PRIVATE_KEY: z.string().optional(),
+      APP_STORE_CONNECT_VENDOR_NUMBER: z.string().optional(),
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: z.string().optional(),
+      GOOGLE_PLAY_REPORTS_BUCKET: z.string().optional(),
+      // Bearer token the scheduled refresh presents to POST /api/stats/refresh.
+      STATS_REFRESH_SECRET: z.string().optional(),
     },
     clientPrefix: 'PUBLIC_',
     client: {

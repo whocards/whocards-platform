@@ -1,4 +1,4 @@
-import {action, atom} from 'nanostores'
+import {atom} from 'nanostores'
 import type {Language} from '~types'
 import {DEFAULT_LANGUAGE} from '~utils'
 
@@ -10,6 +10,6 @@ export const $langStore = atom<LanguageStore>({
   lang: DEFAULT_LANGUAGE,
 })
 
-export const setLang = action($langStore, 'setLang', (store, lang: Language) => {
-  store.set({lang})
-})
+export const setLang = (lang: Language) => {
+  $langStore.set({lang})
+}
