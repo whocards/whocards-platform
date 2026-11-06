@@ -70,5 +70,10 @@ const subscribe = (listener: () => void) => {
  */
 export const useColorScheme = () => useSyncExternalStore(subscribe, getColorScheme, getColorScheme)
 
+const getSetting = () => setting
+
+/** The chosen Theme ('system' | 'light' | 'dark'), shared by every screen. */
+export const useThemeSettingValue = () => useSyncExternalStore(subscribe, getSetting, getSetting)
+
 /** Shorthand for the overwhelmingly common `useColorScheme() === 'dark'`. */
 export const useIsDark = () => useColorScheme() === 'dark'

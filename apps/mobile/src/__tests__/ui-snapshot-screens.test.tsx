@@ -188,7 +188,7 @@ jest.mock('@whocards/observability/events', () => {
   return {...actual, track: jest.fn()}
 })
 
-import {getDeck} from '@whocards/decks'
+import {getDeck, getLanguageName} from '@whocards/decks'
 import {getStoredGame} from '@/lib/game-store'
 import {getStoredLanguage} from '@/lib/language-store'
 import {getStoredTabletopMode} from '@/lib/tabletop-store'
@@ -301,12 +301,7 @@ describe('Play screen', () => {
     const deck = getDeck('library')
     const [stored = '', linked = ''] = deck?.languages ?? []
     mockParams = {deck: 'library', q: '1', lang: linked}
-    // Mount, gear open, and close each read the stored language once.
-    jest
-      .mocked(getStoredLanguage)
-      .mockResolvedValueOnce(stored)
-      .mockResolvedValueOnce(stored)
-      .mockResolvedValueOnce(stored)
+    jest.mocked(getStoredLanguage).mockResolvedValue(stored)
     await renderUi(<PlayScreen />)
     await settle()
     const linkedQuestion = deck?.questions['1']?.[linked] ?? ''
@@ -318,19 +313,22 @@ describe('Play screen', () => {
     expect(screen.getByText(linkedQuestion)).toBeTruthy()
   })
 
-  it('applies a Language changed in the in-play Settings sheet on close (issue #197)', async () => {
+  it("applies a pick of the stored language over a link's language (issue #197)", async () => {
     const deck = getDeck('library')
-    const [stored = '', linked = '', chosen = ''] = deck?.languages ?? []
+    const [stored = '', linked = ''] = deck?.languages ?? []
     mockParams = {deck: 'library', q: '1', lang: linked}
-    jest.mocked(getStoredLanguage).mockResolvedValueOnce(stored).mockResolvedValueOnce(stored)
+    jest.mocked(getStoredLanguage).mockResolvedValue(stored)
     await renderUi(<PlayScreen />)
     await settle()
     await fireEvent.press(screen.getByLabelText('open settings'))
+    await fireEvent.press(
+      await screen.findByLabelText(`Language: ${getLanguageName(linked) ?? linked}`)
+    )
+    await fireEvent.press(await screen.findByText(getLanguageName(stored) ?? stored))
     await settle()
-    jest.mocked(getStoredLanguage).mockResolvedValueOnce(chosen)
     await fireEvent.press(screen.getByLabelText('close'))
     await settle()
-    expect(screen.getByText(deck?.questions['1']?.[chosen] ?? '')).toBeTruthy()
+    expect(screen.getByText(deck?.questions['1']?.[stored] ?? '')).toBeTruthy()
   })
 
   it('renders the unknown-Deck message', async () => {

@@ -1,6 +1,6 @@
 import {Ionicons} from '@expo/vector-icons'
 import {StatusBar} from 'expo-status-bar'
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {
   Modal,
   Pressable,
@@ -79,6 +79,10 @@ type SettingsModalProps = {
   onSelectTheme: (theme: ThemeSetting) => void
   /** False in the play screens (issue #197): the Game never changes mid-session. */
   showGame?: boolean
+  /** The language on screen, when it can differ from the stored one (a shared link's). */
+  currentLanguage?: string
+  /** Every Language pick, even one equal to the stored value. */
+  onSelectLanguage?: (language: string) => void
 }
 
 /**
@@ -220,6 +224,8 @@ export const SettingsModal = ({
   theme,
   onSelectTheme,
   showGame = true,
+  currentLanguage,
+  onSelectLanguage,
 }: SettingsModalProps) => {
   const insets = useSafeAreaInsets()
   const isDark = useIsDark()
@@ -231,6 +237,7 @@ export const SettingsModal = ({
   const [secondary, setSecondary] = useState<string[]>([])
   const [tabletop, setTabletop] = useState(false)
   const [page, setPage] = useState<Page>('menu')
+  const mounted = useRef(false)
   // Touch-lock (review finding on issue #189, third pass): true while a rise
   // or fall is in flight, so a fast tap mid-animation can't fire a second,
   // conflicting transition (e.g. double-tapping a menu row before the state
@@ -290,20 +297,24 @@ export const SettingsModal = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible])
 
-  // Load every setting once on mount, same as the old Library/DeckPlayer
-  // effects this replaces — so the rows never pop from a default value to the
-  // real one while the sheet is already open.
+  // Load on mount, so the rows never pop from a default while the sheet is open,
+  // and again on every open: another screen's sheet may have changed them since.
   useEffect(() => {
+    if (currentLanguage) setLanguage(currentLanguage)
+    if (mounted.current && !visible) return
+    mounted.current = true
     void getStoredGame().then(setGame)
     void getStoredTabletopMode().then(setTabletop)
-    void getStoredLanguage(deckSlug).then((stored) => {
-      if (stored && languages.includes(stored)) setLanguage(stored)
-    })
+    if (!currentLanguage) {
+      void getStoredLanguage(deckSlug).then((stored) => {
+        if (stored && languages.includes(stored)) setLanguage(stored)
+      })
+    }
     void getStoredSecondaryLanguages(deckSlug).then((stored) =>
       setSecondary(stored.filter((code) => languages.includes(code)))
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deckSlug])
+  }, [deckSlug, visible, currentLanguage])
 
   const gameTitle = GAME_CATALOG.find((entry) => entry.id === game)?.title ?? game
   const languageLabel = getLanguageName(language) ?? language
@@ -591,6 +602,7 @@ export const SettingsModal = ({
                       }
                       setLanguage(next)
                       void setStoredLanguage(deckSlug, next)
+                      onSelectLanguage?.(next)
                       // the new primary can't also be a secondary
                       if (secondary.includes(next)) setSecondaryLanguages([])
                       goBack()

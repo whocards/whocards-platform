@@ -228,6 +228,45 @@ describe('SettingsModal — in-play sheet (issue #197)', () => {
     expect(screen.getByText('Theme')).toBeTruthy()
     expect(screen.getByLabelText('Daily question: open notification settings')).toBeTruthy()
   })
+
+  it("shows a shared link's language over the stored one and reports a pick of the stored one", async () => {
+    mockedGetStoredLanguage.mockResolvedValue('en')
+    const onSelectLanguage = jest.fn()
+    await renderModal({showGame: false, currentLanguage: 'he', onSelectLanguage})
+    await fireEvent.press(await screen.findByLabelText('Language: Hebrew'))
+    await fireEvent.press(await screen.findByText('English'))
+    expect(onSelectLanguage).toHaveBeenCalledWith('en')
+  })
+
+  it('never offers the language on screen as the Second language', async () => {
+    mockedGetStoredLanguage.mockResolvedValue('en')
+    await renderModal({currentLanguage: 'he'})
+    await fireEvent.press(await screen.findByLabelText('Second language: None'))
+    await screen.findByText('English')
+    expect(screen.queryByText('Hebrew')).toBeNull()
+  })
+})
+
+describe('SettingsModal — reopening (issue #197)', () => {
+  it('re-reads stored settings on every open, so a change made in another sheet shows', async () => {
+    const {rerender} = await renderModal({visible: false})
+    mockedGetStoredTabletopMode.mockResolvedValue(true)
+    mockedGetStoredLanguage.mockResolvedValue('he')
+    const props = {
+      onClose: () => {},
+      deckSlug: 'library',
+      languages: ['en', 'he'],
+      theme: 'system' as const,
+      onSelectTheme: () => {},
+    }
+    await rerender(<SettingsModal visible {...props} />)
+    await waitFor(() =>
+      expect(screen.getByLabelText('Tabletop mode').props.accessibilityState).toMatchObject({
+        checked: true,
+      })
+    )
+    expect(screen.getByLabelText('Language: Hebrew')).toBeTruthy()
+  })
 })
 
 describe('SettingsModal — Notifications (issue #361)', () => {
