@@ -2,7 +2,7 @@ import {drizzle} from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import {env} from '~env'
 import * as schemas from './schema'
-import {upsertConsent, upsertUser} from './upsert'
+import {confirmNewsletterConsent as confirmNewsletter, upsertConsent, upsertUser} from './upsert'
 import type {ConsentCreate, UserCreate} from './upsert'
 
 const client = postgres(env.DB_URL)
@@ -21,3 +21,4 @@ export const schema = {...schemas}
 // tested against an in-process Postgres without opening this module's live client.
 export const insertUser = (user: UserCreate) => upsertUser(db, user)
 export const insertConsent = (consent: ConsentCreate) => upsertConsent(db, consent)
+export const confirmNewsletterConsent = (email: string) => confirmNewsletter(db, email)
