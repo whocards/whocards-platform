@@ -190,11 +190,13 @@ describe('dispatchResendEvent — contact.updated scoped unsubscribe', () => {
       email: 'scoped@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
     await upsertConsent(db, {
       email: 'scoped@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     // Webhook fires for the newsletter segment only.
@@ -233,6 +235,7 @@ describe('dispatchResendEvent — contact.updated scoped unsubscribe', () => {
       email: 'upper@example.com', // stored lowercase
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -265,11 +268,13 @@ describe('dispatchResendEvent — contact.updated global unsubscribe', () => {
       email: 'global@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
     await upsertConsent(db, {
       email: 'global@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -301,11 +306,13 @@ describe('dispatchResendEvent — contact.updated global unsubscribe', () => {
       email: 'unmapped@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
     await upsertConsent(db, {
       email: 'unmapped@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -341,6 +348,7 @@ describe('dispatchResendEvent — contact.updated global unsubscribe', () => {
       email: 'benign@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -374,11 +382,13 @@ describe('dispatchResendEvent — contact.deleted', () => {
       email: 'deleted@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
     await upsertConsent(db, {
       email: 'deleted@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -448,6 +458,7 @@ describe('dispatchResendEvent — idempotency', () => {
       email: 'idempotent@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -474,6 +485,7 @@ describe('dispatchResendEvent — idempotency', () => {
       email: 'idem2@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -505,11 +517,13 @@ describe('dispatchResendEvent — email.bounced', () => {
       email: 'bounced@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
     await upsertConsent(db, {
       email: 'bounced@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -539,6 +553,7 @@ describe('dispatchResendEvent — email.complained', () => {
       email: 'spammer@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -566,6 +581,7 @@ describe('dispatchResendEvent — email.suppressed', () => {
       email: 'suppressed@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -596,6 +612,7 @@ describe('dispatchResendEvent — ignored event types', () => {
       email: 'delivered@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {type: 'email.delivered', data: {to: 'delivered@example.com'}}
@@ -671,6 +688,7 @@ describe('dispatchResendEvent — DB state after scoped unsubscribe', () => {
       email: 'ts@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const event = {
@@ -705,6 +723,7 @@ describe('dispatchResendEvent — hygiene event missing recipient', () => {
       email: 'some@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     // Payload has no recipient field at all.
@@ -735,11 +754,13 @@ describe('dispatchResendEvent — partial already-unsubscribed state', () => {
       email: 'partial@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
     await upsertConsent(db, {
       email: 'partial@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     // Pre-unsubscribe the newsletter row via a different path (e.g. user request).

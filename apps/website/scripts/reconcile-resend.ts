@@ -94,6 +94,7 @@ async function main() {
         userId,
         consentType: 'newsletter',
         consentSource: 'legacy_user_newsletter',
+        confirmed: true,
       })
       return row
     },
