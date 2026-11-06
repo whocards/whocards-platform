@@ -7,11 +7,12 @@ import {eq} from 'drizzle-orm'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import * as schema from './db/schema'
-import {upsertConsent, upsertUser} from './db/upsert'
+import {confirmNewsletterConsent, upsertConsent, upsertUser} from './db/upsert'
 import {resetTestDb} from './db/test-helpers'
 import type {TestDb} from './db/test-helpers'
 import {
   applyProviderSyncResult,
+  buildNeedsSyncWhere,
   makeSegmentIdResolver,
   needsSync,
   reconcile,
@@ -238,6 +239,7 @@ describe('idempotent sync', () => {
       email: 'retry@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
     // Simulate a prior failed sync recorded in DB.
     await applyProviderSyncResult(db, row.id, {status: 'failed', error: 'prior error'})
@@ -270,6 +272,38 @@ describe('idempotent sync', () => {
 })
 
 // ---------------------------------------------------------------------------
+// Double opt-in (#360)
+// ---------------------------------------------------------------------------
+
+describe('double opt-in', () => {
+  it('an unconfirmed newsletter signup reaches Resend only after its link is confirmed', async () => {
+    const fakeContacts = makeFakeContacts()
+    const deps: SyncDeps = {
+      resendContacts: fakeContacts,
+      segmentIdFor: makeSegmentIdResolver('nl-seg-1', 'wl-seg-2'),
+      logger: silentLogger,
+    }
+    await upsertConsent(db, {
+      email: 'optin@example.com',
+      consentType: 'newsletter',
+      consentSource: 'footer',
+      confirmed: false,
+    })
+
+    expect(await syncEmailConsents(db, 'optin@example.com', deps)).toEqual([])
+    expect(fakeContacts.createCalls).toHaveLength(0)
+    expect(await db.select().from(schema.emailConsent).where(buildNeedsSyncWhere())).toEqual([])
+
+    expect(await confirmNewsletterConsent(db, 'OptIn@example.com')).toBe(1)
+    expect(await confirmNewsletterConsent(db, 'optin@example.com')).toBe(0)
+
+    const summaries = await syncEmailConsents(db, 'optin@example.com', deps)
+    expect(summaries.map((s) => s.result.status)).toEqual(['synced'])
+    expect(fakeContacts.createCalls[0].segments).toEqual([{id: 'nl-seg-1'}])
+  })
+})
+
+// ---------------------------------------------------------------------------
 // 3. Dual-segment consent
 // ---------------------------------------------------------------------------
 
@@ -286,11 +320,13 @@ describe('dual-segment consent', () => {
       email: 'dual@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     await upsertConsent(db, {
       email: 'dual@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const summaries = await syncEmailConsents(db, 'dual@example.com', deps)
@@ -322,11 +358,13 @@ describe('dual-segment consent', () => {
       email: 'dual2@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     await upsertConsent(db, {
       email: 'dual2@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const summaries = await syncEmailConsents(db, 'dual2@example.com', deps)
@@ -351,6 +389,7 @@ describe('provider failure → retry state', () => {
       email: 'fail@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     expect(row).toBeDefined()
 
@@ -372,6 +411,7 @@ describe('provider failure → retry state', () => {
       email: 'recover@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     await applyProviderSyncResult(db, row.id, {status: 'failed', error: 'first failure'})
@@ -397,6 +437,7 @@ describe('provider failure → retry state', () => {
       email: 'skip@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     await applyProviderSyncResult(db, row.id, {status: 'skipped', reason: 'no_segment_configured'})
@@ -428,6 +469,7 @@ describe('provider failure → retry state', () => {
       email: 'err@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const summaries = await syncEmailConsents(db, 'err@example.com', deps)
@@ -502,6 +544,7 @@ function makeUpsertConsentFn(database: PgDatabase<PgQueryResultHKT, typeof schem
       userId,
       consentType: 'newsletter',
       consentSource: 'legacy_user_newsletter',
+      confirmed: true,
     })
   }
 }
@@ -513,11 +556,13 @@ describe('reconcile() — dry-run', () => {
       email: 'a@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
     await upsertConsent(db, {
       email: 'b@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const fakeContacts = makeFakeContacts()
@@ -558,6 +603,7 @@ describe('reconcile() — dry-run', () => {
       email: 'c@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const fakeContacts = makeFakeContacts()
@@ -587,6 +633,7 @@ describe('reconcile() — apply mode', () => {
       email: 'sync@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     const fakeContacts = makeFakeContacts()
@@ -660,6 +707,7 @@ describe('applyProviderSyncResult — synced', () => {
       email: 'ok@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
       userId: user.id,
     })
 

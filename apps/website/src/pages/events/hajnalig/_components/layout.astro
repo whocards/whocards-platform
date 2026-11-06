@@ -26,50 +26,46 @@ const {class: mainClasses, title = 'Hajnalig', description = 'Hajnalig'} = Astro
     <Head title={title} description={description} noindex={isNoindexRoute(Astro.url.pathname)} />
     <PostHog />
   </head>
-  <body
-    class='m-0 flex min-h-screen bg-[#FFF0E8] text-darkest flex-col font-sans selection:bg-primary-dark selection:text-primary-light scrollbar-hide'
-  >
-    <nav class='navbar fixed h-16 justify-between p-4 backdrop-blur z-10'>
+  <body class='m-0 scrollbar-hide flex min-h-screen flex-col bg-[#FFF0E8] font-sans text-darkest selection:bg-primary-dark selection:text-primary-light'>
+    <nav class='navbar fixed z-10 h-16 justify-between p-4 backdrop-blur'>
       <a
         href='/events/hajnalig'
         aria-label='homepage link'
-        class='hover:text-primary-dark text-darkest transition-colors duration-1000'
+        class='text-darkest transition-colors duration-1000 hover:text-primary-dark'
       >
         <Icon name='logo-gradient' class='w-48' />
       </a>
       <ul class='menu menu-horizontal hidden items-center sm:block'>
-        {
-          eventMainLinks.map((link) => (
-            <NavLink
-              {...link}
-              selected={Astro.url.pathname === link.href}
-              class='menu-title'
-              hideIcon
-              size={link.button ? 'md' : 'sm'}
-              dark={link.button}
-              class:list={[
-                !link.button &&
-                  'text-darkest hover:bg-gray/80 hover:text-primary-light h-10 leading-[22px]',
-              ]}
-            />
-          ))
-        }
+        {eventMainLinks.map((link) => (
+          <NavLink
+            {...link}
+            selected={Astro.url.pathname === link.href}
+            class='menu-title'
+            hideIcon
+            size={link.button ? 'md' : 'sm'}
+            dark={link.button}
+            class:list={[
+              !link.button &&
+                'h-10 leading-[22px] text-darkest hover:bg-gray/80 hover:text-primary-light',
+            ]}
+          />
+        ))}
       </ul>
     </nav>
     <main
-      class='flex flex-1 px-4 flex-col items-center justify-center max-w-3xl mx-auto w-full pt-16'
+      class='mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 pt-16'
       class:list={[mainClasses]}
     >
       <slot />
     </main>
     <Image
       src={bgRight}
-      class='fixed top-0 -right-12 md:right-0 overflow-clip min-h-screen h-full opacity-50 md:opacity-100 pointer-events-none'
+      class='pointer-events-none fixed top-0 -right-12 h-full min-h-screen overflow-clip opacity-50 md:right-0 md:opacity-100'
       alt='background'
     />
     <Image
       src={bgLeft}
-      class='fixed top-0 -left-12 md:left-0 overflow-clip min-h-screen h-full opacity-50 md:opacity-100 pointer-events-none'
+      class='pointer-events-none fixed top-0 -left-12 h-full min-h-screen overflow-clip opacity-50 md:left-0 md:opacity-100'
       alt='background'
     />
   </body>

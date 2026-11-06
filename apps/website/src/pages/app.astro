@@ -113,20 +113,14 @@ const features = [
   description='Download WhoCards on iOS today. Android is in testing — meaningful conversations in your pocket, wherever you go.'
   class='scrollbar-hide'
 >
-  <section
-    class='relative grid min-h-[calc(100svh-4rem)] w-full max-w-7xl items-center gap-6 overflow-hidden px-5 pb-10 pt-16 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-8 lg:px-12 lg:py-16 2xl:px-0'
-  >
+  <section class='relative grid min-h-[calc(100svh-4rem)] w-full max-w-7xl items-center gap-6 overflow-hidden px-5 pt-16 pb-10 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-8 lg:px-12 lg:py-16 2xl:px-0'>
     <div class='relative z-[1] flex max-w-xl flex-col items-start text-left'>
-      <p
-        class='mb-6 inline-flex items-center gap-2 rounded-full border border-primary-dark/45 bg-primary-dark/10 px-3.5 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary-light'
-      >
+      <p class='mb-6 inline-flex items-center gap-2 rounded-full border border-primary-dark/45 bg-primary-dark/10 px-3.5 py-2 text-xs font-semibold tracking-[0.16em] text-primary-light uppercase'>
         <span class='h-1.5 w-1.5 rounded-full bg-primary-dark'></span>
         {pillText}
       </p>
 
-      <h1
-        class='font-title text-[2.75rem] font-bold leading-[0.98] tracking-tight text-white sm:text-6xl lg:text-7xl xl:text-[5rem]'
-      >
+      <h1 class='font-title text-[2.75rem] leading-[0.98] font-bold tracking-tight text-white sm:text-6xl lg:text-7xl xl:text-[5rem]'>
         Better questions, <span class='text-gradient'>wherever you are.</span>
       </h1>
 
@@ -136,43 +130,39 @@ const features = [
       </p>
 
       <div class='mt-8 grid w-full max-w-lg gap-3 sm:grid-cols-2'>
-        {
-          tiles.map((tile, index) => (
-            <a
-              href={tile.href}
-              target={tile.external ? '_blank' : undefined}
-              rel={tile.external ? 'noopener noreferrer' : undefined}
-              data-store={tile.kind}
-              class:list={[
-                'group flex min-h-16 items-center gap-3 rounded-2xl border px-5 py-3 text-left transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light',
-                index === 0
-                  ? 'border-primary-light bg-primary-light text-dark hover:bg-yellow-500'
-                  : 'border-white/25 bg-white/5 text-white hover:border-white/50 hover:bg-white/10',
-              ]}
-            >
-              <Icon name={tile.icon} class='h-7 w-7 shrink-0' />
-              <span class='leading-none'>
-                <span class='block text-[0.65rem] font-semibold uppercase tracking-wide opacity-70'>
-                  {tile.label}
-                </span>
-                <span class='mt-1 block text-base font-bold'>{tile.name}</span>
+        {tiles.map((tile, index) => (
+          <a
+            href={tile.href}
+            target={tile.external ? '_blank' : undefined}
+            rel={tile.external ? 'noopener noreferrer' : undefined}
+            data-store={tile.kind}
+            class:list={[
+              'group flex min-h-16 items-center gap-3 rounded-2xl border px-5 py-3 text-left transition duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light',
+              index === 0
+                ? 'border-primary-light bg-primary-light text-dark hover:bg-yellow-500'
+                : 'border-white/25 bg-white/5 text-white hover:border-white/50 hover:bg-white/10',
+            ]}
+          >
+            <Icon name={tile.icon} class='h-7 w-7 shrink-0' />
+            <span class='leading-none'>
+              <span class='block text-[0.65rem] font-semibold tracking-wide uppercase opacity-70'>
+                {tile.label}
               </span>
-              {tile.kind === 'android-test' && (
-                <Icon name='chevron' class='ml-auto h-5 w-5 shrink-0 opacity-70' />
-              )}
-            </a>
-          ))
-        }
+              <span class='mt-1 block text-base font-bold'>{tile.name}</span>
+            </span>
+            {tile.kind === 'android-test' && (
+              <Icon name='chevron' class='ml-auto h-5 w-5 shrink-0 opacity-70' />
+            )}
+          </a>
+        ))}
       </div>
 
-      {
-        !APP_ANDROID_LAUNCHED && (
-          <p class='mt-3 max-w-lg text-xs leading-5 text-gray-dark'>
-            On Android? WhoCards is finishing Google's required test — join in a couple of taps and
-            you'll be among the first to play.
-          </p>
-        )
-      }
+      {!APP_ANDROID_LAUNCHED && (
+        <p class='mt-3 max-w-lg text-xs leading-5 text-gray-dark'>
+          On Android? WhoCards is finishing Google's required test — join in a couple of taps and
+          you'll be among the first to play.
+        </p>
+      )}
 
       <div class='mt-8 w-full max-w-lg border-t border-white/10 pt-6'>
         <p class='mb-3 text-sm text-gray-lighter'>
@@ -180,7 +170,10 @@ const features = [
         </p>
         <form id='waitlist-form' class='flex flex-col gap-3'>
           <div class='flex flex-col gap-3 sm:flex-row'>
-            <label class='sr-only' for='waitlist-email'> Email address </label>
+            <label class='sr-only' for='waitlist-email'>
+              {' '}
+              Email address{' '}
+            </label>
             <input
               id='waitlist-email'
               type='email'
@@ -189,7 +182,7 @@ const features = [
               autocomplete='email'
               inputmode='email'
               placeholder='you@example.com'
-              class='min-h-12 w-full rounded-xl border border-white/25 bg-white/5 px-4 text-white placeholder:text-gray-dark focus:border-primary-light focus:outline-none focus:ring-2 focus:ring-primary-light/20'
+              class='min-h-12 w-full rounded-xl border border-white/25 bg-white/5 px-4 text-white placeholder:text-gray-dark focus:border-primary-light focus:ring-2 focus:ring-primary-light/20 focus:outline-none'
             />
             <input type='hidden' name='source' value='app-page-launch-fallback' />
             <Button type='submit' tag='button' size='md' hideIcon class='shrink-0 sm:w-auto'>
@@ -208,24 +201,21 @@ const features = [
               product news. <span class='text-gray-dark'>Optional.</span>
             </span>
           </label>
-          {
-            siteKey && (
-              <div
-                class='cf-turnstile'
-                data-sitekey={siteKey}
-                data-action={TURNSTILE_ACTION.appWaitlist}
-                data-theme='dark'
-              />
-            )
-          }
+          {siteKey && (
+            <div
+              class='cf-turnstile'
+              data-sitekey={siteKey}
+              data-action={TURNSTILE_ACTION.appWaitlist}
+              data-theme='dark'
+            />
+          )}
         </form>
         <p
           id='waitlist-status'
           class='mt-2 min-h-5 text-sm text-primary-light'
           role='status'
           aria-live='polite'
-        >
-        </p>
+        ></p>
       </div>
     </div>
 
@@ -237,47 +227,41 @@ const features = [
   <section id='why-the-app' class='w-full border-y border-white/10 bg-background/70'>
     <div class='mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 lg:px-12 lg:py-24 2xl:px-0'>
       <div class='grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20'>
-        <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-dark'>
+        <p class='text-sm font-semibold tracking-[0.16em] text-primary-dark uppercase'>
           Why the app?
         </p>
-        <h2 class='font-title text-3xl font-bold leading-tight text-white sm:text-5xl lg:-mt-2'>
+        <h2 class='font-title text-3xl leading-tight font-bold text-white sm:text-5xl lg:-mt-2'>
           Made for the moment between hello and honest.
         </h2>
       </div>
 
       <div class='mt-12 grid gap-9 md:grid-cols-3 md:gap-0 lg:mt-16'>
-        {
-          features.map((feature) => (
-            <article class='group md:border-l md:border-white/10 md:px-8 md:first:border-l-0 md:first:pl-0 md:last:pr-0'>
-              <Icon
-                name={feature.icon}
-                class='h-8 w-8 text-primary-light transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110'
-              />
-              <h3 class='mt-5 font-title text-2xl font-bold text-white'>{feature.title}</h3>
-              <p class='mt-3 max-w-sm leading-7 text-gray-lighter'>{feature.description}</p>
-            </article>
-          ))
-        }
+        {features.map((feature) => (
+          <article class='group md:border-l md:border-white/10 md:px-8 md:first:border-l-0 md:first:pl-0 md:last:pr-0'>
+            <Icon
+              name={feature.icon}
+              class='h-8 w-8 text-primary-light transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6'
+            />
+            <h3 class='mt-5 font-title text-2xl font-bold text-white'>{feature.title}</h3>
+            <p class='mt-3 max-w-sm leading-7 text-gray-lighter'>{feature.description}</p>
+          </article>
+        ))}
       </div>
     </div>
   </section>
 
   <section class='w-full px-5 py-12 sm:px-8 lg:px-12 lg:py-20'>
-    <div
-      class='relative mx-auto grid w-full max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 bg-dark px-6 py-10 sm:px-10 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-12 lg:px-14 lg:py-14'
-    >
+    <div class='relative mx-auto grid w-full max-w-7xl overflow-hidden rounded-[2rem] border border-white/10 bg-dark px-6 py-10 sm:px-10 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-12 lg:px-14 lg:py-14'>
       <Icon
         name='pattern-mobile'
         class='pointer-events-none absolute inset-x-0 top-0 opacity-30 lg:hidden'
         aria-hidden='true'
       />
       <div class='relative'>
-        <p class='text-sm font-semibold uppercase tracking-[0.16em] text-primary-light'>
+        <p class='text-sm font-semibold tracking-[0.16em] text-primary-light uppercase'>
           Your first card
         </p>
-        <h2
-          class='mt-4 max-w-4xl font-title text-3xl font-bold leading-tight text-white sm:text-5xl'
-        >
+        <h2 class='mt-4 max-w-4xl font-title text-3xl leading-tight font-bold text-white sm:text-5xl'>
           What is the most interesting thing you have learned recently?
         </h2>
         <p class='mt-3 text-sm text-gray-dark'>(About yourself or in general.)</p>
@@ -298,11 +282,9 @@ const features = [
   </section>
 </Layout>
 
-{
-  siteKey && (
-    <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
-  )
-}
+{siteKey && (
+  <script is:inline src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer />
+)}
 
 <script>
   // --- #92 launch funnel instrumentation ---------------------------------
@@ -376,6 +358,7 @@ const features = [
       const json = (await res.json().catch(() => ({}))) as {message?: string}
       if (res.ok) {
         window.posthog?.capture('app_waitlist_signup', {source, newsletter_opt_in: newsletter})
+        if (newsletter) window.posthog?.capture('newsletter_signup', {source})
         form.reset()
         setStatus(json.message || 'You’re on the list — we’ll email you when it’s live.', true)
       } else {

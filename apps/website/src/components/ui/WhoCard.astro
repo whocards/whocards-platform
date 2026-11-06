@@ -14,15 +14,15 @@ const question = questions[id][lang]
 ---
 
 <div
-  class='bg-gradient-to-br from-gray-light to-dark rounded-t-xl pt-[0.5px] pl-[0.5px] to-70% min-w-[165px] w-[165px] lg:min-w-[16.5rem] lg:w-[16.5rem] h-[225px] lg:h-[22.5rem] snap-start'
+  class='h-[225px] w-[165px] min-w-[165px] snap-start rounded-t-xl bg-gradient-to-br from-gray-light to-dark to-70% pt-[0.5px] pl-[0.5px] lg:h-[22.5rem] lg:w-[16.5rem] lg:min-w-[16.5rem]'
   class:list={[classes]}
 >
-  <div class='rounded-t-xl bg-dark relative h-full w-full overflow-hidden'>
-    <Icon name='pattern-card' class='absolute right-0 -top-4 bottom-0' />
-    <p lang={lang} class='p-6 text-sm font-bold lg:text-xl whitespace-pre-line'>{question}</p>
-    <div
-      class='text-primary-dark font-title text-3xl absolute bottom-5 font-bold right-5 lg:right-6 lg:bottom-10 lg:text-5xl'
-    >
+  <div class='relative h-full w-full overflow-hidden rounded-t-xl bg-dark'>
+    <Icon name='pattern-card' class='absolute -top-4 right-0 bottom-0' />
+    <p lang={lang} class='p-6 text-sm font-bold whitespace-pre-line lg:text-xl'>
+      {question}
+    </p>
+    <div class='absolute right-5 bottom-5 font-title text-3xl font-bold text-primary-dark lg:right-6 lg:bottom-10 lg:text-5xl'>
       ?
     </div>
   </div>

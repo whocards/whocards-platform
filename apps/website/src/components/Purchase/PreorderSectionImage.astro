@@ -13,31 +13,25 @@ const id = subtitle.replaceAll(' ', '-').replace('?', '')
 ---
 
 <div
-  class='flex lg:grid lg:grid-flow-col lg:grid-cols-2 lg:gap-14 snap-start px-5 pt-16 pb-8 lg:pb-12 gap-4 lg:max-w-7xl xl:px-0 lg:w-full lg:min-h-[44.5rem]'
+  class='flex snap-start gap-4 px-5 pt-16 pb-8 lg:grid lg:min-h-[44.5rem] lg:w-full lg:max-w-7xl lg:grid-flow-col lg:grid-cols-2 lg:gap-14 lg:pb-12 xl:px-0'
   id={id}
   class:list={[reverse ? 'flex-col-reverse' : 'flex-col', classes]}
 >
   {!reverse && <slot />}
 
   <span class='contents' class:list={[forceReverse && 'lg:flex lg:flex-col']}>
-    <div class='flex flex-col gap-4 lg:gap-5 w-full'>
-      <h3
-        class='text-sm font-semibold uppercase leading-snug tracking-wide text-primary-dark lg:text-base lg:tracking-normal lg:leading-7'
-      >
+    <div class='flex w-full flex-col gap-4 lg:gap-5'>
+      <h3 class='text-sm leading-snug font-semibold tracking-wide text-primary-dark uppercase lg:text-base lg:leading-7 lg:tracking-normal'>
         {subtitle}
       </h3>
-      <h2
-        class='text-3xl font-semibold font-title leading-10 lg:text-[54px] lg:leading-tight lg:tracking-tighter'
-      >
+      <h2 class='font-title text-3xl leading-10 font-semibold lg:text-[54px] lg:leading-tight lg:tracking-tighter'>
         {title}
       </h2>
-      {
-        description && (
-          <p class='text-sm leading-snug text-gray-dark pb-2 lg:text-lg lg:max-w-3xl lg:tracking-tight'>
-            {description}
-          </p>
-        )
-      }
+      {description && (
+        <p class='pb-2 text-sm leading-snug text-gray-dark lg:max-w-3xl lg:text-lg lg:tracking-tight'>
+          {description}
+        </p>
+      )}
       <slot name='image-description' />
       <slot name='button' />
     </div>

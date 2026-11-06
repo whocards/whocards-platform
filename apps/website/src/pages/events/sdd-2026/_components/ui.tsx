@@ -81,7 +81,7 @@ export const Notice = ({children, onDismiss}: {children: ReactNode; onDismiss?: 
 
 export const Screen = ({title, children}: {title?: string; children: ReactNode}) => (
   <section className='flex w-full flex-col items-center gap-5 py-6'>
-    {title && <h1 className='font-title text-center text-3xl font-bold'>{title}</h1>}
+    {title && <h1 className='text-center font-title text-3xl font-bold'>{title}</h1>}
     {children}
   </section>
 )

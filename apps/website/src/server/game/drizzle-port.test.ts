@@ -13,7 +13,7 @@ const db = drizzle(client)
 let clock = Date.now()
 const port = createDrizzleGamePort(db, {now: () => clock, random: () => 0.5})
 const as = (playerToken: string | null) =>
-  createCaller({recordAnswer: async () => {}, game: port, playerToken})
+  createCaller({recordAnswer: async () => {}, game: port, playerToken, mobileMinVersion: null})
 
 let gameId = ''
 let roundId = ''

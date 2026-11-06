@@ -30,8 +30,6 @@
     "test": "turbo test",
     "test:e2e": "pnpm --filter website test:e2e",
     "test:e2e:ssr": "pnpm --filter website test:e2e:ssr",
-    "db:generate": "pnpm --filter website db:generate",
-    "db:migrate": "pnpm --filter website db:migrate",
     "db:push": "pnpm --filter website db:push",
     "db:studio": "pnpm --filter website db:studio",
     "lint": "oxlint --deny-warnings",
@@ -53,8 +51,8 @@
       "oxlint --fix --no-error-on-unmatched-pattern",
       "oxfmt --write --no-error-on-unmatched-pattern"
     ],
-    "apps/website/**/*.{ts,tsx,js,jsx,mjs,cjs,astro}": [
-      "pnpm --filter website exec prettier --write --plugin=prettier-plugin-astro"
+    "**/*.astro": [
+      "oxfmt --write --no-error-on-unmatched-pattern"
     ],
     "*.{json,md,yaml,yml}": [
       "oxfmt --write --no-error-on-unmatched-pattern"
@@ -65,7 +63,7 @@
     "dotenv-cli": "^11.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.0",
-    "oxfmt": "^0.72.0",
+    "oxfmt": "^0.75.0",
     "oxlint": "^1.87.0",
     "oxlint-tsgolint": "7.0.2003",
     "release-it": "^20.2.0",

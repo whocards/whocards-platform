@@ -44,6 +44,8 @@ export const emailConsent = pgTable(
       .defaultNow()
       .notNull(),
     consentSource: text('consent_source').notNull(),
+    // Null until the double opt-in link is clicked; Resend sync skips unconfirmed rows (#360).
+    confirmedAt: timestamp('confirmed_at', {withTimezone: true, mode: 'string'}),
     unsubscribedAt: timestamp('unsubscribed_at', {withTimezone: true, mode: 'string'}),
     unsubscribeSource: text('unsubscribe_source'),
     fulfilledAt: timestamp('fulfilled_at', {withTimezone: true, mode: 'string'}),
@@ -169,7 +171,7 @@ export const conferenceQuestionTracking = pgTable(
 // ---------------------------------------------------------------------------
 // Reconciled from prod (ticket 0005, introspected 2026-06-18). These already
 // exist in the Supabase prod DB but were previously unmodelled here; modelling
-// them makes the schema a faithful superset of prod so `drizzle-kit push` /
+// them makes the schema a faithful superset of prod so
 // `generate` never proposes DROPPING them.
 //
 // ⚠️ AUTH DECISION PENDING (ticket 0005): prod has TWO overlapping auth table

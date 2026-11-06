@@ -24,6 +24,11 @@ export function createWebsiteEnv(runtimeEnv: RuntimeEnv) {
       TURNSTILE_SECRET_KEY: z.string().min(1),
       // Workshop game transcription; unset: dev/preview fake it, production answers 503.
       OPENAI_API_KEY: z.string().optional(),
+      // Builds below this x.y.z show the update screen; unset or 0.0.0 turns the gate off.
+      MOBILE_MIN_VERSION: z
+        .string()
+        .regex(/^\d+\.\d+\.\d+$/)
+        .optional(),
     },
     clientPrefix: 'PUBLIC_',
     client: {

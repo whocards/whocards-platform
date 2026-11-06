@@ -39,6 +39,7 @@ import {getDeviceId} from '@/lib/device-id'
 import {getStoredGame} from '@/lib/game-store'
 import {impact, selection} from '@/lib/haptics'
 import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
+import {notePromptShown} from '@/lib/notification-store'
 import {parsePlayLink} from '@/lib/play-link'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 import {getStoredTabletopMode} from '@/lib/tabletop-store'
@@ -405,6 +406,7 @@ const DeckPlayer = ({
       name: EVENTS.QUESTION_SHOWN,
       props: {deck_id: deckSlug, question_id: questionId, language, source: 'nav'},
     })
+    notePromptShown({deck_id: deckSlug, question_id: questionId, language})
     viewTracker.startView({deck_id: deckSlug, question_id: questionId, language})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionId])

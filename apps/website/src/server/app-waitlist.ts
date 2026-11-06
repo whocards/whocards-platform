@@ -48,21 +48,20 @@ export const resolveConsent = ({newsletter}: {newsletter?: boolean}): Consent =>
 /** On-page status message — reflects the consent the visitor actually chose. */
 export const confirmationMessage = ({newsletter}: {newsletter: boolean}) =>
   newsletter
-    ? "You're on the list — we'll email you at launch, plus the occasional good question."
+    ? "You're on the list — we'll email you at launch. Confirm the occasional WhoCards emails from your inbox."
     : "You're on the list — we'll email you at launch. Nothing else until then."
 
 /**
- * Confirmation email — the WhoCards-branded template, with the consent-specific
- * lines branched so an app-only subscriber is never promised newsletter content
- * and an opted-in subscriber is told exactly what they signed up for.
+ * Confirmation email — the WhoCards-branded template. With a newsletter opt-in it
+ * carries the double opt-in link (`confirmUrl`); without one, no newsletter is promised.
  */
-export const confirmationEmail = ({newsletter}: {newsletter: boolean}) => {
-  const consentLine = newsletter
-    ? 'You also opted in to occasional WhoCards emails — a good question now and then, plus the odd bit of product news. Unsubscribe anytime.'
+export const confirmationEmail = ({confirmUrl}: {confirmUrl?: string}) => {
+  const consentLine = confirmUrl
+    ? `You also asked for occasional WhoCards emails — a good question now and then, plus the odd bit of product news. <a href="${confirmUrl}" style="color:#f9d75f;font-weight:700;">Confirm you want them</a>; until you do, you only get the launch email.`
     : 'Just the one launch email — no newsletter, and nothing else from us until then.'
 
-  const footer = newsletter
-    ? 'You signed up at whocards.cc/app and opted in to our emails. Unsubscribe anytime.'
+  const footer = confirmUrl
+    ? 'You signed up at whocards.cc/app and asked for our emails. Ignore the confirm link and you only get the launch email.'
     : 'You signed up at whocards.cc/app. No messages until launch.'
 
   return {
@@ -104,3 +103,30 @@ export const confirmationEmail = ({newsletter}: {newsletter: boolean}) => {
   </html>`,
   }
 }
+
+/** Double opt-in email for a newsletter signup (#360); nothing else is sent until it is confirmed. */
+export const newsletterConfirmationEmail = ({confirmUrl}: {confirmUrl: string}) => ({
+  subject: 'Confirm your WhoCards emails',
+  html: `<!doctype html>
+  <html lang="en">
+    <body style="background:#08001a;margin:0;padding:32px 12px;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;">
+      <div style="max-width:560px;margin:0 auto;">
+        <div style="color:#f9d75f;font-size:24px;font-weight:800;margin:0 8px 22px;">
+          WhoCards<span style="color:#c058d2;">?</span>
+        </div>
+        <div style="background:#262432;border-radius:24px;padding:32px 28px;color:#f5f5f5;">
+          <h1 style="font-size:30px;line-height:1.2;margin:0 0 20px;">One click and you're in.</h1>
+          <p style="font-size:17px;line-height:1.6;margin:0 0 24px;">
+            Confirm you want the occasional WhoCards email — a good question now and then, plus the odd bit of product news.
+          </p>
+          <p style="margin:0 0 24px;text-align:center;">
+            <a href="${confirmUrl}" style="background:#f9d75f;border-radius:999px;color:#111516;display:inline-block;font-size:17px;font-weight:700;padding:15px 28px;text-decoration:none;">Confirm my email</a>
+          </p>
+          <p style="color:#dcdee9;font-size:13px;line-height:1.6;margin:0;">
+            Didn't sign up? Ignore this email and you won't hear from us.
+          </p>
+        </div>
+      </div>
+    </body>
+  </html>`,
+})

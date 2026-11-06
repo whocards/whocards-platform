@@ -1,0 +1,66 @@
+---
+export const prerender = false
+
+import {Resend} from 'resend'
+import {env} from '~env'
+import Layout from '~layouts/Layout.astro'
+import {syncConsentsBestEffort} from '~server/consent-sync'
+import {db} from '~server/db'
+import {newsletterConfirm} from '~server/newsletter-confirm'
+
+// Double opt-in landing (#360): GET shows a Confirm button whose POST (same-origin, enforced by
+// Astro's security.checkOrigin) confirms and syncs to Resend.
+const post = Astro.request.method === 'POST'
+const params = post ? await Astro.request.formData() : Astro.url.searchParams
+const email = params.get('email')?.toString() ?? ''
+const token = params.get('token')?.toString() ?? ''
+const state = await newsletterConfirm(db, {
+  post,
+  email,
+  token,
+  secret: env.RESEND_WEBHOOK_SECRET,
+  onConfirmed: (normalized) =>
+    syncConsentsBestEffort(new Resend(env.RESEND_API_KEY), normalized, 'newsletter-confirm'),
+})
+if (state === 'invalid') Astro.response.status = 400
+
+const copy = {
+  invalid: [
+    'This link does not work',
+    'Sign up again from the bottom of any page to get a fresh link.',
+  ],
+  ask: [
+    'Confirm your subscription',
+    'One click and you get the occasional good question by email.',
+  ],
+  subscribed: [
+    "You're subscribed",
+    "We'll send you the occasional good question. Unsubscribe anytime.",
+  ],
+  'not-subscribed': ["You're not subscribed", 'Sign up again from the bottom of any page.'],
+}[state]
+---
+
+<Layout noindex>
+  <!-- Strip email and token from the URL before analytics records the pageview. -->
+  <script is:inline>
+    history.replaceState(null, '', location.pathname)
+  </script>
+  <div class='flex w-full flex-col items-center gap-6 self-start px-4 pt-12 text-center text-white'>
+    <h1 class='font-title text-4xl md:text-6xl'>{copy[0]}</h1>
+    <p class='md:text-2xl'>{copy[1]}</p>
+    {state === 'ask' ? (
+      <form method='post'>
+        <input type='hidden' name='email' value={email} />
+        <input type='hidden' name='token' value={token} />
+        <button class='btn btn-primary' type='submit'>
+          Confirm
+        </button>
+      </form>
+    ) : (
+      <a class='btn btn-primary' href='/'>
+        Go to homepage
+      </a>
+    )}
+  </div>
+</Layout>
