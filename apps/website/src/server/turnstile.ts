@@ -4,7 +4,7 @@ import type {ZodIssue} from 'zod'
 // Cloudflare Turnstile server-side verification. The client widget only produces a
 // token; it MUST be verified server-side, otherwise a bot can skip the widget and
 // POST a forged/blank token directly. Shared by every protected surface: /contact,
-// /request-cards, the /app waitlist, the /ai-at-work lead magnet and the footer newsletter form.
+// /request-cards, the /app waitlist, the /ai-at-work lead magnet, the footer newsletter form and the translator popup.
 //
 // Beyond `success`, the handler also pins the token to the surface it was minted
 // for (`action`, set via `data-action` on the widget) and to the hostname the page
@@ -25,6 +25,7 @@ export const TURNSTILE_ACTION = {
   appWaitlist: 'app-waitlist',
   aiCheckin: 'ai-checkin',
   newsletter: 'newsletter',
+  translator: 'translator',
 } as const
 
 export type TurnstileAction = (typeof TURNSTILE_ACTION)[keyof typeof TURNSTILE_ACTION]

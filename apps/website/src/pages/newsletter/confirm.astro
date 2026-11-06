@@ -8,14 +8,15 @@ import {syncConsentsBestEffort} from '~server/consent-sync'
 import {db} from '~server/db'
 import {newsletterConfirm} from '~server/newsletter-confirm'
 
-// Double opt-in landing (#360): GET shows a Confirm button whose POST (same-origin, enforced by
-// Astro's security.checkOrigin) confirms and syncs to Resend.
+// Only the button's POST confirms (same-origin via Astro's checkOrigin), so link scanners' GETs don't.
 const post = Astro.request.method === 'POST'
 const params = post ? await Astro.request.formData() : Astro.url.searchParams
 const email = params.get('email')?.toString() ?? ''
 const token = params.get('token')?.toString() ?? ''
+const consentType = params.get('type')?.toString() === 'translator' ? 'translator' : 'newsletter'
 const state = await newsletterConfirm(db, {
   post,
+  consentType,
   email,
   token,
   secret: env.RESEND_WEBHOOK_SECRET,
@@ -24,21 +25,33 @@ const state = await newsletterConfirm(db, {
 })
 if (state === 'invalid') Astro.response.status = 400
 
-const copy = {
-  invalid: [
-    'This link does not work',
-    'Sign up again from the bottom of any page to get a fresh link.',
-  ],
-  ask: [
-    'Confirm your subscription',
-    'One click and you get the occasional good question by email.',
-  ],
-  subscribed: [
-    "You're subscribed",
-    "We'll send you the occasional good question. Unsubscribe anytime.",
-  ],
-  'not-subscribed': ["You're not subscribed", 'Sign up again from the bottom of any page.'],
-}[state]
+const copy = (
+  consentType === 'translator'
+    ? {
+        invalid: ['This link does not work', 'Get in touch from the contact page instead.'],
+        ask: ['Confirm your email', 'One click and we can reach you about translating WhoCards.'],
+        subscribed: [
+          'Thanks for offering to help',
+          "We'll email you when translating into your language opens up.",
+        ],
+        'not-subscribed': ["We don't have your sign-up", 'Get in touch from the contact page.'],
+      }
+    : {
+        invalid: [
+          'This link does not work',
+          'Sign up again from the bottom of any page to get a fresh link.',
+        ],
+        ask: [
+          'Confirm your subscription',
+          'One click and you get the occasional good question by email.',
+        ],
+        subscribed: [
+          "You're subscribed",
+          "We'll send you the occasional good question. Unsubscribe anytime.",
+        ],
+        'not-subscribed': ["You're not subscribed", 'Sign up again from the bottom of any page.'],
+      }
+)[state]
 ---
 
 <Layout noindex>
@@ -53,6 +66,7 @@ const copy = {
       <form method='post'>
         <input type='hidden' name='email' value={email} />
         <input type='hidden' name='token' value={token} />
+        <input type='hidden' name='type' value={consentType} />
         <button class='btn btn-primary' type='submit'>
           Confirm
         </button>
