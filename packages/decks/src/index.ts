@@ -11,6 +11,7 @@ export {
   isLanguageCode,
   getLanguageName,
 } from './pool'
+export {questionOfTheDay} from './pool/daily'
 
 export {libraryDeck} from './decks/library'
 export {aiAtWorkDeck} from './decks/ai-at-work'

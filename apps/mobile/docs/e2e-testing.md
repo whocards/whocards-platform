@@ -73,10 +73,8 @@ project — not yet configured for this repo).
 
 ## Status
 
-The starter flow is authored against the app's real rendered text but has **not yet been
-run on a simulator/emulator** in this environment (no device available here) — that's the
-same outstanding mobile-runtime verification noted in the root `HANDOFF.md`. Once a
-simulator run is done, wire the EAS workflow above (or a local `maestro test` step) into CI.
+The flows run on Avi's Mac as part of the release gate, against a simulator or emulator. Running
+them in CI (the EAS workflow above, or a `maestro test` step) is still open.
 
 ## Sources
 
