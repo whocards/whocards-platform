@@ -2,6 +2,7 @@ import {Ionicons} from '@expo/vector-icons'
 import {StatusBar} from 'expo-status-bar'
 import {useEffect, useRef, useState} from 'react'
 import {
+  AppState,
   Modal,
   Pressable,
   ScrollView,
@@ -23,6 +24,7 @@ import {DEFAULT_GAME, getLanguageName} from '@whocards/decks'
 import {EVENTS, track} from '@whocards/observability/events'
 import {colors} from '@whocards/tokens'
 
+import {DailyTimeSettingsPage, formatHour} from '@/components/daily-time-settings-page'
 import {GameSettingsPage} from '@/components/game-settings-page'
 import {LanguageSettingsPage} from '@/components/language-settings-page'
 import {SecondLanguageSettingsPage} from '@/components/second-language-settings-page'
@@ -38,7 +40,15 @@ import {
   setStoredLanguage,
   setStoredSecondaryLanguages,
 } from '@/lib/language-store'
-import {openNotificationSetting} from '@/lib/notification-store'
+import type {DailySetting} from '@/lib/notification-store'
+import {
+  DAILY_HOUR,
+  getDailySetting,
+  notificationsAllowed,
+  openNotificationSetting,
+  refillDailyQuestions,
+  setDailySetting,
+} from '@/lib/notification-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '@/lib/tabletop-store'
 import type {ThemeSetting} from '@/lib/theme-store'
 
@@ -63,7 +73,7 @@ const PAGE_SLIDE_MS = 260
 // enough to read as "behind" something (see the doc comment below).
 const PAGE_DIM_OPACITY = 0.3
 
-type Page = 'menu' | 'game' | 'theme' | 'language' | 'secondLanguage'
+type Page = 'menu' | 'game' | 'theme' | 'language' | 'secondLanguage' | 'dailyTime'
 
 type SettingsModalProps = {
   visible: boolean
@@ -235,6 +245,8 @@ export const SettingsModal = ({
   const [language, setLanguage] = useState(languages[0])
   const [secondary, setSecondary] = useState<string[]>([])
   const [tabletop, setTabletop] = useState(false)
+  const [daily, setDaily] = useState<DailySetting>({enabled: true, hour: DAILY_HOUR})
+  const [allowed, setAllowed] = useState(true)
   const [page, setPage] = useState<Page>('menu')
   const mounted = useRef(false)
   // Touch-lock (review finding on issue #189, third pass): true while a rise
@@ -303,6 +315,8 @@ export const SettingsModal = ({
     mounted.current = true
     void getStoredGame().then(setGame)
     void getStoredTabletopMode().then(setTabletop)
+    void getDailySetting().then(setDaily)
+    void notificationsAllowed().then(setAllowed, () => {})
     if (!currentLanguage) {
       void getStoredLanguage(deckSlug).then((stored) => {
         if (stored && languages.includes(stored)) setLanguage(stored)
@@ -313,6 +327,27 @@ export const SettingsModal = ({
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckSlug, visible, currentLanguage])
+
+  // Coming back from the OS setting with the sheet still open: show the new permission and schedule.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' || !visible) return
+      void notificationsAllowed().then(setAllowed, () => {})
+      void refillDailyQuestions().catch(() => {})
+    })
+    return () => sub.remove()
+  }, [visible])
+
+  const changeDaily = (next: DailySetting) => {
+    selection()
+    setDaily(next)
+    void setDailySetting(next).catch(() => {})
+  }
+
+  const allowNotifications = async () => {
+    await openNotificationSetting()
+    setAllowed(await notificationsAllowed())
+  }
 
   const gameTitle = GAME_CATALOG.find((entry) => entry.id === game)?.title ?? game
   const languageLabel = getLanguageName(language) ?? language
@@ -512,21 +547,65 @@ export const SettingsModal = ({
                 </View>
               </Pressable>
 
-              {/* The app asks once (issue #361); after that the OS setting is the switch. */}
               <Text className="text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide">
                 Notifications
               </Text>
               <Pressable
-                onPress={() => void openNotificationSetting().catch(() => {})}
-                accessibilityRole="button"
-                accessibilityLabel="Daily question: open notification settings"
+                onPress={() => changeDaily({...daily, enabled: !daily.enabled})}
+                accessibilityRole="switch"
+                accessibilityLabel="Daily question"
+                accessibilityState={{checked: daily.enabled}}
                 className="flex-row items-center justify-between px-5 py-4"
               >
                 <Text className="text-darker dark:text-white font-sans text-lg">
                   Daily question
                 </Text>
-                <Ionicons name="open-outline" size={16} color={chevronColor} />
+                <Ionicons
+                  name={daily.enabled ? 'checkbox' : 'square-outline'}
+                  size={20}
+                  color={
+                    daily.enabled
+                      ? isDark
+                        ? colors.accentOnDark
+                        : colors.accentOnLight
+                      : chevronColor
+                  }
+                />
               </Pressable>
+              {daily.enabled ? (
+                <Pressable
+                  onPress={() => goToPage('dailyTime')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Time: ${formatHour(daily.hour)}`}
+                  className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-t px-5 py-4"
+                >
+                  <Text className="text-darker dark:text-white font-sans text-lg">Time</Text>
+                  <View className="flex-row items-center gap-1.5">
+                    <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
+                      {formatHour(daily.hour)}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={16} color={chevronColor} />
+                  </View>
+                </Pressable>
+              ) : null}
+              {daily.enabled && !allowed ? (
+                <Pressable
+                  onPress={() => void allowNotifications().catch(() => {})}
+                  accessibilityRole="button"
+                  accessibilityLabel="Notifications are off: open notification settings"
+                  className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-t px-5 py-4"
+                >
+                  <View className="flex-1 pr-3">
+                    <Text className="text-darker dark:text-white font-sans text-lg">
+                      Allow notifications
+                    </Text>
+                    <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
+                      Notifications are off for WhoCards in your phone's settings.
+                    </Text>
+                  </View>
+                  <Ionicons name="open-outline" size={16} color={chevronColor} />
+                </Pressable>
+              ) : null}
             </ScrollView>
           </View>
         </Pressable>
@@ -603,6 +682,17 @@ export const SettingsModal = ({
                       onSelectLanguage?.(next)
                       // the new primary can't also be a secondary
                       if (secondary.includes(next)) setSecondaryLanguages([])
+                      goBack()
+                    }}
+                    onBack={goBack}
+                  />
+                ) : null}
+
+                {page === 'dailyTime' ? (
+                  <DailyTimeSettingsPage
+                    current={daily.hour}
+                    onSelect={(hour) => {
+                      changeDaily({...daily, hour})
                       goBack()
                     }}
                     onBack={goBack}

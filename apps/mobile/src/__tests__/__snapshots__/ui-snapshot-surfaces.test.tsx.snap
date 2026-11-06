@@ -219,6 +219,338 @@ exports[`Player bar renders without Share (the pick screen before a deal) 1`] = 
         "Next"
 `;
 
+exports[`Settings pages renders the Daily question time page 1`] = `
+<View>
+  | flex: 1
+  <View>
+    <View>
+      | alignItems: "center"
+      | borderBottomStyle: "solid"
+      | borderBottomWidth: 1
+      | borderColor: "#dcdee9"
+      | flexDirection: "row"
+      | justifyContent: "space-between"
+      | paddingBlock: 14
+      | paddingInline: 17.5
+      | paddingTop: 16
+      <View>
+        | alignItems: "center"
+        | flexDirection: "row"
+        | gap: 3.5
+        <View accessibilityLabel="back" accessibilityState={}>
+          <Text>
+            | color: "#111516"
+            | fontFamily: "ionicons"
+            | fontSize: 24
+            | fontStyle: "normal"
+            | fontWeight: "normal"
+            ""
+        <Text>
+          | color: "#111516"
+          | fontFamily: "aptly"
+          | fontSize: 21
+          | lineHeight: 28
+          "Daily question time"
+    <RCTScrollView>
+      | maxHeight: 1067.2
+      <View>
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "00:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "01:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "02:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "03:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "04:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "05:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "06:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "07:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "08:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "09:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "10:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "11:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "12:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "13:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "14:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "15:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "16:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "17:00"
+        <View accessibilityRole="button" accessibilityState={"selected":true}>
+          | alignItems: "center"
+          | backgroundColor: "#ffe37e66"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "18:00"
+          <Text>
+            | color: "#9a3aac"
+            | fontSize: 15.75
+            | fontWeight: 700
+            | lineHeight: 24.5
+            "✓"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "19:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "20:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "21:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "22:00"
+        <View accessibilityRole="button" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 14
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "23:00"
+`;
+
 exports[`Settings pages renders the Game page 1`] = `
 <View>
   | flex: 1
@@ -815,7 +1147,7 @@ exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
                 | paddingTop: 17.5
                 | textTransform: "uppercase"
                 "Notifications"
-              <View accessibilityRole="button" accessibilityLabel="Daily question: open notification settings" accessibilityState={}>
+              <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
                 | alignItems: "center"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
@@ -828,12 +1160,44 @@ exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
                   | lineHeight: 24.5
                   "Daily question"
                 <Text>
-                  | color: "#6b6d82"
+                  | color: "#9a3aac"
                   | fontFamily: "ionicons"
-                  | fontSize: 16
+                  | fontSize: 20
                   | fontStyle: "normal"
                   | fontWeight: "normal"
-                  ""
+                  ""
+              <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                | alignItems: "center"
+                | borderColor: "#dcdee9"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Time"
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
+                    "18:00"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
       <View>
         | bottom: 0
         | left: 0
@@ -1179,7 +1543,7 @@ exports[`Settings sheet renders the in-play menu, without the Game row (issue #1
                 | paddingTop: 17.5
                 | textTransform: "uppercase"
                 "Notifications"
-              <View accessibilityRole="button" accessibilityLabel="Daily question: open notification settings" accessibilityState={}>
+              <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
                 | alignItems: "center"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
@@ -1192,12 +1556,44 @@ exports[`Settings sheet renders the in-play menu, without the Game row (issue #1
                   | lineHeight: 24.5
                   "Daily question"
                 <Text>
-                  | color: "#6b6d82"
+                  | color: "#9a3aac"
                   | fontFamily: "ionicons"
-                  | fontSize: 16
+                  | fontSize: 20
                   | fontStyle: "normal"
                   | fontWeight: "normal"
-                  ""
+                  ""
+              <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                | alignItems: "center"
+                | borderColor: "#dcdee9"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Time"
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
+                    "18:00"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
 `;
 
 exports[`Settings sheet renders the menu 1`] = `
@@ -1449,7 +1845,7 @@ exports[`Settings sheet renders the menu 1`] = `
                 | paddingTop: 17.5
                 | textTransform: "uppercase"
                 "Notifications"
-              <View accessibilityRole="button" accessibilityLabel="Daily question: open notification settings" accessibilityState={}>
+              <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
                 | alignItems: "center"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
@@ -1462,12 +1858,44 @@ exports[`Settings sheet renders the menu 1`] = `
                   | lineHeight: 24.5
                   "Daily question"
                 <Text>
-                  | color: "#6b6d82"
+                  | color: "#9a3aac"
                   | fontFamily: "ionicons"
-                  | fontSize: 16
+                  | fontSize: 20
                   | fontStyle: "normal"
                   | fontWeight: "normal"
-                  ""
+                  ""
+              <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                | alignItems: "center"
+                | borderColor: "#dcdee9"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Time"
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
+                    "18:00"
+                  <Text>
+                    | color: "#6b6d82"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
 `;
 
 exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] = `
@@ -1719,7 +2147,7 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                 | paddingTop: 17.5
                 | textTransform: "uppercase"
                 "Notifications"
-              <View accessibilityRole="button" accessibilityLabel="Daily question: open notification settings" accessibilityState={}>
+              <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
                 | alignItems: "center"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
@@ -1732,12 +2160,44 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                   | lineHeight: 24.5
                   "Daily question"
                 <Text>
-                  | color: "#9698af"
+                  | color: "#d485e2"
                   | fontFamily: "ionicons"
-                  | fontSize: 16
+                  | fontSize: 20
                   | fontStyle: "normal"
                   | fontWeight: "normal"
-                  ""
+                  ""
+              <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                | alignItems: "center"
+                | borderColor: "#f5f5f51a"
+                | borderTopStyle: "solid"
+                | borderTopWidth: 1
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 14
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#f5f5f5"
+                  | fontFamily: "golos-text"
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Time"
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 5.25
+                  <Text>
+                    | color: "#9698af"
+                    | fontFamily: "golos-text"
+                    | fontSize: 14
+                    | lineHeight: 21
+                    "18:00"
+                  <Text>
+                    | color: "#9698af"
+                    | fontFamily: "ionicons"
+                    | fontSize: 16
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
 `;
 
 exports[`Share sheet renders all three rows for a Pool-backed Deck 1`] = `

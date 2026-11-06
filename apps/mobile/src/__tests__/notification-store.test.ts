@@ -27,12 +27,14 @@ import {
   ASK_DELAY_MS,
   askAfterLaunch,
   DAILY_HOUR,
+  getDailySetting,
   listenForPromptTaps,
   notePromptShown,
   openNotificationSetting,
   PROMPT_SOURCE,
   recordOpenAndMaybeAsk,
   refillDailyQuestions,
+  setDailySetting,
   WINDOW_DAYS,
 } from '../lib/notification-store'
 import {setStoredLanguage} from '../lib/language-store'
@@ -235,6 +237,60 @@ describe('refillDailyQuestions', () => {
     await pressAlertButton('Yes')
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(schedule).toHaveBeenCalledTimes(WINDOW_DAYS)
+  })
+})
+
+describe('daily question setting', () => {
+  beforeEach(() => getPermissions.mockResolvedValue(permission('granted')))
+
+  it('defaults to on at 18:00', async () => {
+    expect(await getDailySetting()).toEqual({enabled: true, hour: DAILY_HOUR})
+  })
+
+  it('cancels every scheduled prompt when turned off, and launch schedules none', async () => {
+    await setDailySetting({enabled: false, hour: DAILY_HOUR})
+    expect(cancelAll).toHaveBeenCalledTimes(1)
+    expect(schedule).not.toHaveBeenCalled()
+
+    await refillDailyQuestions()
+    expect(schedule).not.toHaveBeenCalled()
+    expect(await getDailySetting()).toEqual({enabled: false, hour: DAILY_HOUR})
+  })
+
+  it('reschedules at the new time when the time changes', async () => {
+    jest.useFakeTimers({now: new Date(2026, 10, 4, 12)})
+    await setDailySetting({enabled: true, hour: 8})
+    jest.useRealTimers()
+
+    expect(cancelAll.mock.invocationCallOrder[0]).toBeLessThan(
+      schedule.mock.invocationCallOrder[0] ?? 0
+    )
+    expect(schedule).toHaveBeenCalledTimes(WINDOW_DAYS)
+    expect(scheduled()[0]?.date).toEqual(new Date(2026, 10, 5, 8))
+    expect(await getDailySetting()).toEqual({enabled: true, hour: 8})
+  })
+
+  it('schedules again when turned back on', async () => {
+    await setDailySetting({enabled: false, hour: 7})
+    await setDailySetting({enabled: true, hour: 7})
+    expect(schedule).toHaveBeenCalledTimes(WINDOW_DAYS)
+    expect(scheduled()[0]?.date.getHours()).toBe(7)
+  })
+
+  it('ends off after a quick off-then-on-then-off', async () => {
+    await Promise.all([
+      setDailySetting({enabled: false, hour: DAILY_HOUR}),
+      setDailySetting({enabled: true, hour: DAILY_HOUR}),
+      setDailySetting({enabled: false, hour: DAILY_HOUR}),
+    ])
+    expect(cancelAll.mock.invocationCallOrder.at(-1)).toBeGreaterThan(
+      schedule.mock.invocationCallOrder.at(-1) ?? 0
+    )
+  })
+
+  it('falls back to 18:00 on a corrupt stored hour', async () => {
+    await AsyncStorage.setItem('whocards-notifications:daily-hour', 'soon')
+    expect((await getDailySetting()).hour).toBe(DAILY_HOUR)
   })
 })
 

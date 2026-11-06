@@ -94,7 +94,12 @@ jest.mock('@/lib/game-store', () => ({
 }))
 
 jest.mock('@/lib/notification-store', () => ({
+  DAILY_HOUR: 18,
+  getDailySetting: jest.fn(),
+  notificationsAllowed: jest.fn(),
   openNotificationSetting: jest.fn().mockResolvedValue(undefined),
+  refillDailyQuestions: jest.fn().mockResolvedValue(undefined),
+  setDailySetting: jest.fn().mockResolvedValue(undefined),
 }))
 jest.mock('@/lib/tabletop-store', () => ({
   getStoredTabletopMode: jest.fn().mockResolvedValue(false),
@@ -121,7 +126,12 @@ import {
   getStoredSecondaryLanguages,
   setStoredLanguage,
 } from '../lib/language-store'
-import {openNotificationSetting} from '../lib/notification-store'
+import {
+  getDailySetting,
+  notificationsAllowed,
+  openNotificationSetting,
+  setDailySetting,
+} from '../lib/notification-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '../lib/tabletop-store'
 
 const mockedGetStoredGame = jest.mocked(getStoredGame)
@@ -139,6 +149,8 @@ beforeEach(() => {
   mockedGetStoredTabletopMode.mockResolvedValue(false)
   mockedGetStoredLanguage.mockResolvedValue(undefined)
   mockedGetStoredSecondaryLanguages.mockResolvedValue([])
+  jest.mocked(getDailySetting).mockResolvedValue({enabled: true, hour: 18})
+  jest.mocked(notificationsAllowed).mockResolvedValue(true)
 })
 
 const renderModal = (overrides: Partial<React.ComponentProps<typeof SettingsModal>> = {}) =>
@@ -226,7 +238,7 @@ describe('SettingsModal — in-play sheet (issue #197)', () => {
     expect(screen.getByText('Second language')).toBeTruthy()
     expect(screen.getByText('Tabletop mode')).toBeTruthy()
     expect(screen.getByText('Theme')).toBeTruthy()
-    expect(screen.getByLabelText('Daily question: open notification settings')).toBeTruthy()
+    expect(screen.getByLabelText('Daily question')).toBeTruthy()
   })
 
   it("shows a shared link's language over the stored one and reports a pick of the stored one", async () => {
@@ -269,13 +281,52 @@ describe('SettingsModal — reopening (issue #197)', () => {
   })
 })
 
-describe('SettingsModal — Notifications (issue #361)', () => {
-  it('opens the notification setting from the Daily question row', async () => {
+describe('SettingsModal — Notifications (issues #361, #364)', () => {
+  it('turns the daily question off, hiding its time', async () => {
     await renderModal()
-    await fireEvent.press(
-      await screen.findByLabelText('Daily question: open notification settings')
-    )
+    await screen.findByLabelText('Time: 18:00')
+    await fireEvent.press(screen.getByLabelText('Daily question'))
+    expect(setDailySetting).toHaveBeenCalledWith({enabled: false, hour: 18})
+    expect(screen.getByLabelText('Daily question').props.accessibilityState).toEqual({
+      checked: false,
+    })
+    expect(screen.queryByLabelText('Time: 18:00')).toBeNull()
+  })
+
+  it('picks a new time from its page and returns to the menu', async () => {
+    jest.mocked(getDailySetting).mockResolvedValue({enabled: true, hour: 9})
+    await renderModal()
+    await fireEvent.press(await screen.findByLabelText('Time: 09:00'))
+    await fireEvent.press(await screen.findByText('20:00'))
+    expect(setDailySetting).toHaveBeenCalledWith({enabled: true, hour: 20})
+    expect(await screen.findByLabelText('Time: 20:00')).toBeTruthy()
+    expect(screen.queryByText('Daily question time')).toBeNull()
+  })
+
+  it('links to the OS setting only while notifications are not allowed', async () => {
+    jest.mocked(notificationsAllowed).mockResolvedValue(false)
+    await renderModal()
+    const allow = await screen.findByLabelText('Notifications are off: open notification settings')
+    jest.mocked(notificationsAllowed).mockResolvedValue(true)
+    await fireEvent.press(allow)
     expect(openNotificationSetting).toHaveBeenCalledTimes(1)
+    await waitFor(() =>
+      expect(
+        screen.queryByLabelText('Notifications are off: open notification settings')
+      ).toBeNull()
+    )
+  })
+
+  it('does not nag about OS permission while the daily question is off', async () => {
+    jest.mocked(getDailySetting).mockResolvedValue({enabled: false, hour: 18})
+    jest.mocked(notificationsAllowed).mockResolvedValue(false)
+    await renderModal()
+    await waitFor(() =>
+      expect(screen.getByLabelText('Daily question').props.accessibilityState).toEqual({
+        checked: false,
+      })
+    )
+    expect(screen.queryByLabelText('Notifications are off: open notification settings')).toBeNull()
   })
 })
 
