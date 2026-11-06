@@ -4,7 +4,7 @@ import {Link} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {useCallback, useEffect, useRef, useState} from 'react'
-import type {View as RNView} from 'react-native'
+import type {HostInstance} from 'react-native'
 import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import Animated, {
   useAnimatedStyle,
@@ -70,11 +70,6 @@ export default function LandingScreen() {
   const {theme, resolvedScheme, select: selectTheme} = useThemeSetting()
   const isDark = resolvedScheme !== 'light'
 
-  // Every setting (Game, Theme, Language, Tabletop mode) now lives behind one
-  // Settings menu, only reachable from this screen (issue #176) — Game/Theme
-  // used to be their own Library chips, Language/Tabletop lived in the
-  // play-screen sheet. See settings-modal.tsx for the menu itself and the
-  // per-deck Language scoping decision.
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
 
   // The hidden dev marker (issue #178) — a long-press on the wordmark below
@@ -88,7 +83,7 @@ export default function LandingScreen() {
   const logoShift = useSharedValue(0) // vertical px offset from the final landing spot
   const contentOpacity = useSharedValue(0) // tagline + bottom block
   const bgOpacity = useSharedValue(0) // background texture
-  const logoRef = useRef<RNView>(null)
+  const logoRef = useRef<HostInstance>(null)
   const startedRef = useRef(false)
 
   useEffect(() => {

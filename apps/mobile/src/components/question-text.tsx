@@ -50,6 +50,42 @@ export const fitFontSize = (
   return Math.round(Math.max(minFont, Math.min(MAX_FONT, raw, widthCap)))
 }
 
+// CJK has no spaces (a sentence wraps glyph by glyph) and its glyphs are full-width
+const CJK_CHAR_WIDTH_RATIO = 1
+const CJK_RE = /[\u3000-\u30ff\u3400-\u9fff\uf900-\ufaff\uff00-\uffef]/
+
+/** Greedy word-wrap height at fitFontSize's glyph metrics, on the raw text LanguageBlock renders. */
+export const estimateBlockHeight = (text: string, fontSize: number, width: number) => {
+  let lines = 0
+  for (const paragraph of text.split('\n')) {
+    const ratio = CJK_RE.test(paragraph) ? CJK_CHAR_WIDTH_RATIO : CHAR_WIDTH_RATIO
+    const maxChars = Math.max(1, Math.floor(width / (fontSize * ratio)))
+    const words = paragraph.split(/\s+/).filter(Boolean)
+    if (words.length === 0) {
+      lines += 1
+      continue
+    }
+    let lineLen = 0
+    for (const word of words) {
+      if (word.length > maxChars) {
+        if (lineLen > 0) lines += 1
+        lines += Math.floor(word.length / maxChars)
+        lineLen = word.length % maxChars
+        continue
+      }
+      const needed = lineLen === 0 ? word.length : lineLen + 1 + word.length
+      if (needed <= maxChars) {
+        lineLen = needed
+      } else {
+        lines += 1
+        lineLen = word.length
+      }
+    }
+    if (lineLen > 0) lines += 1
+  }
+  return lines * fontSize * LINE_HEIGHT_RATIO
+}
+
 // The primary's share of the box height when secondaries are shown — the
 // secondaries are support, not focus (DESIGN.md: the Question is the focus).
 const PRIMARY_SHARE = [1, 0.65, 0.55] as const
@@ -89,9 +125,55 @@ export const fitSecondaryFontSize = (primaryFontSize: number, primaryMinFont: nu
 // each read one language (issue #366). Each half only gets ~50% of the box height
 // (minus MIRROR_GAP), so it fits against a lower floor than a full face.
 const MIN_FONT_MIRRORED = 16
-const MIRROR_GAP = 28
+export const MIRROR_GAP = 28
+export const SECONDARY_GAP = 14 // main's mt-4 at this app's 14px rem, so 1× spacing is unchanged
 
 type LanguageText = {language: string; text: string}
+
+// iOS' largest accessibility text size is ~3.1×, so 4 is effectively uncapped
+const MAX_FONT_SCALE = 4
+const FONT_SCALE_STEP = 0.05
+// real fonts render taller than the estimate (see FILL), so the cap leaves 15% of the box spare
+const CAP_HEADROOM = 0.85
+
+const estimateStackHeight = (
+  text: string,
+  shown: LanguageText[],
+  fontSize: number,
+  secondaryFont: number,
+  width: number
+) =>
+  estimateBlockHeight(text, fontSize, width) +
+  shown.reduce(
+    (sum, s) => sum + SECONDARY_GAP + estimateBlockHeight(s.text, secondaryFont, width),
+    0
+  )
+
+/** main's font sizes for one face, plus the largest OS text scale (never below 1) that still fits its box. */
+export const fitStack = ({
+  text,
+  secondaries,
+  width,
+  height,
+  compact = false,
+}: {
+  text: string
+  secondaries: LanguageText[]
+  width: number
+  height: number
+  compact?: boolean
+}) => {
+  const minFont = compact ? MIN_FONT_MIRRORED : MIN_FONT
+  const share = PRIMARY_SHARE[Math.min(secondaries.length, PRIMARY_SHARE.length - 1)] ?? 1
+  const fontSize = fitFontSize(text, width, height * share, minFont)
+  const secondaryFont = fitSecondaryFontSize(fontSize, minFont)
+  const fits = (scale: number) =>
+    estimateStackHeight(text, secondaries, fontSize * scale, secondaryFont * scale, width) <=
+    height * CAP_HEADROOM
+  let scale = MAX_FONT_SCALE
+  while (scale > 1 && !fits(scale)) scale = Math.round((scale - FONT_SCALE_STEP) * 100) / 100
+  return {fontSize, secondaryFont, maxFontSizeMultiplier: Math.max(1, scale)}
+}
 
 type QuestionTextProps = {
   text: string
@@ -127,15 +209,22 @@ const LanguageBlock = ({
   text,
   language,
   fontSize,
+  maxFontSizeMultiplier,
   muted,
   themedText,
-}: LanguageText & {fontSize: number; muted?: boolean; themedText?: boolean}) => {
+}: LanguageText & {
+  fontSize: number
+  maxFontSizeMultiplier: number
+  muted?: boolean
+  themedText?: boolean
+}) => {
   const direction = getDirection(language)
   // brand/script face where one exists; system font (with a weight) otherwise
   const font = questionFontFamily(language)
 
   return (
     <Text
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
       className={
         themedText
           ? muted
@@ -180,29 +269,35 @@ const QuestionFace = ({
   compact = false,
   themedText,
 }: QuestionFaceProps) => {
-  const share = PRIMARY_SHARE[Math.min(shown.length, PRIMARY_SHARE.length - 1)] ?? 1
-  const minFont = compact ? MIN_FONT_MIRRORED : MIN_FONT
-  const fontSize = useMemo(
-    () => fitFontSize(text, box.width, box.height * share, minFont),
-    [text, box.width, box.height, share, minFont]
+  // `shown` is a fresh array every render, so the memo keys on its content
+  const shownKey = shown.map((s) => `${s.language}:${s.text}`).join('\n')
+  const {fontSize, secondaryFont, maxFontSizeMultiplier} = useMemo(
+    () => fitStack({text, secondaries: shown, width: box.width, height: box.height, compact}),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shownKey stands in for shown
+    [text, box.width, box.height, compact, shownKey]
   )
-  const secondaryFont = fitSecondaryFontSize(fontSize, minFont)
+  const primary = (
+    <LanguageBlock
+      text={text}
+      language={language}
+      fontSize={fontSize}
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
+      themedText={themedText}
+    />
+  )
 
-  if (shown.length === 0) {
-    return (
-      <LanguageBlock text={text} language={language} fontSize={fontSize} themedText={themedText} />
-    )
-  }
+  if (shown.length === 0) return primary
 
   return (
     <View>
-      <LanguageBlock text={text} language={language} fontSize={fontSize} themedText={themedText} />
+      {primary}
       {shown.map((entry) => (
-        <View key={entry.language} className="mt-4">
+        <View key={entry.language} style={{marginTop: SECONDARY_GAP}}>
           <LanguageBlock
             text={entry.text}
             language={entry.language}
             fontSize={secondaryFont}
+            maxFontSizeMultiplier={maxFontSizeMultiplier}
             muted
             themedText={themedText}
           />

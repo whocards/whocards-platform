@@ -44,7 +44,7 @@ const schedule = jest.mocked(Notifications.scheduleNotificationAsync)
 const cancelAll = jest.mocked(Notifications.cancelAllScheduledNotificationsAsync)
 const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
 const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue()
-const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true)
+const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue()
 const addResponseListener = jest.mocked(Notifications.addNotificationResponseReceivedListener)
 const getLastResponse = jest.mocked(Notifications.getLastNotificationResponse)
 
