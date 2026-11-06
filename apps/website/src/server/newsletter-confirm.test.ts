@@ -12,10 +12,10 @@ vi.mock('./db/upsert', async (importOriginal) => {
   const real = await importOriginal<typeof upsert>()
   return {
     ...real,
-    confirmNewsletterConsent: async (...args: Parameters<typeof real.confirmNewsletterConsent>) => {
+    confirmConsent: async (...args: Parameters<typeof real.confirmConsent>) => {
       if (race.unsubscribeFirst)
         await args[0].update(schema.emailConsent).set({unsubscribedAt: '2025-01-01T00:00:00Z'})
-      return real.confirmNewsletterConsent(...args)
+      return real.confirmConsent(...args)
     },
   }
 })
@@ -102,5 +102,46 @@ describe('newsletter confirm page (#360)', () => {
         onConfirmed: vi.fn<(email: string) => Promise<void>>(),
       })
     ).toBe('invalid')
+  })
+})
+
+const signUp = (language: string | null) =>
+  upsert.upsertConsent(db, {
+    email,
+    consentType: 'translator',
+    consentSource: 'translate_prompt',
+    language,
+    confirmed: false,
+  })
+const confirm = (tokenFor: 'newsletter' | 'translator') =>
+  newsletterConfirm(db, {
+    post: true,
+    consentType: 'translator',
+    email,
+    token: newsletterConfirmToken(email, secret, tokenFor),
+    secret,
+    onConfirmed: vi.fn<(email: string) => Promise<void>>(async () => {}),
+  })
+
+describe('translator confirm (#391)', () => {
+  it('stores the language and keeps it when a later sign-up omits it', async () => {
+    await signUp('Indonesian')
+    await signUp(null)
+    const [row] = await db.select().from(schema.emailConsent)
+    expect(row).toMatchObject({
+      consentType: 'translator',
+      language: 'Indonesian',
+      confirmedAt: null,
+    })
+  })
+
+  it('confirms only with a translator token, leaving any newsletter row alone', async () => {
+    await pending()
+    await signUp('Dutch')
+    expect(await confirm('newsletter')).toBe('invalid')
+    expect(await confirm('translator')).toBe('subscribed')
+    const rows = await db.select().from(schema.emailConsent)
+    const confirmed = Object.fromEntries(rows.map((r) => [r.consentType, r.confirmedAt !== null]))
+    expect(confirmed).toEqual({newsletter: false, translator: true})
   })
 })

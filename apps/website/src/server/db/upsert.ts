@@ -1,7 +1,7 @@
 import {and, isNull, eq, sql} from 'drizzle-orm'
 import type {PgDatabase, PgQueryResultHKT} from 'drizzle-orm/pg-core'
 import {normalizeEmail} from '../consent'
-import type {ConsentType} from '../consent'
+import type {ConfirmableConsentType, ConsentType} from '../consent'
 import * as schema from './schema'
 
 export type UserCreate = typeof schema.users.$inferInsert
@@ -43,6 +43,7 @@ export type ConsentCreate = {
   userId?: number | null
   consentType: ConsentType
   consentSource: string
+  language?: string | null
   // False leaves the row waiting on its double opt-in link (newsletter, #360).
   confirmed: boolean
 }
@@ -51,7 +52,8 @@ export type ConsentCreate = {
 //
 // On conflict (same email + consent_type):
 //   - Updates name when a new value is provided.
-//   - Coalesces userId so we never null an existing link.
+//   - Coalesces userId and language so we never null an existing value.
+//   - Keeps an active confirmed row's language, so a fresh sign-up can't rewrite it.
 //   - Clears unsubscribe fields on resubscribe.
 //   - Resets provider sync state on resubscribe so reconciliation re-adds the
 //     contact to Resend (a previously-synced-then-unsubscribed row would
@@ -75,6 +77,7 @@ export const upsertConsent = <T extends PgQueryResultHKT>(
       userId: consent.userId ?? null,
       consentType: consent.consentType,
       consentSource: consent.consentSource,
+      language: consent.language ?? null,
       confirmedAt: consent.confirmed ? sql`now()` : null,
     })
     .onConflictDoUpdate({
@@ -82,6 +85,7 @@ export const upsertConsent = <T extends PgQueryResultHKT>(
       set: {
         name: sql`CASE WHEN excluded.name IS NOT NULL THEN excluded.name ELSE ${schema.emailConsent.name} END`,
         userId: sql`COALESCE(excluded.user_id, ${schema.emailConsent.userId})`,
+        language: sql`CASE WHEN ${schema.emailConsent.confirmedAt} IS NOT NULL AND ${schema.emailConsent.unsubscribedAt} IS NULL THEN ${schema.emailConsent.language} ELSE COALESCE(excluded.language, ${schema.emailConsent.language}) END`,
         confirmedAt: sql`CASE WHEN ${schema.emailConsent.unsubscribedAt} IS NULL THEN ${schema.emailConsent.confirmedAt} ELSE excluded.confirmed_at END`,
         unsubscribedAt: null,
         unsubscribeSource: null,
@@ -94,10 +98,11 @@ export const upsertConsent = <T extends PgQueryResultHKT>(
     .then((rows) => rows[0])
 }
 
-/** Marks the active, unconfirmed newsletter row confirmed; returns rows updated (0 or 1). */
-export const confirmNewsletterConsent = async <T extends PgQueryResultHKT>(
+/** Marks the active, unconfirmed row of a double opt-in type confirmed; returns rows updated (0 or 1). */
+export const confirmConsent = async <T extends PgQueryResultHKT>(
   database: PgDatabase<T, typeof schema>,
-  email: string
+  email: string,
+  consentType: ConfirmableConsentType = 'newsletter'
 ): Promise<number> => {
   const {emailConsent} = schema
   const rows = await database
@@ -106,7 +111,7 @@ export const confirmNewsletterConsent = async <T extends PgQueryResultHKT>(
     .where(
       and(
         eq(emailConsent.email, normalizeEmail(email)),
-        eq(emailConsent.consentType, 'newsletter'),
+        eq(emailConsent.consentType, consentType),
         isNull(emailConsent.unsubscribedAt),
         isNull(emailConsent.confirmedAt)
       )
