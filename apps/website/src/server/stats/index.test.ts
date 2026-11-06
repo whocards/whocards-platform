@@ -256,7 +256,7 @@ const storedAt = (generatedAt: string): StatsSnapshot => {
   }
 }
 
-describe('getStatsSnapshot — serves the stored snapshot, rebuilds inline only when there is none', () => {
+describe('getStatsSnapshot — serves a fresh stored snapshot, rebuilds inline when missing or stale', () => {
   it('returns a fresh stored snapshot without touching the source queries', async () => {
     const stored = storedAt(new Date().toISOString())
     store.readLatestSnapshot.mockResolvedValue(stored)
@@ -266,12 +266,14 @@ describe('getStatsSnapshot — serves the stored snapshot, rebuilds inline only 
     expect(store.writeSnapshot).not.toHaveBeenCalled()
   })
 
-  it('serves a stale snapshot and warns, rather than rebuilding inline', async () => {
+  it('rebuilds and stores a stale snapshot, warning, so the page still updates without the cron', async () => {
     const {getStatsSnapshot, MAX_SNAPSHOT_AGE_MS} = await freshIndex()
     const stored = storedAt(new Date(Date.now() - MAX_SNAPSHOT_AGE_MS - 1000).toISOString())
     store.readLatestSnapshot.mockResolvedValue(stored)
-    expect(await getStatsSnapshot()).toBe(stored)
-    expect(query.getAnswerTotals).not.toHaveBeenCalled()
+    const snapshot = await getStatsSnapshot()
+    expect(snapshot).not.toBe(stored)
+    expect(query.getAnswerTotals).toHaveBeenCalledTimes(1)
+    expect(store.writeSnapshot).toHaveBeenCalledWith(expect.anything(), snapshot)
     expect(observability.logWarn).toHaveBeenCalled()
   })
 

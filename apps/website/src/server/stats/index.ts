@@ -162,18 +162,15 @@ export const refreshStatsSnapshot = async (): Promise<StatsSnapshot> => {
 const isFresh = (snapshot: StatsSnapshot, now: number): boolean =>
   now - Date.parse(snapshot.generatedAt) < MAX_SNAPSHOT_AGE_MS
 
-// A stale snapshot is still served: rebuilding per request would let cache-busting hammer the store APIs.
+// Stale rebuilds store a fresh snapshot, so cache-busting costs one build per window unless writes fail (logged).
 export const getStatsSnapshot = async (): Promise<StatsSnapshot> => {
   const stored = await readLatestSnapshot(db).catch((error: unknown) => {
     logError('stats: reading the snapshot failed', error)
     return undefined
   })
-  if (stored) {
-    if (!isFresh(stored, Date.now())) {
-      logWarn('stats: serving a stale snapshot', undefined, {generatedAt: stored.generatedAt})
-    }
-    return stored
-  }
+  if (stored && isFresh(stored, Date.now())) return stored
+  if (stored)
+    logWarn('stats: snapshot is stale, rebuilding', undefined, {generatedAt: stored.generatedAt})
   if (inFlight) return inFlight
 
   inFlight = buildStatsSnapshot()
