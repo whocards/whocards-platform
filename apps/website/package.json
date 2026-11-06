@@ -15,8 +15,6 @@
     "test:e2e:ssr": "playwright test -c playwright.ssr.config.ts",
     "test:performance:lcp": "pnpm build && node scripts/mobile-lighthouse.mjs",
     "analyze": "pnpx unlighthouse --site https://whocards.cc",
-    "db:generate": "pnpm with-env drizzle-kit generate",
-    "db:migrate": "pnpm with-env drizzle-kit migrate",
     "db:push": "pnpm with-env drizzle-kit push",
     "db:studio": "pnpm with-env drizzle-kit studio",
     "reconcile:resend": "pnpm with-env tsx scripts/reconcile-resend.ts",

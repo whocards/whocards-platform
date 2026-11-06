@@ -6,6 +6,9 @@
     "gate": "none",
     "merge": 2
   },
+  "paperTrail": {
+    "repo": "whocards/factory-log"
+  },
   "modules": {
     "reviewBots": {
       "bots": {
@@ -45,11 +48,6 @@
       "apps/website/src/server/db/schema.ts",
       "packages/game/src/db/schema.ts"
     ],
-    "migrationFiles": [
-      "apps/app/src/server/db/migrations/*.sql",
-      "apps/website/src/server/db/migrations/*.sql"
-    ],
-    "generate": "pnpm --filter app --filter website db:generate",
     "schemaChanges": "pr"
   }
 }

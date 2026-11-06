@@ -2,6 +2,8 @@
 
 Recorded runs, newest first:
 
+- [recent_questions sets, opener rewrites and empty history · 2026-11-04](REPORT-2026-11-04-recent-questions-sets.md) — Opus 5.5, eight jobs: sets of five with history, an opener trap and empty history all passed on v0.1, so the skill text stays unchanged.
+- [recent_questions baseline · 2026-11-04](REPORT-2026-11-04-recent-questions.md) — Opus 5.5, eight single-question jobs with a supplied history: none repeated or closely paraphrased it, against the expected failure. The v0.1 skill already documents the input.
 - [Maintainer taste test · 2026-09-08](REPORT-2026-09-08-maintainer.md) — 21/25 reviewed items rated 4 or 5; five unrated. Human taste calibration, plus a four-request [single-question check](results/2026-09-08-single-question-check.json) against the v0.1 instructions.
 - [Claude Haiku 4.5 · 2026-09-08](REPORT-2026-09-08-haiku.md) — same skill bytes and scenarios as the baseline, different model, but also a different vendor, harness and reasoning setting. Better cards, worse counting: all four count failures were plural asks for a group setting.
 - [gpt-5.6-luna baseline · 2026-09-08](REPORT.md) — the first recorded run.
@@ -25,7 +27,7 @@ mkdir -p experiments/whocards-questions
 node evals/whocards-questions/scripts/prepare-run.mjs experiments/whocards-questions/run-01 MODEL_ID 2
 ```
 
-Create only the parent directory; the preparation tool creates the new run directory. Use a new output directory and the actual model identifier. Two samples per scenario provide a small variation check, not a statistical quality estimate. The script freezes the skill, references, deck, file hashes, requests, and reviewer expectations. It refuses to replace an existing run.
+Create only the parent directory; the preparation tool creates the new run directory. Use a new output directory and the actual model identifier. Two samples per scenario provide a small variation check, not a statistical quality estimate. An optional fourth argument names another scenario file, such as `evals/whocards-questions/prompts-recent-questions.json`, whose scenarios carry a `recent_questions` history in the format `SKILL.md` documents; the job passes it as the host's block before the request, and each scenario's `expect.avoid` lists what a response must not repeat or closely paraphrase. The script freezes the skill, references, deck, file hashes, requests, and reviewer expectations. It refuses to replace an existing run.
 
 Run one fresh agent per `jobs/*.txt`, with no conversation history or previous outputs. Give it only that file's contents. The job includes the complete skill and resources; it does not include expected counts or reviewer hints. Save the complete, unedited final response to `responses/JOB_ID.txt`. Record the actual model, reasoning setting, execution method, failures, and any extra instructions in the run report. Do not silently retry or switch models; retain failed attempts separately.
 
