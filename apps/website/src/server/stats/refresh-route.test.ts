@@ -12,7 +12,7 @@ vi.mock('@whocards/observability', () => ({logError: vi.fn<() => void>()}))
 const post = async (secret: string, presented: string) => {
   envMock.STATS_REFRESH_SECRET = secret
   vi.resetModules()
-  const {POST} = await import('./refresh')
+  const {POST} = await import('../../pages/api/stats/refresh')
   const request = new Request('https://whocards.cc/api/stats/refresh', {
     method: 'POST',
     headers: {authorization: `Bearer ${presented}`},
