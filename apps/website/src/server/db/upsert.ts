@@ -43,6 +43,8 @@ export type ConsentCreate = {
   userId?: number | null
   consentType: ConsentType
   consentSource: string
+  // False leaves the row waiting on its double opt-in link (newsletter, #360).
+  confirmed: boolean
 }
 
 // Upserts a consent row for a given (email, consentType) pair.
@@ -56,6 +58,9 @@ export type ConsentCreate = {
 //     otherwise look "already synced" and be skipped by needsSync()).
 //   - Does NOT overwrite consentedAt (preserves first-consent timestamp).
 //   - Does NOT touch fulfilledAt.
+//   - Never changes an active row's confirmation: only the double opt-in link
+//     confirms a pending one. A resubscribe after unsubscribing takes this
+//     signup's confirmation.
 export const upsertConsent = <T extends PgQueryResultHKT>(
   database: PgDatabase<T, typeof schema>,
   consent: ConsentCreate
@@ -70,12 +75,14 @@ export const upsertConsent = <T extends PgQueryResultHKT>(
       userId: consent.userId ?? null,
       consentType: consent.consentType,
       consentSource: consent.consentSource,
+      confirmedAt: consent.confirmed ? sql`now()` : null,
     })
     .onConflictDoUpdate({
       target: [schema.emailConsent.email, schema.emailConsent.consentType],
       set: {
         name: sql`CASE WHEN excluded.name IS NOT NULL THEN excluded.name ELSE ${schema.emailConsent.name} END`,
         userId: sql`COALESCE(excluded.user_id, ${schema.emailConsent.userId})`,
+        confirmedAt: sql`CASE WHEN ${schema.emailConsent.unsubscribedAt} IS NULL THEN ${schema.emailConsent.confirmedAt} ELSE excluded.confirmed_at END`,
         unsubscribedAt: null,
         unsubscribeSource: null,
         providerSyncedAt: null,
@@ -85,6 +92,27 @@ export const upsertConsent = <T extends PgQueryResultHKT>(
     })
     .returning()
     .then((rows) => rows[0])
+}
+
+/** Marks the active, unconfirmed newsletter row confirmed; returns rows updated (0 or 1). */
+export const confirmNewsletterConsent = async <T extends PgQueryResultHKT>(
+  database: PgDatabase<T, typeof schema>,
+  email: string
+): Promise<number> => {
+  const {emailConsent} = schema
+  const rows = await database
+    .update(emailConsent)
+    .set({confirmedAt: sql`now()`, updatedAt: sql`now()`})
+    .where(
+      and(
+        eq(emailConsent.email, normalizeEmail(email)),
+        eq(emailConsent.consentType, 'newsletter'),
+        isNull(emailConsent.unsubscribedAt),
+        isNull(emailConsent.confirmedAt)
+      )
+    )
+    .returning({id: emailConsent.id})
+  return rows.length
 }
 
 // ---------------------------------------------------------------------------

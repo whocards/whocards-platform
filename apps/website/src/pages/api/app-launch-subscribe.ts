@@ -4,8 +4,9 @@ import {Resend} from 'resend'
 import {env} from '~env'
 import {appWaitlistSchema, confirmationEmail, confirmationMessage} from '~server/app-waitlist'
 import {CONSENT_SOURCE, normalizeEmail} from '~server/consent'
-import {db, insertConsent, insertUser} from '~server/db'
-import {makeSegmentIdResolver, syncEmailConsents} from '~server/resend-sync'
+import {syncConsentsBestEffort} from '~server/consent-sync'
+import {insertConsent, insertUser} from '~server/db'
+import {newsletterConfirmUrl} from '~server/newsletter-token'
 import {TURNSTILE_ACTION, turnstileMessageFor, verifyTurnstile} from '~server/turnstile'
 
 // SSR endpoint for the /app waitlist and launch-day reminder capture.
@@ -54,17 +55,14 @@ export const POST: APIRoute = async ({request, clientAddress, url}) => {
     console.info('app-launch-subscribe: source=%s', source)
   }
 
-  // Persist the lead. Upsert the user row first (keeps user.newsletter OR-merge
-  // compatibility), then write consent rows: app_launch always, newsletter only
-  // when the visitor opted in. The durable consent row is the point of the form —
+  // Persist the lead: the user row, then consent rows: app_launch always, newsletter
+  // only when the visitor opted in, unconfirmed until its emailed link is clicked (#360).
+  // user.newsletter stays false: the reconcile script treats it as already-confirmed consent.
+  // The durable consent row is the point of the form —
   // if it fails, fail the request rather than telling the visitor they're on the
   // list with no record to back it (and nothing for the Resend sync to reconcile).
   try {
-    const user = await insertUser({
-      email,
-      name: displayName,
-      newsletter,
-    })
+    const user = await insertUser({email, name: displayName})
     const userId = user?.id ?? null
 
     await insertConsent({
@@ -73,6 +71,7 @@ export const POST: APIRoute = async ({request, clientAddress, url}) => {
       userId,
       consentType: 'app_launch',
       consentSource,
+      confirmed: true,
     })
 
     if (newsletter) {
@@ -82,6 +81,7 @@ export const POST: APIRoute = async ({request, clientAddress, url}) => {
         userId,
         consentType: 'newsletter',
         consentSource,
+        confirmed: false,
       })
     }
   } catch (error) {
@@ -96,7 +96,11 @@ export const POST: APIRoute = async ({request, clientAddress, url}) => {
 
   const resend = new Resend(env.RESEND_API_KEY)
 
-  const confirmation = confirmationEmail({newsletter})
+  const confirmation = confirmationEmail({
+    confirmUrl: newsletter
+      ? newsletterConfirmUrl(url.origin, email, env.RESEND_WEBHOOK_SECRET)
+      : undefined,
+  })
 
   try {
     const {error} = await resend.emails.send({
@@ -115,26 +119,8 @@ export const POST: APIRoute = async ({request, clientAddress, url}) => {
     return json({message: "We couldn't send the confirmation email. Please try again."}, 502)
   }
 
-  // Best-effort Resend Contacts/Segments sync (#120). Runs AFTER the
-  // confirmation email so a sync failure never blocks a successful signup.
-  // Wrap in try/catch — provider failures are recorded in provider_sync_error
-  // for reconciliation; they must NOT erase the consent rows.
-  try {
-    const segmentIdFor = makeSegmentIdResolver(
-      env.RESEND_SEGMENT_NEWSLETTER_ID,
-      env.RESEND_SEGMENT_APP_WAITLIST_ID
-    )
-    const resendContacts = {
-      create: (payload: Parameters<typeof resend.contacts.create>[0]) =>
-        resend.contacts.create(payload),
-      get: (options: {email: string}) => resend.contacts.get(options),
-      addToSegment: (options: {email: string; segmentId: string}) =>
-        resend.contacts.segments.add(options),
-    }
-    await syncEmailConsents(db, email, {resendContacts, segmentIdFor})
-  } catch (syncErr) {
-    logError('app-launch-subscribe: resend sync threw (non-fatal)', syncErr)
-  }
+  // Runs AFTER the confirmation email so a sync failure never blocks a signup.
+  await syncConsentsBestEffort(resend, email, 'app-launch-subscribe')
 
   return json({message: confirmationMessage({newsletter})}, 200)
 }

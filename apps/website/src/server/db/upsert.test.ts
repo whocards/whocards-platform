@@ -53,11 +53,13 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'x@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     await upsertConsent(db, {
       email: 'x@example.com',
       consentType: 'newsletter',
       consentSource: 'app_page',
+      confirmed: true,
     })
     const rows = await db.select().from(schema.emailConsent)
     expect(rows).toHaveLength(2)
@@ -71,6 +73,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'waitlist-only@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     const rows = await db.select().from(schema.emailConsent)
     expect(rows).toHaveLength(1)
@@ -84,11 +87,13 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'dup@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     const second = await upsertConsent(db, {
       email: 'dup@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     expect(second.id).toBe(first.id)
     const rows = await db.select().from(schema.emailConsent)
@@ -100,6 +105,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'resub@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
 
     // Seed a FIXED older consented_at so the assertion is deterministic — two
@@ -115,9 +121,41 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'resub@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     // consentedAt must be the original (seeded) timestamp, not overwritten
     expect(new Date(second.consentedAt).toISOString()).toBe(fixedConsentedAt)
+  })
+
+  it('never confirms a pending row, e.g. from the legacy backfill (#360)', async () => {
+    const consent = {
+      email: 'pending@example.com',
+      consentType: 'newsletter',
+      consentSource: 'footer',
+      confirmed: false,
+    } as const
+    await upsertConsent(db, consent)
+    const backfill = {...consent, consentSource: 'legacy_user_newsletter', confirmed: true}
+    expect((await upsertConsent(db, backfill)).confirmedAt).toBeNull()
+  })
+
+  it('keeps an active confirmation, but a resubscribe after unsubscribing must confirm again (#360)', async () => {
+    const consent = {
+      email: 'again@example.com',
+      consentType: 'newsletter',
+      consentSource: 'footer',
+      confirmed: false,
+    } as const
+    const first = await upsertConsent(db, {...consent, confirmed: true})
+    expect(first.confirmedAt).not.toBeNull()
+
+    expect((await upsertConsent(db, consent)).confirmedAt).toBe(first.confirmedAt)
+
+    await db
+      .update(schema.emailConsent)
+      .set({unsubscribedAt: '2025-01-01T00:00:00Z'})
+      .where(eq(schema.emailConsent.id, first.id))
+    expect((await upsertConsent(db, consent)).confirmedAt).toBeNull()
   })
 
   it('non-destructive resubscribe: clears unsubscribe fields and reuses same row', async () => {
@@ -126,6 +164,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'unsub@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     expect(initial).toBeDefined()
 
@@ -155,6 +194,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'unsub@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page_return',
+      confirmed: true,
     })
     // The row id should be the same (upsert, not a new insert)
     expect(resub.id).toBe(initial.id)
@@ -177,6 +217,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'linked@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
       userId: user.id,
     })
     expect(row.userId).toBe(user.id)
@@ -186,6 +227,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'linked@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
       userId: null,
     })
     expect(row2.userId).toBe(user.id) // preserved
@@ -197,12 +239,14 @@ describe('upsertConsent — email_consent table (#119)', () => {
       name: 'Original',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     const updated = await upsertConsent(db, {
       email: 'named@example.com',
       name: 'Updated',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     expect(updated.name).toBe('Updated')
 
@@ -211,6 +255,7 @@ describe('upsertConsent — email_consent table (#119)', () => {
       email: 'named@example.com',
       consentType: 'app_launch',
       consentSource: 'app_page',
+      confirmed: true,
     })
     expect(kept.name).toBe('Updated')
   })

@@ -271,7 +271,7 @@ export type EmailSyncSummary = {
 }
 
 /**
- * Load all active (unsubscribed_at IS NULL) consent rows for a given email
+ * Load all active (unsubscribed_at IS NULL), confirmed consent rows for a given email
  * and best-effort sync each one, applying results to DB.
  * Never throws — individual failures are captured in the returned summaries.
  */
@@ -285,7 +285,13 @@ export async function syncEmailConsents<T extends PgQueryResultHKT>(
   const rows = await db
     .select()
     .from(emailConsent)
-    .where(and(eq(emailConsent.email, email), isNull(emailConsent.unsubscribedAt)))
+    .where(
+      and(
+        eq(emailConsent.email, email),
+        isNull(emailConsent.unsubscribedAt),
+        isNotNull(emailConsent.confirmedAt)
+      )
+    )
 
   const summaries: EmailSyncSummary[] = []
 
@@ -322,6 +328,7 @@ export function buildNeedsSyncWhere() {
   const {emailConsent} = schema
   return and(
     isNull(emailConsent.unsubscribedAt),
+    isNotNull(emailConsent.confirmedAt),
     or(isNull(emailConsent.providerSyncedAt), isNotNull(emailConsent.providerSyncError))
   )
 }
