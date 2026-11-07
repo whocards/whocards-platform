@@ -41,7 +41,14 @@ jest.mock('@/lib/game-store', () => ({
   setStoredGame: jest.fn().mockResolvedValue(undefined),
 }))
 
-jest.mock('@/lib/notification-store', () => ({openNotificationSetting: jest.fn()}))
+jest.mock('@/lib/notification-store', () => ({
+  DAILY_HOUR: 18,
+  getDailySetting: jest.fn().mockResolvedValue({enabled: true, hour: 18}),
+  notificationsAllowed: jest.fn().mockResolvedValue(true),
+  openNotificationSetting: jest.fn(),
+  refillDailyQuestions: jest.fn(),
+  setDailySetting: jest.fn(),
+}))
 jest.mock('@/lib/tabletop-store', () => ({
   getStoredTabletopMode: jest.fn().mockResolvedValue(false),
   setStoredTabletopMode: jest.fn().mockResolvedValue(undefined),
@@ -63,6 +70,7 @@ jest.mock('@whocards/observability/events', () => {
   return {...actual, track: jest.fn()}
 })
 
+import {DailyTimeSettingsPage} from '../components/daily-time-settings-page'
 import {GameSettingsPage} from '../components/game-settings-page'
 import {LanguageSettingsPage} from '../components/language-settings-page'
 import {PlayerBar} from '../components/player-bar'
@@ -150,6 +158,12 @@ describe('Settings pages', () => {
       <LanguageSettingsPage languages={['en', 'he']} current="en" onSelect={noop} onBack={noop} />
     )
     await screen.findByText('Choose your language')
+    expect(uiSnapshot(screen)).toMatchSnapshot()
+  })
+
+  it('renders the Daily question time page', async () => {
+    await renderUi(<DailyTimeSettingsPage current={18} onSelect={noop} onBack={noop} />)
+    await screen.findByText('Daily question time')
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
