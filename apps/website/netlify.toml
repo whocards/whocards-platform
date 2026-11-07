@@ -8,6 +8,8 @@ NODE_VERSION = "24"
 [build]
 command = "pnpm build"
 publish = "dist"
+# Skip deploys (production and previews) when nothing website builds from changed.
+ignore = "sh ../../scripts/ci/netlify-ignore.sh website"
 
 # Preserve external links to the retired English wide-format PDF by sending
 # visitors directly to the current print flow. With no query parameters in the
