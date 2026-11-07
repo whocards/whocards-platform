@@ -18,9 +18,12 @@ declare module '@tanstack/react-router' {
 }
 
 export const Route = createFileRoute('/_authed')({
-  beforeLoad: async (): Promise<CurrentMember> => {
+  beforeLoad: async ({location}): Promise<CurrentMember> => {
     const member = await getCurrentMember()
     if (!member) throw redirect({to: '/sign-in'})
+    if (member.membership?.role === 'translator' && location.pathname !== '/translate') {
+      throw redirect({to: '/translate'})
+    }
     return member
   },
   component: AuthedLayout,
@@ -46,23 +49,33 @@ function AuthedLayout() {
 
   if (bare && membership) return <Outlet />
 
-  const links = (
-    <>
-      <Link to="/decks" onClick={close} activeProps={navActive} className={navLink}>
-        Decks
+  const links =
+    membership?.role === 'translator' ? (
+      <Link to="/translate" onClick={close} activeProps={navActive} className={navLink}>
+        Translate
       </Link>
-      {isHost ? (
-        <Link to="/host" onClick={close} activeProps={navActive} className={navLink}>
-          Host
+    ) : (
+      <>
+        <Link to="/decks" onClick={close} activeProps={navActive} className={navLink}>
+          Decks
         </Link>
-      ) : null}
-      {isAdmin ? (
-        <Link to="/admin/people" onClick={close} activeProps={navActive} className={navLink}>
-          People
-        </Link>
-      ) : null}
-    </>
-  )
+        {isHost ? (
+          <Link to="/host" onClick={close} activeProps={navActive} className={navLink}>
+            Host
+          </Link>
+        ) : null}
+        {isAdmin ? (
+          <>
+            <Link to="/admin/people" onClick={close} activeProps={navActive} className={navLink}>
+              People
+            </Link>
+            <Link to="/translate" onClick={close} activeProps={navActive} className={navLink}>
+              Translate
+            </Link>
+          </>
+        ) : null}
+      </>
+    )
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -7,6 +7,7 @@ import {sendEmail} from '@whocards/emails/resend'
 import {db, schema} from '../db'
 import {env} from '@whocards/env/app'
 import {MAGIC_LINK_DISABLE_SIGNUP, knownUsersOnly} from './magic-link-policy'
+import {translatorsOffOrganizationEndpoints} from './organization-policy'
 import {roles} from './permissions'
 
 const googleProvider =
@@ -45,6 +46,7 @@ export const auth = betterAuth({
   session: {modelName: 'app_session'},
   account: {modelName: 'app_account'},
   verification: {modelName: 'app_verification'},
+  hooks: {before: translatorsOffOrganizationEndpoints},
   plugins: [
     magicLink({
       // Invite-only — see magic-link-policy.ts for exactly why this can't

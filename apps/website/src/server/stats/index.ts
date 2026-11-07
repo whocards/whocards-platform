@@ -108,7 +108,7 @@ const buildStatsSnapshot = async (): Promise<StatsSnapshot> => {
 
   return {
     generatedAt: now.toISOString(),
-    // Answer record only: Live events would double-count (see CONTEXT.md).
+    // Answer record only: conference tracking would double-count web Live event serves (see CONTEXT.md).
     questionsAnswered: totals.ok
       ? live(
           {total: totals.value.answers, thisWeek: totals.value.answersThisWeek},

@@ -15,17 +15,34 @@ describe('pool', () => {
     expect(Object.keys(pool)).toHaveLength(66)
   })
 
+  // At least, not exactly: a language part-way through translation is on some Questions only.
   it('has every Pool language present on every question', () => {
-    const expected = LANGUAGE_CODES.toSorted()
     for (const id of poolQuestionIds) {
-      expect(Object.keys(pool[id] ?? {}).toSorted()).toEqual(expected)
+      expect(Object.keys(pool[id] ?? {})).toEqual(expect.arrayContaining(LANGUAGE_CODES))
     }
   })
 })
 
+const LAUNCH_LANGUAGES = [
+  'da',
+  'de',
+  'en',
+  'es',
+  'fr',
+  'he',
+  'hu',
+  'pl',
+  'pt',
+  'pt-br',
+  'ro',
+  'sr',
+  'zh',
+  'jp',
+]
+
 describe('languages', () => {
-  it('ships 14 language codes including the default', () => {
-    expect(LANGUAGE_CODES).toHaveLength(14)
+  it('ships at least the 14 launch languages, including the default', () => {
+    expect(LANGUAGE_CODES).toEqual(expect.arrayContaining(LAUNCH_LANGUAGES))
     expect(LANGUAGE_CODES).toContain(DEFAULT_LANGUAGE)
   })
 

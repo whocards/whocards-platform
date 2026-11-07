@@ -21,7 +21,7 @@ describe('registry', () => {
     const deck = getDeck('ai-at-work')
     expect(deck?.source.kind).toBe('inline')
     expect(deck?.questionIds.length).toBeGreaterThan(0)
-    expect(deck?.languages).toEqual(['en'])
+    expect(deck?.languages[0]).toBe('en')
   })
 
   it('returns undefined for an unknown slug', () => {

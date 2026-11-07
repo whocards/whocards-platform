@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AuthedReviewRouteImport } from './routes/_authed/review'
+import { Route as AuthedTranslateRouteImport } from './routes/_authed/translate'
 import { Route as AuthedAdminPeopleRouteImport } from './routes/_authed/admin/people'
 import { Route as AuthedDecksIndexRouteImport } from './routes/_authed/decks/index'
 import { Route as AuthedDecksSlugRouteImport } from './routes/_authed/decks/$slug'
@@ -39,6 +40,11 @@ const SignInRoute = SignInRouteImport.update({
 const AuthedReviewRoute = AuthedReviewRouteImport.update({
   id: '/review',
   path: '/review',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedTranslateRoute = AuthedTranslateRouteImport.update({
+  id: '/translate',
+  path: '/translate',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAdminPeopleRoute = AuthedAdminPeopleRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/review': typeof AuthedReviewRoute
+  '/translate': typeof AuthedTranslateRoute
   '/admin/people': typeof AuthedAdminPeopleRoute
   '/decks/$slug': typeof AuthedDecksSlugRoute
   '/host/$gameId': typeof AuthedHostGameIdRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/sign-in': typeof SignInRoute
   '/review': typeof AuthedReviewRoute
+  '/translate': typeof AuthedTranslateRoute
   '/admin/people': typeof AuthedAdminPeopleRoute
   '/decks/$slug': typeof AuthedDecksSlugRoute
   '/host/$gameId': typeof AuthedHostGameIdRoute
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/sign-in': typeof SignInRoute
   '/_authed/review': typeof AuthedReviewRoute
+  '/_authed/translate': typeof AuthedTranslateRoute
   '/_authed/admin/people': typeof AuthedAdminPeopleRoute
   '/_authed/decks/$slug': typeof AuthedDecksSlugRoute
   '/_authed/host/$gameId': typeof AuthedHostGameIdRoute
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/sign-in'
     | '/review'
+    | '/translate'
     | '/admin/people'
     | '/decks/$slug'
     | '/host/$gameId'
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/'
     | '/sign-in'
     | '/review'
+    | '/translate'
     | '/admin/people'
     | '/decks/$slug'
     | '/host/$gameId'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/sign-in'
     | '/_authed/review'
+    | '/_authed/translate'
     | '/_authed/admin/people'
     | '/_authed/decks/$slug'
     | '/_authed/host/$gameId'
@@ -202,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/review'
       fullPath: '/review'
       preLoaderRoute: typeof AuthedReviewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/translate': {
+      id: '/_authed/translate'
+      path: '/translate'
+      fullPath: '/translate'
+      preLoaderRoute: typeof AuthedTranslateRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/admin/people': {
@@ -265,6 +284,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedReviewRoute: typeof AuthedReviewRoute
+  AuthedTranslateRoute: typeof AuthedTranslateRoute
   AuthedAdminPeopleRoute: typeof AuthedAdminPeopleRoute
   AuthedDecksSlugRoute: typeof AuthedDecksSlugRoute
   AuthedHostGameIdRoute: typeof AuthedHostGameIdRoute
@@ -275,6 +295,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedReviewRoute: AuthedReviewRoute,
+  AuthedTranslateRoute: AuthedTranslateRoute,
   AuthedAdminPeopleRoute: AuthedAdminPeopleRoute,
   AuthedDecksSlugRoute: AuthedDecksSlugRoute,
   AuthedHostGameIdRoute: AuthedHostGameIdRoute,
