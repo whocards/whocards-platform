@@ -37,3 +37,4 @@ npm-debug.log*
 
 # local experiments scratch
 /experiments/
+.secrets/
