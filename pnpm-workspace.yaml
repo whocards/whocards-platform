@@ -90,8 +90,3 @@ auditConfig:
   ignoreGhsas:
     # zod 3 (no 3.x fix) only via @expo/cli, the dev/EAS-time CLI; app code is on patched zod 4.
     - GHSA-mrhx-c7xc-m3w5
-    # decode-uri-component 0.2 via expo-router's query-string 7: patched locally via patches/decode-uri-component@0.2.2.patch (0.5.1's linear decoder; 0.5 is ESM-only and query-string require()s it).
-    - GHSA-qr28-fpjm-wq7f
-
-patchedDependencies:
-  decode-uri-component@0.2.2: patches/decode-uri-component@0.2.2.patch
