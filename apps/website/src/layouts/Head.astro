@@ -120,32 +120,29 @@ const rawText =
 // from its parenthetical context — only the main line belongs in the title.
 const mainLine = rawText?.split('\n\n')[0]?.replace(/\s+/g, ' ').trim()
 
-// hreflang alternates (#207): question pages are the one place on the site
-// where the same content genuinely exists at multiple per-language URLs —
-// every language with a translation for this id is a real alternate, so
-// build the full hreflang cluster + x-default. Other pages have no
-// per-language URL variant (src/pages/[language]/index.astro 301s to /), so
-// hreflang doesn't apply there — adding self-only hreflang with no
-// alternates isn't meaningful.
+// hreflang alternates (#207): question pages and the conversation-starters hub exist at one URL per
+// language; every other page has no per-language variant, so it gets none.
+const isHubRoute = /\/conversation-starters(\.html)?$/.test(Astro.url.pathname)
 const questionTranslations = isQuestionPageRoute
   ? (questions as Record<string, Record<string, string>>)[id ?? '']
   : undefined
-const questionLanguages = questionTranslations
-  ? Object.keys(questionTranslations).filter((lang) => lang in languages)
-  : []
-const hreflangAlternates = questionLanguages.map((lang) => ({
+const alternateLanguages = isHubRoute
+  ? Object.keys(languages)
+  : Object.keys(questionTranslations ?? {}).filter((lang) => lang in languages)
+const alternateHref = (lang: string) =>
+  new URL(
+    isHubRoute ? `/${lang}/conversation-starters` : `/${lang}/question/${id}`,
+    site
+  ).toString()
+const hreflangAlternates = alternateLanguages.map((lang) => ({
   hreflang: toBCP47LanguageTag(lang),
-  href: new URL(`/${lang}/question/${id}`, site).toString(),
+  href: alternateHref(lang),
 }))
-// x-default: the version to show when no other hreflang matches. Fall back
-// to the first available language on the vanishingly small chance a future
-// question ships without an English translation.
-const xDefaultLang = questionLanguages.includes(DEFAULT_LANGUAGE)
+// Fall back to the first language should an alternate set ever lack English.
+const xDefaultLang = alternateLanguages.includes(DEFAULT_LANGUAGE)
   ? DEFAULT_LANGUAGE
-  : questionLanguages[0]
-const xDefaultHref = xDefaultLang
-  ? new URL(`/${xDefaultLang}/question/${id}`, site).toString()
-  : undefined
+  : alternateLanguages[0]
+const xDefaultHref = xDefaultLang ? alternateHref(xDefaultLang) : undefined
 
 if (id) {
   titles.push(mainLine || `Question #${id}`)
@@ -171,7 +168,7 @@ const title = titles.join(' | ')
 {noindex && <meta name='robots' content='noindex, follow' />}
 <link rel='canonical' href={canonicalUrl} />
 
-<!-- hreflang alternates (question pages only — see hreflangAlternates above) -->
+<!-- hreflang alternates (question pages and the hub — see hreflangAlternates above) -->
 {hreflangAlternates.map(({hreflang, href}) => (
   <link rel='alternate' hreflang={hreflang} href={href} />
 ))}

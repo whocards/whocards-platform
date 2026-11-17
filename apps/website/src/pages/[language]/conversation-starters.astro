@@ -1,0 +1,55 @@
+---
+import {getDirection} from '@whocards/decks/engine'
+
+import Button from '~components/ui/Button.astro'
+import {HUB_COPY} from '~constants/conversation-starters'
+import languages from '~data/languages.json'
+import questions from '~data/questions.json'
+import Layout from '~layouts/Layout.astro'
+import type {Language} from '~types'
+
+export function getStaticPaths() {
+  return Object.keys(languages).map((language) => ({params: {language}}))
+}
+
+const {language} = Astro.params as {language: Language}
+const copy = HUB_COPY[language]
+const starters = Object.entries(questions).map(([id, translations]) => ({
+  id,
+  main: translations[language].split('\n\n')[0],
+}))
+---
+
+<Layout
+  lang={language}
+  title={copy.title}
+  description={copy.description}
+  class='mx-auto max-w-3xl px-6 pt-24 pb-16'
+>
+  <div dir={getDirection(language)}>
+    <h1 class='text-gradient text-center font-title text-4xl leading-tight font-bold lg:text-6xl'>
+      {copy.title}
+    </h1>
+    <p class='mt-6 text-center text-lg text-gray-lighter'>{copy.intro}</p>
+    <div class='mt-8 flex flex-wrap justify-center gap-4'>
+      <Button tag='a' href={`/play?lang=${language}`} size='lg'>
+        {copy.play}
+      </Button>
+      <Button tag='a' href='/print' size='lg' variant='secondary'>
+        {copy.print}
+      </Button>
+    </div>
+    <ol class='mt-12 flex list-decimal flex-col gap-4 ps-6 text-lg marker:text-gray-dark'>
+      {starters.map(({id, main}) => (
+        <li>
+          <a
+            href={`/${language}/question/${id}`}
+            class='whitespace-pre-line text-white underline-offset-4 hover:text-primary-light hover:underline'
+          >
+            {main}
+          </a>
+        </li>
+      ))}
+    </ol>
+  </div>
+</Layout>

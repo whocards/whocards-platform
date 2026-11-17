@@ -103,5 +103,6 @@ export default defineConfig({
   redirects: {
     '/preorder': '/contact',
     '/gift': '/contact',
+    '/conversation-starters': '/en/conversation-starters',
   },
 })

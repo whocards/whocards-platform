@@ -50,7 +50,7 @@ export const contactLinks: Link[] = [
 
 export const footerLinks: Link[] = [
   ...mainLinks.filter((link) => !link.button),
-  {href: '/conversation-starters', title: 'Conversation Starters'},
+  {href: '/en/conversation-starters', title: 'Conversation Starters'},
 ]
 
 export const legalLinks: Link[] = [
