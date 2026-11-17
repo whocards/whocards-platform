@@ -2,7 +2,6 @@
 import {getDirection} from '@whocards/decks/engine'
 
 import Button from '~components/ui/Button.astro'
-import WhoCard from '~components/ui/WhoCard.astro'
 import {HUB_COPY} from '~constants/conversation-starters'
 import languages from '~data/languages.json'
 import questions from '~data/questions.json'
@@ -50,6 +49,7 @@ const otherLanguages = Object.entries(languages).filter(
   ([code]) => code !== language && questions[id][code as Language]
 )
 const copy = HUB_COPY[language]
+const [back, forward] = direction === 'rtl' ? ['→', '←'] : ['←', '→']
 const linkClass =
   'text-sm font-semibold text-gray-lighter underline-offset-4 transition-colors hover:text-primary-light hover:underline'
 ---
@@ -63,19 +63,25 @@ const linkClass =
       {main}
     </h1>
     {context && <p class='text-base whitespace-pre-line text-gray-lighter lg:text-lg'>{context}</p>}
-    <WhoCard lang={language} id={id} class='mx-auto' />
+    <img
+      src={`/og/${language}/${id}.png`}
+      alt=''
+      width='1200'
+      height='630'
+      class='w-full rounded-xl'
+    />
     <Button tag='a' href={playHref} size='lg'>
       {copy.playQuestion}
     </Button>
-    <nav class='flex w-full justify-between gap-4' dir='ltr'>
+    <nav class='flex w-full justify-between gap-4'>
       <a href={`/${language}/question/${prevId}`} class={linkClass}>
-        &larr; {copy.prev}
+        {back} {copy.prev}
       </a>
       <a href={`/${language}/conversation-starters`} class={linkClass}>
         {copy.all}
       </a>
       <a href={`/${language}/question/${nextId}`} class={linkClass}>
-        {copy.next} &rarr;
+        {copy.next} {forward}
       </a>
     </nav>
     <nav class='flex flex-wrap justify-center gap-x-4 gap-y-2' dir='ltr'>
