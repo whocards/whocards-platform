@@ -2,7 +2,7 @@
 import {Icon} from 'astro-icon/components'
 import type {Icon as IconName} from 'virtual:astro-icon'
 import Button from '~components/ui/Button.astro'
-import {mainLinks, socialLinks, legalLinks} from '~constants/navigation'
+import {footerLinks, socialLinks, legalLinks} from '~constants/navigation'
 import {env} from '~env'
 import {TURNSTILE_ACTION} from '~server/turnstile'
 ---
@@ -64,16 +64,14 @@ import {TURNSTILE_ACTION} from '~server/turnstile'
   </form>
   <div class='flex justify-between'>
     <div class='flex flex-col gap-4'>
-      {mainLinks
-        .filter((i) => !i.button)
-        .map((link) => (
-          <a
-            href={link.href}
-            class='w-36 text-sm font-semibold hover:text-primary-light active:underline'
-          >
-            {link.title}
-          </a>
-        ))}
+      {footerLinks.map((link) => (
+        <a
+          href={link.href}
+          class='w-36 text-sm font-semibold hover:text-primary-light active:underline'
+        >
+          {link.title}
+        </a>
+      ))}
     </div>
     <div class='flex flex-col gap-4 text-end'>
       {legalLinks.map((link) => (

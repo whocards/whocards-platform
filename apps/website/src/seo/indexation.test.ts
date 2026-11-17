@@ -26,6 +26,7 @@ describe('search indexation policy', () => {
     '/ai-at-work',
     '/app',
     '/contact',
+    '/conversation-starters',
     '/mission',
     '/print',
     '/request-cards',

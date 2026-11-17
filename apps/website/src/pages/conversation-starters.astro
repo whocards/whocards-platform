@@ -1,0 +1,45 @@
+---
+import Button from '~components/ui/Button.astro'
+import questions from '~data/questions.json'
+import Layout from '~layouts/Layout.astro'
+
+const starters = Object.entries(questions).map(([id, translations]) => ({
+  id,
+  main: translations.en.split('\n\n')[0],
+}))
+---
+
+<Layout
+  title='66 Conversation Starters'
+  description='66 deep conversation starters and icebreaker questions that move past small talk, for friends, family, dates and teams. Free to play online in 14 languages.'
+  class='mx-auto max-w-3xl px-6 pt-24 pb-16'
+>
+  <h1 class='text-gradient text-center font-title text-4xl leading-tight font-bold lg:text-6xl'>
+    66 Conversation Starters
+  </h1>
+  <p class='mt-6 text-center text-lg text-gray-lighter'>
+    Honest, open-ended questions that move a conversation past small talk. Use them with friends,
+    family, on a date, or as a check-in with your team. There are no right answers: ask one, then
+    listen.
+  </p>
+  <div class='mt-8 flex flex-wrap justify-center gap-4'>
+    <Button tag='a' href='/play' size='lg'>
+      Play them online
+    </Button>
+    <Button tag='a' href='/print' size='lg' variant='secondary'>
+      Print a deck
+    </Button>
+  </div>
+  <ol class='mt-12 flex list-decimal flex-col gap-4 ps-6 text-lg marker:text-gray-dark'>
+    {starters.map(({id, main}) => (
+      <li>
+        <a
+          href={`/en/question/${id}`}
+          class='whitespace-pre-line text-white underline-offset-4 hover:text-primary-light hover:underline'
+        >
+          {main}
+        </a>
+      </li>
+    ))}
+  </ol>
+</Layout>
