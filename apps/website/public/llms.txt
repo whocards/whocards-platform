@@ -12,6 +12,7 @@ question, listen.
 
 - [Homepage](https://whocards.cc/): what WhoCards is, how to play, FAQ.
 - [Play online](https://whocards.cc/play): the full 66-question deck, free in the browser.
+- [Conversation starters](https://whocards.cc/conversation-starters): all 66 questions on one page, each linking to its own page.
 - [AI Check-In](https://whocards.cc/ai-at-work): a free, ~20-minute team deck of questions for
   talking honestly about AI adoption at work — for managers and teams, not just individuals.
 - [Mission](https://whocards.cc/mission): why WhoCards exists.

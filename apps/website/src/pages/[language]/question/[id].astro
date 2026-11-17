@@ -40,6 +40,16 @@ const [main, ...rest] = text.split('\n\n')
 const context = rest.join(' ').trim()
 const direction = getDirection(language)
 const playHref = `/play?lang=${language}&q=${id}`
+
+const ids = Object.keys(questions).filter((qid) => questions[qid as QuestionId][language])
+const at = ids.indexOf(id)
+const prevId = ids[(at - 1 + ids.length) % ids.length]
+const nextId = ids[(at + 1) % ids.length]
+const otherLanguages = Object.entries(languages).filter(
+  ([code]) => code !== language && questions[id][code as Language]
+)
+const linkClass =
+  'text-sm font-semibold text-gray-lighter underline-offset-4 transition-colors hover:text-primary-light hover:underline'
 ---
 
 <Layout lang={language}>
@@ -55,11 +65,23 @@ const playHref = `/play?lang=${language}&q=${id}`
     <Button tag='a' href={playHref} size='lg'>
       Play this question
     </Button>
-    <a
-      href='/'
-      class='text-sm font-semibold text-gray-lighter underline-offset-4 transition-colors hover:text-primary-light hover:underline'
-    >
-      &larr; Back to WhoCards
-    </a>
+    <nav class='flex w-full justify-between gap-4' dir='ltr'>
+      <a href={`/${language}/question/${prevId}`} class={linkClass}>
+        &larr; Previous question
+      </a>
+      <a href='/conversation-starters' class={linkClass}>
+        All conversation starters
+      </a>
+      <a href={`/${language}/question/${nextId}`} class={linkClass}>
+        Next question &rarr;
+      </a>
+    </nav>
+    <nav class='flex flex-wrap justify-center gap-x-4 gap-y-2' dir='ltr'>
+      {otherLanguages.map(([code, name]) => (
+        <a href={`/${code}/question/${id}`} class={linkClass}>
+          {name}
+        </a>
+      ))}
+    </nav>
   </div>
 </Layout>

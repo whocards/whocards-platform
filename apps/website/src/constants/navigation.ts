@@ -48,6 +48,11 @@ export const contactLinks: Link[] = [
   {icon: 'mdi:github', title: 'Github', href: 'https://github.com/whocards'},
 ]
 
+export const footerLinks: Link[] = [
+  ...mainLinks.filter((link) => !link.button),
+  {href: '/conversation-starters', title: 'Conversation Starters'},
+]
+
 export const legalLinks: Link[] = [
   {title: 'Contact', href: '/contact'},
   {title: 'Privacy Policy', href: '/legal/pp'},
