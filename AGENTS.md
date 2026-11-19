@@ -41,3 +41,7 @@ The ADRs in [docs/adr](docs/adr) are settled; open a ticket before working again
 ## Checks
 
 `pnpm check` (oxfmt, oxlint, turbo typecheck and test) before every push. More in [docs/agents/testing.md](docs/agents/testing.md).
+
+## Search reviews
+
+The recurring SEO and AEO reviews of the website are run from [docs/agents/seo-review.md](docs/agents/seo-review.md).
