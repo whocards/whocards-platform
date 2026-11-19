@@ -25,7 +25,7 @@ test.beforeEach(async ({page}) => {
 test('has intent-aligned metadata and a crawlable link to the AI check-in', async ({page}) => {
   await page.goto('/play')
 
-  await expect(page).toHaveTitle('WhoCards | Play a Free Online Conversation Card Game')
+  await expect(page).toHaveTitle('WhoCards | Play Online Now')
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
     /Play WhoCards free online/
