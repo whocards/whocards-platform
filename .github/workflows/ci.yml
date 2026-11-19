@@ -94,6 +94,10 @@ jobs:
     if: github.event_name != 'pull_request' || needs.changes.outputs.website == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Browsers and OS deps are baked in; the tag must equal the locked @playwright/test version.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f
+      options: --user 1001
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -129,25 +133,6 @@ jobs:
           TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
           PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
           ENV
-
-      - name: Get Playwright version
-        id: pw
-        run: echo "version=$(pnpm --filter website exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: pw-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-
-      - name: Install Playwright browsers
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter website exec playwright install --with-deps chromium
-
-      - name: Install Playwright OS deps
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter website exec playwright install-deps chromium
 
       - name: Static e2e (tests/e2e)
         run: pnpm --filter website test:e2e
