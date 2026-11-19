@@ -26,13 +26,13 @@ catalog:
   tsup: ^8.5.1
 
   # env validation (Standard Schema based — see each package's keys.ts)
-  '@t3-oss/env-core': ^0.13.8
-  zod: ^4.6.5
+  '@t3-oss/env-core': ^0.13.11
+  zod: ^4.6.7
 
   # tRPC (in-app router — see ADR-0002)
-  '@trpc/server': ^11.24.0
-  '@trpc/client': ^11.24.0
-  '@tanstack/react-query': ^5.105.3
+  '@trpc/server': ^11.28.3
+  '@trpc/client': ^11.28.3
+  '@tanstack/react-query': ^5.108.0
 
   # react (shared major across web React-DOM islands + React Native)
   react: ^19.2.1
@@ -64,6 +64,8 @@ overrides:
   '@expo/metro-config>lightningcss': 1.30.1
   # One pg keeps a single drizzle-orm copy, so the @whocards/game tables type-check in every host.
   pg: ^8.23.0
+  # The 2.0 betas don't pair with the @emnapi/core 1.x that astro check loads.
+  '@emnapi/runtime': ^1.11.3
   # Audit floors: transitive advisories, lifted within each parent's range
   # except sharp, which lifts dev-only ipx (Netlify dev image server, wants ^0.34) to 0.35.
   brace-expansion@<1.1.20: ^1.1.20
