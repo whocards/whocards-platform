@@ -19,13 +19,13 @@
   },
   "dependencies": {
     "@react-email/components": "^1.0.12",
-    "@react-email/render": "^2.2.0",
+    "@react-email/render": "^2.3.1",
     "@whocards/app-store": "workspace:*",
     "@whocards/env": "workspace:*",
     "@whocards/tokens": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "resend": "^6.37.0",
+    "resend": "^6.38.1",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -34,7 +34,7 @@
     "@types/react-dom": "catalog:",
     "@whocards/typescript-config": "workspace:*",
     "dotenv-cli": "^11.1.0",
-    "react-email": "^6.11.6",
+    "react-email": "^6.11.14",
     "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "catalog:"

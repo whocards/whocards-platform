@@ -37,7 +37,6 @@ The ADRs in [docs/adr](docs/adr) are settled; open a ticket before working again
 - **Releases are never an agent's:** a `v*` tag runs a real store build and submit (`mobile-release.yml`). Don't tag, run `pnpm release`, or touch EAS credentials.
 - **Tickets:** factory paperwork (claims, memos, odd jobs boxes) is fine. Any other new ticket or label is proposed to Avi first, never filed unasked.
 - **Visual changes need pixels:** a mobile or web change with a visual surface ships with a screenshot of the changed state in both themes; a new look for the Card or another brand surface is mocked for Avi before it is built.
-- **Workflow files** are pushed over SSH (`git@github.com:whocards/whocards-platform.git`): the `gh` token has no `workflow` scope.
 
 ## Checks
 
