@@ -139,3 +139,35 @@ test('the Share sheet on a non-Pool deck (ai-at-work) offers Share link only', a
   await expect(page.getByRole('button', {name: 'Download story image'})).toHaveCount(0)
   await expect(page.getByRole('button', {name: 'Download post image'})).toHaveCount(0)
 })
+
+const prompt = (page: Page) => page.locator('a[data-source="shared_question"]')
+
+test.describe('Get the App prompt on a shared question', () => {
+  test('shows iPhone visitors a UTM-tagged App Store link', async ({browser}) => {
+    const iphone = await browser.newContext({
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+    })
+    const page = await iphone.newPage()
+    await page.goto('/play?lang=en&q=1&utm_source=share&utm_medium=app')
+
+    await expect(heading(page)).toHaveText(q1.en)
+    await expect(prompt(page)).toBeVisible()
+    await expect(prompt(page)).toHaveText('Get the App')
+    const url = new URL((await prompt(page).getAttribute('href'))!)
+    expect(url.hostname).toBe('apps.apple.com')
+    expect(url.searchParams.get('utm_medium')).toBe('shared_question')
+    await iphone.close()
+  })
+
+  test('stays hidden off iOS', async ({page}) => {
+    await page.goto('/play?lang=en&q=1')
+    await expect(heading(page)).toHaveText(q1.en)
+    await expect(prompt(page)).toBeHidden()
+  })
+
+  test('is absent without a shared question', async ({page}) => {
+    await page.goto('/play')
+    await expect(prompt(page)).toHaveCount(0)
+  })
+})
