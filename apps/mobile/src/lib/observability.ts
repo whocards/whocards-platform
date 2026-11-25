@@ -36,7 +36,7 @@ export const posthog =
     : undefined
 
 // Release builds on non-real hardware — simulators/emulators, including the
-// Maestro flows `pnpm release:check` drives (issue #178) — send events that
+// e2e flows `pnpm release:check` drives (issue #178) — send events that
 // are otherwise indistinguishable from a real player's, once sendToPostHog is
 // true. Flag rather than drop: a dropped event is gone for good, a flagged one
 // stays debuggable and is one PostHog "Filter out internal and test users"

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Maestro e2e gate. Run by release-it's before:init hook (both platforms), by the
+// Mobile e2e gate (apps/mobile/e2e). Run by release-it's before:init hook (both platforms), by the
 // mobile:rebuild:* scripts (one platform), and standalone via `pnpm release:check`.
 //
 // CI (ci.yml) already covers lint + typecheck + unit tests on every push to
-// main, so by the time you ship, those are green. What CI does NOT run is the Maestro
+// main, so by the time you ship, those are green. What CI does NOT run is the mobile
 // e2e suite (no simulator/emulator in CI). So we run e2e locally against booted devices
 // as the last gate before a build/tag goes out.
 //
@@ -25,9 +25,7 @@
 // (and run the flows yourself, or accept the risk for a hotfix).
 //
 // Before each platform's suite, we make sure a CURRENT app is actually installed on the
-// booted device — `e2e:ios`/`e2e:android` are bare `maestro test` invocations with no
-// build/install step of their own, so without this a fresh device dies instantly with
-// "Failed to get app binary directory". We build a self-contained Release sim/emulator
+// booted device — `pnpm -F mobile e2e` has no build/install step of its own. We build a self-contained Release sim/emulator
 // app (JS embedded, no Metro dependency needed) and install it whenever the installed
 // app is missing or was built from a different revision. Skip just the build (e.g. you
 // already installed a build yourself) with RELEASE_SKIP_BUILD=1 — the suite still runs.
@@ -55,6 +53,7 @@ import {
   emulatorSerial,
   ensureAvd,
   ensureSimulator,
+  hasApp,
   startEmulator,
   waitForEmulator,
 } from '../../apps/mobile/scripts/devices.mjs'
@@ -75,7 +74,6 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const MOBILE_DIR = path.join(REPO_ROOT, 'apps', 'mobile')
 const IOS_DIR = path.join(MOBILE_DIR, 'ios')
 const ANDROID_DIR = path.join(MOBILE_DIR, 'android')
-const APP_ID = {ios: 'cc.whocards.mobile', android: 'com.whocards.mobile'}
 
 const SIM = DEVICES.pro
 const AVD = DEVICES.duo
@@ -161,28 +159,6 @@ function getBootedIosUdid() {
 }
 
 const getBootedAndroidSerial = () => emulatorSerial(AVD)
-
-function isIosAppInstalled(udid) {
-  if (!udid) return false
-  try {
-    execSync(`xcrun simctl get_app_container ${udid} ${APP_ID.ios} app`, {stdio: 'ignore'})
-    return true
-  } catch {
-    return false
-  }
-}
-
-function isAndroidAppInstalled(serial) {
-  if (!serial) return false
-  try {
-    const out = execSync(`"${ADB}" -s ${serial} shell pm path ${APP_ID.android}`, {
-      encoding: 'utf8',
-    })
-    return out.includes('package:')
-  } catch {
-    return false
-  }
-}
 
 // ── self-provisioning build ─────────────────────────────────────────────────────────────
 // ios/ and android/ are gitignored Expo prebuild output — generate them if this is a
@@ -279,7 +255,11 @@ function buildAndInstallAndroid(serial) {
   ensurePrebuild('android')
   const javaHome = findJdk17()
   console.log('   Building Release Android app (:app:assembleRelease)… this can take a while.')
-  execSync('pnpm with-env android/gradlew :app:assembleRelease', {
+  // Release lint crashes in analysis, and KSP outgrows the generated gradle.properties' Metaspace.
+  const gradle =
+    'pnpm with-env android/gradlew -p android :app:assembleRelease -x lintVitalAnalyzeRelease ' +
+    '"-Porg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g"'
+  execSync(gradle, {
     cwd: MOBILE_DIR,
     stdio: 'inherit',
     env: javaHome ? {...process.env, JAVA_HOME: javaHome} : process.env,
@@ -293,7 +273,6 @@ function buildAndInstallAndroid(serial) {
 }
 
 const getBootedDevice = {ios: getBootedIosUdid, android: getBootedAndroidSerial}
-const isAppInstalled = {ios: isIosAppInstalled, android: isAndroidAppInstalled}
 const buildAndInstall = {ios: buildAndInstallIos, android: buildAndInstallAndroid}
 
 // ── device boot ──────────────────────────────────────────────────────────────────────
@@ -321,7 +300,7 @@ function ensureIosBooted() {
   try {
     execSync('open -a Simulator', {stdio: 'ignore'})
   } catch {
-    // headless boot still works for Maestro even if the UI doesn't open
+    // headless boot still works for the flows even if the UI doesn't open
   }
   return wasBooted ? null : {kind: 'ios', id: sim.udid}
 }
@@ -433,15 +412,15 @@ function teardown(handle) {
 // ── gate ───────────────────────────────────────────────────────────────────────────────
 if (process.env.RELEASE_SKIP_E2E) {
   console.warn(
-    '\n⚠️  pre-release: RELEASE_SKIP_E2E set — skipping Maestro e2e gate.\n' +
+    '\n⚠️  pre-release: RELEASE_SKIP_E2E set — skipping the mobile e2e gate.\n' +
       '   Make sure the flows passed some other way before you ship.\n'
   )
   process.exit(0)
 }
 
 const allSuites = [
-  ['ios', 'iOS', SIM.name, 'pnpm --filter mobile e2e:ios'],
-  ['android', 'Android', AVD.displayName, 'pnpm --filter mobile e2e:android'],
+  ['ios', 'iOS', SIM.name, 'pnpm --filter mobile e2e --device pro'],
+  ['android', 'Android', AVD.displayName, 'pnpm --filter mobile e2e --device duo'],
 ]
 const suites = only ? allSuites.filter(([id]) => id === only) : allSuites
 
@@ -449,7 +428,7 @@ const key = revisionKey()
 const cache = loadCache(key)
 
 console.log(
-  `\n▶  pre-release: running Maestro e2e gate${only ? ` (${only})` : ''} (set RELEASE_SKIP_E2E=1 to skip)\n`
+  `\n▶  pre-release: running the mobile e2e gate${only ? ` (${only})` : ''} (set RELEASE_SKIP_E2E=1 to skip)\n`
 )
 
 // Devices we boot are torn down once the run finishes (pass or fail), so a release leaves
@@ -461,7 +440,7 @@ for (const [id, label, device, cmd] of suites) {
   if (handle) booted.push(handle)
 
   const deviceId = getBootedDevice[id]()
-  const installed = isAppInstalled[id](deviceId)
+  const installed = Boolean(deviceId) && hasApp(deviceId)
   const state = platformState(cache, id)
 
   if (process.env.RELEASE_SKIP_BUILD) {
@@ -504,9 +483,9 @@ for (const [id, label, device, cmd] of suites) {
     console.error(`\n✖  pre-release: ${device} isn't booted — aborting.\n`)
     process.exit(1)
   }
-  console.log(`\n— ${label}: ${cmd} --device ${deviceId}`)
+  console.log(`\n— ${label}: ${cmd}`)
   try {
-    execSync(`${cmd} --device ${deviceId}`, {stdio: 'inherit'})
+    execSync(cmd, {stdio: 'inherit'})
   } catch {
     booted.forEach(teardown)
     console.error(

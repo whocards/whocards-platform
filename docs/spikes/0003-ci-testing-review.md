@@ -90,6 +90,8 @@ Nothing here is urgent; the gate is already about a minute of work. Do these whe
 
 ### B. Remote iOS + Android e2e without a second Mac
 
+> **Superseded (2026-11-19):** Avi chose to keep mobile e2e on the Mac. Maestro was replaced by tester.army `e2e` flows in `apps/mobile/e2e`, run on the WhoCards simulator and emulator ([#273 📋](https://github.com/whocards/whocards-platform/issues/273)). Nothing below was built.
+
 Pricing seen 2026-09-06.
 
 | Option                                                      | iOS         | Android              | Cost                                                          | Verdict                                                                                                                                                                                                                                                                        |
