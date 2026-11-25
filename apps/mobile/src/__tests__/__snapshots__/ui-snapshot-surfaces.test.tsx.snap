@@ -2351,6 +2351,7 @@ exports[`Share sheet renders all three rows for a Pool-backed Deck 1`] = `
         | flexGrow: 1
         | flexShrink: 1
         | justifyContent: "flex-end"
+        | paddingBottom: 0
         <View accessibilityLabel="dismiss" accessibilityState={}>
           | inset: 0
           | position: "absolute"
@@ -2412,6 +2413,25 @@ exports[`Share sheet renders all three rows for a Pool-backed Deck 1`] = `
                     | fontSize: 15.75
                     | lineHeight: 24.5
                     "Share link"
+                <View accessibilityRole="button" accessibilityLabel="Ask someone" accessibilityState={"busy":false,"disabled":false}>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 10.5
+                  | paddingBlock: 14
+                  | paddingInline: 17.5
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "ionicons"
+                    | fontSize: 22
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 15.75
+                    | lineHeight: 24.5
+                    "Ask someone"
                 <View accessibilityRole="button" accessibilityLabel="Story image" accessibilityState={"busy":false,"disabled":false}>
                   | alignItems: "center"
                   | flexDirection: "row"
@@ -2463,6 +2483,7 @@ exports[`Share sheet renders the link row alone for an inline-source Deck 1`] = 
         | flexGrow: 1
         | flexShrink: 1
         | justifyContent: "flex-end"
+        | paddingBottom: 0
         <View accessibilityLabel="dismiss" accessibilityState={}>
           | inset: 0
           | position: "absolute"
@@ -2524,4 +2545,23 @@ exports[`Share sheet renders the link row alone for an inline-source Deck 1`] = 
                     | fontSize: 15.75
                     | lineHeight: 24.5
                     "Share link"
+                <View accessibilityRole="button" accessibilityLabel="Ask someone" accessibilityState={"busy":false,"disabled":false}>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 10.5
+                  | paddingBlock: 14
+                  | paddingInline: 17.5
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "ionicons"
+                    | fontSize: 22
+                    | fontStyle: "normal"
+                    | fontWeight: "normal"
+                    ""
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 15.75
+                    | lineHeight: 24.5
+                    "Ask someone"
 `;

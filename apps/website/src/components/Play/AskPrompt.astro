@@ -1,0 +1,55 @@
+---
+import {buildAskReply, cleanAskerName} from './share-ui'
+
+type Props = {deckId: string; questionId: string; language: string; questionText: string}
+
+// An ask link (issue #434): `ask=1`, and `from` when the sender typed a name. The name is shown as text only.
+const {deckId, questionId, language, questionText} = Astro.props
+const from = cleanAskerName(Astro.url.searchParams.get('from') ?? '')
+---
+
+<div
+  data-ask
+  data-deck-id={deckId}
+  data-question-id={questionId}
+  data-language={language}
+  class='flex flex-col items-center gap-3 px-4 pt-28 text-center'
+>
+  <p class='text-lg font-semibold text-white'>
+    {from ? `${from} wants to hear your answer` : 'Someone wants to hear your answer'}
+  </p>
+  <button
+    type='button'
+    data-ask-reply={buildAskReply(questionText)}
+    class='rounded-full bg-yellow-400 px-6 py-2 font-semibold text-darker transition-colors hover:bg-yellow-500 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light'
+  >
+    Reply
+  </button>
+</div>
+
+<script>
+  import {EVENTS, track} from '@whocards/observability/events'
+
+  const ask = document.querySelector<HTMLElement>('[data-ask]')
+  const reply = ask?.querySelector<HTMLButtonElement>('[data-ask-reply]')
+  if (ask && reply) {
+    const props = {
+      deck_id: ask.dataset.deckId,
+      question_id: ask.dataset.questionId,
+      language: ask.dataset.language,
+    }
+    track({name: EVENTS.ASK_OPENED, props})
+    reply.addEventListener('click', async () => {
+      track({name: EVENTS.ASK_ANSWER_STARTED, props})
+      const text = reply.dataset.askReply ?? ''
+      if (navigator.share) {
+        await navigator.share({text}).catch(() => {})
+        return
+      }
+      await navigator.clipboard.writeText(text).then(
+        () => (reply.textContent = 'Copied: paste it into your chat'),
+        () => {}
+      )
+    })
+  }
+</script>

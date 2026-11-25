@@ -19,6 +19,26 @@ export const buildShareUrl = (deckSlug: string, language: string, questionId: st
   return `${env.EXPO_PUBLIC_WEB_URL}${basePath}?lang=${language}&q=${questionId}&utm_source=share&utm_medium=app`
 }
 
+/** The most characters of a sender's name an ask link carries (issue #434). */
+export const ASKER_NAME_MAX = 40
+
+/** A sender's name as an ask link may carry it: no control characters, whitespace collapsed, capped. */
+export const cleanAskerName = (name: string): string =>
+  Array.from(name.replace(/\p{C}/gu, ' ').replace(/\s+/g, ' ').trim())
+    .slice(0, ASKER_NAME_MAX)
+    .join('')
+    .trim()
+
+/** A share link turned into an ask (issue #434): the web landing frames it as "<name> wants to hear your answer". */
+export const buildAskUrl = (shareUrl: string, name: string): string => {
+  const from = cleanAskerName(name)
+  return `${shareUrl}&ask=1${from ? `&from=${encodeURIComponent(from)}` : ''}`
+}
+
+/** The message an ask goes out with; the OS share sheet adds nothing else. */
+export const buildAskMessage = (questionText: string, askUrl: string): string =>
+  `I want to hear your answer to this one:\n\n“${questionText}”\n\n${askUrl}`
+
 /** The two Share Card sizes the on-demand endpoint renders (ADR-0007). */
 export type ShareCardSize = 'story' | 'post'
 

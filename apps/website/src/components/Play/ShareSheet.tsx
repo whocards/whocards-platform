@@ -3,6 +3,9 @@ import {logWarn} from '@whocards/observability'
 import {EVENTS, track} from '@whocards/observability/events'
 import type {ShareImageFormat} from './share-ui'
 import {
+  ASKER_NAME_MAX,
+  buildAskMessage,
+  buildAskUrl,
   buildQuestionShareUrl,
   buildShareCardFilename,
   buildShareCardUrl,
@@ -66,6 +69,10 @@ export const ShareSheet = ({
   const ref = useRef<HTMLDialogElement>(null)
   const [linkCopied, setLinkCopied] = useState(false)
   const [linkError, setLinkError] = useState(false)
+  // The ask row (issue #434) opens an optional name field before anything is sent.
+  const [askOpen, setAskOpen] = useState(false)
+  const [askerName, setAskerName] = useState('')
+  const [askCopied, setAskCopied] = useState(false)
   const [imageState, setImageState] = useState<Record<ShareImageFormat, RowState>>({
     story: 'idle',
     post: 'idle',
@@ -85,6 +92,9 @@ export const ShareSheet = ({
       dialog.showModal()
       setLinkCopied(false)
       setLinkError(false)
+      setAskOpen(false)
+      setAskerName('')
+      setAskCopied(false)
       setImageState({story: 'idle', post: 'idle'})
     } else if (!open && dialog.open) {
       dialog.close()
@@ -110,9 +120,12 @@ export const ShareSheet = ({
     }
   }, [onClose])
 
-  const emitShareCompleted = (format: 'link' | ShareImageFormat) => {
+  const emitShareCompleted = (
+    format: 'link' | ShareImageFormat | 'ask',
+    name: typeof EVENTS.SHARE_COMPLETED | typeof EVENTS.ASK_SENT = EVENTS.SHARE_COMPLETED
+  ) => {
     track({
-      name: EVENTS.SHARE_COMPLETED,
+      name,
       props: {deck_id: deckId, question_id: questionId, language, game, format},
     })
   }
@@ -143,6 +156,32 @@ export const ShareSheet = ({
     } catch (error) {
       logWarn('share-sheet: clipboard copy failed', error)
       setLinkError(true)
+    }
+  }
+
+  const handleAsk = async () => {
+    const share = buildQuestionShareUrl(window.location.origin, deckId, language, questionId)
+    const url = buildAskUrl(share, askerName)
+    const text = buildAskMessage(questionText)
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({title: 'WhoCards', text, url})
+        emitShareCompleted('ask', EVENTS.ASK_SENT)
+      } catch (error) {
+        if (!(error instanceof Error) || error.name !== 'AbortError') {
+          logWarn('share-sheet: ask share failed', error)
+        }
+      }
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(`${text}\n\n${url}`)
+      setAskCopied(true)
+      emitShareCompleted('ask', EVENTS.ASK_SENT)
+    } catch (error) {
+      logWarn('share-sheet: ask copy failed', error)
     }
   }
 
@@ -241,6 +280,39 @@ export const ShareSheet = ({
             <p role='alert' className='px-4 pb-2 text-sm text-red'>
               Couldn&apos;t copy the link — try again.
             </p>
+          )}
+          {askOpen ? (
+            <form
+              className='flex items-center gap-2 px-4 py-2'
+              onSubmit={(event) => {
+                event.preventDefault()
+                void handleAsk()
+              }}
+            >
+              <input
+                type='text'
+                value={askerName}
+                onChange={(event) => setAskerName(event.target.value)}
+                maxLength={ASKER_NAME_MAX}
+                placeholder='Your name (optional)'
+                aria-label='Your name (optional)'
+                className='min-w-0 flex-1 rounded-full border border-gray-lighter bg-white px-4 py-2 text-base text-darker'
+              />
+              <button
+                type='submit'
+                className='shrink-0 rounded-full bg-yellow-400 px-4 py-2 font-semibold text-darker hover:bg-yellow-500'
+              >
+                {askCopied ? 'Copied!' : 'Send'}
+              </button>
+            </form>
+          ) : (
+            <button
+              type='button'
+              onClick={() => setAskOpen(true)}
+              className='who-modal flex w-full items-center btn-ghost px-4 py-3 text-left'
+            >
+              Ask someone
+            </button>
           )}
           {supportsShareImages && (
             <>

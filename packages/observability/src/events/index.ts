@@ -30,6 +30,9 @@ export const EVENTS = {
   APP_REVIEW_REQUESTED: 'app_review_requested',
   SHARE_SHEET_OPENED: 'share_sheet_opened',
   SHARE_COMPLETED: 'share_completed',
+  ASK_SENT: 'ask_sent',
+  ASK_OPENED: 'ask_opened',
+  ASK_ANSWER_STARTED: 'ask_answer_started',
   PROMPT_SCHEDULED: 'prompt_scheduled',
   PROMPT_OPENED: 'prompt_opened',
   PROMPT_PLAYED: 'prompt_played',
@@ -38,8 +41,8 @@ export const EVENTS = {
 /** Game ids used in event payloads — single source of truth for the `game` prop. */
 export const GAMES = {WH: 'wh', PICK: 'pick'} as const
 
-/** The three rows offered by the Share sheet (epic #152) — one shape for web and mobile. */
-export type ShareFormat = 'link' | 'story' | 'post'
+/** The rows offered by the Share sheet (epic #152, ask: issue #434) — one shape for web and mobile. */
+export type ShareFormat = 'link' | 'story' | 'post' | 'ask'
 
 export type DeckOpenedProps = {deck_id: string; source: string}
 export type GameStartedProps = {
@@ -119,8 +122,18 @@ export type ShareCompletedProps = {
 }
 /** The OS share sheet opened, completed or not: Android's chooser and image shares never confirm completion (issue #200). */
 export type ShareSheetOpenedProps = ShareCompletedProps
-/** The two Share events a Share sheet reports; each carries the same props. */
-export type ShareEventName = typeof EVENTS.SHARE_SHEET_OPENED | typeof EVENTS.SHARE_COMPLETED
+/** The Share events a Share sheet reports; each carries the same props. */
+export type ShareEventName =
+  | typeof EVENTS.SHARE_SHEET_OPENED
+  | typeof EVENTS.SHARE_COMPLETED
+  | typeof EVENTS.ASK_SENT
+/**
+ * An ask (issue #434) was sent from a Share sheet; same props as a Share. The sender's
+ * name never travels in any ask event.
+ */
+export type AskSentProps = ShareCompletedProps
+/** Someone opened an ask link on the web, or tapped its Reply. */
+export type AskLandingProps = {deck_id: string; question_id: string; language: string}
 
 /** The app re-filled its rolling window of daily Question of the Day notifications (issue #362). */
 export type PromptScheduledProps = {count: number}

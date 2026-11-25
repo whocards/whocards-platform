@@ -2,6 +2,7 @@
 export const prerender = false
 
 import GetAppPrompt from '~components/App/GetAppPrompt.astro'
+import AskPrompt from '~components/Play/AskPrompt.astro'
 import {Play, supportsShareImages} from '~components/Play'
 import type {QuestionSet} from '~components/Play'
 import {DEFAULT_DECK_SLUG, getDeck} from '~data/decks'
@@ -28,6 +29,10 @@ const langParam = Astro.url.searchParams.get('lang')
 const lang = langParam && LANG_KEYS.includes(langParam) ? langParam : deck.languages[0]
 const qParam = Astro.url.searchParams.get('q')
 const questionId = qParam && qParam in deck.questions ? qParam : undefined
+const askText =
+  questionId && Astro.url.searchParams.get('ask') === '1'
+    ? (deck.questions[questionId]?.[lang] ?? deck.questions[questionId]?.[deck.languages[0] ?? ''])
+    : undefined
 ---
 
 <Layout
@@ -39,6 +44,9 @@ const questionId = qParam && qParam in deck.questions ? qParam : undefined
   description={deck.description}
 >
   {questionId && <GetAppPrompt />}
+  {questionId && askText && (
+    <AskPrompt deckId={deck.slug} questionId={questionId} language={lang} questionText={askText} />
+  )}
   <Play
     client:only='react'
     questions={deck.questions as QuestionSet}

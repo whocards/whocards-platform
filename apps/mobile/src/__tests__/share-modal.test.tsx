@@ -112,6 +112,22 @@ describe('ShareModal', () => {
     expect(screen.getByText('Post image')).toBeTruthy()
   })
 
+  it('sends an ask with the typed name in the link only, never in the event (issue #434)', async () => {
+    const onShareEvent = jest.fn()
+    await render(<ShareModal visible {...PROPS} onShareEvent={onShareEvent} onClose={() => {}} />)
+
+    await fireEvent.press(screen.getByText('Ask someone'))
+    await fireEvent.changeText(screen.getByLabelText('Your name (optional)'), 'Avi')
+    await act(async () => {
+      await fireEvent.press(screen.getByLabelText('Send ask'))
+    })
+
+    const {message} = shareSpy.mock.calls[0][0]
+    expect(message).toContain(PROPS.questionText)
+    expect(message).toContain(`${PROPS.shareUrl}&ask=1&from=Avi`)
+    expect(onShareEvent.mock.calls).toEqual([[EVENTS.ASK_SENT, 'ask']])
+  })
+
   it('renders only the link row when the image URLs are omitted (an inline-source deck)', async () => {
     await render(
       <ShareModal

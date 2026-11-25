@@ -93,3 +93,26 @@ export const buildQuestionShareUrl = (
   const basePath = deckSlug === DEFAULT_DECK_SLUG ? '/play' : `/play/${deckSlug}`
   return `${origin}${basePath}?lang=${language}&q=${questionId}&utm_source=share&utm_medium=web`
 }
+
+/** The most characters of a sender's name an ask link carries — mirrors the app's `ASKER_NAME_MAX` (issue #434). */
+export const ASKER_NAME_MAX = 40
+
+/** A sender's name as an ask link may carry and show it: no control characters, whitespace collapsed, capped. */
+export const cleanAskerName = (name: string): string =>
+  Array.from(name.replace(/\p{C}/gu, ' ').replace(/\s+/g, ' ').trim())
+    .slice(0, ASKER_NAME_MAX)
+    .join('')
+    .trim()
+
+/** A share link turned into an ask — mirrors the app's `buildAskUrl`. */
+export const buildAskUrl = (shareUrl: string, name: string): string => {
+  const from = cleanAskerName(name)
+  return `${shareUrl}&ask=1${from ? `&from=${encodeURIComponent(from)}` : ''}`
+}
+
+/** The message an ask goes out with; the link travels next to it. */
+export const buildAskMessage = (questionText: string): string =>
+  `I want to hear your answer to this one:\n\n“${questionText}”`
+
+/** The line a Reply starts with: the Question quoted back into the chat the ask came from. */
+export const buildAskReply = (questionText: string): string => `My answer to “${questionText}”:\n\n`

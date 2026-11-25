@@ -6,12 +6,14 @@ import type {ShareEventName, ShareFormat} from '@whocards/observability/events'
 import {useCallback, useMemo, useState} from 'react'
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
   ScrollView,
   Share,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from 'react-native'
@@ -21,6 +23,7 @@ import {colors} from '@whocards/tokens'
 
 import {useIsDark} from '@/lib/color-scheme'
 import {downloadAndShareImage} from '@/lib/share-image'
+import {ASKER_NAME_MAX, buildAskMessage, buildAskUrl} from '@/lib/share-url'
 
 // A downward drag past this many px, or a fling faster than this velocity
 // (px/s), counts as "swipe down" and dismisses the sheet — mirrors the
@@ -145,6 +148,9 @@ export const ShareModal = ({
   // other rows so a slow download can't be started twice from a double-tap.
   const [pending, setPending] = useState<ShareFormat | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // The ask row (issue #434) opens an optional name field before anything is sent.
+  const [askOpen, setAskOpen] = useState(false)
+  const [askerName, setAskerName] = useState('')
   // Themed (issue #163, amendment 1): a dark surface in dark mode, the
   // pre-existing light sheet surface in light mode.
   const isDark = useIsDark()
@@ -156,6 +162,7 @@ export const ShareModal = ({
   // is a normal, intentional state.
   const rows: Row[] = [
     {format: 'link', icon: 'link-outline', label: 'Share link'},
+    {format: 'ask', icon: 'chatbubbles-outline', label: 'Ask someone'},
     ...(storyImageUrl
       ? [
           {
@@ -178,6 +185,8 @@ export const ShareModal = ({
     if (visible) {
       setPending(null)
       setError(null)
+      setAskOpen(false)
+      setAskerName('')
     }
   }
 
@@ -218,7 +227,7 @@ export const ShareModal = ({
   }, [questionText, shareUrl, onShareEvent])
 
   const shareImage = useCallback(
-    (format: Exclude<ShareFormat, 'link'>, url: string) => {
+    (format: Exclude<ShareFormat, 'link' | 'ask'>, url: string) => {
       setError(null)
       setPending(format)
       downloadAndShareImage(url)
@@ -246,11 +255,24 @@ export const ShareModal = ({
     [onShareEvent]
   )
 
+  const sendAsk = useCallback(() => {
+    const message = buildAskMessage(questionText, buildAskUrl(shareUrl, askerName))
+    Share.share({message})
+      .then(() => onShareEvent(EVENTS.ASK_SENT, 'ask'))
+      .catch((err: unknown) => {
+        logWarn('[share-modal] ask share failed', err)
+      })
+  }, [questionText, shareUrl, askerName, onShareEvent])
+
   const handlePress = useCallback(
     (row: Row) => {
       if (pending) return
       if (row.format === 'link') {
         shareLink()
+        return
+      }
+      if (row.format === 'ask') {
+        setAskOpen(true)
         return
       }
       // Every non-link row in `rows` is only ever built with its `url` set (see
@@ -306,7 +328,10 @@ export const ShareModal = ({
         {/* Dark sheet → light status-bar icons; light sheet → dark icons — same
             pattern as every other themed sheet (issue #173). */}
         <StatusBar style={isDark ? 'light' : 'dark'} />
-        <View className="flex-1 justify-end">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          className="flex-1 justify-end"
+        >
           {/* Transparent backdrop (owner on-device, 2026-07-03 — no dim, same
               as the settings sheet). Tapping it dismisses; the sheet below
               swallows its own taps (see the no-op onPress) so tapping the
@@ -346,6 +371,33 @@ export const ShareModal = ({
                 {rows.map((row) => {
                   const isPending = pending === row.format
                   const disabled = pending !== null && !isPending
+                  if (row.format === 'ask' && askOpen) {
+                    return (
+                      <View key={row.format} className="flex-row items-center gap-3 px-5 py-2">
+                        <Ionicons name={row.icon} size={22} color={iconColor} />
+                        <TextInput
+                          value={askerName}
+                          onChangeText={setAskerName}
+                          onSubmitEditing={sendAsk}
+                          placeholder="Your name (optional)"
+                          placeholderTextColor={spinnerColor}
+                          maxLength={ASKER_NAME_MAX}
+                          returnKeyType="send"
+                          accessibilityLabel="Your name (optional)"
+                          className="text-darker dark:text-white font-sans text-lg flex-1 py-2"
+                        />
+                        <Pressable
+                          onPress={sendAsk}
+                          accessibilityRole="button"
+                          accessibilityLabel="Send ask"
+                          hitSlop={8}
+                          className="active:bg-yellow-500 rounded-full bg-yellow-400 px-4 py-2"
+                        >
+                          <Text className="text-darker font-sans text-base">Send</Text>
+                        </Pressable>
+                      </View>
+                    )
+                  }
                   return (
                     <Pressable
                       key={row.format}
@@ -381,7 +433,7 @@ export const ShareModal = ({
               </Pressable>
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </GestureHandlerRootView>
     </Modal>
   )

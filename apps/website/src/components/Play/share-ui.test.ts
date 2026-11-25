@@ -1,7 +1,10 @@
 import {describe, expect, it} from 'vitest'
 
 import {
+  ASKER_NAME_MAX,
+  buildAskUrl,
   buildQuestionShareUrl,
+  cleanAskerName,
   buildShareCardFilename,
   buildShareCardUrl,
   getImageRowLabel,
@@ -128,5 +131,26 @@ describe('buildQuestionShareUrl', () => {
     expect(buildQuestionShareUrl('http://localhost:4321', 'library', 'en', '1')).toBe(
       'http://localhost:4321/play?lang=en&q=1&utm_source=share&utm_medium=web'
     )
+  })
+})
+
+describe('buildAskUrl (issue #434)', () => {
+  const share = buildQuestionShareUrl('https://whocards.cc', 'library', 'en', '1')
+
+  it('marks the link as an ask and carries the encoded name', () => {
+    const url = new URL(buildAskUrl(share, 'Avi & <b>co</b>'))
+    expect(url.pathname).toBe('/play')
+    expect(url.searchParams.get('ask')).toBe('1')
+    expect(url.searchParams.get('from')).toBe('Avi & <b>co</b>')
+    expect(url.searchParams.get('q')).toBe('1')
+  })
+
+  it('leaves the name out when none was typed', () => {
+    expect(buildAskUrl(share, '  ')).toBe(share + '&ask=1')
+  })
+
+  it('strips control characters, collapses whitespace and caps the length', () => {
+    expect(cleanAskerName(' Avi\n\u0000 Charlop ')).toBe('Avi Charlop')
+    expect(Array.from(cleanAskerName('😀'.repeat(100)))).toHaveLength(ASKER_NAME_MAX)
   })
 })
