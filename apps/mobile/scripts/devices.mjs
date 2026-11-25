@@ -69,7 +69,10 @@ export function screenshot(id, file) {
       run(ADB, ['-s', id, 'shell', 'dumpsys', 'display'])
     )
     const display = lit ? ['-d', lit[1]] : []
-    writeFileSync(file, execFileSync(ADB, ['-s', id, 'exec-out', 'screencap', '-p', ...display]))
+    const png = execFileSync(ADB, ['-s', id, 'exec-out', 'screencap', '-p', ...display], {
+      maxBuffer: 64 * 1024 * 1024,
+    })
+    writeFileSync(file, png)
   }
 }
 

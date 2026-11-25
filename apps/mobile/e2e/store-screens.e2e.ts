@@ -43,6 +43,8 @@ test('Store listing frames', {tags: ['screenshots']}, async (fixtures) => {
   await openSettings(screen)
   await tapUntil(button(screen, 'Language: English'), screen.getByText('Choose your language'))
   await expect(screen.getByText('Choose your language')).toBeVisible()
+  // The page is still sliding in when its title first shows.
+  await new Promise((resolve) => setTimeout(resolve, 1_000))
   shoot('03-language-picker')
 
   await screen.getByText('Hebrew').tap()
