@@ -84,7 +84,9 @@
       ],
       "expo-updates",
       "expo-localization",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-sharing",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true,

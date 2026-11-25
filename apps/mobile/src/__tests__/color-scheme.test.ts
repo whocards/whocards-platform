@@ -35,9 +35,7 @@ const load = (initialOsScheme: OsScheme) => {
   const stubOsPreference = (appearance: typeof Appearance) => {
     jest.spyOn(appearance, 'getColorScheme').mockImplementation(() => os)
     jest.spyOn(appearance, 'addChangeListener').mockImplementation((listener) => {
-      // 'unspecified' is how the change event spells "no OS preference"; the
-      // getter above spells the same thing null.
-      osListeners.push(() => listener({colorScheme: os ?? 'unspecified'}))
+      osListeners.push(() => listener({colorScheme: os}))
       return {remove: () => undefined}
     })
   }

@@ -4,7 +4,7 @@ import {Link} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {useCallback, useEffect, useRef, useState} from 'react'
-import type {View as RNView} from 'react-native'
+import type {HostInstance} from 'react-native'
 import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import Animated, {
   useAnimatedStyle,
@@ -83,7 +83,7 @@ export default function LandingScreen() {
   const logoShift = useSharedValue(0) // vertical px offset from the final landing spot
   const contentOpacity = useSharedValue(0) // tagline + bottom block
   const bgOpacity = useSharedValue(0) // background texture
-  const logoRef = useRef<RNView>(null)
+  const logoRef = useRef<HostInstance>(null)
   const startedRef = useRef(false)
 
   useEffect(() => {
