@@ -171,11 +171,11 @@ catalogs:
       specifier: ^5.108.4
       version: 5.108.4
     '@trpc/client':
-      specifier: ^11.29.9
-      version: 11.29.9
+      specifier: ^11.29.10
+      version: 11.29.10
     '@trpc/server':
-      specifier: ^11.29.9
-      version: 11.29.9
+      specifier: ^11.29.10
+      version: 11.29.10
     '@types/node':
       specifier: ^24.19.2
       version: 24.19.2
@@ -273,10 +273,10 @@ importers:
         version: 1.169.7(esbuild@0.28.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.19)(rollup@4.62.2)(supports-color@8.1.1)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
       '@trpc/client':
         specifier: 'catalog:'
-        version: 11.29.9(@trpc/server@11.29.9(@types/ws@8.18.1)(typescript@7.0.2))(typescript@7.0.2)
+        version: 11.29.10(@trpc/server@11.29.10(@types/ws@8.18.1)(typescript@7.0.2))(typescript@7.0.2)
       '@trpc/server':
         specifier: 'catalog:'
-        version: 11.29.9(@types/ws@8.18.1)(typescript@7.0.2)
+        version: 11.29.10(@types/ws@8.18.1)(typescript@7.0.2)
       '@whocards/decks':
         specifier: workspace:*
         version: link:../../packages/decks
@@ -452,10 +452,10 @@ importers:
         version: 2.2.0(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.9)(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.9)(supports-color@8.1.1))
       '@trpc/client':
         specifier: 'catalog:'
-        version: 11.29.9(@trpc/server@11.29.9(@types/ws@8.18.1)(typescript@6.0.3))(typescript@6.0.3)
+        version: 11.29.10(@trpc/server@11.29.10(@types/ws@8.18.1)(typescript@6.0.3))(typescript@6.0.3)
       '@trpc/server':
         specifier: 'catalog:'
-        version: 11.29.9(@types/ws@8.18.1)(typescript@6.0.3)
+        version: 11.29.10(@types/ws@8.18.1)(typescript@6.0.3)
       '@whocards/api':
         specifier: workspace:*
         version: link:../../packages/api
@@ -666,10 +666,10 @@ importers:
         version: 4.3.5(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))
       '@trpc/client':
         specifier: 'catalog:'
-        version: 11.29.9(@trpc/server@11.29.9(@types/ws@8.18.1)(typescript@6.0.3))(typescript@6.0.3)
+        version: 11.29.10(@trpc/server@11.29.10(@types/ws@8.18.1)(typescript@6.0.3))(typescript@6.0.3)
       '@trpc/server':
         specifier: 'catalog:'
-        version: 11.29.9(@types/ws@8.18.1)(typescript@6.0.3)
+        version: 11.29.10(@types/ws@8.18.1)(typescript@6.0.3)
       '@types/react':
         specifier: 'catalog:'
         version: 19.3.0
@@ -823,7 +823,7 @@ importers:
     dependencies:
       '@trpc/server':
         specifier: 'catalog:'
-        version: 11.29.9(@types/ws@8.18.1)(typescript@7.0.2)
+        version: 11.29.10(@types/ws@8.18.1)(typescript@7.0.2)
       '@whocards/app-store':
         specifier: workspace:*
         version: link:../app-store
@@ -5762,14 +5762,14 @@ packages:
     resolution: {integrity: sha512-HqmEUIGRJ5fSXchkVgR5F7qn48bDBzv0kWj/Kfu5e6uci4UlEeng4331LnBkWffb++Ei3FOVLxo8JJWMFBDMeQ==}
     engines: {node: '>= 10'}
 
-  '@trpc/client@11.29.9':
-    resolution: {integrity: sha512-SlgU0q79Z+iIz9iXHQAdoeAi7R+MfXsReH6nILeS0ZMHVk+1xqdXusy0K6io6t2GDl1TliTNaJbra79WruCX0Q==}
+  '@trpc/client@11.29.10':
+    resolution: {integrity: sha512-yTiBswmBfUj/U8OPSTTavhlQi8LkN0+5/W0miPJC4vt9ceXqtoUmLz8Op2KjeGCVjevQZGMQsD3KcVPKkpLEqQ==}
     peerDependencies:
-      '@trpc/server': 11.29.9
+      '@trpc/server': 11.29.10
       typescript: '>=5.7.2'
 
-  '@trpc/server@11.29.9':
-    resolution: {integrity: sha512-hycG0d/dqV0HbuC0xF7supnfdPYZz+Q8kAO4MNwVXdOyZHq4PJ3Wg2PsgEfE2orXybrDFz2TXnCWATx9iBBiWQ==}
+  '@trpc/server@11.29.10':
+    resolution: {integrity: sha512-EYlhLAbNLCUleWIBrUNk2FRqfCdHcD9T3795Pzk9hzRmFKpAFaTlHDvohS89GIv4ryfRGXkVYTuyE6CcEMDKmw==}
     peerDependencies:
       '@types/aws-lambda': '*'
       '@types/express': '*'
@@ -17974,23 +17974,23 @@ snapshots:
 
   '@tootallnate/once@2.0.1': {}
 
-  '@trpc/client@11.29.9(@trpc/server@11.29.9(@types/ws@8.18.1)(typescript@6.0.3))(typescript@6.0.3)':
+  '@trpc/client@11.29.10(@trpc/server@11.29.10(@types/ws@8.18.1)(typescript@6.0.3))(typescript@6.0.3)':
     dependencies:
-      '@trpc/server': 11.29.9(@types/ws@8.18.1)(typescript@6.0.3)
+      '@trpc/server': 11.29.10(@types/ws@8.18.1)(typescript@6.0.3)
       typescript: 6.0.3
 
-  '@trpc/client@11.29.9(@trpc/server@11.29.9(@types/ws@8.18.1)(typescript@7.0.2))(typescript@7.0.2)':
+  '@trpc/client@11.29.10(@trpc/server@11.29.10(@types/ws@8.18.1)(typescript@7.0.2))(typescript@7.0.2)':
     dependencies:
-      '@trpc/server': 11.29.9(@types/ws@8.18.1)(typescript@7.0.2)
+      '@trpc/server': 11.29.10(@types/ws@8.18.1)(typescript@7.0.2)
       typescript: 7.0.2
 
-  '@trpc/server@11.29.9(@types/ws@8.18.1)(typescript@6.0.3)':
+  '@trpc/server@11.29.10(@types/ws@8.18.1)(typescript@6.0.3)':
     dependencies:
       typescript: 6.0.3
     optionalDependencies:
       '@types/ws': 8.18.1
 
-  '@trpc/server@11.29.9(@types/ws@8.18.1)(typescript@7.0.2)':
+  '@trpc/server@11.29.10(@types/ws@8.18.1)(typescript@7.0.2)':
     dependencies:
       typescript: 7.0.2
     optionalDependencies:
