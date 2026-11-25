@@ -8,9 +8,9 @@ import Button from '~components/ui/Button.astro'
 import {
   APP_ANDROID_LAUNCHED,
   APP_IOS_LAUNCHED,
-  APP_STORE_URL,
   APP_VISIBLE,
-  PLAY_STORE_URL,
+  appStoreUrl,
+  playStoreUrl,
 } from '~constants/app'
 import {ANDROID_TESTER_SIGNUP_URL} from '~constants/android-testers'
 import {env} from '~env'
@@ -51,7 +51,7 @@ const appStoreTile: Tile = {
   kind: 'ios',
   name: 'App Store',
   label: 'Download on the',
-  href: APP_STORE_URL,
+  href: appStoreUrl('app_page'),
   icon: 'mdi:apple',
   external: true,
 }
@@ -63,7 +63,7 @@ const androidTile: Tile = APP_ANDROID_LAUNCHED
       kind: 'android',
       name: 'Google Play',
       label: 'Get it on',
-      href: PLAY_STORE_URL,
+      href: playStoreUrl('app_page'),
       icon: 'mdi:google-play',
       external: true,
     }
