@@ -10,7 +10,7 @@ import {DEFAULT_DECK_SLUG} from '@whocards/decks'
 
 import appJson from '../../app.json'
 import {redirectSystemPath} from '../app/+native-intent'
-import {buildShareUrl} from '../lib/share-url'
+import {buildAskUrl, buildShareUrl} from '../lib/share-url'
 
 jest.mock('@/env', () => ({env: {EXPO_PUBLIC_WEB_URL: 'https://whocards.cc'}}))
 
@@ -53,8 +53,14 @@ const matchesAppLinks = (url: URL) =>
       ('path' in data ? url.pathname === data.path : url.pathname.startsWith(data.pathPrefix))
   )
 
-describe.each([DEFAULT_DECK_SLUG, 'ai-at-work', 'hajnalig'])('share link for %s', (deck) => {
-  const url = new URL(buildShareUrl(deck, 'es', '42'))
+describe.each(
+  [DEFAULT_DECK_SLUG, 'ai-at-work', 'hajnalig'].flatMap((deck) => [
+    ['share', deck],
+    ['ask', deck],
+  ])
+)('%s link for %s', (kind, deck) => {
+  const share = buildShareUrl(deck, 'es', '42')
+  const url = new URL(kind === 'ask' ? buildAskUrl(share, 'Avi & co') : share)
 
   it('carries the share UTM', () => {
     expect(url.searchParams.get('utm_source')).toBe('share')

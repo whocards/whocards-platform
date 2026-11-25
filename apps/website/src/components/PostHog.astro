@@ -16,6 +16,7 @@ const isInternal = isInternalDeployContext(env.CONTEXT)
   import {initObservability} from '~lib/observability'
   import {identify} from '@whocards/observability'
   import {getDeviceId} from '~lib/device-id'
+  import {dropAskerName} from '~components/Play/share-ui'
 
   // Dev-gate the raw PostHog client itself, not just our own event wrapper
   // (issue #178): `initObservability`'s `dev` flag only routes trackEvent/
@@ -34,6 +35,7 @@ const isInternal = isInternalDeployContext(env.CONTEXT)
       capture_exceptions: true,
       disable_session_recording: true,
       persistence: 'localStorage+cookie',
+      before_send: dropAskerName,
     })
 
     window.posthog = posthog

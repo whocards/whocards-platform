@@ -13,7 +13,13 @@ jest.mock('@/env', () => ({env: {EXPO_PUBLIC_WEB_URL: 'https://whocards.cc'}}))
 // DEFAULT_DECK_SLUG is 'library' — imported from the real package so the test
 // stays in sync if the default ever changes.
 import {DEFAULT_DECK_SLUG} from '@whocards/decks'
-import {buildShareCardUrl, buildShareUrl} from '../lib/share-url'
+import {
+  ASKER_NAME_MAX,
+  buildAskUrl,
+  buildShareCardUrl,
+  buildShareUrl,
+  cleanAskerName,
+} from '../lib/share-url'
 
 describe('buildShareUrl', () => {
   it('uses /play (no slug segment) for the default deck', () => {
@@ -65,5 +71,25 @@ describe('buildShareCardUrl', () => {
   it('has no deck-slug segment — the endpoint identifies a card by (size, language, id) alone', () => {
     const url = buildShareCardUrl('story', 'fr', 'q-99')
     expect(url).toBe('https://whocards.cc/share-card/story/fr/q-99.png')
+  })
+})
+
+describe('buildAskUrl (issue #434)', () => {
+  const share = buildShareUrl(DEFAULT_DECK_SLUG, 'en', '1')
+
+  it('marks the link as an ask and carries the encoded name', () => {
+    const url = new URL(buildAskUrl(share, 'Avi & <b>co</b>'))
+    expect(url.searchParams.get('ask')).toBe('1')
+    expect(url.searchParams.get('from')).toBe('Avi & <b>co</b>')
+    expect(url.searchParams.get('q')).toBe('1')
+  })
+
+  it('leaves the name out when none was typed', () => {
+    expect(buildAskUrl(share, '   ')).toBe(`${share}&ask=1`)
+  })
+
+  it('strips control characters, collapses whitespace and caps the length', () => {
+    expect(cleanAskerName('  Avi\n\u0000 Charlop ')).toBe('Avi Charlop')
+    expect(Array.from(cleanAskerName('😀'.repeat(100)))).toHaveLength(ASKER_NAME_MAX)
   })
 })
