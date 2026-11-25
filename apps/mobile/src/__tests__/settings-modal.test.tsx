@@ -35,6 +35,7 @@
  * job is the component's wiring — not the storage layer itself.
  */
 import React from 'react'
+import {Linking, Platform} from 'react-native'
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native'
 
 // Jest's default is 5s PER TEST, which this file alone outgrew on CI's 4-vCPU
@@ -323,6 +324,19 @@ describe('SettingsModal — Notifications (issues #361, #364)', () => {
       })
     )
     expect(screen.queryByLabelText('Allow notifications')).toBeNull()
+  })
+})
+
+describe('SettingsModal — Send feedback (issue #455)', () => {
+  it('opens the contact form set to App feedback with this platform and version', async () => {
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue()
+    await renderModal()
+    await fireEvent.press(await screen.findByLabelText('Send feedback'))
+    const url = new URL(openURL.mock.calls[0]?.[0] ?? '')
+    expect(url.pathname).toBe('/contact')
+    expect(url.searchParams.get('about')).toBe('app-feedback')
+    expect(url.searchParams.get('platform')).toBe(Platform.OS)
+    openURL.mockRestore()
   })
 })
 

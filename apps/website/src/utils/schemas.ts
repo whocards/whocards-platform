@@ -1,4 +1,5 @@
 import {z} from 'zod'
+import {CONTACT_ABOUT_KEYS, contactPlatformFrom, contactVersionFrom} from '~constants/contact'
 import countries from '~data/countries.json'
 
 export const thankYouFormSchema = z.object({
@@ -38,6 +39,10 @@ export const contactMessageSchema = z.object({
     .trim()
     .min(10, {message: 'Message must be at least 10 characters'})
     .max(2000, {message: 'Message must be 2000 characters or fewer'}),
+  about: z.enum(CONTACT_ABOUT_KEYS).catch('general'),
+  // Set by the app's Send feedback link; anything but a known value is dropped.
+  platform: z.string().optional().transform(contactPlatformFrom),
+  version: z.string().optional().transform(contactVersionFrom),
 })
 // Note: the Cloudflare Turnstile token (`cf-turnstile-response`) is intentionally
 // NOT part of this schema — it's verified server-side before parsing (see

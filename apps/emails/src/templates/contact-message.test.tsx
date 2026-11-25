@@ -23,6 +23,17 @@ describe('ContactMessageEmail', () => {
     expect(contactMessageSubject('Ada Lovelace')).toBe('Contact form: Ada Lovelace')
   })
 
+  it('puts what the message is about in the subject, and the app details in the body (issue #455)', async () => {
+    const tagged = {...props, about: 'Android test', platform: 'android', version: '1.2.0'}
+    expect(contactMessageSubject(tagged.name, tagged.about)).toBe(
+      'Contact form (Android test): Ada Lovelace'
+    )
+    expect(contactMessageText(tagged)).toContain('About: Android test\nApp: android 1.2.0')
+    const html = await render(<ContactMessageEmail {...tagged} />)
+    expect(html).toContain('Android test')
+    expect(html).toContain('android 1.2.0')
+  })
+
   it('provides a complete plain-text fallback', () => {
     const text = contactMessageText(props)
     expect(text).toContain('Ada Lovelace')

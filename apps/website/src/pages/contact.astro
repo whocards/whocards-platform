@@ -7,6 +7,12 @@ import {Icon} from 'astro-icon/components'
 import type {ZodIssue} from 'zod'
 import ContactForm from '~components/thanks/ContactForm.astro'
 import {FormSuccess} from '~components/thanks'
+import {
+  CONTACT_ABOUT,
+  contactAboutFrom,
+  contactPlatformFrom,
+  contactVersionFrom,
+} from '~constants/contact'
 import {contactLinks} from '~constants/navigation'
 import {env} from '~env'
 import {Layout} from '~layouts'
@@ -15,7 +21,13 @@ import {contactMessageSchema} from '~utils/schemas'
 
 const siteKey = env.PUBLIC_TURNSTILE_SITE_KEY
 
-let formData: Record<string, string> | undefined
+// The App feedback / Android test links pre-select the About field; unknown values fall back to General.
+const query = Astro.url.searchParams
+let formData: Record<string, string | undefined> | undefined = {
+  about: contactAboutFrom(query.get('about')),
+  platform: contactPlatformFrom(query.get('platform')),
+  version: contactVersionFrom(query.get('version')),
+}
 let errors: Record<string, ZodIssue> | undefined
 let confirmed = false
 let serverError: string | undefined
@@ -54,6 +66,7 @@ if (Astro.request.method === 'POST') {
           from: env.RESEND_FROM_EMAIL,
           to: 'hello@whocards.cc',
           ...parsed.data,
+          about: CONTACT_ABOUT[parsed.data.about],
         })
 
         if (error) {

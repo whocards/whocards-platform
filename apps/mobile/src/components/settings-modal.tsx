@@ -3,6 +3,7 @@ import {StatusBar} from 'expo-status-bar'
 import {useEffect, useRef, useState} from 'react'
 import {
   AppState,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -31,6 +32,7 @@ import {SecondLanguageSettingsPage} from '@/components/second-language-settings-
 import {SettingsSheetHeader} from '@/components/settings-sheet-header'
 import {ThemeSettingsPage} from '@/components/theme-settings-page'
 import {useIsDark} from '@/lib/color-scheme'
+import {buildFeedbackUrl} from '@/lib/feedback-url'
 import {getStoredGame, setStoredGame} from '@/lib/game-store'
 import {selection} from '@/lib/haptics'
 import {GAME_CATALOG} from '@/lib/games'
@@ -606,6 +608,19 @@ export const SettingsModal = ({
                   <Ionicons name="open-outline" size={16} color={chevronColor} />
                 </Pressable>
               ) : null}
+
+              <Text className="text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide">
+                Support
+              </Text>
+              <Pressable
+                onPress={() => void Linking.openURL(buildFeedbackUrl()).catch(() => {})}
+                accessibilityRole="link"
+                accessibilityLabel="Send feedback"
+                className="flex-row items-center justify-between px-5 py-4"
+              >
+                <Text className="text-darker dark:text-white font-sans text-lg">Send feedback</Text>
+                <Ionicons name="open-outline" size={16} color={chevronColor} />
+              </Pressable>
             </ScrollView>
           </View>
         </Pressable>

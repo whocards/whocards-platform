@@ -7,12 +7,23 @@ export type ContactMessageProps = Readonly<{
   name: string
   email: string
   message: string
+  /** What the message is about, as the form labels it (e.g. "Android test"). */
+  about?: string
+  /** The app's platform and version, when sent from the app's Send feedback link. */
+  platform?: string
+  version?: string
 }>
 
-export const contactMessageSubject = (name: string) => `Contact form: ${name}`
+export const contactMessageSubject = (name: string, about?: string) =>
+  about ? `Contact form (${about}): ${name}` : `Contact form: ${name}`
+
+const sentFrom = ({platform, version}: ContactMessageProps) =>
+  [platform, version].filter(Boolean).join(' ')
 export const contactMessagePreview = (name: string) => `New contact message from ${name}`
 
-export function ContactMessageEmail({name, email, message}: ContactMessageProps) {
+export function ContactMessageEmail(props: ContactMessageProps) {
+  const {name, email, message, about} = props
+  const app = sentFrom(props)
   return (
     <EmailShell preview={contactMessagePreview(name)}>
       <Text style={eyebrow}>NEW CONTACT MESSAGE</Text>
@@ -23,6 +34,18 @@ export function ContactMessageEmail({name, email, message}: ContactMessageProps)
           {email}
         </Link>
       </Text>
+      {about ? (
+        <>
+          <Text style={label}>About</Text>
+          <Text style={value}>{about}</Text>
+        </>
+      ) : null}
+      {app ? (
+        <>
+          <Text style={label}>App</Text>
+          <Text style={value}>{app}</Text>
+        </>
+      ) : null}
       <Hr style={rule} />
       <Text style={label}>Message</Text>
       {message.split('\n').map((line, index) => (
@@ -36,10 +59,12 @@ export function ContactMessageEmail({name, email, message}: ContactMessageProps)
   )
 }
 
-export function contactMessageText({name, email, message}: ContactMessageProps) {
+export function contactMessageText(props: ContactMessageProps) {
+  const {name, email, message, about} = props
+  const app = sentFrom(props)
   return `New contact message from ${name}
 
-Email: ${email}
+Email: ${email}${about ? `\nAbout: ${about}` : ''}${app ? `\nApp: ${app}` : ''}
 
 Message:
 ${message}
