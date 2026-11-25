@@ -53,13 +53,6 @@ const matchesAppLinks = (url: URL) =>
       ('path' in data ? url.pathname === data.path : url.pathname.startsWith(data.pathPrefix))
   )
 
-// expo-router parses deep-link queries with its own query-string copy.
-const queryString: {parse: (query: string) => Record<string, string>} = require(
-  require.resolve('query-string', {
-    paths: [path.dirname(require.resolve('expo-router/package.json'))],
-  })
-)
-
 describe.each([DEFAULT_DECK_SLUG, 'ai-at-work', 'hajnalig'])('share link for %s', (deck) => {
   const url = new URL(buildShareUrl(deck, 'es', '42'))
 
@@ -79,6 +72,10 @@ describe.each([DEFAULT_DECK_SLUG, 'ai-at-work', 'hajnalig'])('share link for %s'
   it('still opens the question in the app', () => {
     const routed = new URL(redirectSystemPath({path: url.toString(), initial: true}), url.origin)
     expect(routed.pathname).toBe(`/play/${deck}`)
-    expect(queryString.parse(routed.search)).toMatchObject({lang: 'es', q: '42'})
+    // expo-router 58 reads deep-link queries with URLSearchParams (getStateFromPath-forks).
+    expect(Object.fromEntries(new URLSearchParams(routed.search))).toMatchObject({
+      lang: 'es',
+      q: '42',
+    })
   })
 })
