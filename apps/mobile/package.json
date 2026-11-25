@@ -23,7 +23,8 @@
     "eas:build:android": "pnpx eas-cli@latest build -p android --profile production",
     "eas:submit:ios": "pnpx eas-cli@latest submit -p ios --profile production --latest",
     "eas:submit:android": "pnpx eas-cli@latest submit -p android --profile production --latest",
-    "eas:update": "pnpx eas-cli@latest update --channel production"
+    "eas:update": "pnpx eas-cli@latest update --channel production",
+    "fonts:cjk": "python3 scripts/subset-cjk-fonts.py"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.17",
