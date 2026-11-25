@@ -352,7 +352,11 @@ export const ShareModal = ({
                 in landscape, can't push rows off-screen — content still sizes
                 naturally (well under this cap) in the normal case, and only
                 this section scrolls; the handle above stays put. */}
-            <ScrollView style={{maxHeight: sheetMaxHeight}} bounces={false}>
+            <ScrollView
+              style={{maxHeight: sheetMaxHeight}}
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+            >
               {/* No-op tap target: swallows taps landing on the sheet's own
                   whitespace so they don't fall through to the backdrop above
                   and close the sheet. `accessible={false}` keeps this out of
