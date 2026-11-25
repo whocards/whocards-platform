@@ -25,10 +25,6 @@
 # output, no dependencies needed. If ImageMagick's `compare` happens to be
 # installed, a diff PNG is written per differing frame too; it is optional and
 # its absence is not an error.
-#
-# Requires Maestro, and Maestro requires a valid JAVA_HOME (a JDK) — if it dies
-# with "JAVA_HOME is set to an invalid directory", run
-# `export JAVA_HOME="$(/usr/libexec/java_home)"` first. See .maestro/README.md.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -40,8 +36,8 @@ usage:
   pnpm -F mobile ui-diff capture <label>            capture the frames for one ref
   pnpm -F mobile ui-diff compare <labelA> <labelB>  compare two captured labels
 
-  DEVICES="<device-id>:<name> ..." is passed through to the capture script;
-  unset, it captures the default 6.5" iOS simulator set.
+  DEVICES="<device>:<name> ..." (device = pro, plus or duo) is passed through to
+  the capture script; unset, it captures WhoCards iPhone 14 Plus as iphone-6.5.
 USAGE
   exit 2
 }
@@ -83,13 +79,6 @@ capture() {
   [[ -n "$label" ]] || usage
   validate_label "$label"
 
-  command -v maestro >/dev/null 2>&1 || {
-    echo "✗ maestro is not on PATH — install it with:" >&2
-    echo '    curl -fsSL "https://get.maestro.mobile.dev" | bash' >&2
-    echo '  and make sure JAVA_HOME points at a JDK (export JAVA_HOME="$(/usr/libexec/java_home)").' >&2
-    exit 1
-  }
-
   local dest="$OUT_ROOT/$label"
   rm -rf "$dest"
   mkdir -p "$dest"
@@ -116,7 +105,6 @@ capture() {
 
   if [[ "$count" == 0 ]]; then
     echo "✗ the flow produced no frames — nothing was captured for '$label'" >&2
-    echo "  (a Maestro run that fails mid-flow can still exit 0 on some commands; check its output above)" >&2
     rm -rf "$dest"
     exit 1
   fi

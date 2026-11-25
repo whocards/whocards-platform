@@ -11,7 +11,7 @@
  *
  * Also covers the Exit button (issue #186): the floating top-right close chip
  * moved into this bar as a proper icon+label action, keeping its old
- * `accessibilityLabel="exit deck"` for Maestro/VoiceOver continuity.
+ * `accessibilityLabel="exit deck"` for e2e/VoiceOver continuity.
  */
 import React from 'react'
 import {StyleSheet} from 'react-native'

@@ -30,7 +30,7 @@
  *     window-derived first-paint fallback box instead. Deterministic (the
  *     window is fixed under Jest), just not the size a phone lands on.
  *   - Anything gesture-driven (the card swipe, swipe-to-dismiss). Those are
- *     native recognizers; they need the Maestro pass.
+ *     native recognizers; they need the e2e pass.
  *
  * Deliberately written to run under BOTH @testing-library/react-native 13 and
  * 14: `await render(...)` is a no-op on 13 and the awaited form on 14, and none

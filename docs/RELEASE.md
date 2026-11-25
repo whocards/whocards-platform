@@ -171,7 +171,7 @@ flips. A platform's soak and campaign do not wait for the other.
 
 - [ ] `pnpm check` green (tsc + oxlint + oxfmt + `decks`/`api` unit tests + **mobile jest suite**)
 - [ ] **Mobile unit/component tests** — `pnpm --filter mobile test` (jest + RN Testing Library; covers language-store, answer-queue, device-id, getBaseUrl, ErrorBoundary)
-- [ ] **Maestro suite** — run `pnpm --filter mobile e2e:ios` and `pnpm --filter mobile e2e:android` (see `.maestro/README.md`). Offline-record→drain has no observable UI signal and is covered by the `answer-queue`/`answer-transport` jest tests instead.
+- [ ] **e2e suite** — run `pnpm --filter mobile e2e` and `pnpm --filter mobile e2e --device duo` (see `apps/mobile/e2e/README.md`). Offline-record→drain has no observable UI signal and is covered by the `answer-queue`/`answer-transport` jest tests instead.
 - [ ] Manual smoke on the **device matrix** (native builds — see below)
 
 ## Device matrix
