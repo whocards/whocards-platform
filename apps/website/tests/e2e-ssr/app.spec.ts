@@ -17,6 +17,10 @@ test.describe('/app download mode (iOS live, Android in testing)', () => {
     const html = await res!.text()
     expect(html).toContain('apps.apple.com')
     await expect(page.locator('a[data-store="ios"]').first()).toBeVisible()
+    await expect(page.locator('a[data-store="ios"]').first()).toHaveAttribute(
+      'href',
+      /utm_source=website&utm_medium=app_page&utm_campaign=app$/
+    )
   })
 
   test('routes Android visitors to the tester funnel, not a dead Play badge', async ({page}) => {

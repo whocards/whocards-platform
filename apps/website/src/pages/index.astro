@@ -12,7 +12,7 @@ import Accordion from '~components/ui/Accordion.astro'
 import Button from '~components/ui/Button.astro'
 import RoundedImage from '~components/ui/RoundedImage.astro'
 import WhoCard from '~components/ui/WhoCard.astro'
-import {APP_VISIBLE} from '~constants/app'
+import {APP_IOS_LAUNCHED, APP_VISIBLE, appStoreUrl} from '~constants/app'
 import {faqs} from '~constants/faqs'
 import Layout from '~layouts/Layout.astro'
 import {Image} from 'astro:assets'
@@ -49,7 +49,15 @@ const description =
         Play Online
       </Button>
       {APP_VISIBLE ? (
-        <Button tag='a' href='/app' full hideIcon variant='secondary'>
+        <Button
+          tag='a'
+          href='/app'
+          data-ios-href={APP_IOS_LAUNCHED ? appStoreUrl('homepage') : undefined}
+          data-source='homepage'
+          full
+          hideIcon
+          variant='secondary'
+        >
           Get the App
         </Button>
       ) : (
@@ -268,6 +276,10 @@ const description =
 </Layout>
 
 <script>
+  import {wireIosStoreLinks} from '~lib/store-links'
+
+  wireIosStoreLinks()
+
   const button = document.getElementById('read-more') as HTMLButtonElement
   if (button) {
     button.addEventListener('click', () => {

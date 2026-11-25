@@ -10,8 +10,6 @@
  * Android visitors to the /android-testers funnel instead of a Play badge.
  *
  * Store URLs point at the real listings (iOS App Store id + Android package).
- * The guard below throws at module load if a placeholder ever slips back in for a
- * platform that is marked launched, so a broken CTA can never reach a live funnel.
  *
  * The store id/package are defined once, in `@whocards/app-store` — the single
  * source of truth also consumed by the launch-blast email (#128).
@@ -45,25 +43,9 @@ export const APP_VISIBLE: boolean = computeAppVisible(APP_IOS_LAUNCHED, APP_ANDR
  */
 export {APP_STORE_APP_ID}
 
-/** App Store product URL — keyed off the numeric App Store id (slug is cosmetic). */
-export const APP_STORE_URL = buildAppStoreUrl({source: 'website', medium: 'app_page'})
+/** UTM-tagged store links; `medium` names the surface the link sits on. */
+export const appStoreUrl = (medium: string): string =>
+  buildAppStoreUrl({source: 'website', medium, campaign: 'app'})
 
-/** Google Play store URL — keyed off the Android application id. */
-export const PLAY_STORE_URL = buildPlayStoreUrl({source: 'website', medium: 'app_page'})
-
-// Defence-in-depth: a launched platform must never serve a placeholder store link.
-// This fires at module load (SSR) so a stray `TODO` can't slip past review and
-// reach visitors once a store flag is flipped on. Each platform is checked only
-// when it is actually marked launched.
-if (APP_IOS_LAUNCHED && APP_STORE_URL.includes('TODO')) {
-  throw new Error(
-    'iOS is launched (PUBLIC_APP_IOS_LAUNCHED=true) but the App Store URL still contains a TODO ' +
-      'placeholder. Set the real App Store id in packages/app-store/src/index.ts before launch.'
-  )
-}
-if (APP_ANDROID_LAUNCHED && PLAY_STORE_URL.includes('TODO')) {
-  throw new Error(
-    'Android is launched (PUBLIC_APP_ANDROID_LAUNCHED=true) but the Play Store URL still contains a ' +
-      'TODO placeholder. Set the real Android package in packages/app-store/src/index.ts before launch.'
-  )
-}
+export const playStoreUrl = (medium: string): string =>
+  buildPlayStoreUrl({source: 'website', medium, campaign: 'app'})

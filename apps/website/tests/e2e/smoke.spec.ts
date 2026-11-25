@@ -23,6 +23,33 @@ test('landing page renders', async ({page}) => {
   )
 })
 
+test('landing page sends iPhone visitors straight to the App Store', async ({browser}) => {
+  const iphone = await browser.newContext({
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148',
+  })
+  const page = await iphone.newPage()
+  await page.goto('/')
+
+  const cta = page.getByRole('main').getByRole('link', {name: 'Get the App'})
+  await expect(cta).toHaveAttribute('href', /^https:\/\/apps\.apple\.com\//)
+  const url = new URL((await cta.getAttribute('href'))!)
+  expect(Object.fromEntries(url.searchParams)).toEqual({
+    utm_source: 'website',
+    utm_medium: 'homepage',
+    utm_campaign: 'app',
+  })
+  await iphone.close()
+})
+
+test('landing page sends other visitors to /app', async ({page}) => {
+  await page.goto('/')
+  await expect(page.getByRole('main').getByRole('link', {name: 'Get the App'})).toHaveAttribute(
+    'href',
+    '/app'
+  )
+})
+
 test('AI Check-In has intent-aligned metadata and links back to the conversation game', async ({
   page,
 }) => {
