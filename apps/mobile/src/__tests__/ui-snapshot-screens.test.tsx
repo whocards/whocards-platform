@@ -191,6 +191,7 @@ jest.mock('@whocards/observability/events', () => {
 import {getDeck, getLanguageName} from '@whocards/decks'
 import {getStoredGame} from '@/lib/game-store'
 import {getStoredLanguage} from '@/lib/language-store'
+import {setStoredCardAnimation} from '@/lib/card-animation-store'
 import {getStoredTabletopMode} from '@/lib/tabletop-store'
 import {getStoredTheme} from '@/lib/theme-store'
 
@@ -306,8 +307,9 @@ describe('Play screen', () => {
     expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(2)
   })
 
-  it('turns the Question over on Next and back on Back, coming to rest face-on (issue #456)', async () => {
+  it('with Card animation Flip, turns the Question over on Next and back on Back, coming to rest face-on (issue #456)', async () => {
     mockParams = {deck: 'library', q: '1'}
+    await setStoredCardAnimation('flip')
     const questions = getDeck('library')?.questions
     await renderUi(<PlayScreen />)
     await settle()

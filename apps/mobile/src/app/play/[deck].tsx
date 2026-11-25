@@ -42,6 +42,8 @@ import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-sto
 import {notePromptShown} from '@/lib/notification-store'
 import {parsePlayLink} from '@/lib/play-link'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
+import {getStoredCardAnimation} from '@/lib/card-animation-store'
+import type {CardAnimation} from '@/lib/card-animation-store'
 import {getStoredTabletopMode} from '@/lib/tabletop-store'
 
 // react-native-css's safe-area adapter re-exports the platform SafeAreaView,
@@ -228,6 +230,8 @@ const DeckPlayer = ({
   // the bottom half so two sides of a flat phone can both read it. Global, not
   // per-deck — see tabletop-store.ts.
   const [tabletop, setTabletop] = useState(false)
+  // Card animation (issue #456, a Display setting): Next and Back slide or flip.
+  const [cardAnimation, setCardAnimation] = useState<CardAnimation>('slide')
   // true once the AsyncStorage read has settled — gates the first card paint so
   // the player never shows a visible language flip on launch. The read is a single
   // fast local hit (~1-5 ms); holding the card behind it is the right trade-off
@@ -251,6 +255,7 @@ const DeckPlayer = ({
           setSecondary(stored.filter((code) => languages.includes(code)))
         ),
         getStoredTabletopMode().then(setTabletop),
+        getStoredCardAnimation().then(setCardAnimation),
       ]),
     [deckSlug, languages]
   )
@@ -444,6 +449,8 @@ const DeckPlayer = ({
   // Set when the out-half has dispatched; the effect below turns the new Question in from the far side.
   const turningIn = useRef<1 | -1 | null>(null)
   const halfTurnMs = (reduceMotion ? FADE_MS : FLIP_MS) / 2
+  // Reduce Motion always crossfades (the turn's fade form), whatever the Card animation.
+  const turns = reduceMotion || cardAnimation === 'flip'
 
   // card-enter animation: when questionId changes, the new card flies in from
   // the appropriate edge. navDir is set by goNext/goPrevious before dispatch.
@@ -524,23 +531,27 @@ const DeckPlayer = ({
 
   const goNext = useCallback(() => {
     revealChrome()
-    turnOut(1, () => {
+    const commit = () => {
       navDir.current = 1
       viewTracker.endView('advanced')
       dispatchNav({type: 'next'})
-    })
-  }, [revealChrome, turnOut, viewTracker, dispatchNav])
+    }
+    if (turns) turnOut(1, commit)
+    else commit()
+  }, [revealChrome, turns, turnOut, viewTracker, dispatchNav])
 
   // the reducer clamps `previous` at the first card; turning there would leave it edge-on
   const goPrevious = useCallback(() => {
     revealChrome()
     if (isAtFirst) return
-    turnOut(-1, () => {
+    const commit = () => {
       navDir.current = -1
       viewTracker.endView('previous')
       dispatchNav({type: 'previous'})
-    })
-  }, [revealChrome, isAtFirst, turnOut, viewTracker, dispatchNav])
+    }
+    if (turns) turnOut(-1, commit)
+    else commit()
+  }, [revealChrome, isAtFirst, turns, turnOut, viewTracker, dispatchNav])
 
   const swipeNext = useCallback(() => turnOut(1, dispatchNext), [turnOut, dispatchNext])
   const swipePrevious = useCallback(
@@ -582,6 +593,10 @@ const DeckPlayer = ({
   useEffect(() => {
     reduceMotionSV.set(reduceMotion)
   }, [reduceMotion, reduceMotionSV])
+  const turnsSV = useSharedValue(turns)
+  useEffect(() => {
+    turnsSV.set(turns)
+  }, [turns, turnsSV])
 
   // stable JS callbacks for worklet → JS bridge
   const revealChromeStable = useCallback(() => revealChrome(), [revealChrome])
@@ -608,22 +623,33 @@ const DeckPlayer = ({
         'worklet'
         const tx = event.translationX
         const vx = event.velocityX
-        const settle = reduceMotionSV.get() ? 0 : 150
+        const travel = reduceMotionSV.get() ? 0 : SWIPE_OFF_SCREEN
+        // A turning Card settles back to centre and turns; a sliding one leaves off the edge.
+        const leave = (dir: 1 | -1, slideOff: () => void, turnOver: () => void) => {
+          if (turnsSV.get()) {
+            translateX.set(withTiming(0, {duration: reduceMotionSV.get() ? 0 : 150}))
+            runOnJS(turnOver)()
+            return
+          }
+          translateX.set(
+            withTiming(-dir * travel, {duration: reduceMotionSV.get() ? 0 : 260}, () => {
+              'worklet'
+              runOnJS(slideOff)()
+            })
+          )
+        }
 
-        // commit next: swipe left past threshold or fast leftward fling — the card
-        // settles back and turns over (issue #456)
+        // commit next: swipe left past threshold or fast leftward fling
         if (tx <= -SWIPE_THRESHOLD || vx < -500) {
           runOnJS(impactMediumOnJS)()
-          translateX.set(withTiming(0, {duration: settle}))
-          runOnJS(swipeNext)()
+          leave(1, dispatchNext, swipeNext)
           return
         }
         // commit previous: swipe right past threshold or fast rightward fling
         // (but not if rubber-banded at the start)
         if ((tx >= SWIPE_THRESHOLD || vx > 500) && !isAtFirstSV.get()) {
           runOnJS(impactMediumOnJS)()
-          translateX.set(withTiming(0, {duration: settle}))
-          runOnJS(swipePrevious)()
+          leave(-1, dispatchPrevious, swipePrevious)
           return
         }
         // spring back to rest
@@ -638,9 +664,12 @@ const DeckPlayer = ({
     return Gesture.Race(tap, pan)
   }, [
     revealChromeStable,
+    dispatchNext,
+    dispatchPrevious,
     swipeNext,
     swipePrevious,
     impactMediumOnJS,
+    turnsSV,
     translateX,
     isAtFirstSV,
     reduceMotionSV,
