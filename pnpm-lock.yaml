@@ -177,7 +177,7 @@ catalogs:
       specifier: ^11.29.9
       version: 11.29.9
     '@types/node':
-      specifier: ^24.10.2
+      specifier: ^24.19.2
       version: 24.19.2
     '@types/react':
       specifier: ^19.3.0
