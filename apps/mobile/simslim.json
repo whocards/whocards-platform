@@ -1,0 +1,6 @@
+{
+  "name": "whocards",
+  "description": "WhoCards e2e flows and store screenshots on the iOS Simulator. Keeps push token registration and universal links.",
+  "except": [],
+  "keep": ["com.apple.apsd", "com.apple.swcd"]
+}

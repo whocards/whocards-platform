@@ -20,8 +20,10 @@ version, tags, and pushes — with confirmation prompts along the way.
 
 ## Before each release
 
-1. **Boot a simulator and an emulator.** The release command runs the Maestro e2e suite
-   (`e2e:ios` + `e2e:android`) as a hard gate — CI does not run e2e (see `ci.yml`).
+1. **Nothing to boot.** The release command runs the Maestro e2e suite (`e2e:ios` +
+   `e2e:android`) as a hard gate on WhoCards' own `WhoCards iPhone 17 Pro` simulator and
+   `WhoCards Duo` emulator, creating, booting and slimming them itself — CI does not run
+   e2e (see `ci.yml`).
    The gate self-provisions: if the booted device doesn't already have a current build
    installed, it builds a self-contained Release sim/emulator app and installs it before
    running the suite — no manual build/install step needed. Skip just that step with

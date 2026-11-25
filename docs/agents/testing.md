@@ -19,6 +19,7 @@ Astro's dev toolbar intercepts clicks in the local SSR suite (Share tests), not 
 
 - Unit tests: jest, with the helpers in `apps/mobile/src/test-utils`.
 - E2E: Maestro flows in `apps/mobile/.maestro`, see [apps/mobile/docs/e2e-testing.md](../../apps/mobile/docs/e2e-testing.md) and [docs/mobile/device-testing.md](../mobile/device-testing.md). They run only on Avi's Mac with a simulator or emulator.
+- Devices: WhoCards' own, from `pnpm -F mobile devices` (`apps/mobile/scripts/devices.mjs`): `WhoCards iPhone 17 Pro`, `WhoCards iPhone 14 Plus` (store screenshots) and the `WhoCards Duo` foldable AVD (`WhoCards_Duo`). iOS ones are slimmed with simslim (`apps/mobile/simslim.json`, `brew install mobai-app/tap/simslim`) before a run. Never boot, slim or run on a device not named `WhoCards …`: other projects' simulators live on the same Mac.
 
 ## Review bots
 
