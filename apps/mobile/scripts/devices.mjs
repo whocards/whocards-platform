@@ -114,8 +114,11 @@ export const EMULATOR = tool('emulator', 'emulator')
 const SDKMANAGER = tool('cmdline-tools/latest/bin', 'sdkmanager')
 const AVDMANAGER = tool('cmdline-tools/latest/bin', 'avdmanager')
 
-const avdConfig = (avd) =>
-  path.join(os.homedir(), '.android', 'avd', `${avd.name}.avd`, 'config.ini')
+// Where avdmanager and the emulator keep AVDs, honouring the same overrides they do.
+const AVD_HOME =
+  process.env.ANDROID_AVD_HOME ||
+  path.join(process.env.ANDROID_USER_HOME || path.join(os.homedir(), '.android'), 'avd')
+const avdConfig = (avd) => path.join(AVD_HOME, `${avd.name}.avd`, 'config.ini')
 
 /** The AVD named `avd.name`, created from its system image (installed when missing). */
 export function ensureAvd(avd) {

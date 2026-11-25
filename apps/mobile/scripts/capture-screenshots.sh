@@ -66,7 +66,7 @@ verify_sizes() {
 for entry in $DEVICES; do
   key="${entry%%:*}"
   name="${entry##*:}"
-  if [[ -z "$key" || -z "$name" || "$key" == "$name" ]]; then
+  if [[ "$entry" != *:* || -z "$key" || -z "$name" ]]; then
     echo "✗ bad DEVICES entry '$entry' — expected '<device>:<name>'" >&2
     exit 1
   fi
