@@ -153,7 +153,7 @@ describe('Tailwind theme — line height', () => {
     // — which lands on the same pixel value by construction, for any font size
     // expressed in rem. That equality is the thing worth pinning: it is why
     // `text-sm`'s default is exactly what v4's `text-sm leading-5` pinned, and
-    // so why theme-settings-page.tsx could drop that class outright rather than
+    // so why segmented-control.tsx could drop that class outright rather than
     // restate it as a ratio.
     expect(resolvedStyle(await renderClass('text-sm'))).toMatchObject({
       fontSize: rem('0.875rem'),

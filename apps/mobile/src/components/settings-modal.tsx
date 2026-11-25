@@ -27,10 +27,9 @@ import {colors} from '@whocards/tokens'
 
 import {DailyTimeSettingsPage, formatHour} from '@/components/daily-time-settings-page'
 import {GameSettingsPage} from '@/components/game-settings-page'
-import {LanguageSettingsPage} from '@/components/language-settings-page'
-import {SecondLanguageSettingsPage} from '@/components/second-language-settings-page'
+import {LanguagesSettingsPage} from '@/components/languages-settings-page'
+import {SegmentedControl} from '@/components/segmented-control'
 import {SettingsSheetHeader} from '@/components/settings-sheet-header'
-import {ThemeSettingsPage} from '@/components/theme-settings-page'
 import {useIsDark} from '@/lib/color-scheme'
 import {buildFeedbackUrl} from '@/lib/feedback-url'
 import {getStoredGame, setStoredGame} from '@/lib/game-store'
@@ -56,13 +55,18 @@ import type {CardAnimation} from '@/lib/card-animation-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '@/lib/tabletop-store'
 import type {ThemeSetting} from '@/lib/theme-store'
 
-const THEME_LABEL: Record<ThemeSetting, string> = {system: 'System', light: 'Light', dark: 'Dark'}
+const THEME_OPTIONS = [
+  {value: 'system', label: 'System'},
+  {value: 'light', label: 'Light'},
+  {value: 'dark', label: 'Dark'},
+] as const satisfies readonly {value: ThemeSetting; label: string}[]
 
-// Caps the menu page at this fraction of the window so max Dynamic Type or a
-// compact device in landscape can't push the Tabletop row off-screen —
-// content still sizes naturally (well under this cap in the normal case) and
-// only this section scrolls; the header stays put. Every pushed page carries
-// its own copy of this same cap+ratio.
+const CARD_ANIMATION_OPTIONS = [
+  {value: 'slide', label: 'Slide'},
+  {value: 'flip', label: 'Flip'},
+] as const satisfies readonly {value: CardAnimation; label: string}[]
+
+// Caps the menu at this fraction of the window; it only scrolls under max Dynamic Type or in landscape.
 const SHEET_MAX_HEIGHT_RATIO = 0.8
 
 // Page-rise duration — matches CARD_ENTER_MS (play/[deck].tsx), this app's
@@ -77,7 +81,7 @@ const PAGE_SLIDE_MS = 260
 // enough to read as "behind" something (see the doc comment below).
 const PAGE_DIM_OPACITY = 0.3
 
-type Page = 'menu' | 'game' | 'theme' | 'language' | 'secondLanguage' | 'dailyTime'
+type Page = 'menu' | 'game' | 'languages' | 'dailyTime'
 
 type SettingsModalProps = {
   visible: boolean
@@ -105,19 +109,10 @@ type SettingsModalProps = {
  * (Language, secondary language, Tabletop mode) now lives here, behind
  * the home screen's `SecondaryButton` (`app/index.tsx`) and the play bar's gear.
  *
- * Two sections (issue #189, owner on-device feedback — see "Second language"
- * below): **Gameplay** (Game, Language, Second language, Tabletop mode) and
- * **Appearance** (Theme). Primary Language sits in Gameplay, not Appearance,
- * even though — like Theme — it never changes which Card is drawn (CONTEXT.md's
- * Display-setting boundary holds for both). The distinction that matters here
- * is *content* vs. *chrome*: Language decides what you actually read (the
- * Question's text, in which script, which direction) — that's core to
- * *playing*, not to how the app around the Card looks. Theme only ever
- * changes the canvas/chrome color, never the Card. So Language groups with
- * the other things that shape the play experience (which Game, whether a
- * second language shows, whether the table reads both ways), and Appearance
- * is left with just Theme — a one-item section today, but a real, separate
- * category (font/density-style settings would also land there, not here).
+ * Layout C (issue #460): one screen that fits without scrolling on a 6.1" phone, home and in play.
+ * Game and Languages push pages; Card animation and Theme are inline segmented controls; Tabletop
+ * mode and Daily question are checkboxes; the Daily question time is a chip; Send feedback is a
+ * footer link.
  *
  * Language scoping decision (flagged per #176): Language and its secondary
  * are stored per-deck (`whocards-language:{deck}`,
@@ -190,24 +185,12 @@ type SettingsModalProps = {
  * anyway. Android hardware back still pops the page first and only closes
  * the sheet from the menu page.
  *
- * Game and Theme's `onSelect` calls `goBack()` after applying the pick (a
- * pick is a complete action, same as the pre-pager modals auto-closing on
- * select). Primary Language now does too (issue #189, fourth pass) — it used
- * to stay open so a secondary could also be toggled right after, but that
- * secondary picker is its own page now (see "Second language" below), so the
- * original reason to linger is gone; every single-pick page behaves the same
- * way. Second language also auto-returns, including a bare "None" pick.
- *
- * Second language (issue #189, owner on-device feedback: "split the second
- * language selector into a separate section in game play options"): the
- * "Also show" secondary-language picker used to live as a second section
- * beneath the primary list on the Language page. It's now its own menu row
- * and page (`second-language-settings-page.tsx`) — see the section-grouping
- * note above for where it landed and why.
+ * A Game or time pick returns to the menu. The Languages page stays up after a pick, since it
+ * holds both the primary and the second language; its back arrow returns.
  *
  * Height: each page still sizes to its own content (each carries its own
  * `SHEET_MAX_HEIGHT_RATIO`-capped, scrolling `ScrollView` for the
- * unbounded-list case — Language, Second language). Review finding on the
+ * unbounded-list case — Languages). Review finding on the
  * third pass's horizontal version: the menu `View` was unconditionally
  * mounted (only a11y-hidden) as a flex-row sibling of the destination page,
  * so the row's height was the *max* of both — a short page (Game, Theme)
@@ -229,7 +212,50 @@ type SettingsModalProps = {
  * reader user should reach immediately rather than after a ~260ms rise
  * finishes.
  */
-const CARD_ANIMATION_LABEL: Record<CardAnimation, string> = {slide: 'Slide', flip: 'Flip'}
+
+const ROW_BORDER = 'border-gray-lighter dark:border-white/10 border-b'
+
+type NavRowProps = {
+  label: string
+  value: string
+  onPress: () => void
+  disabled?: boolean
+  chevronColor: string
+}
+
+// The label carries the value too: a button's children collapse behind its label in the iOS a11y tree.
+const NavRow = ({label, value, onPress, disabled = false, chevronColor}: NavRowProps) => (
+  <Pressable
+    onPress={onPress}
+    disabled={disabled}
+    accessibilityRole="button"
+    accessibilityLabel={`${label}: ${value}`}
+    accessibilityState={{disabled}}
+    className={`${ROW_BORDER} flex-row items-center justify-between px-5 py-4`}
+  >
+    <Text className="text-darker dark:text-white font-sans text-lg">{label}</Text>
+    <View className="flex-row items-center gap-1.5">
+      <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">{value}</Text>
+      {disabled ? null : <Ionicons name="chevron-forward" size={16} color={chevronColor} />}
+    </View>
+  </Pressable>
+)
+
+const Checkbox = ({checked, isDark}: {checked: boolean; isDark: boolean}) => (
+  <Ionicons
+    name={checked ? 'checkbox' : 'square-outline'}
+    size={22}
+    color={
+      checked
+        ? isDark
+          ? colors.accentOnDark
+          : colors.accentOnLight
+        : isDark
+          ? colors.gray.dark
+          : colors.mutedOnLight
+    }
+  />
+)
 
 export const SettingsModal = ({
   visible,
@@ -358,9 +384,10 @@ export const SettingsModal = ({
   }
 
   const gameTitle = GAME_CATALOG.find((entry) => entry.id === game)?.title ?? game
-  const languageLabel = getLanguageName(language) ?? language
   const hasLanguageChoice = languages.length > 1
-  const secondaryLabel = secondary[0] ? (getLanguageName(secondary[0]) ?? secondary[0]) : 'None'
+  const languagesLabel = [language, ...secondary]
+    .map((code) => getLanguageName(code) ?? code)
+    .join(' + ')
 
   const sheetMaxHeight = windowHeight * SHEET_MAX_HEIGHT_RATIO
 
@@ -419,92 +446,42 @@ export const SettingsModal = ({
           >
             <SettingsSheetHeader title="Settings" icon="close" onPress={onClose} />
             <ScrollView style={{maxHeight: sheetMaxHeight}} bounces={false}>
-              {/* Gameplay — everything that shapes what you're actually playing
-                  with: which Game, which language(s) the Question renders in,
-                  whether the table reads both ways. */}
-              <Text className="text-mutedOnLight dark:text-gray-dark px-5 pb-1 pt-4 font-sans text-xs font-bold uppercase tracking-wide">
-                Gameplay
-              </Text>
-              {/* label mirrors the visible text so tests and screen readers see the
-                  current value (a button's children collapse behind its label in
-                  the iOS a11y tree) — same pattern as the old Library chips. */}
+              {/* Layout C (issue #460): one screen, controls inline, no section labels. */}
               {showGame ? (
-                <Pressable
+                <NavRow
+                  label="Game"
+                  value={gameTitle}
                   onPress={() => goToPage('game')}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Game: ${gameTitle}`}
-                  className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
-                >
-                  <Text className="text-darker dark:text-white font-sans text-lg">Game</Text>
-                  <View className="flex-row items-center gap-1.5">
-                    <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                      {gameTitle}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={16} color={chevronColor} />
-                  </View>
-                </Pressable>
+                  chevronColor={chevronColor}
+                />
               ) : null}
-
-              <Pressable
-                onPress={() => hasLanguageChoice && goToPage('language')}
+              <NavRow
+                label="Languages"
+                value={languagesLabel}
+                onPress={() => goToPage('languages')}
                 disabled={!hasLanguageChoice}
-                accessibilityRole="button"
-                accessibilityLabel={`Language: ${languageLabel}`}
-                accessibilityState={{disabled: !hasLanguageChoice}}
-                className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
-              >
-                <Text className="text-darker dark:text-white font-sans text-lg">Language</Text>
-                <View className="flex-row items-center gap-1.5">
-                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                    {languageLabel}
-                  </Text>
-                  {hasLanguageChoice ? (
-                    <Ionicons name="chevron-forward" size={16} color={chevronColor} />
-                  ) : null}
-                </View>
-              </Pressable>
-
-              <Pressable
-                onPress={() => hasLanguageChoice && goToPage('secondLanguage')}
-                disabled={!hasLanguageChoice}
-                accessibilityRole="button"
-                accessibilityLabel={`Second language: ${secondaryLabel}`}
-                accessibilityState={{disabled: !hasLanguageChoice}}
-                className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-b px-5 py-4"
-              >
+                chevronColor={chevronColor}
+              />
+              <View className={`${ROW_BORDER} flex-row items-center justify-between px-5 py-2.5`}>
                 <Text className="text-darker dark:text-white font-sans text-lg">
-                  Second language
+                  Card animation
                 </Text>
-                <View className="flex-row items-center gap-1.5">
-                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                    {secondaryLabel}
-                  </Text>
-                  {hasLanguageChoice ? (
-                    <Ionicons name="chevron-forward" size={16} color={chevronColor} />
-                  ) : null}
-                </View>
-              </Pressable>
-
-              {/* Tabletop mode (issue #148): moved here from the play-screen sheet by
-                  #176 since it's a global preference (tabletop-store.ts), not a
-                  per-deck one — a plain on/off row, no nested page needed for one
-                  checkbox. */}
-              <View className="px-5 pb-1 pt-5">
-                <Text className="text-darker dark:text-white font-title text-lg">
-                  Tabletop mode
-                </Text>
-                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-                  Lay the phone flat on the table — the question mirrors on top so both sides can
-                  read it at once.
-                </Text>
+                <SegmentedControl
+                  label="Card animation"
+                  options={CARD_ANIMATION_OPTIONS}
+                  current={cardAnimation}
+                  onSelect={(next) => {
+                    selection()
+                    setCardAnimation(next)
+                    void setStoredCardAnimation(next)
+                  }}
+                />
               </View>
               <Pressable
                 onPress={() => {
                   selection()
                   const next = !tabletop
-                  // Global setting, no deck context anymore (this menu opens before
-                  // any deck is open) — matches THEME_CHANGED's shape, the other
-                  // global setting's event, which also carries no deck_id.
+                  // Global setting with no deck context, so no deck_id (same shape as THEME_CHANGED).
                   track({name: EVENTS.TABLETOP_MODE_CHANGED, props: {enabled: next}})
                   setTabletop(next)
                   void setStoredTabletopMode(next)
@@ -512,116 +489,67 @@ export const SettingsModal = ({
                 accessibilityRole="switch"
                 accessibilityLabel="Tabletop mode"
                 accessibilityState={{checked: tabletop}}
-                className={`flex-row items-center justify-between px-5 py-3 ${
+                className={`${ROW_BORDER} flex-row items-center justify-between gap-3 px-5 py-3 ${
                   tabletop ? 'bg-yellow-300/40' : ''
                 }`}
               >
-                <Text className="text-darker dark:text-white font-sans text-lg">
-                  Two-way readable
-                </Text>
-                <Ionicons
-                  name={tabletop ? 'checkbox' : 'square-outline'}
-                  size={20}
-                  color={
-                    tabletop
-                      ? isDark
-                        ? colors.accentOnDark
-                        : colors.accentOnLight
-                      : isDark
-                        ? colors.gray.dark
-                        : colors.mutedOnLight
-                  }
-                />
-              </Pressable>
-
-              {/* Card animation (issue #456, a Display setting): two options, so a tap toggles. */}
-              <Pressable
-                onPress={() => {
-                  selection()
-                  const next = cardAnimation === 'slide' ? 'flip' : 'slide'
-                  setCardAnimation(next)
-                  void setStoredCardAnimation(next)
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`Card animation: ${CARD_ANIMATION_LABEL[cardAnimation]}`}
-                className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-t px-5 py-4"
-              >
-                <Text className="text-darker dark:text-white font-sans text-lg">
-                  Card animation
-                </Text>
-                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                  {CARD_ANIMATION_LABEL[cardAnimation]}
-                </Text>
-              </Pressable>
-
-              {/* Appearance — how the app itself looks, never what you're playing
-                  with (Theme never changes the Card, only the chrome/canvas
-                  around it). */}
-              <Text className="text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide">
-                Appearance
-              </Text>
-              <Pressable
-                onPress={() => goToPage('theme')}
-                accessibilityRole="button"
-                accessibilityLabel={`Theme: ${THEME_LABEL[theme]}`}
-                className="flex-row items-center justify-between px-5 py-4"
-              >
-                <Text className="text-darker dark:text-white font-sans text-lg">Theme</Text>
-                <View className="flex-row items-center gap-1.5">
-                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                    {THEME_LABEL[theme]}
+                <View className="flex-1">
+                  <Text className="text-darker dark:text-white font-sans text-lg">
+                    Tabletop mode
                   </Text>
-                  <Ionicons name="chevron-forward" size={16} color={chevronColor} />
+                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
+                    Mirror the Question so both sides of the table can read it.
+                  </Text>
                 </View>
+                <Checkbox checked={tabletop} isDark={isDark} />
               </Pressable>
-
-              <Text className="text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide">
-                Notifications
-              </Text>
-              <Pressable
-                onPress={() => changeDaily({...daily, enabled: !daily.enabled})}
-                accessibilityRole="switch"
-                accessibilityLabel="Daily question"
-                accessibilityState={{checked: daily.enabled}}
-                className="flex-row items-center justify-between px-5 py-4"
-              >
+              <View className={`${ROW_BORDER} flex-row items-center justify-between px-5 py-2.5`}>
+                <Text className="text-darker dark:text-white font-sans text-lg">Theme</Text>
+                <SegmentedControl
+                  label="Theme"
+                  options={THEME_OPTIONS}
+                  current={theme}
+                  onSelect={(next) => {
+                    selection()
+                    onSelectTheme(next)
+                  }}
+                />
+              </View>
+              <View className="flex-row items-center justify-between px-5 py-3">
                 <Text className="text-darker dark:text-white font-sans text-lg">
                   Daily question
                 </Text>
-                <Ionicons
-                  name={daily.enabled ? 'checkbox' : 'square-outline'}
-                  size={20}
-                  color={
-                    daily.enabled
-                      ? isDark
-                        ? colors.accentOnDark
-                        : colors.accentOnLight
-                      : chevronColor
-                  }
-                />
-              </Pressable>
-              {daily.enabled ? (
-                <Pressable
-                  onPress={() => goToPage('dailyTime')}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Time: ${formatHour(daily.hour)}`}
-                  className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-t px-5 py-4"
-                >
-                  <Text className="text-darker dark:text-white font-sans text-lg">Time</Text>
-                  <View className="flex-row items-center gap-1.5">
-                    <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
-                      {formatHour(daily.hour)}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={16} color={chevronColor} />
-                  </View>
-                </Pressable>
-              ) : null}
+                <View className="flex-row items-center gap-3">
+                  {daily.enabled ? (
+                    <Pressable
+                      onPress={() => goToPage('dailyTime')}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Time: ${formatHour(daily.hour)}`}
+                      className="bg-gray-lighter dark:bg-white/10 flex-row items-center gap-1 rounded-full px-3 py-1.5"
+                    >
+                      <Text className="text-darker dark:text-white font-sans text-base font-semibold">
+                        {formatHour(daily.hour)}
+                      </Text>
+                      <Ionicons name="chevron-forward" size={14} color={chevronColor} />
+                    </Pressable>
+                  ) : null}
+                  <Pressable
+                    onPress={() => changeDaily({...daily, enabled: !daily.enabled})}
+                    accessibilityRole="switch"
+                    accessibilityLabel="Daily question"
+                    accessibilityState={{checked: daily.enabled}}
+                    hitSlop={12}
+                  >
+                    <Checkbox checked={daily.enabled} isDark={isDark} />
+                  </Pressable>
+                </View>
+              </View>
               {daily.enabled && !allowed ? (
                 <Pressable
                   onPress={() => void allowNotifications().catch(() => {})}
                   accessibilityRole="button"
                   accessibilityLabel="Allow notifications"
-                  className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-t px-5 py-4"
+                  className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-t px-5 py-3"
                 >
                   <View className="flex-1 pr-3">
                     <Text className="text-darker dark:text-white font-sans text-lg">
@@ -634,19 +562,20 @@ export const SettingsModal = ({
                   <Ionicons name="open-outline" size={16} color={chevronColor} />
                 </Pressable>
               ) : null}
-
-              <Text className="text-mutedOnLight dark:text-gray-dark border-gray-lighter dark:border-white/10 mt-2 border-t px-5 pb-1 pt-5 font-sans text-xs font-bold uppercase tracking-wide">
-                Support
-              </Text>
-              <Pressable
-                onPress={() => void Linking.openURL(buildFeedbackUrl()).catch(() => {})}
-                accessibilityRole="link"
-                accessibilityLabel="Send feedback"
-                className="flex-row items-center justify-between px-5 py-4"
-              >
-                <Text className="text-darker dark:text-white font-sans text-lg">Send feedback</Text>
-                <Ionicons name="open-outline" size={16} color={chevronColor} />
-              </Pressable>
+              <View className="border-gray-lighter dark:border-white/10 mt-1 items-center border-t pt-4">
+                <Pressable
+                  onPress={() => void Linking.openURL(buildFeedbackUrl()).catch(() => {})}
+                  accessibilityRole="link"
+                  accessibilityLabel="Send feedback"
+                  hitSlop={12}
+                  className="flex-row items-center gap-1.5"
+                >
+                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base font-semibold">
+                    Send feedback
+                  </Text>
+                  <Ionicons name="open-outline" size={15} color={chevronColor} />
+                </Pressable>
+              </View>
             </ScrollView>
           </View>
         </Pressable>
@@ -694,22 +623,11 @@ export const SettingsModal = ({
                   />
                 ) : null}
 
-                {page === 'theme' ? (
-                  <ThemeSettingsPage
-                    current={theme}
-                    onSelect={(next) => {
-                      selection()
-                      onSelectTheme(next)
-                      goBack()
-                    }}
-                    onBack={goBack}
-                  />
-                ) : null}
-
-                {page === 'language' ? (
-                  <LanguageSettingsPage
+                {page === 'languages' ? (
+                  <LanguagesSettingsPage
                     languages={languages}
                     current={language}
+                    secondary={secondary}
                     onSelect={(next) => {
                       selection()
                       if (next !== language) {
@@ -721,10 +639,9 @@ export const SettingsModal = ({
                       setLanguage(next)
                       void setStoredLanguage(deckSlug, next)
                       onSelectLanguage?.(next)
-                      // the new primary can't also be a secondary
                       if (secondary.includes(next)) setSecondaryLanguages([])
-                      goBack()
                     }}
+                    onChangeSecondary={setSecondaryLanguages}
                     onBack={goBack}
                   />
                 ) : null}
@@ -734,19 +651,6 @@ export const SettingsModal = ({
                     current={daily.hour}
                     onSelect={(hour) => {
                       changeDaily({...daily, hour})
-                      goBack()
-                    }}
-                    onBack={goBack}
-                  />
-                ) : null}
-
-                {page === 'secondLanguage' ? (
-                  <SecondLanguageSettingsPage
-                    languages={languages}
-                    current={language}
-                    secondary={secondary}
-                    onChange={(next) => {
-                      setSecondaryLanguages(next)
                       goBack()
                     }}
                     onBack={goBack}

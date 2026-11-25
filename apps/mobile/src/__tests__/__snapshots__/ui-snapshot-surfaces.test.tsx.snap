@@ -655,7 +655,7 @@ exports[`Settings pages renders the Game page 1`] = `
             "Draw each card yourself — a fresh deal for every question."
 `;
 
-exports[`Settings pages renders the Language page 1`] = `
+exports[`Settings pages renders the Languages page 1`] = `
 <View>
   | flex: 1
   <View>
@@ -686,16 +686,28 @@ exports[`Settings pages renders the Language page 1`] = `
           | fontFamily: "aptly"
           | fontSize: 21
           | lineHeight: 28
-          "Choose your language"
+          "Languages"
     <RCTScrollView>
       | maxHeight: 1067.2
       <View>
-        <View accessibilityRole="button" accessibilityState={"selected":true}>
+        <Text>
+          | color: "#6b6d82"
+          | fontFamily: "golos-text"
+          | fontSize: 10.5
+          | fontWeight: 700
+          | letterSpacing: 0.26
+          | lineHeight: 14
+          | paddingBottom: 3.5
+          | paddingInline: 17.5
+          | paddingTop: 14
+          | textTransform: "uppercase"
+          "Language"
+        <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"selected":true}>
           | alignItems: "center"
           | backgroundColor: "#ffe37e66"
           | flexDirection: "row"
           | justifyContent: "space-between"
-          | paddingBlock: 14
+          | paddingBlock: 12.25
           | paddingInline: 17.5
           <Text>
             | color: "#111516"
@@ -709,11 +721,11 @@ exports[`Settings pages renders the Language page 1`] = `
             | fontWeight: 700
             | lineHeight: 24.5
             "✓"
-        <View accessibilityRole="button" accessibilityState={"selected":false}>
+        <View accessibilityRole="button" accessibilityLabel="Language: Hebrew" accessibilityState={"selected":false}>
           | alignItems: "center"
           | flexDirection: "row"
           | justifyContent: "space-between"
-          | paddingBlock: 14
+          | paddingBlock: 12.25
           | paddingInline: 17.5
           <Text>
             | color: "#111516"
@@ -721,48 +733,39 @@ exports[`Settings pages renders the Language page 1`] = `
             | fontSize: 15.75
             | lineHeight: 24.5
             "Hebrew"
-`;
-
-exports[`Settings pages renders the Second language page 1`] = `
-<View>
-  | flex: 1
-  <View>
-    <View>
-      | alignItems: "center"
-      | borderBottomStyle: "solid"
-      | borderBottomWidth: 1
-      | borderColor: "#dcdee9"
-      | flexDirection: "row"
-      | justifyContent: "space-between"
-      | paddingBlock: 14
-      | paddingInline: 17.5
-      | paddingTop: 16
-      <View>
-        | alignItems: "center"
-        | flexDirection: "row"
-        | gap: 3.5
-        <View accessibilityLabel="back" accessibilityState={}>
-          <Text>
-            | color: "#111516"
-            | fontFamily: "ionicons"
-            | fontSize: 24
-            | fontStyle: "normal"
-            | fontWeight: "normal"
-            ""
-        <Text>
-          | color: "#111516"
-          | fontFamily: "aptly"
-          | fontSize: 21
-          | lineHeight: 28
-          "Second language"
-    <RCTScrollView>
-      | maxHeight: 1067.2
-      <View>
-        <View accessibilityRole="button" accessibilityState={"selected":false}>
+        <View accessibilityRole="button" accessibilityLabel="Language: Spanish" accessibilityState={"selected":false}>
           | alignItems: "center"
           | flexDirection: "row"
           | justifyContent: "space-between"
-          | paddingBlock: 14
+          | paddingBlock: 12.25
+          | paddingInline: 17.5
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 15.75
+            | lineHeight: 24.5
+            "Spanish"
+        <Text>
+          | borderColor: "#dcdee9"
+          | borderTopStyle: "solid"
+          | borderTopWidth: 1
+          | color: "#6b6d82"
+          | fontFamily: "golos-text"
+          | fontSize: 10.5
+          | fontWeight: 700
+          | letterSpacing: 0.26
+          | lineHeight: 14
+          | marginTop: 7
+          | paddingBottom: 3.5
+          | paddingInline: 17.5
+          | paddingTop: 17.5
+          | textTransform: "uppercase"
+          "Second language"
+        <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | flexDirection: "row"
+          | justifyContent: "space-between"
+          | paddingBlock: 12.25
           | paddingInline: 17.5
           <Text>
             | color: "#111516"
@@ -770,12 +773,12 @@ exports[`Settings pages renders the Second language page 1`] = `
             | fontSize: 15.75
             | lineHeight: 24.5
             "None"
-        <View accessibilityRole="button" accessibilityState={"selected":true}>
+        <View accessibilityRole="button" accessibilityLabel="Second language: Hebrew" accessibilityState={"selected":true}>
           | alignItems: "center"
           | backgroundColor: "#ffe37e66"
           | flexDirection: "row"
           | justifyContent: "space-between"
-          | paddingBlock: 14
+          | paddingBlock: 12.25
           | paddingInline: 17.5
           <Text>
             | color: "#111516"
@@ -789,11 +792,11 @@ exports[`Settings pages renders the Second language page 1`] = `
             | fontWeight: 700
             | lineHeight: 24.5
             "✓"
-        <View accessibilityRole="button" accessibilityState={"selected":false}>
+        <View accessibilityRole="button" accessibilityLabel="Second language: Spanish" accessibilityState={"selected":false}>
           | alignItems: "center"
           | flexDirection: "row"
           | justifyContent: "space-between"
-          | paddingBlock: 14
+          | paddingBlock: 12.25
           | paddingInline: 17.5
           <Text>
             | color: "#111516"
@@ -801,101 +804,6 @@ exports[`Settings pages renders the Second language page 1`] = `
             | fontSize: 15.75
             | lineHeight: 24.5
             "Spanish"
-`;
-
-exports[`Settings pages renders the Theme page 1`] = `
-<View>
-  | flex: 1
-  <View>
-    <View>
-      | alignItems: "center"
-      | borderBottomStyle: "solid"
-      | borderBottomWidth: 1
-      | borderColor: "#dcdee9"
-      | flexDirection: "row"
-      | justifyContent: "space-between"
-      | paddingBlock: 14
-      | paddingInline: 17.5
-      | paddingTop: 16
-      <View>
-        | alignItems: "center"
-        | flexDirection: "row"
-        | gap: 3.5
-        <View accessibilityLabel="back" accessibilityState={}>
-          <Text>
-            | color: "#111516"
-            | fontFamily: "ionicons"
-            | fontSize: 24
-            | fontStyle: "normal"
-            | fontWeight: "normal"
-            ""
-        <Text>
-          | color: "#111516"
-          | fontFamily: "aptly"
-          | fontSize: 21
-          | lineHeight: 28
-          "Theme"
-    <View>
-      | paddingBlock: 14
-      | paddingInline: 17.5
-      <View>
-        | backgroundColor: "#dcdee9"
-        | borderRadius: 10.5
-        | flexDirection: "row"
-        | padding: 3.5
-        <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":true}>
-          | alignItems: "center"
-          | backgroundColor: "#f5f5f5"
-          | borderRadius: 7
-          | elevation: 1
-          | flexBasis: "0%"
-          | flexGrow: 1
-          | flexShrink: 1
-          | paddingBlock: 8.75
-          | shadowColor: "#000"
-          | shadowOffset: {"height":1,"width":0}
-          | shadowOpacity: 0.12
-          | shadowRadius: 2
-          <Text>
-            | color: "#111516"
-            | fontFamily: "golos-text"
-            | fontSize: 12.25
-            | fontWeight: 700
-            | lineHeight: 17.5
-            "System"
-        <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
-          | alignItems: "center"
-          | borderRadius: 7
-          | flexBasis: "0%"
-          | flexGrow: 1
-          | flexShrink: 1
-          | paddingBlock: 8.75
-          <Text>
-            | color: "#111516"
-            | fontFamily: "golos-text"
-            | fontSize: 12.25
-            | lineHeight: 17.5
-            "Light"
-        <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":false}>
-          | alignItems: "center"
-          | borderRadius: 7
-          | flexBasis: "0%"
-          | flexGrow: 1
-          | flexShrink: 1
-          | paddingBlock: 8.75
-          <Text>
-            | color: "#111516"
-            | fontFamily: "golos-text"
-            | fontSize: 12.25
-            | lineHeight: 17.5
-            "Dark"
-      <Text>
-        | color: "#6b6d82"
-        | fontFamily: "golos-text"
-        | fontSize: 12.25
-        | lineHeight: 17.5
-        | marginTop: 14
-        "Matches your device by default. Presentation only — it never changes which Card is drawn or your progress."
 `;
 
 exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
@@ -943,19 +851,7 @@ exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
           <RCTScrollView>
             | maxHeight: 1067.2
             <View>
-              <Text>
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 14
-                | textTransform: "uppercase"
-                "Gameplay"
-              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={}>
+              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={"disabled":false}>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
@@ -987,7 +883,7 @@ exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
                     | fontStyle: "normal"
                     | fontWeight: "normal"
                     ""
-              <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
+              <View accessibilityRole="button" accessibilityLabel="Languages: English" accessibilityState={"disabled":false}>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
@@ -1001,7 +897,7 @@ exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Language"
+                  "Languages"
                 <View>
                   | alignItems: "center"
                   | flexDirection: "row"
@@ -1019,55 +915,149 @@ exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
                     | fontStyle: "normal"
                     | fontWeight: "normal"
                     ""
-              <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
+              <View>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
                 | borderColor: "#dcdee9"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
-                | paddingBlock: 14
+                | paddingBlock: 8.75
                 | paddingInline: 17.5
                 <Text>
                   | color: "#111516"
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Second language"
+                  "Card animation"
                 <View>
-                  | alignItems: "center"
+                  | backgroundColor: "#dcdee9"
+                  | borderRadius: 10.5
                   | flexDirection: "row"
-                  | gap: 5.25
+                  | padding: 3.5
+                  <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={"selected":true}>
+                    | alignItems: "center"
+                    | backgroundColor: "#f5f5f5"
+                    | borderRadius: 7
+                    | elevation: 1
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    | shadowColor: "#000"
+                    | shadowOffset: {"height":1,"width":0}
+                    | shadowOpacity: 0.12
+                    | shadowRadius: 2
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | fontWeight: 700
+                      | lineHeight: 17.5
+                      "Slide"
+                  <View accessibilityRole="button" accessibilityLabel="Card animation: Flip" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Flip"
+              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | gap: 10.5
+                | justifyContent: "space-between"
+                | paddingBlock: 10.5
+                | paddingInline: 17.5
+                <View>
+                  | flexBasis: "0%"
+                  | flexGrow: 1
+                  | flexShrink: 1
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 15.75
+                    | lineHeight: 24.5
+                    "Tabletop mode"
                   <Text>
                     | color: "#6b6d82"
                     | fontFamily: "golos-text"
-                    | fontSize: 14
-                    | lineHeight: 21
-                    "None"
-                  <Text>
-                    | color: "#6b6d82"
-                    | fontFamily: "ionicons"
-                    | fontSize: 16
-                    | fontStyle: "normal"
-                    | fontWeight: "normal"
-                    ""
-              <View>
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "aptly"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Tabletop mode"
+                    | fontSize: 12.25
+                    | lineHeight: 17.5
+                    "Mirror the Question so both sides of the table can read it."
                 <Text>
                   | color: "#6b6d82"
+                  | fontFamily: "ionicons"
+                  | fontSize: 22
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+              <View>
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 8.75
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
                   | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | lineHeight: 17.5
-                  "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
-              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Theme"
+                <View>
+                  | backgroundColor: "#dcdee9"
+                  | borderRadius: 10.5
+                  | flexDirection: "row"
+                  | padding: 3.5
+                  <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":true}>
+                    | alignItems: "center"
+                    | backgroundColor: "#f5f5f5"
+                    | borderRadius: 7
+                    | elevation: 1
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    | shadowColor: "#000"
+                    | shadowOffset: {"height":1,"width":0}
+                    | shadowOpacity: 0.12
+                    | shadowRadius: 2
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | fontWeight: 700
+                      | lineHeight: 17.5
+                      "System"
+                  <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Light"
+                  <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Dark"
+              <View>
                 | alignItems: "center"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
@@ -1078,131 +1068,49 @@ exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Two-way readable"
-                <Text>
-                  | color: "#6b6d82"
-                  | fontFamily: "ionicons"
-                  | fontSize: 20
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
-              <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={}>
-                | alignItems: "center"
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Card animation"
-                <Text>
-                  | color: "#6b6d82"
-                  | fontFamily: "golos-text"
-                  | fontSize: 14
-                  | lineHeight: 21
-                  "Slide"
-              <Text>
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Appearance"
-              <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Theme"
-                <View>
-                  | alignItems: "center"
-                  | flexDirection: "row"
-                  | gap: 5.25
-                  <Text>
-                    | color: "#6b6d82"
-                    | fontFamily: "golos-text"
-                    | fontSize: 14
-                    | lineHeight: 21
-                    "System"
-                  <Text>
-                    | color: "#6b6d82"
-                    | fontFamily: "ionicons"
-                    | fontSize: 16
-                    | fontStyle: "normal"
-                    | fontWeight: "normal"
-                    ""
-              <Text>
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Notifications"
-              <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
                   "Daily question"
-                <Text>
-                  | color: "#9a3aac"
-                  | fontFamily: "ionicons"
-                  | fontSize: 20
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
-              <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 10.5
+                  <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                    | alignItems: "center"
+                    | backgroundColor: "#dcdee9"
+                    | borderRadius: 9007199254740990
+                    | flexDirection: "row"
+                    | gap: 3.5
+                    | paddingBlock: 5.25
+                    | paddingInline: 10.5
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 14
+                      | fontWeight: 600
+                      | lineHeight: 21
+                      "18:00"
+                    <Text>
+                      | color: "#6b6d82"
+                      | fontFamily: "ionicons"
+                      | fontSize: 14
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+                  <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
+                    <Text>
+                      | color: "#9a3aac"
+                      | fontFamily: "ionicons"
+                      | fontSize: 22
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+              <View>
                 | alignItems: "center"
                 | borderColor: "#dcdee9"
                 | borderTopStyle: "solid"
                 | borderTopWidth: 1
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Time"
-                <View>
+                | marginTop: 3.5
+                | paddingTop: 14
+                <View accessibilityRole="link" accessibilityLabel="Send feedback" accessibilityState={}>
                   | alignItems: "center"
                   | flexDirection: "row"
                   | gap: 5.25
@@ -1210,50 +1118,16 @@ exports[`Settings sheet renders a risen page over the dimmed menu 1`] = `
                     | color: "#6b6d82"
                     | fontFamily: "golos-text"
                     | fontSize: 14
+                    | fontWeight: 600
                     | lineHeight: 21
-                    "18:00"
+                    "Send feedback"
                   <Text>
                     | color: "#6b6d82"
                     | fontFamily: "ionicons"
-                    | fontSize: 16
+                    | fontSize: 15
                     | fontStyle: "normal"
                     | fontWeight: "normal"
-                    ""
-              <Text>
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Support"
-              <View accessibilityRole="link" accessibilityLabel="Send feedback" accessibilityState={}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Send feedback"
-                <Text>
-                  | color: "#6b6d82"
-                  | fontFamily: "ionicons"
-                  | fontSize: 16
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
+                    ""
       <View>
         | bottom: 0
         | left: 0
@@ -1427,19 +1301,7 @@ exports[`Settings sheet renders the in-play menu, without the Game row (issue #1
           <RCTScrollView>
             | maxHeight: 1067.2
             <View>
-              <Text>
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 14
-                | textTransform: "uppercase"
-                "Gameplay"
-              <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
+              <View accessibilityRole="button" accessibilityLabel="Languages: English" accessibilityState={"disabled":false}>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
@@ -1453,7 +1315,7 @@ exports[`Settings sheet renders the in-play menu, without the Game row (issue #1
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Language"
+                  "Languages"
                 <View>
                   | alignItems: "center"
                   | flexDirection: "row"
@@ -1471,55 +1333,149 @@ exports[`Settings sheet renders the in-play menu, without the Game row (issue #1
                     | fontStyle: "normal"
                     | fontWeight: "normal"
                     ""
-              <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
+              <View>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
                 | borderColor: "#dcdee9"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
-                | paddingBlock: 14
+                | paddingBlock: 8.75
                 | paddingInline: 17.5
                 <Text>
                   | color: "#111516"
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Second language"
+                  "Card animation"
                 <View>
-                  | alignItems: "center"
+                  | backgroundColor: "#dcdee9"
+                  | borderRadius: 10.5
                   | flexDirection: "row"
-                  | gap: 5.25
+                  | padding: 3.5
+                  <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={"selected":true}>
+                    | alignItems: "center"
+                    | backgroundColor: "#f5f5f5"
+                    | borderRadius: 7
+                    | elevation: 1
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    | shadowColor: "#000"
+                    | shadowOffset: {"height":1,"width":0}
+                    | shadowOpacity: 0.12
+                    | shadowRadius: 2
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | fontWeight: 700
+                      | lineHeight: 17.5
+                      "Slide"
+                  <View accessibilityRole="button" accessibilityLabel="Card animation: Flip" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Flip"
+              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | gap: 10.5
+                | justifyContent: "space-between"
+                | paddingBlock: 10.5
+                | paddingInline: 17.5
+                <View>
+                  | flexBasis: "0%"
+                  | flexGrow: 1
+                  | flexShrink: 1
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 15.75
+                    | lineHeight: 24.5
+                    "Tabletop mode"
                   <Text>
                     | color: "#6b6d82"
                     | fontFamily: "golos-text"
-                    | fontSize: 14
-                    | lineHeight: 21
-                    "None"
-                  <Text>
-                    | color: "#6b6d82"
-                    | fontFamily: "ionicons"
-                    | fontSize: 16
-                    | fontStyle: "normal"
-                    | fontWeight: "normal"
-                    ""
-              <View>
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "aptly"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Tabletop mode"
+                    | fontSize: 12.25
+                    | lineHeight: 17.5
+                    "Mirror the Question so both sides of the table can read it."
                 <Text>
                   | color: "#6b6d82"
+                  | fontFamily: "ionicons"
+                  | fontSize: 22
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+              <View>
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 8.75
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
                   | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | lineHeight: 17.5
-                  "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
-              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Theme"
+                <View>
+                  | backgroundColor: "#dcdee9"
+                  | borderRadius: 10.5
+                  | flexDirection: "row"
+                  | padding: 3.5
+                  <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":true}>
+                    | alignItems: "center"
+                    | backgroundColor: "#f5f5f5"
+                    | borderRadius: 7
+                    | elevation: 1
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    | shadowColor: "#000"
+                    | shadowOffset: {"height":1,"width":0}
+                    | shadowOpacity: 0.12
+                    | shadowRadius: 2
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | fontWeight: 700
+                      | lineHeight: 17.5
+                      "System"
+                  <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Light"
+                  <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Dark"
+              <View>
                 | alignItems: "center"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
@@ -1530,131 +1486,49 @@ exports[`Settings sheet renders the in-play menu, without the Game row (issue #1
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Two-way readable"
-                <Text>
-                  | color: "#6b6d82"
-                  | fontFamily: "ionicons"
-                  | fontSize: 20
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
-              <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={}>
-                | alignItems: "center"
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Card animation"
-                <Text>
-                  | color: "#6b6d82"
-                  | fontFamily: "golos-text"
-                  | fontSize: 14
-                  | lineHeight: 21
-                  "Slide"
-              <Text>
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Appearance"
-              <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Theme"
-                <View>
-                  | alignItems: "center"
-                  | flexDirection: "row"
-                  | gap: 5.25
-                  <Text>
-                    | color: "#6b6d82"
-                    | fontFamily: "golos-text"
-                    | fontSize: 14
-                    | lineHeight: 21
-                    "System"
-                  <Text>
-                    | color: "#6b6d82"
-                    | fontFamily: "ionicons"
-                    | fontSize: 16
-                    | fontStyle: "normal"
-                    | fontWeight: "normal"
-                    ""
-              <Text>
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Notifications"
-              <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
                   "Daily question"
-                <Text>
-                  | color: "#9a3aac"
-                  | fontFamily: "ionicons"
-                  | fontSize: 20
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
-              <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 10.5
+                  <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                    | alignItems: "center"
+                    | backgroundColor: "#dcdee9"
+                    | borderRadius: 9007199254740990
+                    | flexDirection: "row"
+                    | gap: 3.5
+                    | paddingBlock: 5.25
+                    | paddingInline: 10.5
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 14
+                      | fontWeight: 600
+                      | lineHeight: 21
+                      "18:00"
+                    <Text>
+                      | color: "#6b6d82"
+                      | fontFamily: "ionicons"
+                      | fontSize: 14
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+                  <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
+                    <Text>
+                      | color: "#9a3aac"
+                      | fontFamily: "ionicons"
+                      | fontSize: 22
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+              <View>
                 | alignItems: "center"
                 | borderColor: "#dcdee9"
                 | borderTopStyle: "solid"
                 | borderTopWidth: 1
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Time"
-                <View>
+                | marginTop: 3.5
+                | paddingTop: 14
+                <View accessibilityRole="link" accessibilityLabel="Send feedback" accessibilityState={}>
                   | alignItems: "center"
                   | flexDirection: "row"
                   | gap: 5.25
@@ -1662,50 +1536,16 @@ exports[`Settings sheet renders the in-play menu, without the Game row (issue #1
                     | color: "#6b6d82"
                     | fontFamily: "golos-text"
                     | fontSize: 14
+                    | fontWeight: 600
                     | lineHeight: 21
-                    "18:00"
+                    "Send feedback"
                   <Text>
                     | color: "#6b6d82"
                     | fontFamily: "ionicons"
-                    | fontSize: 16
+                    | fontSize: 15
                     | fontStyle: "normal"
                     | fontWeight: "normal"
-                    ""
-              <Text>
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Support"
-              <View accessibilityRole="link" accessibilityLabel="Send feedback" accessibilityState={}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Send feedback"
-                <Text>
-                  | color: "#6b6d82"
-                  | fontFamily: "ionicons"
-                  | fontSize: 16
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
+                    ""
 `;
 
 exports[`Settings sheet renders the menu 1`] = `
@@ -1753,19 +1593,7 @@ exports[`Settings sheet renders the menu 1`] = `
           <RCTScrollView>
             | maxHeight: 1067.2
             <View>
-              <Text>
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 14
-                | textTransform: "uppercase"
-                "Gameplay"
-              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={}>
+              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={"disabled":false}>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
@@ -1797,7 +1625,7 @@ exports[`Settings sheet renders the menu 1`] = `
                     | fontStyle: "normal"
                     | fontWeight: "normal"
                     ""
-              <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
+              <View accessibilityRole="button" accessibilityLabel="Languages: English" accessibilityState={"disabled":false}>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
@@ -1811,7 +1639,7 @@ exports[`Settings sheet renders the menu 1`] = `
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Language"
+                  "Languages"
                 <View>
                   | alignItems: "center"
                   | flexDirection: "row"
@@ -1829,55 +1657,149 @@ exports[`Settings sheet renders the menu 1`] = `
                     | fontStyle: "normal"
                     | fontWeight: "normal"
                     ""
-              <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
+              <View>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
                 | borderColor: "#dcdee9"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
-                | paddingBlock: 14
+                | paddingBlock: 8.75
                 | paddingInline: 17.5
                 <Text>
                   | color: "#111516"
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Second language"
+                  "Card animation"
                 <View>
-                  | alignItems: "center"
+                  | backgroundColor: "#dcdee9"
+                  | borderRadius: 10.5
                   | flexDirection: "row"
-                  | gap: 5.25
+                  | padding: 3.5
+                  <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={"selected":true}>
+                    | alignItems: "center"
+                    | backgroundColor: "#f5f5f5"
+                    | borderRadius: 7
+                    | elevation: 1
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    | shadowColor: "#000"
+                    | shadowOffset: {"height":1,"width":0}
+                    | shadowOpacity: 0.12
+                    | shadowRadius: 2
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | fontWeight: 700
+                      | lineHeight: 17.5
+                      "Slide"
+                  <View accessibilityRole="button" accessibilityLabel="Card animation: Flip" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Flip"
+              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | gap: 10.5
+                | justifyContent: "space-between"
+                | paddingBlock: 10.5
+                | paddingInline: 17.5
+                <View>
+                  | flexBasis: "0%"
+                  | flexGrow: 1
+                  | flexShrink: 1
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 15.75
+                    | lineHeight: 24.5
+                    "Tabletop mode"
                   <Text>
                     | color: "#6b6d82"
                     | fontFamily: "golos-text"
-                    | fontSize: 14
-                    | lineHeight: 21
-                    "None"
-                  <Text>
-                    | color: "#6b6d82"
-                    | fontFamily: "ionicons"
-                    | fontSize: 16
-                    | fontStyle: "normal"
-                    | fontWeight: "normal"
-                    ""
-              <View>
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "aptly"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Tabletop mode"
+                    | fontSize: 12.25
+                    | lineHeight: 17.5
+                    "Mirror the Question so both sides of the table can read it."
                 <Text>
                   | color: "#6b6d82"
+                  | fontFamily: "ionicons"
+                  | fontSize: 22
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+              <View>
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#dcdee9"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 8.75
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#111516"
                   | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | lineHeight: 17.5
-                  "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
-              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Theme"
+                <View>
+                  | backgroundColor: "#dcdee9"
+                  | borderRadius: 10.5
+                  | flexDirection: "row"
+                  | padding: 3.5
+                  <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":true}>
+                    | alignItems: "center"
+                    | backgroundColor: "#f5f5f5"
+                    | borderRadius: 7
+                    | elevation: 1
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    | shadowColor: "#000"
+                    | shadowOffset: {"height":1,"width":0}
+                    | shadowOpacity: 0.12
+                    | shadowRadius: 2
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | fontWeight: 700
+                      | lineHeight: 17.5
+                      "System"
+                  <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Light"
+                  <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Dark"
+              <View>
                 | alignItems: "center"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
@@ -1888,131 +1810,49 @@ exports[`Settings sheet renders the menu 1`] = `
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Two-way readable"
-                <Text>
-                  | color: "#6b6d82"
-                  | fontFamily: "ionicons"
-                  | fontSize: 20
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
-              <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={}>
-                | alignItems: "center"
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Card animation"
-                <Text>
-                  | color: "#6b6d82"
-                  | fontFamily: "golos-text"
-                  | fontSize: 14
-                  | lineHeight: 21
-                  "Slide"
-              <Text>
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Appearance"
-              <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Theme"
-                <View>
-                  | alignItems: "center"
-                  | flexDirection: "row"
-                  | gap: 5.25
-                  <Text>
-                    | color: "#6b6d82"
-                    | fontFamily: "golos-text"
-                    | fontSize: 14
-                    | lineHeight: 21
-                    "System"
-                  <Text>
-                    | color: "#6b6d82"
-                    | fontFamily: "ionicons"
-                    | fontSize: 16
-                    | fontStyle: "normal"
-                    | fontWeight: "normal"
-                    ""
-              <Text>
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Notifications"
-              <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
                   "Daily question"
-                <Text>
-                  | color: "#9a3aac"
-                  | fontFamily: "ionicons"
-                  | fontSize: 20
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
-              <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 10.5
+                  <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                    | alignItems: "center"
+                    | backgroundColor: "#dcdee9"
+                    | borderRadius: 9007199254740990
+                    | flexDirection: "row"
+                    | gap: 3.5
+                    | paddingBlock: 5.25
+                    | paddingInline: 10.5
+                    <Text>
+                      | color: "#111516"
+                      | fontFamily: "golos-text"
+                      | fontSize: 14
+                      | fontWeight: 600
+                      | lineHeight: 21
+                      "18:00"
+                    <Text>
+                      | color: "#6b6d82"
+                      | fontFamily: "ionicons"
+                      | fontSize: 14
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+                  <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
+                    <Text>
+                      | color: "#9a3aac"
+                      | fontFamily: "ionicons"
+                      | fontSize: 22
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+              <View>
                 | alignItems: "center"
                 | borderColor: "#dcdee9"
                 | borderTopStyle: "solid"
                 | borderTopWidth: 1
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Time"
-                <View>
+                | marginTop: 3.5
+                | paddingTop: 14
+                <View accessibilityRole="link" accessibilityLabel="Send feedback" accessibilityState={}>
                   | alignItems: "center"
                   | flexDirection: "row"
                   | gap: 5.25
@@ -2020,50 +1860,16 @@ exports[`Settings sheet renders the menu 1`] = `
                     | color: "#6b6d82"
                     | fontFamily: "golos-text"
                     | fontSize: 14
+                    | fontWeight: 600
                     | lineHeight: 21
-                    "18:00"
+                    "Send feedback"
                   <Text>
                     | color: "#6b6d82"
                     | fontFamily: "ionicons"
-                    | fontSize: 16
+                    | fontSize: 15
                     | fontStyle: "normal"
                     | fontWeight: "normal"
-                    ""
-              <Text>
-                | borderColor: "#dcdee9"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Support"
-              <View accessibilityRole="link" accessibilityLabel="Send feedback" accessibilityState={}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Send feedback"
-                <Text>
-                  | color: "#6b6d82"
-                  | fontFamily: "ionicons"
-                  | fontSize: 16
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
+                    ""
 `;
 
 exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] = `
@@ -2111,19 +1917,7 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
           <RCTScrollView>
             | maxHeight: 1067.2
             <View>
-              <Text>
-                | color: "#9698af"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 14
-                | textTransform: "uppercase"
-                "Gameplay"
-              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={}>
+              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={"disabled":false}>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
@@ -2155,7 +1949,7 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                     | fontStyle: "normal"
                     | fontWeight: "normal"
                     ""
-              <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false}>
+              <View accessibilityRole="button" accessibilityLabel="Languages: English" accessibilityState={"disabled":false}>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
@@ -2169,7 +1963,7 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Language"
+                  "Languages"
                 <View>
                   | alignItems: "center"
                   | flexDirection: "row"
@@ -2187,55 +1981,149 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                     | fontStyle: "normal"
                     | fontWeight: "normal"
                     ""
-              <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false}>
+              <View>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
                 | borderBottomWidth: 1
                 | borderColor: "#f5f5f51a"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
-                | paddingBlock: 14
+                | paddingBlock: 8.75
                 | paddingInline: 17.5
                 <Text>
                   | color: "#f5f5f5"
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Second language"
+                  "Card animation"
                 <View>
-                  | alignItems: "center"
+                  | backgroundColor: "#f5f5f51a"
+                  | borderRadius: 10.5
                   | flexDirection: "row"
-                  | gap: 5.25
+                  | padding: 3.5
+                  <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={"selected":true}>
+                    | alignItems: "center"
+                    | backgroundColor: "#262432"
+                    | borderRadius: 7
+                    | elevation: 1
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    | shadowColor: "#000"
+                    | shadowOffset: {"height":1,"width":0}
+                    | shadowOpacity: 0.12
+                    | shadowRadius: 2
+                    <Text>
+                      | color: "#f5f5f5"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | fontWeight: 700
+                      | lineHeight: 17.5
+                      "Slide"
+                  <View accessibilityRole="button" accessibilityLabel="Card animation: Flip" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#f5f5f5"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Flip"
+              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#f5f5f51a"
+                | flexDirection: "row"
+                | gap: 10.5
+                | justifyContent: "space-between"
+                | paddingBlock: 10.5
+                | paddingInline: 17.5
+                <View>
+                  | flexBasis: "0%"
+                  | flexGrow: 1
+                  | flexShrink: 1
+                  <Text>
+                    | color: "#f5f5f5"
+                    | fontFamily: "golos-text"
+                    | fontSize: 15.75
+                    | lineHeight: 24.5
+                    "Tabletop mode"
                   <Text>
                     | color: "#9698af"
                     | fontFamily: "golos-text"
-                    | fontSize: 14
-                    | lineHeight: 21
-                    "None"
-                  <Text>
-                    | color: "#9698af"
-                    | fontFamily: "ionicons"
-                    | fontSize: 16
-                    | fontStyle: "normal"
-                    | fontWeight: "normal"
-                    ""
-              <View>
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "aptly"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Tabletop mode"
+                    | fontSize: 12.25
+                    | lineHeight: 17.5
+                    "Mirror the Question so both sides of the table can read it."
                 <Text>
                   | color: "#9698af"
+                  | fontFamily: "ionicons"
+                  | fontSize: 22
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+              <View>
+                | alignItems: "center"
+                | borderBottomStyle: "solid"
+                | borderBottomWidth: 1
+                | borderColor: "#f5f5f51a"
+                | flexDirection: "row"
+                | justifyContent: "space-between"
+                | paddingBlock: 8.75
+                | paddingInline: 17.5
+                <Text>
+                  | color: "#f5f5f5"
                   | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | lineHeight: 17.5
-                  "Lay the phone flat on the table — the question mirrors on top so both sides can read it at once."
-              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+                  | fontSize: 15.75
+                  | lineHeight: 24.5
+                  "Theme"
+                <View>
+                  | backgroundColor: "#f5f5f51a"
+                  | borderRadius: 10.5
+                  | flexDirection: "row"
+                  | padding: 3.5
+                  <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#f5f5f5"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "System"
+                  <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
+                    | alignItems: "center"
+                    | borderRadius: 7
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    <Text>
+                      | color: "#f5f5f5"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | lineHeight: 17.5
+                      "Light"
+                  <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":true}>
+                    | alignItems: "center"
+                    | backgroundColor: "#262432"
+                    | borderRadius: 7
+                    | elevation: 1
+                    | paddingBlock: 7
+                    | paddingInline: 12.25
+                    | shadowColor: "#000"
+                    | shadowOffset: {"height":1,"width":0}
+                    | shadowOpacity: 0.12
+                    | shadowRadius: 2
+                    <Text>
+                      | color: "#f5f5f5"
+                      | fontFamily: "golos-text"
+                      | fontSize: 12.25
+                      | fontWeight: 700
+                      | lineHeight: 17.5
+                      "Dark"
+              <View>
                 | alignItems: "center"
                 | flexDirection: "row"
                 | justifyContent: "space-between"
@@ -2246,131 +2134,49 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                   | fontFamily: "golos-text"
                   | fontSize: 15.75
                   | lineHeight: 24.5
-                  "Two-way readable"
-                <Text>
-                  | color: "#9698af"
-                  | fontFamily: "ionicons"
-                  | fontSize: 20
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
-              <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={}>
-                | alignItems: "center"
-                | borderColor: "#f5f5f51a"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Card animation"
-                <Text>
-                  | color: "#9698af"
-                  | fontFamily: "golos-text"
-                  | fontSize: 14
-                  | lineHeight: 21
-                  "Slide"
-              <Text>
-                | borderColor: "#f5f5f51a"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#9698af"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Appearance"
-              <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Theme"
-                <View>
-                  | alignItems: "center"
-                  | flexDirection: "row"
-                  | gap: 5.25
-                  <Text>
-                    | color: "#9698af"
-                    | fontFamily: "golos-text"
-                    | fontSize: 14
-                    | lineHeight: 21
-                    "Dark"
-                  <Text>
-                    | color: "#9698af"
-                    | fontFamily: "ionicons"
-                    | fontSize: 16
-                    | fontStyle: "normal"
-                    | fontWeight: "normal"
-                    ""
-              <Text>
-                | borderColor: "#f5f5f51a"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#9698af"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Notifications"
-              <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
                   "Daily question"
-                <Text>
-                  | color: "#d485e2"
-                  | fontFamily: "ionicons"
-                  | fontSize: 20
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
-              <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                <View>
+                  | alignItems: "center"
+                  | flexDirection: "row"
+                  | gap: 10.5
+                  <View accessibilityRole="button" accessibilityLabel="Time: 18:00" accessibilityState={}>
+                    | alignItems: "center"
+                    | backgroundColor: "#f5f5f51a"
+                    | borderRadius: 9007199254740990
+                    | flexDirection: "row"
+                    | gap: 3.5
+                    | paddingBlock: 5.25
+                    | paddingInline: 10.5
+                    <Text>
+                      | color: "#f5f5f5"
+                      | fontFamily: "golos-text"
+                      | fontSize: 14
+                      | fontWeight: 600
+                      | lineHeight: 21
+                      "18:00"
+                    <Text>
+                      | color: "#9698af"
+                      | fontFamily: "ionicons"
+                      | fontSize: 14
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+                  <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
+                    <Text>
+                      | color: "#d485e2"
+                      | fontFamily: "ionicons"
+                      | fontSize: 22
+                      | fontStyle: "normal"
+                      | fontWeight: "normal"
+                      ""
+              <View>
                 | alignItems: "center"
                 | borderColor: "#f5f5f51a"
                 | borderTopStyle: "solid"
                 | borderTopWidth: 1
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Time"
-                <View>
+                | marginTop: 3.5
+                | paddingTop: 14
+                <View accessibilityRole="link" accessibilityLabel="Send feedback" accessibilityState={}>
                   | alignItems: "center"
                   | flexDirection: "row"
                   | gap: 5.25
@@ -2378,50 +2184,16 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                     | color: "#9698af"
                     | fontFamily: "golos-text"
                     | fontSize: 14
+                    | fontWeight: 600
                     | lineHeight: 21
-                    "18:00"
+                    "Send feedback"
                   <Text>
                     | color: "#9698af"
                     | fontFamily: "ionicons"
-                    | fontSize: 16
+                    | fontSize: 15
                     | fontStyle: "normal"
                     | fontWeight: "normal"
-                    ""
-              <Text>
-                | borderColor: "#f5f5f51a"
-                | borderTopStyle: "solid"
-                | borderTopWidth: 1
-                | color: "#9698af"
-                | fontFamily: "golos-text"
-                | fontSize: 10.5
-                | fontWeight: 700
-                | letterSpacing: 0.26
-                | lineHeight: 14
-                | marginTop: 7
-                | paddingBottom: 3.5
-                | paddingInline: 17.5
-                | paddingTop: 17.5
-                | textTransform: "uppercase"
-                "Support"
-              <View accessibilityRole="link" accessibilityLabel="Send feedback" accessibilityState={}>
-                | alignItems: "center"
-                | flexDirection: "row"
-                | justifyContent: "space-between"
-                | paddingBlock: 14
-                | paddingInline: 17.5
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "golos-text"
-                  | fontSize: 15.75
-                  | lineHeight: 24.5
-                  "Send feedback"
-                <Text>
-                  | color: "#9698af"
-                  | fontFamily: "ionicons"
-                  | fontSize: 16
-                  | fontStyle: "normal"
-                  | fontWeight: "normal"
-                  ""
+                    ""
 `;
 
 exports[`Share sheet renders all three rows for a Pool-backed Deck 1`] = `

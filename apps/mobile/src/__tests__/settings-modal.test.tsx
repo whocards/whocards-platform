@@ -18,14 +18,10 @@
  *   risen page now pops that page (same as Android back), not a full close —
  *   the *outer* sheet's own backdrop still fully closes, but it's covered
  *   while a page is risen so it isn't reachable in that state.
- * - "Second language" split out of the Language page into its own menu row
- *   and page (owner: "split the second language selector into a separate
- *   section in game play options") — see second-language-settings-page.test.tsx
- *   for that page's own content tests. Splitting it also removed the one
- *   reason primary Language used to stay open after a pick, so it now
- *   auto-returns to the menu like every other single-pick page.
- * - The menu is grouped into two sections, Gameplay and Appearance — see
- *   settings-modal.tsx's own doc comment for where Language landed and why.
+ *
+ * Issue #460: layout C. One screen with Game, a combined Languages page, inline
+ * Card animation and Theme segmented controls, Tabletop mode and Daily question
+ * checkboxes, the Daily question time as a chip, and Send feedback as a footer link.
  *
  * The storage libs (game-store, tabletop-store, language-store) are mocked
  * outright rather than run for real: they already have their own dedicated
@@ -186,50 +182,42 @@ const pressAndroidBack = async () => {
   await act(() => modal.props.onRequestClose())
 }
 
-describe('SettingsModal — menu', () => {
-  it('shows Gameplay (Game, Language, Second language, Tabletop) and Appearance (Theme)', async () => {
+describe('SettingsModal — menu (layout C, issue #460)', () => {
+  it('shows every setting on one screen', async () => {
     await renderModal()
     await screen.findByText('Settings')
-    expect(screen.getByText('Gameplay')).toBeTruthy()
-    expect(screen.getByText('Game')).toBeTruthy()
-    expect(screen.getByText('Language')).toBeTruthy()
-    expect(screen.getByText('Second language')).toBeTruthy()
-    expect(screen.getByText('Tabletop mode')).toBeTruthy()
-    expect(screen.getByText('Appearance')).toBeTruthy()
-    expect(screen.getByText('Theme')).toBeTruthy()
+    expect(screen.getByLabelText('Game: Classic')).toBeTruthy()
+    expect(screen.getByLabelText('Languages: English')).toBeTruthy()
+    expect(screen.getByLabelText('Card animation: Slide')).toBeTruthy()
+    expect(screen.getByLabelText('Tabletop mode')).toBeTruthy()
+    expect(screen.getByLabelText('Theme: System')).toBeTruthy()
+    expect(screen.getByLabelText('Daily question')).toBeTruthy()
+    expect(screen.getByLabelText('Send feedback')).toBeTruthy()
   })
 
-  it('reflects the loaded Game, Theme, Language, and Second language values', async () => {
+  it('reflects the loaded Game, Theme and Languages', async () => {
     mockedGetStoredGame.mockResolvedValue('pick')
     mockedGetStoredLanguage.mockResolvedValue('he')
     mockedGetStoredSecondaryLanguages.mockResolvedValue(['en'])
     await renderModal({theme: 'dark', languages: ['en', 'he']})
-    await waitFor(() => expect(screen.getByText('Pick a Card')).toBeTruthy())
-    expect(screen.getByText('Dark')).toBeTruthy()
-    expect(screen.getByLabelText('Language: Hebrew')).toBeTruthy()
-    expect(screen.getByLabelText('Second language: English')).toBeTruthy()
+    await waitFor(() => expect(screen.getByLabelText('Game: Pick a Card')).toBeTruthy())
+    expect(screen.getByLabelText('Theme: Dark').props.accessibilityState).toEqual({selected: true})
+    expect(await screen.findByLabelText('Languages: Hebrew + English')).toBeTruthy()
   })
 
-  it('shows "None" for Second language when no secondary is stored', async () => {
-    await renderModal()
-    await screen.findByText('Settings')
-    expect(screen.getByLabelText('Second language: None')).toBeTruthy()
-  })
-
-  it('disables the Language row for a single-language deck (no chevron, no navigation)', async () => {
+  it('disables the Languages row for a single-language deck', async () => {
     await renderModal({languages: ['en']})
-    const row = await screen.findByLabelText('Language: English')
+    const row = await screen.findByLabelText('Languages: English')
     expect(row.props.accessibilityState).toEqual({disabled: true})
     await fireEvent.press(row)
-    expect(screen.queryByText('Choose your language')).toBeNull()
+    expect(screen.queryByLabelText('back')).toBeNull()
   })
 
-  it('disables the Second language row for a single-language deck (no possible secondary)', async () => {
-    await renderModal({languages: ['en']})
-    const row = await screen.findByLabelText('Second language: None')
-    expect(row.props.accessibilityState).toEqual({disabled: true})
-    await fireEvent.press(row)
-    // No page opened — "back" only ever renders on a pushed page's header.
+  it('switches Theme inline, without opening a page', async () => {
+    const onSelectTheme = jest.fn()
+    await renderModal({onSelectTheme})
+    await fireEvent.press(await screen.findByLabelText('Theme: Dark'))
+    expect(onSelectTheme).toHaveBeenCalledWith('dark')
     expect(screen.queryByLabelText('back')).toBeNull()
   })
 })
@@ -238,12 +226,11 @@ describe('SettingsModal — in-play sheet (issue #197)', () => {
   it('hides the Game row when showGame is false, keeping every other setting', async () => {
     await renderModal({showGame: false})
     await screen.findByText('Settings')
-    expect(screen.queryByText('Game')).toBeNull()
     expect(screen.queryByLabelText(/^Game:/)).toBeNull()
-    expect(screen.getByText('Language')).toBeTruthy()
-    expect(screen.getByText('Second language')).toBeTruthy()
-    expect(screen.getByText('Tabletop mode')).toBeTruthy()
-    expect(screen.getByText('Theme')).toBeTruthy()
+    expect(screen.getByLabelText('Languages: English')).toBeTruthy()
+    expect(screen.getByLabelText('Card animation: Slide')).toBeTruthy()
+    expect(screen.getByLabelText('Tabletop mode')).toBeTruthy()
+    expect(screen.getByLabelText('Theme: System')).toBeTruthy()
     expect(screen.getByLabelText('Daily question')).toBeTruthy()
   })
 
@@ -251,17 +238,17 @@ describe('SettingsModal — in-play sheet (issue #197)', () => {
     mockedGetStoredLanguage.mockResolvedValue('en')
     const onSelectLanguage = jest.fn()
     await renderModal({showGame: false, currentLanguage: 'he', onSelectLanguage})
-    await fireEvent.press(await screen.findByLabelText('Language: Hebrew'))
-    await fireEvent.press(await screen.findByText('English'))
+    await fireEvent.press(await screen.findByLabelText('Languages: Hebrew'))
+    await fireEvent.press(await screen.findByLabelText('Language: English'))
     expect(onSelectLanguage).toHaveBeenCalledWith('en')
   })
 
   it('never offers the language on screen as the Second language', async () => {
     mockedGetStoredLanguage.mockResolvedValue('en')
     await renderModal({currentLanguage: 'he'})
-    await fireEvent.press(await screen.findByLabelText('Second language: None'))
-    await screen.findByText('English')
-    expect(screen.queryByText('Hebrew')).toBeNull()
+    await fireEvent.press(await screen.findByLabelText('Languages: Hebrew'))
+    await screen.findByLabelText('Second language: English')
+    expect(screen.queryByLabelText('Second language: Hebrew')).toBeNull()
   })
 })
 
@@ -283,7 +270,7 @@ describe('SettingsModal — reopening (issue #197)', () => {
         checked: true,
       })
     )
-    expect(screen.getByLabelText('Language: Hebrew')).toBeTruthy()
+    expect(screen.getByLabelText('Languages: Hebrew')).toBeTruthy()
   })
 })
 
@@ -345,12 +332,15 @@ describe('SettingsModal — Send feedback (issue #455)', () => {
   })
 })
 
-describe('SettingsModal — Card animation (issue #456)', () => {
-  it('toggles between Slide and Flip and stores the choice', async () => {
+describe('SettingsModal — Card animation (issues #456, #460)', () => {
+  it('picks Slide or Flip inline and stores the choice', async () => {
     await renderModal()
-    await fireEvent.press(await screen.findByLabelText('Card animation: Slide'))
-    expect(setStoredCardAnimation).toHaveBeenLastCalledWith('flip')
     await fireEvent.press(await screen.findByLabelText('Card animation: Flip'))
+    expect(setStoredCardAnimation).toHaveBeenLastCalledWith('flip')
+    expect(screen.getByLabelText('Card animation: Flip').props.accessibilityState).toEqual({
+      selected: true,
+    })
+    await fireEvent.press(screen.getByLabelText('Card animation: Slide'))
     expect(setStoredCardAnimation).toHaveBeenLastCalledWith('slide')
   })
 })
@@ -370,28 +360,16 @@ describe('SettingsModal — Game page', () => {
   })
 })
 
-describe('SettingsModal — Theme page', () => {
-  it('navigates on press, reports a selection via onSelectTheme, and returns to the menu', async () => {
-    const onSelectTheme = jest.fn()
-    await renderModal({onSelectTheme})
-    const themeRow = await screen.findByLabelText('Theme: System')
-    await fireEvent.press(themeRow)
-    const dark = await screen.findByLabelText('Theme: Dark')
-    await fireEvent.press(dark)
-    expect(onSelectTheme).toHaveBeenCalledWith('dark')
-    await waitFor(() => expect(screen.queryByLabelText('Theme: Dark')).toBeNull())
-    expect(screen.getByText('Settings')).toBeTruthy()
-  })
-})
+const openLanguages = async () => {
+  await fireEvent.press(await screen.findByLabelText('Languages: English'))
+  await screen.findByLabelText('Language: English')
+}
 
-describe('SettingsModal — Language page', () => {
-  it('navigates on press, applies + persists a primary selection, tracks LANGUAGE_CHANGED, and returns to the menu', async () => {
+describe('SettingsModal — Languages page (issue #460)', () => {
+  it('applies + persists a primary pick, tracks LANGUAGE_CHANGED, and stays open for the second', async () => {
     await renderModal()
-    const languageRow = await screen.findByLabelText('Language: English')
-    await fireEvent.press(languageRow)
-    await screen.findByText('Choose your language')
-    const hebrew = await screen.findByText('Hebrew')
-    await fireEvent.press(hebrew)
+    await openLanguages()
+    await fireEvent.press(screen.getByLabelText('Language: Hebrew'))
     expect(mockedSetStoredLanguage).toHaveBeenCalledWith('library', 'he')
     expect(mockedTrack).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -399,58 +377,36 @@ describe('SettingsModal — Language page', () => {
         props: expect.objectContaining({deck_id: 'library', from: 'en', to: 'he'}),
       })
     )
-    // Issue #189, fourth pass: now auto-returns like every other single-pick
-    // page (splitting "Second language" out removed the reason to linger).
-    await waitFor(() => expect(screen.queryByText('Choose your language')).toBeNull())
-    expect(screen.getByLabelText('Language: Hebrew')).toBeTruthy()
+    expect(screen.getByLabelText('back')).toBeTruthy()
+    await fireEvent.press(screen.getByLabelText('back'))
+    expect(await screen.findByLabelText('Languages: Hebrew')).toBeTruthy()
   })
 
-  it('clears an existing Second language when it becomes the new primary', async () => {
+  it('applies + persists a second language and tracks SECONDARY_LANGUAGES_CHANGED', async () => {
     await renderModal({languages: ['en', 'he']})
-    // Set Hebrew as the secondary first.
-    await fireEvent.press(await screen.findByLabelText('Second language: None'))
-    await fireEvent.press(await screen.findByText('Hebrew'))
-    await waitFor(() => expect(screen.getByLabelText('Second language: Hebrew')).toBeTruthy())
-
-    // Now pick Hebrew as the primary too — it can't remain the secondary.
-    await fireEvent.press(screen.getByLabelText('Language: English'))
-    await fireEvent.press(await screen.findByText('Hebrew'))
-    await waitFor(() => expect(screen.getByLabelText('Second language: None')).toBeTruthy())
-  })
-})
-
-describe('SettingsModal — Second language page (issue #189, owner on-device feedback)', () => {
-  it('navigates on press, applies + persists a selection, tracks SECONDARY_LANGUAGES_CHANGED, and returns to the menu', async () => {
-    await renderModal({languages: ['en', 'he']})
-    await fireEvent.press(await screen.findByLabelText('Second language: None'))
-    await screen.findByText('Second language')
-    await fireEvent.press(await screen.findByText('Hebrew'))
+    await openLanguages()
+    await fireEvent.press(screen.getByLabelText('Second language: Hebrew'))
     expect(mockedTrack).toHaveBeenCalledWith({
       name: 'secondary_languages_changed',
       props: {deck_id: 'library', secondary: ['he']},
     })
-    // Back on the menu — "back" only ever renders on a pushed page's header.
-    await waitFor(() => expect(screen.queryByLabelText('back')).toBeNull())
-    expect(screen.getByLabelText('Second language: Hebrew')).toBeTruthy()
+    await fireEvent.press(screen.getByLabelText('back'))
+    expect(await screen.findByLabelText('Languages: English + Hebrew')).toBeTruthy()
   })
 
-  it('never lists the current primary as a choice', async () => {
-    await renderModal({languages: ['en', 'he']})
-    await fireEvent.press(await screen.findByLabelText('Second language: None'))
-    await screen.findByText('Second language')
-    expect(screen.queryByText('English')).toBeNull()
-  })
-
-  it('picking "None" clears an existing secondary', async () => {
-    await renderModal({languages: ['en', 'he']})
-    await fireEvent.press(await screen.findByLabelText('Second language: None'))
-    await fireEvent.press(await screen.findByText('Hebrew'))
-    await waitFor(() => expect(screen.getByLabelText('Second language: Hebrew')).toBeTruthy())
-
+  it('clears the second language when it becomes the primary, and None clears it too', async () => {
+    await renderModal({languages: ['en', 'he', 'es']})
+    await openLanguages()
     await fireEvent.press(screen.getByLabelText('Second language: Hebrew'))
-    const [none] = await screen.findAllByText('None')
-    await fireEvent.press(none)
-    await waitFor(() => expect(screen.getByLabelText('Second language: None')).toBeTruthy())
+    await fireEvent.press(screen.getByLabelText('Language: Hebrew'))
+    expect(screen.getByLabelText('Second language: None').props.accessibilityState).toEqual({
+      selected: true,
+    })
+    await fireEvent.press(screen.getByLabelText('Second language: Spanish'))
+    await fireEvent.press(screen.getByLabelText('Second language: None'))
+    expect(screen.getByLabelText('Second language: None').props.accessibilityState).toEqual({
+      selected: true,
+    })
   })
 })
 

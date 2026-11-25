@@ -3,10 +3,9 @@ import {expect} from 'e2e'
 
 import {
   button,
-  closeSettings,
   launchClean,
-  openSettings,
-  pickSetting,
+  pickLanguage,
+  pickTheme,
   play,
   revealControls,
   startPlay,
@@ -22,16 +21,11 @@ const CARDS = [
 test('A Mandarin and a Japanese card render, in Light and in Dark', async (fixtures) => {
   const {app, screen} = fixtures
   await launchClean(fixtures)
-  let theme = 'System'
   let language = 'English'
-  for (const next of ['Light', 'Dark']) {
-    await openSettings(screen)
-    await tapUntil(button(screen, `Theme: ${theme}`), button(screen, `Theme: ${next}`))
-    await tapUntil(button(screen, `Theme: ${next}`), button(screen, `Theme: ${theme}`), 'hidden')
-    await closeSettings(screen)
-    theme = next
+  for (const theme of ['Light', 'Dark']) {
+    await pickTheme(screen, theme)
     for (const card of CARDS) {
-      await pickSetting(screen, `Language: ${language}`, card.language)
+      await pickLanguage(screen, language, card.language)
       language = card.language
       await startPlay(screen)
       await expect(screen.getByText(card.text)).toBeVisible()

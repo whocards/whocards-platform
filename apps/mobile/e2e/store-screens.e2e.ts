@@ -41,13 +41,13 @@ test('Store listing frames', {tags: ['screenshots']}, async (fixtures) => {
   await tapUntil(button(screen, 'exit deck'), play(screen))
   await expect(play(screen)).toBeVisible()
   await openSettings(screen)
-  await tapUntil(button(screen, 'Language: English'), screen.getByText('Choose your language'))
-  await expect(screen.getByText('Choose your language')).toBeVisible()
+  await tapUntil(button(screen, 'Languages: English'), button(screen, 'Language: Hebrew'))
   // The page is still sliding in when its title first shows.
   await new Promise((resolve) => setTimeout(resolve, 1_000))
   shoot('03-language-picker')
 
-  await screen.getByText('Hebrew').tap()
+  await button(screen, 'Language: Hebrew').tap()
+  await tapUntil(screen.getByLabel('back', {exact: true}), button(screen, 'Languages: Hebrew'))
   await closeSettings(screen)
   await openQuestion(fixtures, 1)
   await expect(screen.getByText(Q1_HE)).toBeVisible({timeout: 30_000})
