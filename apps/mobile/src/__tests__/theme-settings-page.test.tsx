@@ -46,12 +46,7 @@ describe('ThemeSettingsPage — options (issue #189, third pass)', () => {
   })
 
   it('keeps the explanatory copy at its pre-NativeWind-5 line height', async () => {
-    // This copy used to carry `leading-5` on top of `text-sm`. NativeWind v5
-    // reads a leading-* step as em rather than rem, which would have squashed
-    // 1.25rem (17.5px) to 1.4285…em × 12.25px (15.3px) — so the class was
-    // dropped. text-sm's own line height was already exactly 1.25rem, so this
-    // is the value the class was pinning all along; assert it, because nothing
-    // about the rendered output says the class is gone on purpose.
+    // text-sm's own line height is what the dropped `leading-5` used to pin.
     await renderPage()
     const copy = await screen.findByText(/Matches your device by default/)
     expect(resolvedStyle(copy).lineHeight).toBe(rem('1.25rem'))

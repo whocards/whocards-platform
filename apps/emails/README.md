@@ -41,7 +41,7 @@ RESEND_FROM_EMAIL="WhoCards <hello@whocards.cc>"
 ANDROID_TESTER_SIGNUP_URL=https://your-real-signup-url.example
 ANDROID_TESTER_GROUP_URL=https://groups.google.com/g/your-tester-group
 ANDROID_TESTER_OPT_IN_URL=https://play.google.com/apps/testing/com.whocards.mobile
-ANDROID_TESTER_FEEDBACK_URL=https://your-feedback-form.example
+ANDROID_TESTER_FEEDBACK_URL=https://whocards.cc/contact?about=android-test
 EMAIL_TEST_RECIPIENT=you@example.com
 ```
 

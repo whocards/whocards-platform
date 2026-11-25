@@ -133,26 +133,7 @@ describe('Tailwind theme — fonts', () => {
   })
 })
 
-/**
- * Line height — the one silently breaking change in the NativeWind v5 upgrade.
- *
- * v4 emitted `leading-<n>` as a `rem` length (`leading-8` = 2rem = 28px). v5's
- * `nativewind/theme` overrides the utility to a *unitless* value, which
- * react-native-css multiplies by the element's own font size — so the same
- * `leading-8` is now 2em, which is 35px at `text-xl`. Nothing throws when that
- * changes; the text just gets taller. These are the cases that would catch it.
- *
- * The migration recipe is "divide the old value by the font size": v4's
- * `text-xl leading-8` is 2rem ÷ 1.25rem = 1.6em, and each v5 step is 0.25em, so
- * the exact equivalent would be `leading-6.4` — which the override can't
- * express (it takes integers only). Nor can an arbitrary value: `leading-[…]`
- * does fall through to Tailwind's built-in utility and compiles fine, but
- * react-native-css accepts only a plain number for lineHeight, so
- * `leading-[1.6]`, `leading-[1.6em]`, `leading-[2rem]` and `leading-[28px]` all
- * resolve to no lineHeight at all (measured). `leading-6` (1.5em = 26.25px) is
- * the nearest step, and what src/app/index.tsx's tagline now uses — 1.75px
- * tighter than v4's 28px, and the migration's one accepted visual change.
- */
+// Line height: a regression here changes text height without throwing anything.
 const renderClass = async (className: string) => {
   await render(<Text testID="line" className={className} />)
   return screen.getByTestId('line')
@@ -184,10 +165,9 @@ describe('Tailwind theme — line height', () => {
     })
   })
 
-  it('parses a leading-* step as 0.25em, not 0.25rem', async () => {
-    // Against text-xl's 1.25rem (17.5px) font size.
-    expect(await lineHeightOf('text-xl leading-6')).toBe(1.5 * rem('1.25rem'))
-    expect(await lineHeightOf('text-xl leading-8')).toBe(2 * rem('1.25rem'))
+  it('parses a leading-* step as 0.25rem, independent of font size', async () => {
+    expect(await lineHeightOf('text-xl leading-7.5')).toBe(rem('1.875rem'))
+    expect(await lineHeightOf('text-xl leading-8')).toBe(rem('2rem'))
   })
 })
 

@@ -24,4 +24,17 @@ config.resolver.unstable_enablePackageExports = true
 //    `react-native` for `react-native-css/components`, which is what gives every
 //    primitive its `className` prop. There is no `input` option any more —
 //    src/global.css is imported as a normal module from src/app/_layout.tsx.
-module.exports = withNativewind(config)
+const nativewindConfig = withNativewind(config)
+const EXPO_ASSET = /[\\/]node_modules[\\/]expo-asset[\\/]/
+
+module.exports = {
+  ...nativewindConfig,
+  resolver: {
+    ...nativewindConfig.resolver,
+    // react-native-css's `react-native` stand-in has no AssetRegistry, which expo-asset 58 imports, so it gets the real one.
+    resolveRequest: (context, moduleName, platform) =>
+      moduleName === 'react-native' && EXPO_ASSET.test(context.originModulePath)
+        ? context.resolveRequest(context, moduleName, platform)
+        : nativewindConfig.resolver.resolveRequest(context, moduleName, platform),
+  },
+}
