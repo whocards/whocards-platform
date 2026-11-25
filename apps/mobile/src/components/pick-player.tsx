@@ -44,6 +44,8 @@ import {getStoredTabletopMode} from '@/lib/tabletop-store'
 // Full card flip (deal → reveal) duration; DESIGN.md's 200–300 ms band applies to
 // interaction transitions — the deal is the one composed "moment of theatre" per card.
 const FLIP_MS = 450
+// Reduce Motion swaps the flip for a plain crossfade between the two faces (issue #456).
+const FADE_MS = 200
 // Physical-card proportions (width / height, ~poker card) for the deck and the
 // flipped question card.
 const CARD_ASPECT = 0.72
@@ -274,28 +276,43 @@ export const PickPlayer = ({
   useEffect(() => {
     if (!onCard) return
     flip.set(0)
-    flip.set(withTiming(1, {duration: reduceMotion ? 0 : FLIP_MS}))
+    flip.set(withTiming(1, {duration: reduceMotion ? FADE_MS : FLIP_MS}))
   }, [onCard, flip, reduceMotion])
 
-  const wrapperStyle = useAnimatedStyle(() => ({
-    transform: [
-      // a slight lift-and-settle arc through the flip, so the card reads as
-      // picked up off the deck rather than spun in place
-      {translateY: interpolate(flip.get(), [0, 0.5, 1], [0, -16, 0])},
-      {scale: interpolate(flip.get(), [0, 0.5, 1], [1, 1.04, 1])},
-    ],
-  }))
-  const backStyle = useAnimatedStyle(() => ({
-    transform: [{perspective: 1000}, {rotateY: `${interpolate(flip.get(), [0, 1], [0, 180])}deg`}],
-    backfaceVisibility: 'hidden' as const,
-  }))
-  const faceStyle = useAnimatedStyle(() => ({
-    transform: [
-      {perspective: 1000},
-      {rotateY: `${interpolate(flip.get(), [0, 1], [180, 360])}deg`},
-    ],
-    backfaceVisibility: 'hidden' as const,
-  }))
+  const wrapperStyle = useAnimatedStyle(() =>
+    reduceMotion
+      ? {}
+      : {
+          transform: [
+            // a slight lift-and-settle arc through the flip, so the card reads as
+            // picked up off the deck rather than spun in place
+            {translateY: interpolate(flip.get(), [0, 0.5, 1], [0, -16, 0])},
+            {scale: interpolate(flip.get(), [0, 0.5, 1], [1, 1.04, 1])},
+          ],
+        }
+  )
+  const backStyle = useAnimatedStyle(() =>
+    reduceMotion
+      ? {opacity: 1 - flip.get()}
+      : {
+          transform: [
+            {perspective: 1000},
+            {rotateY: `${interpolate(flip.get(), [0, 1], [0, 180])}deg`},
+          ],
+          backfaceVisibility: 'hidden' as const,
+        }
+  )
+  const faceStyle = useAnimatedStyle(() =>
+    reduceMotion
+      ? {opacity: flip.get()}
+      : {
+          transform: [
+            {perspective: 1000},
+            {rotateY: `${interpolate(flip.get(), [0, 1], [180, 360])}deg`},
+          ],
+          backfaceVisibility: 'hidden' as const,
+        }
+  )
   // --- actions ---
   const handlePick = useCallback(() => {
     impact('medium')
@@ -320,7 +337,7 @@ export const PickPlayer = ({
     exitingRef.current = true
     selection()
     flip.set(
-      withTiming(0, {duration: reduceMotion ? 0 : FLIP_MS}, () => {
+      withTiming(0, {duration: reduceMotion ? FADE_MS : FLIP_MS}, () => {
         'worklet'
         runOnJS(commitPutDown)()
       })
