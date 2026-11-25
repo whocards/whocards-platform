@@ -3,7 +3,7 @@ import {StatusBar} from 'expo-status-bar'
 import {logWarn} from '@whocards/observability'
 import {EVENTS} from '@whocards/observability/events'
 import type {ShareEventName, ShareFormat} from '@whocards/observability/events'
-import {useCallback, useEffect, useMemo, useState} from 'react'
+import {useCallback, useMemo, useState} from 'react'
 import {
   ActivityIndicator,
   Modal,
@@ -172,14 +172,14 @@ export const ShareModal = ({
   ]
 
   // Clear stale state whenever the sheet is (re)opened for a (possibly new) card.
-  /* oxlint-disable react/set-state-in-effect -- intentional reset-on-open; restructuring to key-based reset needs on-device verification */
-  useEffect(() => {
+  const [wasVisible, setWasVisible] = useState(visible)
+  if (visible !== wasVisible) {
+    setWasVisible(visible)
     if (visible) {
       setPending(null)
       setError(null)
     }
-  }, [visible])
-  /* oxlint-enable react/set-state-in-effect */
+  }
 
   const shareLink = useCallback(() => {
     setError(null)

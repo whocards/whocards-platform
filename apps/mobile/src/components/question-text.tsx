@@ -3,17 +3,17 @@ import {Text, View} from 'react-native'
 import {getDirection} from '@whocards/decks'
 
 // Per-script question face. golos-text (the brand body face) covers Latin + Cyrillic;
-// Hebrew gets its bundled Noto face; CJK (zh/jp) falls back to the system font — full
-// glyph coverage on device, and the Noto CJK faces are too heavy to bundle (see
-// docs/tickets/0001-mobile-cjk-hebrew-question-fonts.md).
-const SYSTEM_FONT_LANGUAGES = new Set(['zh', 'jp'])
-const SCRIPT_FONTS: Record<string, string> = {he: 'noto-sans-hebrew'}
-
-/** The font family for a question in `language`, or `undefined` for the system font. */
-export const questionFontFamily = (language: string): string | undefined => {
-  if (language in SCRIPT_FONTS) return SCRIPT_FONTS[language]
-  return SYSTEM_FONT_LANGUAGES.has(language) ? undefined : 'golos-text'
+// Hebrew and CJK get their bundled Noto faces, the CJK ones subset to the decks' glyphs
+// (scripts/subset-cjk-fonts.py).
+export const SCRIPT_FONTS: Record<string, string> = {
+  he: 'noto-sans-hebrew',
+  zh: 'noto-sans-chinese',
+  jp: 'noto-sans-japanese',
 }
+
+/** The font family for a question in `language`. */
+export const questionFontFamily = (language: string): string =>
+  SCRIPT_FONTS[language] ?? 'golos-text'
 
 // --- dynamic question sizing: grow the text to fill its box, recomputed on rotation ---
 export const LINE_HEIGHT_RATIO = 1.15
@@ -219,8 +219,6 @@ const LanguageBlock = ({
   themedText?: boolean
 }) => {
   const direction = getDirection(language)
-  // brand/script face where one exists; system font (with a weight) otherwise
-  const font = questionFontFamily(language)
 
   return (
     <Text
@@ -241,7 +239,7 @@ const LanguageBlock = ({
         // writingDirection sets the bidi base direction but not paragraph
         // alignment in RN — RTL (Hebrew) needs textAlign to right-align
         textAlign: direction === 'rtl' ? 'right' : 'left',
-        ...(font ? {fontFamily: font} : {fontWeight: '600'}),
+        fontFamily: questionFontFamily(language),
       }}
     >
       {text}

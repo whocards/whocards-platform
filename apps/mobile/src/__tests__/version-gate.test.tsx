@@ -68,7 +68,7 @@ describe('VersionGate', () => {
   ] as const)('on %s, below the minimum shows the update screen and opens %s', async (os, url) => {
     jest.replaceProperty(Platform, 'OS', os)
     mockQuery.mockResolvedValue({minVersion: '1.3.0', storeUrl})
-    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true)
+    const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue()
     await renderGate()
     expect(screen.queryByText('Library')).toBeNull()
     await fireEvent.press(screen.getByRole('button', {name: 'Update'}))

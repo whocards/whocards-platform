@@ -236,6 +236,20 @@ describe('ShareModal', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
+  it('clears a stale error when the sheet is closed and reopened (issue #236)', async () => {
+    mockDownloadAndShareImage.mockRejectedValue(new Error('network request failed'))
+    const props = {...PROPS, onShareEvent: () => {}, onClose: () => {}}
+    const {rerender} = await render(<ShareModal visible {...props} />)
+    await act(async () => {
+      await fireEvent.press(screen.getByText('Post image'))
+    })
+    expect(screen.getByText(/couldn't load the image/i)).toBeTruthy()
+
+    await rerender(<ShareModal visible={false} {...props} />)
+    await rerender(<ShareModal visible {...props} />)
+    expect(screen.queryByText(/couldn't load the image/i)).toBeNull()
+  })
+
   it('shows a graceful inline message on an image failure and keeps the sheet usable', async () => {
     mockDownloadAndShareImage.mockRejectedValue(new Error('network request failed'))
     const onShareEvent = jest.fn()

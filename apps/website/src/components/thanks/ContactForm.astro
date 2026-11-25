@@ -2,16 +2,25 @@
 import type {ZodIssue} from 'zod'
 import Button from '~components/ui/Button.astro'
 import Input from '~components/ui/Input.astro'
+import {
+  CONTACT_ABOUT,
+  contactAboutFrom,
+  contactPlatformFrom,
+  contactVersionFrom,
+} from '~constants/contact'
 import {TURNSTILE_ACTION} from '~server/turnstile'
 
 export type Props = {
-  formData?: Record<string, string>
+  formData?: Record<string, string | undefined>
   errors?: Record<string, ZodIssue>
   serverError?: string
   siteKey?: string
 }
 
 const {formData, errors, serverError, siteKey} = Astro.props
+const about = contactAboutFrom(formData?.about)
+const platform = contactPlatformFrom(formData?.platform)
+const version = contactVersionFrom(formData?.version)
 ---
 
 <div class='flex flex-col items-center gap-4 text-center md:items-start md:gap-5 md:text-start'>
@@ -39,6 +48,22 @@ const {formData, errors, serverError, siteKey} = Astro.props
       value={formData?.email ?? ''}
       error={errors?.email}
     />
+    <label for='contact-about' class='flex flex-col gap-2 pb-7 text-start text-base font-medium'>
+      <div>about</div>
+      <select
+        id='contact-about'
+        name='about'
+        class='w-full rounded-xl border border-gray bg-transparent px-4.5 py-3'
+      >
+        {Object.entries(CONTACT_ABOUT).map(([value, label]) => (
+          <option value={value} selected={value === about}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </label>
+    {platform && <input type='hidden' name='platform' value={platform} />}
+    {version && <input type='hidden' name='version' value={version} />}
     <label
       for='contact-message'
       class='flex flex-col gap-2 pb-2.5 text-start text-base font-medium'
