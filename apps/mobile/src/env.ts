@@ -28,6 +28,8 @@ const schema = z.object({
    * Defaults to the live site; override in staging/preview builds.
    */
   EXPO_PUBLIC_WEB_URL: z.string().url().default('https://whocards.cc'),
+  /** Prototype (issue #195): drift the light maze and crossfade theme switches. Off by default. */
+  EXPO_PUBLIC_ANIMATED_BACKGROUND: z.stringbool().default(false),
 })
 
 export const env = schema.parse({
@@ -37,4 +39,5 @@ export const env = schema.parse({
   EXPO_PUBLIC_RECORD_ANSWERS: process.env.EXPO_PUBLIC_RECORD_ANSWERS,
   EXPO_PUBLIC_DEBUG: process.env.EXPO_PUBLIC_DEBUG,
   EXPO_PUBLIC_WEB_URL: process.env.EXPO_PUBLIC_WEB_URL,
+  EXPO_PUBLIC_ANIMATED_BACKGROUND: process.env.EXPO_PUBLIC_ANIMATED_BACKGROUND,
 })
