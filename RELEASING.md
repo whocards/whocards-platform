@@ -20,8 +20,8 @@ version, tags, and pushes — with confirmation prompts along the way.
 
 ## Before each release
 
-1. **Nothing to boot.** The release command runs the Maestro e2e suite (`e2e:ios` +
-   `e2e:android`) as a hard gate on WhoCards' own `WhoCards iPhone 17 Pro` simulator and
+1. **Nothing to boot.** The release command runs the e2e flows (`pnpm -F mobile e2e`,
+   iOS and Android) as a hard gate on WhoCards' own `WhoCards iPhone 17 Pro` simulator and
    `WhoCards Duo` emulator, creating, booting and slimming them itself — CI does not run
    e2e (see `ci.yml`).
    The gate self-provisions: if the booted device doesn't already have a current build
@@ -44,7 +44,7 @@ pnpm release:dry      # preview everything, change nothing
 
 What it does, in order:
 
-1. **e2e gate** — `scripts/release/pre-release-check.mjs` runs `e2e:ios` then `e2e:android`.
+1. **e2e gate** — `scripts/release/pre-release-check.mjs` runs `pnpm -F mobile e2e` on iOS, then on Android.
    Aborts on failure.
 2. **Version** — recommended from your conventional commits (`feat` → minor, `fix` → patch,
    `BREAKING CHANGE` → major). You confirm or override.
@@ -99,10 +99,10 @@ to ship without bumping the version:
 
 - **Native rebuild, same version (build number bumps to the next):**
   ```sh
-  pnpm mobile:rebuild:ios       # e2e:ios gate → eas build → eas submit
-  pnpm mobile:rebuild:android   # e2e:android gate → eas build → eas submit
+  pnpm mobile:rebuild:ios       # iOS e2e gate → eas build → eas submit
+  pnpm mobile:rebuild:android   # Android e2e gate → eas build → eas submit
   ```
-  Each runs the same Maestro e2e gate as the release command (skip with
+  Each runs the same e2e gate as the release command (skip with
   `RELEASE_SKIP_E2E=1`), then builds and submits to TestFlight / Play internal. No tag,
   no `app.json` edit.
 

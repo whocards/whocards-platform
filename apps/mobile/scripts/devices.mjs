@@ -5,7 +5,7 @@
 //   node scripts/devices.mjs                 create any that are missing, and list them
 //   node scripts/devices.mjs prepare <key>   also boot it (and slim an iOS one), then print its id
 import {execFileSync, spawn} from 'node:child_process'
-import {appendFileSync, existsSync} from 'node:fs'
+import {appendFileSync, existsSync, writeFileSync} from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
@@ -46,6 +46,32 @@ const ok = (cmd, args, opts) => {
   }
 }
 const simctl = (...args) => run('xcrun', ['simctl', ...args], {timeout: 300_000})
+
+export const APP_ID = {ios: 'cc.whocards.mobile', android: 'com.whocards.mobile'}
+const platformOf = (id) => (id.startsWith('emulator-') ? 'android' : 'ios')
+
+/** Whether the WhoCards app is on the simulator (udid) or emulator (serial). */
+export function hasApp(id) {
+  if (platformOf(id) === 'ios') return ok('xcrun', ['simctl', 'get_app_container', id, APP_ID.ios])
+  try {
+    return run(ADB, ['-s', id, 'shell', 'pm', 'path', APP_ID.android]).includes('package:')
+  } catch {
+    return false
+  }
+}
+
+/** Saves the device's screen to `file` as a PNG. */
+export function screenshot(id, file) {
+  if (platformOf(id) === 'ios') simctl('io', id, 'screenshot', file)
+  else {
+    // A foldable has a display per panel, and screencap would pick the first, lit or not.
+    const lit = /uniqueId="local:(\d+)".*state ON/.exec(
+      run(ADB, ['-s', id, 'shell', 'dumpsys', 'display'])
+    )
+    const display = lit ? ['-d', lit[1]] : []
+    writeFileSync(file, execFileSync(ADB, ['-s', id, 'exec-out', 'screencap', '-p', ...display]))
+  }
+}
 
 // ── iOS ────────────────────────────────────────────────────────────────────────────────
 

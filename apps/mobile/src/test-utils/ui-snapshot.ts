@@ -36,7 +36,7 @@
  *    layer does with these props (Yoga's actual layout maths, text shaping,
  *    shadow rasterisation) is invisible here. A clean run is evidence that the
  *    JS render matches this baseline, not that the screen is identical — that
- *    still needs an on-device / Maestro comparison.
+ *    still needs an on-device / e2e comparison.
  * 2. Native layout and rasterization. Jest compiles and injects the app's
  *    stylesheet, so Tailwind classes are represented by their resolved styles;
  *    Yoga layout, text shaping, shadows, and platform rendering still need a

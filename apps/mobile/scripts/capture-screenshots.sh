@@ -1,28 +1,24 @@
 #!/usr/bin/env bash
-# Capture store-listing screenshots across a device matrix with Maestro (#34, #111).
+# Capture store-listing screenshots across a device matrix (#34, #111).
 #
-# Each device runs .maestro/screenshots/store-screens.yaml and writes its frames to
+# Each device runs the e2e/store-screens.e2e.ts flow and writes its frames to
 # store-assets/<name>/NN-*.png. The app must already be installed on each device
-# (see .maestro/README.md for the build step).
+# (see e2e/README.md for the build step).
 #
 # Usage:
 #   DEVICES="<device>:<name> ..." pnpm -F mobile screenshots
 #
 # where <device> is a WhoCards device key from scripts/devices.mjs (pro, plus, duo) and
-# <name> is the output folder. Each device is created, booted and (iOS) slimmed first.
+# <name> is the output folder. scripts/e2e.mjs creates, boots and (iOS) slims each first.
 #
 # App Store submission needs a 6.5" Display set, so that is the DEFAULT: with no DEVICES
 # it captures `WhoCards iPhone 14 Plus` (1284×2778) to `iphone-6.5`, size-checked:
 #   pnpm -F mobile screenshots
 # A full matrix (the folder name still drives the size check):
 #   DEVICES="plus:iphone-6.5 pro:iphone-17-pro duo:duo" pnpm -F mobile screenshots
-#
-# Note: Maestro needs a valid JAVA_HOME (a JDK). If `maestro` errors with
-# "JAVA_HOME is set to an invalid directory", point it at an installed JDK first.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-FLOW=.maestro/screenshots/store-screens.yaml
 DEVICES="${DEVICES:-plus:iphone-6.5}"
 
 # Apple-accepted portrait pixel sizes per known App Store slot folder name. A folder
@@ -70,11 +66,9 @@ for entry in $DEVICES; do
     echo "✗ bad DEVICES entry '$entry' — expected '<device>:<name>'" >&2
     exit 1
   fi
-  id="$(node scripts/devices.mjs prepare "$key")"
-  echo "▶ capturing on $name ($id)"
-  app_id="cc.whocards.mobile"
-  [[ "$key" == "duo" ]] && app_id="com.whocards.mobile"
-  maestro --device "$id" test "$FLOW" -e "DEVICE=$name" -e "APP_ID=$app_id"
+  echo "▶ capturing on $name ($key)"
+  mkdir -p "store-assets/$name"
+  STORE_DIR="store-assets/$name" node scripts/e2e.mjs --device "$key" --tag screenshots store-screens
   verify_sizes "$name"
 done
 
