@@ -1,5 +1,6 @@
 import {useRef} from 'react'
 import {Pressable, ScrollView, Text, View, useWindowDimensions} from 'react-native'
+import type {ScrollViewInstance} from 'react-native'
 
 import {SettingsSheetHeader} from '@/components/settings-sheet-header'
 
@@ -17,7 +18,7 @@ type DailyTimeSettingsPageProps = {
 
 /** The hour the daily question arrives: one page in SettingsModal's pager, whole hours only. */
 export const DailyTimeSettingsPage = ({current, onSelect, onBack}: DailyTimeSettingsPageProps) => {
-  const scrollRef = useRef<ScrollView>(null)
+  const scrollRef = useRef<ScrollViewInstance>(null)
   const {height: windowHeight} = useWindowDimensions()
 
   return (
