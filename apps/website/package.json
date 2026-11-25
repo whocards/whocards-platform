@@ -90,7 +90,7 @@
     "lighthouse": "13.6.0",
     "pg": "^8.23.1",
     "tsx": "^4.23.15",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "vitest": "catalog:"
   }
 }
