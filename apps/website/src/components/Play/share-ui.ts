@@ -114,5 +114,35 @@ export const buildAskUrl = (shareUrl: string, name: string): string => {
 export const buildAskMessage = (questionText: string): string =>
   `I want to hear your answer to this one:\n\n“${questionText}”`
 
+const withoutAskerName = (value: unknown): unknown => {
+  if (typeof value !== 'string' || !value.includes('from=')) return value
+  try {
+    const url = new URL(value)
+    url.searchParams.delete('from')
+    return url.toString()
+  } catch {
+    return value
+  }
+}
+
+type AnalyticsEvent = {properties?: Record<string, unknown>; $set?: unknown; $set_once?: unknown}
+
+/** PostHog `before_send`: an ask link's sender name never leaves in a captured URL (issue #434). */
+export const dropAskerName = <T extends AnalyticsEvent>(event: T | null): T | null => {
+  if (!event) return event
+  const bags = [
+    event.properties,
+    event.properties?.$set,
+    event.properties?.$set_once,
+    event.$set,
+    event.$set_once,
+  ]
+  for (const bag of bags) {
+    if (!bag || typeof bag !== 'object') continue
+    for (const [key, value] of Object.entries(bag)) Reflect.set(bag, key, withoutAskerName(value))
+  }
+  return event
+}
+
 /** The line a Reply starts with: the Question quoted back into the chat the ask came from. */
 export const buildAskReply = (questionText: string): string => `My answer to “${questionText}”:\n\n`

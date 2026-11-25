@@ -292,7 +292,10 @@ export const ShareSheet = ({
               <input
                 type='text'
                 value={askerName}
-                onChange={(event) => setAskerName(event.target.value)}
+                onChange={(event) => {
+                  setAskerName(event.target.value)
+                  setAskCopied(false)
+                }}
                 maxLength={ASKER_NAME_MAX}
                 placeholder='Your name (optional)'
                 aria-label='Your name (optional)'

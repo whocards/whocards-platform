@@ -128,6 +128,17 @@ describe('ShareModal', () => {
     expect(onShareEvent.mock.calls).toEqual([[EVENTS.ASK_SENT, 'ask']])
   })
 
+  it('does not count an ask the player cancels on iOS', async () => {
+    shareSpy.mockResolvedValue({action: Share.dismissedAction})
+    const onShareEvent = jest.fn()
+    await render(<ShareModal visible {...PROPS} onShareEvent={onShareEvent} onClose={() => {}} />)
+    await fireEvent.press(screen.getByText('Ask someone'))
+    await act(async () => {
+      await fireEvent.press(screen.getByLabelText('Send ask'))
+    })
+    expect(onShareEvent).not.toHaveBeenCalled()
+  })
+
   it('renders only the link row when the image URLs are omitted (an inline-source deck)', async () => {
     await render(
       <ShareModal

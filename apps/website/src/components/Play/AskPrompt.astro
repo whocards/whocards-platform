@@ -15,7 +15,7 @@ const from = cleanAskerName(Astro.url.searchParams.get('from') ?? '')
   data-language={language}
   class='flex flex-col items-center gap-3 px-4 pt-28 text-center'
 >
-  <p class='text-lg font-semibold text-white'>
+  <p class='ph-no-capture text-lg font-semibold text-white'>
     {from ? `${from} wants to hear your answer` : 'Someone wants to hear your answer'}
   </p>
   <button

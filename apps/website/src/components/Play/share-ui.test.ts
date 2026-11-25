@@ -5,6 +5,7 @@ import {
   buildAskUrl,
   buildQuestionShareUrl,
   cleanAskerName,
+  dropAskerName,
   buildShareCardFilename,
   buildShareCardUrl,
   getImageRowLabel,
@@ -152,5 +153,18 @@ describe('buildAskUrl (issue #434)', () => {
   it('strips control characters, collapses whitespace and caps the length', () => {
     expect(cleanAskerName(' Avi\n\u0000 Charlop ')).toBe('Avi Charlop')
     expect(Array.from(cleanAskerName('😀'.repeat(100)))).toHaveLength(ASKER_NAME_MAX)
+  })
+})
+
+describe('dropAskerName (issue #434)', () => {
+  it('removes the sender name from every captured URL', () => {
+    const url = 'https://whocards.cc/play?lang=en&q=1&ask=1&from=Avi'
+    const event = dropAskerName({
+      properties: {$current_url: url, $set_once: {$initial_current_url: url}, other: 'Avi'},
+      $set: {$referrer: url},
+    })
+    expect(JSON.stringify(event)).not.toContain('from=')
+    expect(event?.properties?.$current_url).toBe('https://whocards.cc/play?lang=en&q=1&ask=1')
+    expect(event?.properties?.other).toBe('Avi')
   })
 })

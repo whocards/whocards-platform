@@ -256,13 +256,18 @@ export const ShareModal = ({
   )
 
   const sendAsk = useCallback(() => {
+    if (pending) return
     const message = buildAskMessage(questionText, buildAskUrl(shareUrl, askerName))
     Share.share({message})
-      .then(() => onShareEvent(EVENTS.ASK_SENT, 'ask'))
+      .then((result) => {
+        // iOS reports a cancel; Android resolves as its chooser opens, so it counts there (issue #200).
+        if (Platform.OS === 'ios' && result.action !== Share.sharedAction) return
+        onShareEvent(EVENTS.ASK_SENT, 'ask')
+      })
       .catch((err: unknown) => {
         logWarn('[share-modal] ask share failed', err)
       })
-  }, [questionText, shareUrl, askerName, onShareEvent])
+  }, [pending, questionText, shareUrl, askerName, onShareEvent])
 
   const handlePress = useCallback(
     (row: Row) => {
