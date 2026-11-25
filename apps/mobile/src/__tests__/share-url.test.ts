@@ -18,12 +18,14 @@ import {buildShareCardUrl, buildShareUrl} from '../lib/share-url'
 describe('buildShareUrl', () => {
   it('uses /play (no slug segment) for the default deck', () => {
     const url = buildShareUrl(DEFAULT_DECK_SLUG, 'en', 'q-42')
-    expect(url).toBe('https://whocards.cc/play?lang=en&q=q-42')
+    expect(url).toBe('https://whocards.cc/play?lang=en&q=q-42&utm_source=share&utm_medium=app')
   })
 
   it('includes the deck slug in the path for non-default decks', () => {
     const url = buildShareUrl('ai-at-work', 'es', 'q-7')
-    expect(url).toBe('https://whocards.cc/play/ai-at-work?lang=es&q=q-7')
+    expect(url).toBe(
+      'https://whocards.cc/play/ai-at-work?lang=es&q=q-7&utm_source=share&utm_medium=app'
+    )
   })
 
   it('passes the language param correctly', () => {
@@ -38,7 +40,9 @@ describe('buildShareUrl', () => {
 
   it('matches the expected URL shape end-to-end for a named deck', () => {
     const url = buildShareUrl('hajnalig', 'fr', 'q-99')
-    expect(url).toBe('https://whocards.cc/play/hajnalig?lang=fr&q=q-99')
+    expect(url).toBe(
+      'https://whocards.cc/play/hajnalig?lang=fr&q=q-99&utm_source=share&utm_medium=app'
+    )
   })
 })
 

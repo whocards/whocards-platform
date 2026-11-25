@@ -1,0 +1,26 @@
+---
+import {Icon} from 'astro-icon/components'
+import {APP_IOS_LAUNCHED, appStoreUrl} from '~constants/app'
+
+// Android waits on Play production access (#357), so only iOS ever sees this.
+const href = appStoreUrl('shared_question')
+---
+
+{APP_IOS_LAUNCHED && (
+  <a
+    hidden
+    href={href}
+    data-ios-href={href}
+    data-source='shared_question'
+    class='absolute top-20 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-primary-dark/45 bg-primary-dark/10 px-3.5 py-1.5 text-sm font-semibold text-primary-light transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-light'
+  >
+    <Icon name='mdi:apple' class='h-4 w-4' />
+    Get the App
+  </a>
+)}
+
+<script>
+  import {wireIosStoreLinks} from '~lib/store-links'
+
+  wireIosStoreLinks()
+</script>

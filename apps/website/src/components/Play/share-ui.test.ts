@@ -106,13 +106,13 @@ describe('supportsShareImages', () => {
 describe('buildQuestionShareUrl', () => {
   it('uses /play (no slug segment) for the default deck', () => {
     expect(buildQuestionShareUrl('https://whocards.cc', 'library', 'en', 'q-42')).toBe(
-      'https://whocards.cc/play?lang=en&q=q-42'
+      'https://whocards.cc/play?lang=en&q=q-42&utm_source=share&utm_medium=web'
     )
   })
 
   it('includes the deck slug in the path for non-default decks (mirrors mobile buildShareUrl)', () => {
     expect(buildQuestionShareUrl('https://whocards.cc', 'ai-at-work', 'es', 'q-7')).toBe(
-      'https://whocards.cc/play/ai-at-work?lang=es&q=q-7'
+      'https://whocards.cc/play/ai-at-work?lang=es&q=q-7&utm_source=share&utm_medium=web'
     )
   })
 
@@ -120,13 +120,13 @@ describe('buildQuestionShareUrl', () => {
     // Without the deck segment, q=1 would resolve inside the library deck to an
     // unrelated Pool question instead of hajnalig's question 1.
     expect(buildQuestionShareUrl('https://whocards.cc', 'hajnalig', 'hu', '1')).toBe(
-      'https://whocards.cc/play/hajnalig?lang=hu&q=1'
+      'https://whocards.cc/play/hajnalig?lang=hu&q=1&utm_source=share&utm_medium=web'
     )
   })
 
   it('uses the given origin verbatim', () => {
     expect(buildQuestionShareUrl('http://localhost:4321', 'library', 'en', '1')).toBe(
-      'http://localhost:4321/play?lang=en&q=1'
+      'http://localhost:4321/play?lang=en&q=1&utm_source=share&utm_medium=web'
     )
   })
 })

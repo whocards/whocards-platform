@@ -1,6 +1,7 @@
 ---
 export const prerender = false
 
+import GetAppPrompt from '~components/App/GetAppPrompt.astro'
 import {Play, supportsShareImages} from '~components/Play'
 import type {QuestionSet} from '~components/Play'
 import {DEFAULT_DECK_SLUG, getDeck} from '~data/decks'
@@ -36,6 +37,7 @@ const description =
   noFooter
   id={questionId}
 >
+  {questionId && <GetAppPrompt />}
   <section class='flex min-h-[calc(100vh-4rem)] w-full items-center justify-center'>
     <Play
       client:only='react'

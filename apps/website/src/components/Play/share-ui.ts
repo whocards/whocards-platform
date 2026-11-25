@@ -91,5 +91,5 @@ export const buildQuestionShareUrl = (
   questionId: string
 ): string => {
   const basePath = deckSlug === DEFAULT_DECK_SLUG ? '/play' : `/play/${deckSlug}`
-  return `${origin}${basePath}?lang=${language}&q=${questionId}`
+  return `${origin}${basePath}?lang=${language}&q=${questionId}&utm_source=share&utm_medium=web`
 }

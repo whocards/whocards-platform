@@ -1,6 +1,7 @@
 ---
 export const prerender = false
 
+import GetAppPrompt from '~components/App/GetAppPrompt.astro'
 import {Play, supportsShareImages} from '~components/Play'
 import type {QuestionSet} from '~components/Play'
 import {DEFAULT_DECK_SLUG, getDeck} from '~data/decks'
@@ -37,6 +38,7 @@ const questionId = qParam && qParam in deck.questions ? qParam : undefined
   title={deck.title}
   description={deck.description}
 >
+  {questionId && <GetAppPrompt />}
   <Play
     client:only='react'
     questions={deck.questions as QuestionSet}
