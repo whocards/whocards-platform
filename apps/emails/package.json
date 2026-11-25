@@ -25,7 +25,7 @@
     "@whocards/tokens": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "resend": "^6.38.1",
+    "resend": "^6.39.0",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -34,7 +34,7 @@
     "@types/react-dom": "catalog:",
     "@whocards/typescript-config": "workspace:*",
     "dotenv-cli": "^11.1.0",
-    "react-email": "^6.11.14",
+    "react-email": "^6.11.16",
     "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "catalog:"
