@@ -52,14 +52,19 @@ const simctl = (...args) => run('xcrun', ['simctl', ...args], {timeout: 300_000}
 const simulators = () =>
   Object.values(JSON.parse(simctl('list', 'devices', 'available', '-j')).devices).flat()
 
-/** The simulator named `device.name`, created on the newest runtime that runs its model. */
+// shortcut: iOS 27 kills a build from the iOS 27 SDK that hasn't adopted UIScene, which this app hasn't; raise once it has.
+const IOS_MAX_MAJOR = 26
+
+/** The simulator named `device.name`, created on the newest runtime (up to IOS_MAX_MAJOR) that runs its model. */
 export function ensureSimulator(device) {
   const found = simulators().find((d) => d.name === device.name)
   if (found) return found
   const runtime = JSON.parse(simctl('list', 'runtimes', 'available', '-j'))
     .runtimes.filter(
       (r) =>
-        r.platform === 'iOS' && r.supportedDeviceTypes?.some((t) => t.identifier === device.type)
+        r.platform === 'iOS' &&
+        Number.parseInt(r.version, 10) <= IOS_MAX_MAJOR &&
+        r.supportedDeviceTypes?.some((t) => t.identifier === device.type)
     )
     .toSorted((a, b) => a.version.localeCompare(b.version, undefined, {numeric: true}))
     .at(-1)
