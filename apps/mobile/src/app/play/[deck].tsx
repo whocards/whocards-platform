@@ -52,7 +52,7 @@ const missingDeckContainerStyle = StyleSheet.create({
 }).root
 
 const SWIPE_THRESHOLD = 60
-// How far off-screen the card travels when a swipe commits (points)
+// The drag distance (points) over which a dragged card fades out
 const SWIPE_OFF_SCREEN = 400
 // Rubber-band resistance factor when swiping at a boundary (0–1, lower = more resistance)
 const RUBBER_BAND = 0.3
@@ -87,6 +87,10 @@ const CARD_ENTER_TRAVEL = 28
 // Larger travel on the first entrance so the slower 900 ms timing reads as a real
 // slide rather than a long fade-in.
 const INITIAL_CARD_ENTER_TRAVEL = 56
+// Next and Back turn the Question edge-on and bring the next one round (issue #456), on Pick a
+// Card's flip timing; Reduce Motion fades instead.
+const FLIP_MS = 450
+const FADE_MS = 200
 
 export default function PlayScreen() {
   // `q` deep-links to a specific question (e.g. mobile://play/library?q=1): the engine
@@ -434,6 +438,12 @@ const DeckPlayer = ({
   // Flips to false after the very first entrance so only the open sequence gets
   // the slower, deliberate timing (subsequent swipes stay at CARD_ENTER_MS).
   const isFirstEnter = useRef(true)
+  // The turn: 0 at rest, ±1 edge-on (rotateY ±90°). Next turns towards +1, Back towards -1.
+  const turn = useSharedValue(0)
+  const turning = useRef(false)
+  // Set when the out-half has dispatched; the effect below turns the new Question in from the far side.
+  const turningIn = useRef<1 | -1 | null>(null)
+  const halfTurnMs = (reduceMotion ? FADE_MS : FLIP_MS) / 2
 
   // card-enter animation: when questionId changes, the new card flies in from
   // the appropriate edge. navDir is set by goNext/goPrevious before dispatch.
@@ -442,11 +452,18 @@ const DeckPlayer = ({
   useEffect(() => {
     const first = isFirstEnter.current
     if (first) isFirstEnter.current = false
+    const dir = turningIn.current
+    if (dir !== null) {
+      turningIn.current = null
+      turn.set(-dir)
+      turn.set(withTiming(0, {duration: halfTurnMs}))
+      return
+    }
     const travel = reduceMotion ? 0 : first ? INITIAL_CARD_ENTER_TRAVEL : CARD_ENTER_TRAVEL
     const duration = reduceMotion ? 0 : first ? INITIAL_CARD_ENTER_MS : CARD_ENTER_MS
     translateX.set(navDir.current * travel)
     translateX.set(withTiming(0, {duration}))
-  }, [questionId, translateX, reduceMotion])
+  }, [questionId, idx, translateX, turn, halfTurnMs, reduceMotion])
 
   const cardStyle = useAnimatedStyle(() => {
     // opacity fades slightly as the card is dragged off screen
@@ -456,11 +473,38 @@ const DeckPlayer = ({
       [0, 1, 0],
       'clamp'
     )
-    return {
-      opacity,
-      transform: [{translateX: translateX.get()}],
-    }
+    const t = turn.get()
+    return reduceMotion
+      ? {opacity: opacity * (1 - Math.abs(t)), transform: [{translateX: translateX.get()}]}
+      : {
+          opacity,
+          transform: [
+            {perspective: 1000},
+            {translateX: translateX.get()},
+            {rotateY: `${t * 90}deg`},
+          ],
+        }
   })
+
+  // The out-half of a turn; the Question changes only once it is edge-on.
+  const turnOut = useCallback(
+    (dir: 1 | -1, commit: () => void) => {
+      if (turning.current) return
+      turning.current = true
+      const done = () => {
+        turning.current = false
+        turningIn.current = dir
+        commit()
+      }
+      turn.set(
+        withTiming(dir, {duration: halfTurnMs}, () => {
+          'worklet'
+          runOnJS(done)()
+        })
+      )
+    },
+    [turn, halfTurnMs]
+  )
 
   // JS-thread callbacks for dispatching navigation after a committed swipe.
   // navDir is set here so the card-enter effect knows which edge to enter from.
@@ -479,19 +523,30 @@ const DeckPlayer = ({
   }, [viewTracker, dispatchNav])
 
   const goNext = useCallback(() => {
-    navDir.current = 1
     revealChrome()
-    viewTracker.endView('advanced')
-    dispatchNav({type: 'next'})
-  }, [revealChrome, viewTracker, dispatchNav])
+    turnOut(1, () => {
+      navDir.current = 1
+      viewTracker.endView('advanced')
+      dispatchNav({type: 'next'})
+    })
+  }, [revealChrome, turnOut, viewTracker, dispatchNav])
 
-  // the reducer clamps `previous` at the first card, so no idx guard is needed here
+  // the reducer clamps `previous` at the first card; turning there would leave it edge-on
   const goPrevious = useCallback(() => {
-    navDir.current = -1
     revealChrome()
-    viewTracker.endView('previous')
-    dispatchNav({type: 'previous'})
-  }, [revealChrome, viewTracker, dispatchNav])
+    if (isAtFirst) return
+    turnOut(-1, () => {
+      navDir.current = -1
+      viewTracker.endView('previous')
+      dispatchNav({type: 'previous'})
+    })
+  }, [revealChrome, isAtFirst, turnOut, viewTracker, dispatchNav])
+
+  const swipeNext = useCallback(() => turnOut(1, dispatchNext), [turnOut, dispatchNext])
+  const swipePrevious = useCallback(
+    () => turnOut(-1, dispatchPrevious),
+    [turnOut, dispatchPrevious]
+  )
 
   // leave the player — back to wherever we came from, falling back to the landing
   const handleExit = useCallback(() => {
@@ -553,29 +608,22 @@ const DeckPlayer = ({
         'worklet'
         const tx = event.translationX
         const vx = event.velocityX
-        const travel = reduceMotionSV.get() ? 0 : SWIPE_OFF_SCREEN
+        const settle = reduceMotionSV.get() ? 0 : 150
 
-        // commit next: swipe left past threshold or fast leftward fling
+        // commit next: swipe left past threshold or fast leftward fling — the card
+        // settles back and turns over (issue #456)
         if (tx <= -SWIPE_THRESHOLD || vx < -500) {
           runOnJS(impactMediumOnJS)()
-          translateX.set(
-            withTiming(-travel, {duration: reduceMotionSV.get() ? 0 : 260}, () => {
-              'worklet'
-              runOnJS(dispatchNext)()
-            })
-          )
+          translateX.set(withTiming(0, {duration: settle}))
+          runOnJS(swipeNext)()
           return
         }
         // commit previous: swipe right past threshold or fast rightward fling
         // (but not if rubber-banded at the start)
         if ((tx >= SWIPE_THRESHOLD || vx > 500) && !isAtFirstSV.get()) {
           runOnJS(impactMediumOnJS)()
-          translateX.set(
-            withTiming(travel, {duration: reduceMotionSV.get() ? 0 : 260}, () => {
-              'worklet'
-              runOnJS(dispatchPrevious)()
-            })
-          )
+          translateX.set(withTiming(0, {duration: settle}))
+          runOnJS(swipePrevious)()
           return
         }
         // spring back to rest
@@ -590,8 +638,8 @@ const DeckPlayer = ({
     return Gesture.Race(tap, pan)
   }, [
     revealChromeStable,
-    dispatchNext,
-    dispatchPrevious,
+    swipeNext,
+    swipePrevious,
     impactMediumOnJS,
     translateX,
     isAtFirstSV,

@@ -205,6 +205,15 @@ const Root = ({children}: {children: React.ReactNode}) => (
 
 const renderUi = async (ui: React.ReactElement) => await render(ui, {wrapper: Root})
 
+/** The transform of the nearest animated view above `text`. */
+const rotation = (text: string) => {
+  for (let node = screen.getByText(text).parent; node; node = node.parent) {
+    const transform = flattenStyle(node.props.style)?.transform
+    if (Array.isArray(transform)) return transform
+  }
+  return undefined
+}
+
 // The safe-area adapter's SafeAreaView ignores className, so the Library's
 // container spacing lives in explicit styles. Find the container by its own
 // testID (not by the values under test) and pin the whole style object.
@@ -295,6 +304,21 @@ describe('Play screen', () => {
     await fireEvent.press(screen.getByLabelText('close'))
     await settle()
     expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(2)
+  })
+
+  it('turns the Question over on Next and back on Back, coming to rest face-on (issue #456)', async () => {
+    mockParams = {deck: 'library', q: '1'}
+    const questions = getDeck('library')?.questions
+    await renderUi(<PlayScreen />)
+    await settle()
+    await fireEvent.press(screen.getByLabelText('next question'))
+    await settle()
+    const second = questions?.['2']?.en ?? ''
+    expect(rotation(second)).toContainEqual({rotateY: '0deg'})
+    await fireEvent.press(screen.getByLabelText('previous question'))
+    await settle()
+    expect(rotation(questions?.['1']?.en ?? '')).toContainEqual({rotateY: '0deg'})
+    expect(screen.queryByText(second)).toBeNull()
   })
 
   it("keeps a link's language when the in-play Settings sheet closes unchanged (issue #197)", async () => {
