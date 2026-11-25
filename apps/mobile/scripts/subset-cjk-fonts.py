@@ -24,7 +24,7 @@ def strings(node, key=None):
 
 text = {lang: set() for lang in FACES}
 for path in sorted((ROOT / 'packages/decks/src').rglob('*.json')):
-    for lang, value in strings(json.loads(path.read_text())):
+    for lang, value in strings(json.loads(path.read_text(encoding='utf-8'))):
         text[lang].update(value)
 
 for lang, family in FACES.items():

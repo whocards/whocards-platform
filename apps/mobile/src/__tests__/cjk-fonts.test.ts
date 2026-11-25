@@ -30,21 +30,25 @@ const mappedCodepoints = (file: string) => {
       for (let s = 0; s < segX2; s += 2) {
         const delta = font.readUInt16BE(deltas + s)
         const rangeOffset = font.readUInt16BE(rangeOffsets + s)
-        for (let c = font.readUInt16BE(starts + s); c <= font.readUInt16BE(ends + s); c++) {
+        const start = font.readUInt16BE(starts + s)
+        for (let c = start; c <= font.readUInt16BE(ends + s); c++) {
           if (c === 0xffff) break
-          const glyph =
+          const indexed =
             rangeOffset === 0
-              ? c + delta
-              : font.readUInt16BE(
-                  rangeOffsets + s + rangeOffset + 2 * (c - font.readUInt16BE(starts + s))
-                )
-          if (glyph % 0x10000 !== 0) mapped.add(c)
+              ? c
+              : font.readUInt16BE(rangeOffsets + s + rangeOffset + 2 * (c - start))
+          if (rangeOffset !== 0 && indexed === 0) continue
+          if ((indexed + delta) % 0x10000 !== 0) mapped.add(c)
         }
       }
     } else if (format === 12) {
       for (let g = 0; g < font.readUInt32BE(sub + 12); g++) {
         const group = sub + 16 + g * 12
-        for (let c = font.readUInt32BE(group); c <= font.readUInt32BE(group + 4); c++) mapped.add(c)
+        const start = font.readUInt32BE(group)
+        const startGlyph = font.readUInt32BE(group + 8)
+        for (let c = start; c <= font.readUInt32BE(group + 4); c++) {
+          if (startGlyph + (c - start) !== 0) mapped.add(c)
+        }
       }
     }
   }
