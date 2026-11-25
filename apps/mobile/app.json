@@ -78,7 +78,9 @@
           "fonts": [
             "./assets/fonts/golos-text.ttf",
             "./assets/fonts/aptly.ttf",
-            "./assets/fonts/noto-sans-hebrew.ttf"
+            "./assets/fonts/noto-sans-hebrew.ttf",
+            "./assets/fonts/noto-sans-chinese.ttf",
+            "./assets/fonts/noto-sans-japanese.ttf"
           ]
         }
       ],
