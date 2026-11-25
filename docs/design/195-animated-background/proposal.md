@@ -7,9 +7,9 @@ Status: prototype behind `EXPO_PUBLIC_ANIMATED_BACKGROUND`, default off. Nothing
 The flag is read when the JS bundle is built, so turning it on means a fresh bundle:
 
 - Dev client: add `EXPO_PUBLIC_ANIMATED_BACKGROUND=true` to the root `.env`, then `pnpm dev:mobile --clear`.
-- Release build on a WhoCards device: `EXPO_PUBLIC_ANIMATED_BACKGROUND=true RELEASE_FORCE_E2E=1 pnpm release:check ios` (or `android`).
+- Release build on the simulator: `EXPO_PUBLIC_ANIMATED_BACKGROUND=true pnpm -F mobile with-env expo run:ios --configuration Release --device "WhoCards iPhone 17 Pro"`.
 
-Switch Theme in Settings to see the crossfade. Turn on Reduce Motion to see everything go still.
+Switch Theme in Settings to see the crossfade. To see everything go still, turn on Reduce Motion and fully restart the app: `useReducedMotion()` reads the setting once, at launch.
 
 ## What the prototype does
 
