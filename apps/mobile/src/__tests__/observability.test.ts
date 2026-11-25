@@ -3,7 +3,7 @@
  *
  * - a Release build (or EXPO_PUBLIC_DEBUG dev) on non-real hardware
  *   (`Device.isDevice === false`) auto-registers `is_internal: true` on
- *   construction, so simulators/emulators — including Maestro release-check
+ *   construction, so simulators/emulators — including e2e release-check
  *   runs — are flagged rather than silently dropped;
  * - a real device does NOT get that auto-flag;
  * - `setInternalMarker` is the manual escape hatch used by the hidden dev

@@ -57,10 +57,9 @@ jobs:
       - name: Typecheck + unit tests
         run: pnpm exec turbo run typecheck test
 
-      # Maestro mobile e2e is intentionally NOT run here: it needs a built binary on
-      # a booted simulator/emulator. It runs locally as a hard gate in `pnpm release`
-      # (scripts/release/pre-release-check.mjs). Moving it to CI is tracked in the
-      # CI & codebase health epic (#230).
+      # Mobile e2e is intentionally NOT run here: it runs on the WhoCards simulator and
+      # emulator on Avi's Mac, as a hard gate in `pnpm release`
+      # (scripts/release/pre-release-check.mjs).
 
   changes:
     name: Detect changed areas

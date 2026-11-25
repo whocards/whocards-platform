@@ -23,7 +23,7 @@
  * exercised here — gesture-handler's native recognizers aren't driven by
  * `fireEvent`, same as the existing swipe gestures elsewhere in this app
  * (e.g. pick-player.tsx's card swipe, also untested at this level); it needs
- * on-device/Maestro verification instead.
+ * on-device/e2e verification instead.
  *
  * And, from issue #192 (Android: dismissing the system share sheet left the
  * app unresponsive; owner follow-up decision, 2026-07-03: the sheet must

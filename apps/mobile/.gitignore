@@ -45,8 +45,8 @@ example
 /ios
 /android
 
-# maestro e2e screenshots / run artifacts
-.maestro/artifacts/
+# e2e run reports, screenshots and artifacts
+.e2e/
 
 # generated store-listing screenshots (regenerate with `pnpm -F mobile screenshots`)
 store-assets/

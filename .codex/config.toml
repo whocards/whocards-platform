@@ -1,6 +1,2 @@
 [mcp_servers.expo]
 url = "https://mcp.expo.dev/mcp"
-
-[mcp_servers.maestro]
-command = "maestro"
-args = ["mcp", "--no-viewer"]
