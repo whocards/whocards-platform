@@ -10,6 +10,7 @@ describe('contact About (issue #455)', () => {
     expect(contactAboutFrom('android-test')).toBe('android-test')
     expect(contactAboutFrom('<script>')).toBe('general')
     expect(contactAboutFrom(null)).toBe('general')
+    expect(contactAboutFrom('toString')).toBe('general')
   })
 
   it('keeps only a known platform and an x.y.z version', () => {

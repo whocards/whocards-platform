@@ -18,7 +18,7 @@ export const CONTACT_ABOUT: Record<ContactAbout, string> = {
   events: 'Events',
 }
 
-const isContactAbout = (value: string): value is ContactAbout => value in CONTACT_ABOUT
+const isContactAbout = (value: string): value is ContactAbout => Object.hasOwn(CONTACT_ABOUT, value)
 
 /** The `?about=` value, or General for anything unknown. */
 export const contactAboutFrom = (value: string | null | undefined): ContactAbout =>
