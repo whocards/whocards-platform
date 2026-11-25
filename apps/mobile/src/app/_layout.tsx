@@ -32,7 +32,7 @@ void getStoredTheme().then((stored) => setColorScheme(stored))
 
 import '../global.css'
 
-// Brand faces (golos-text / aptly / noto-sans-hebrew) are embedded natively via the
+// Brand faces (golos-text / aptly / the noto-sans script faces) are embedded natively via the
 // expo-font config plugin (app.json), so they're available at launch. The landing
 // screen runs the splash → content handoff (the logo animates from the splash's
 // centre into place) and hides the splash itself; this is only a backstop so a deep
