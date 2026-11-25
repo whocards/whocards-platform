@@ -1,7 +1,9 @@
 # Mobile e2e + store screenshots (Maestro)
 
 End-to-end flows for the Expo app, run with [Maestro](https://maestro.mobile.dev)
-against a build installed on a booted simulator/emulator.
+against a build installed on a WhoCards simulator/emulator. `pnpm -F mobile devices` creates them
+(`WhoCards iPhone 17 Pro`, `WhoCards iPhone 14 Plus`, the `WhoCards Duo` foldable AVD); never run
+the flows on another project's device.
 
 ## Flows
 
@@ -72,7 +74,7 @@ auto-hide makes the captures reproducible and clean.
 Output: `store-assets/<device>/NN-*.png` (gitignored — regenerate on demand).
 
 **Default (no `DEVICES`)** captures the App Store-required **iOS 6.5" set** — the script
-resolves an available 6.5"-class simulator by name (iPhone 14 Plus → 1284×2778) and writes
+uses the `WhoCards iPhone 14 Plus` simulator (1284×2778), booted and slimmed, and writes
 it to `store-assets/iphone-6.5/`, verified against an accepted size:
 
 ```bash
@@ -82,7 +84,7 @@ pnpm -F mobile screenshots
 Set `DEVICES` explicitly to drive a full matrix (the folder name still drives the size check):
 
 ```bash
-DEVICES="<udid>:iphone-6.5 <udid>:iphone-17-pro emulator-5554:pixel-3a" \
+DEVICES="plus:iphone-6.5 pro:iphone-17-pro duo:duo" \
   pnpm -F mobile screenshots
 ```
 
@@ -101,12 +103,12 @@ being rejected at upload.
 | `ipad-13` / `ipad-12.9` | 2048×2732                      | iPad Pro 13" / 12.9"                            |
 
 The mandatory 6.5" set is the **default** (`pnpm -F mobile screenshots`, see above) — it
-resolves a 6.5"-class simulator (iPhone 14 Plus → 1284×2778) automatically. Install the
+uses `WhoCards iPhone 14 Plus` (1284×2778). Install the
 Release `.app` on that sim first (see "Building + installing" below). To pin a specific
 device explicitly:
 
 ```bash
-DEVICES="<iphone-14-plus-udid>:iphone-6.5" pnpm -F mobile screenshots
+DEVICES="plus:iphone-6.5" pnpm -F mobile screenshots
 # → store-assets/iphone-6.5/NN-*.png, each verified ✓ at an accepted 6.5" size
 ```
 
@@ -135,13 +137,13 @@ and dependencies isolated.
 # 1) baseline — on the PRE-upgrade ref
 git checkout main
 pnpm install
-pnpm -F mobile exec expo run:ios --configuration Release --device "iPhone 14 Plus"
+pnpm -F mobile exec expo run:ios --configuration Release --device "WhoCards iPhone 14 Plus"
 pnpm -F mobile ui-diff capture before
 
 # 2) candidate — on the upgrade branch
 git checkout chore/my-upgrade
 pnpm install
-pnpm -F mobile exec expo run:ios --configuration Release --device "iPhone 14 Plus"
+pnpm -F mobile exec expo run:ios --configuration Release --device "WhoCards iPhone 14 Plus"
 pnpm -F mobile ui-diff capture after
 
 # 3) compare (exits non-zero if any frame differs)
@@ -150,7 +152,7 @@ pnpm -F mobile ui-diff compare before after
 
 Captures land in `apps/mobile/.ui-diff/<label>/<device>/NN-*.png` (gitignored), not in
 `store-assets/`, so checking out the other ref between the two captures can't clobber
-the first one. `DEVICES="<device-id>:<name> ..."` is passed straight through to
+the first one. `DEVICES="<device>:<name> ..."` is passed straight through to
 `scripts/capture-screenshots.sh`; unset, both captures use its default 6.5" iOS set —
 just use the _same_ devices for both, or the comparison refuses to run.
 
@@ -182,7 +184,7 @@ needed during the run). Build once, then install the same `.app`/APK on every de
 
 ```bash
 # iOS — build, then install on additional sims from the build product:
-pnpm -F mobile exec expo run:ios --configuration Release --device "iPhone 17 Pro Max"
+pnpm -F mobile exec expo run:ios --configuration Release --device "WhoCards iPhone 17 Pro"
 xcrun simctl install <other-sim-udid> \
   ~/Library/Developer/Xcode/DerivedData/WhoCards-*/Build/Products/Release-iphonesimulator/WhoCards.app
 
@@ -243,8 +245,8 @@ pnpm -F mobile e2e:android
 maestro --device <id> test .maestro/deep-link-back.yaml -e APP_ID=com.whocards.mobile
 ```
 
-Run against **one booted simulator at a time** unless you pass `--device <udid>` — with
-several sims booted, Maestro's iOS driver otherwise attaches to whichever booted first.
+Pass `--device <udid>` of a WhoCards simulator: with several sims booted, Maestro's iOS
+driver otherwise attaches to whichever booted first, which may be another project's.
 
 ## Notes
 

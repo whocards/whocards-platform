@@ -16,6 +16,7 @@
     "lint": "oxlint --deny-warnings",
     "e2e:ios": "maestro test .maestro --exclude-tags=screenshots,android-only -e APP_ID=cc.whocards.mobile",
     "e2e:android": "maestro test .maestro --exclude-tags=screenshots -e APP_ID=com.whocards.mobile",
+    "devices": "node scripts/devices.mjs",
     "screenshots": "bash scripts/capture-screenshots.sh",
     "ui-diff": "bash scripts/ui-diff.sh",
     "eas": "pnpx eas-cli@latest",

@@ -40,8 +40,8 @@ usage:
   pnpm -F mobile ui-diff capture <label>            capture the frames for one ref
   pnpm -F mobile ui-diff compare <labelA> <labelB>  compare two captured labels
 
-  DEVICES="<device-id>:<name> ..." is passed through to the capture script;
-  unset, it captures the default 6.5" iOS simulator set.
+  DEVICES="<device>:<name> ..." (device = pro, plus or duo) is passed through to
+  the capture script; unset, it captures WhoCards iPhone 14 Plus as iphone-6.5.
 USAGE
   exit 2
 }

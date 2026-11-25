@@ -18,8 +18,10 @@
 // the full e2e suite, but none of release-it's version bump / commit / tag. Use it to
 // dry-run the gate without cutting a release.
 //
-// The relevant simulator/emulator is booted automatically before its suite runs (set
-// RELEASE_SKIP_BOOT=1 to boot them yourself). Skip the whole gate with RELEASE_SKIP_E2E=1
+// The gate runs only on WhoCards' own devices (apps/mobile/scripts/devices.mjs): the
+// `WhoCards iPhone 17 Pro` simulator, slimmed with simslim, and the `WhoCards Duo` emulator.
+// Each is created and booted before its suite runs (set RELEASE_SKIP_BOOT=1 to boot them
+// yourself). Skip the whole gate with RELEASE_SKIP_E2E=1
 // (and run the flows yourself, or accept the risk for a hotfix).
 //
 // Before each platform's suite, we make sure a CURRENT app is actually installed on the
@@ -38,12 +40,24 @@
 // installed on the booted device anymore (e.g. you erased the simulator). Force a full
 // re-run with RELEASE_FORCE_E2E=1 (or delete the file).
 
-import {execSync, spawn} from 'node:child_process'
+import {execSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {existsSync, readdirSync, readFileSync, writeFileSync} from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
+
+import {
+  ADB,
+  bootSimulator,
+  bootedSimulator,
+  DEVICES,
+  emulatorSerial,
+  ensureAvd,
+  ensureSimulator,
+  startEmulator,
+  waitForEmulator,
+} from '../../apps/mobile/scripts/devices.mjs'
 
 const only = process.argv[2]?.toLowerCase()
 if (only && only !== 'ios' && only !== 'android') {
@@ -63,18 +77,8 @@ const IOS_DIR = path.join(MOBILE_DIR, 'ios')
 const ANDROID_DIR = path.join(MOBILE_DIR, 'android')
 const APP_ID = {ios: 'cc.whocards.mobile', android: 'com.whocards.mobile'}
 
-// The Android SDK tools usually aren't on PATH (only ANDROID_HOME is set), so resolve the
-// emulator/adb binaries from the SDK and fall back to a bare name (PATH) if not found.
-function resolveAndroidTool(name, subdir) {
-  const sdk =
-    process.env.ANDROID_HOME ||
-    process.env.ANDROID_SDK_ROOT ||
-    path.join(os.homedir(), 'Library', 'Android', 'sdk')
-  const candidate = path.join(sdk, subdir, name)
-  return existsSync(candidate) ? candidate : name
-}
-const EMULATOR = resolveAndroidTool('emulator', 'emulator')
-const ADB = resolveAndroidTool('adb', 'platform-tools')
+const SIM = DEVICES.pro
+const AVD = DEVICES.duo
 
 // ── per-revision cache ─────────────────────────────────────────────────────────────────
 // Keyed to HEAD + working-tree state, so it only short-circuits when nothing changed. One
@@ -150,29 +154,13 @@ function platformState(cache, id) {
 // confirm the app is actually on the currently-booted device right now.
 function getBootedIosUdid() {
   try {
-    const {devices} = JSON.parse(
-      execSync('xcrun simctl list devices booted --json', {encoding: 'utf8'})
-    )
-    for (const list of Object.values(devices)) {
-      const booted = list.find((d) => d.state === 'Booted')
-      if (booted) return booted.udid
-    }
+    return bootedSimulator(SIM)
   } catch {
-    // xcrun unavailable — no udid to report
+    return null // xcrun unavailable
   }
-  return null
 }
 
-function getBootedAndroidSerial() {
-  try {
-    const serial = /(emulator-\d+)\s+device/.exec(
-      execSync(`"${ADB}" devices`, {encoding: 'utf8'})
-    )?.[1]
-    return serial ?? null
-  } catch {
-    return null
-  }
-}
+const getBootedAndroidSerial = () => emulatorSerial(AVD)
 
 function isIosAppInstalled(udid) {
   if (!udid) return false
@@ -313,142 +301,56 @@ const buildAndInstall = {ios: buildAndInstallIos, android: buildAndInstallAndroi
 // can be shut down again afterwards), or null when the device was already running / boot
 // was skipped — we only ever shut down what we started.
 //
-// Boot an iOS simulator if none is running. Picks the first available iPhone and waits
-// for it to finish booting, then opens the Simulator UI.
+// Create and boot the WhoCards simulator if it isn't running, and slim it either way.
 function ensureIosBooted() {
   if (process.env.RELEASE_SKIP_BOOT) return null
-  let booted
+  let sim
   try {
-    booted = execSync('xcrun simctl list devices booted', {encoding: 'utf8'})
-  } catch {
-    console.warn('   pre-release: xcrun simctl unavailable — skipping iOS auto-boot.')
+    sim = ensureSimulator(SIM)
+  } catch (err) {
+    console.warn(`   pre-release: ${err.message} — skipping iOS auto-boot.`)
     return null
   }
-  if (/\bBooted\b/.test(booted)) {
-    console.log('   iOS simulator already booted.')
-    return null
-  }
-
-  let udid
+  const wasBooted = sim.state === 'Booted'
+  console.log(`   ${wasBooted ? 'Slimming' : 'Booting'} ${SIM.name} (${sim.udid})…`)
   try {
-    const {devices} = JSON.parse(
-      execSync('xcrun simctl list devices available --json', {encoding: 'utf8'})
-    )
-    for (const [runtime, list] of Object.entries(devices)) {
-      if (!/iOS/.test(runtime)) continue
-      const iphone = list.find((d) => d.isAvailable && /iPhone/.test(d.name))
-      if (iphone) {
-        udid = iphone.udid
-        break
-      }
-    }
-  } catch {
-    // fall through — open -a Simulator can still boot the last-used device
-  }
-
-  console.log(`   Booting iOS simulator${udid ? ` (${udid})` : ''}…`)
-  try {
-    // `-b` boots the device if needed, then blocks until it's fully booted.
-    execSync(`xcrun simctl bootstatus ${udid ?? 'booted'} -b`, {stdio: 'inherit'})
-  } catch {
-    console.warn('   pre-release: could not confirm iOS boot — continuing anyway.')
+    bootSimulator(sim)
+  } catch (err) {
+    console.warn(`   pre-release: could not boot or slim ${SIM.name} — ${err.message}`)
   }
   try {
     execSync('open -a Simulator', {stdio: 'ignore'})
   } catch {
     // headless boot still works for Maestro even if the UI doesn't open
   }
-  // Only offer a teardown handle when we know exactly which device we booted. Without a
-  // udid we'd have to fall back to `simctl shutdown booted`, which kills every booted
-  // simulator — including any the user opened — so leave it running instead.
-  return udid ? {kind: 'ios', id: udid} : null
+  return wasBooted ? null : {kind: 'ios', id: sim.udid}
 }
 
-// Boot an Android emulator if none is running. Picks the first AVD, launches it
-// detached, and waits for sys.boot_completed.
+// Create and boot the WhoCards Duo emulator if it isn't running, and wait for boot_completed.
 function ensureAndroidBooted() {
   if (process.env.RELEASE_SKIP_BOOT) return null
-  let devices
+  if (emulatorSerial(AVD)) {
+    console.log(`   ${AVD.displayName} already booted.`)
+    return null
+  }
   try {
-    devices = execSync(`"${ADB}" devices`, {encoding: 'utf8'})
-  } catch {
-    console.warn('   pre-release: adb unavailable — skipping Android auto-boot.')
+    ensureAvd(AVD)
+  } catch (err) {
+    console.warn(`   pre-release: ${err.message} — skipping Android auto-boot.`)
     return null
   }
-  if (/emulator-\d+\s+device/.test(devices)) {
-    console.log('   Android emulator already booted.')
-    return null
-  }
+  const child = startEmulator(AVD)
 
-  let avd
-  try {
-    avd = execSync(`"${EMULATOR}" -list-avds`, {encoding: 'utf8'})
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)[0]
-  } catch {
-    console.warn('   pre-release: emulator binary unavailable — skipping Android auto-boot.')
-    return null
-  }
-  if (!avd) {
-    console.warn('   pre-release: no Android AVD found — skipping Android auto-boot.')
-    return null
-  }
-
-  console.log(`   Booting Android emulator (${avd})…`)
-  const child = spawn(EMULATOR, ['-avd', avd, '-no-snapshot-save'], {
-    detached: true,
-    stdio: 'ignore',
-  })
-  child.unref()
-
-  // Register teardown for the process we just spawned right away. Every path below this
-  // point (wait-for-device failure, boot never confirmed, no serial) must still return
-  // this handle, or we'd leak the emulator we started. The adb serial — preferred for a
-  // graceful `emu kill` — is filled in once the device registers; the pid is the fallback.
+  // Every path below must return this handle, or we'd leak the emulator we started; the
+  // serial (for a graceful `emu kill`) is filled in once it boots, the pid is the fallback.
   const handle = {kind: 'android', id: null, pid: child.pid}
-  const captureSerial = () => {
-    try {
-      handle.id =
-        /(emulator-\d+)\s+device/.exec(
-          execSync(`"${ADB}" devices`, {encoding: 'utf8', timeout: 5_000})
-        )?.[1] ?? handle.id
-    } catch {
-      // adb unavailable — keep whatever serial we already had (maybe none; pid covers it)
-    }
-  }
-
-  try {
-    execSync(`"${ADB}" wait-for-device`, {stdio: 'inherit', timeout: 120_000})
-  } catch {
-    console.warn('   pre-release: adb wait-for-device failed — continuing anyway.')
+  handle.id = waitForEmulator(AVD)
+  if (!handle.id) {
+    console.warn(`   pre-release: ${AVD.displayName} boot not confirmed — continuing anyway.`)
     return handle
   }
-
-  const timeoutMs = 180_000
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    let prop = ''
-    try {
-      // Bound each poll: `adb shell` can hang while the adb daemon respawns during a cold
-      // boot, and a hung call would freeze the loop past its outer 3m ceiling.
-      prop = execSync(`"${ADB}" shell getprop sys.boot_completed`, {
-        encoding: 'utf8',
-        timeout: 5_000,
-      }).trim()
-    } catch {
-      // device not ready yet (or the poll timed out) — try again
-    }
-    if (prop === '1') {
-      console.log('   Android emulator booted.')
-      warmUpAndroidShareSheet()
-      captureSerial()
-      return handle
-    }
-    sleep(2)
-  }
-  console.warn('   pre-release: Android boot not confirmed within 3m — continuing anyway.')
-  captureSerial()
+  console.log(`   ${AVD.displayName} booted.`)
+  warmUpAndroidShareSheet(handle.id)
   return handle
 }
 
@@ -458,7 +360,7 @@ function ensureAndroidBooted() {
 // preview). Wait for the boot animation to end, dismiss the keyguard, then fire and
 // dismiss a throwaway share chooser so the resolver is warm before the suite runs.
 // Best-effort — any failure here must not block the gate.
-function warmUpAndroidShareSheet() {
+function warmUpAndroidShareSheet(serial) {
   // Every adb call here is bounded — they run during an unstable boot window where a hung
   // `adb shell` would otherwise stall the gate.
   try {
@@ -466,7 +368,7 @@ function warmUpAndroidShareSheet() {
     while (Date.now() < animDeadline) {
       let anim = ''
       try {
-        anim = execSync(`"${ADB}" shell getprop init.svc.bootanim`, {
+        anim = execSync(`"${ADB}" -s ${serial} shell getprop init.svc.bootanim`, {
           encoding: 'utf8',
           timeout: 5_000,
         }).trim()
@@ -476,15 +378,21 @@ function warmUpAndroidShareSheet() {
       if (anim === 'stopped') break
       sleep(2)
     }
-    execSync(`"${ADB}" shell wm dismiss-keyguard`, {stdio: 'ignore', timeout: 5_000})
+    execSync(`"${ADB}" -s ${serial} shell wm dismiss-keyguard`, {stdio: 'ignore', timeout: 5_000})
     console.log('   Warming up the Android share sheet…')
     execSync(
-      `"${ADB}" shell am start -a android.intent.action.SEND -t text/plain --es android.intent.extra.TEXT warmup`,
+      `"${ADB}" -s ${serial} shell am start -a android.intent.action.SEND -t text/plain --es android.intent.extra.TEXT warmup`,
       {stdio: 'ignore', timeout: 10_000}
     )
     sleep(2)
-    execSync(`"${ADB}" shell input keyevent KEYCODE_BACK`, {stdio: 'ignore', timeout: 5_000})
-    execSync(`"${ADB}" shell input keyevent KEYCODE_HOME`, {stdio: 'ignore', timeout: 5_000})
+    execSync(`"${ADB}" -s ${serial} shell input keyevent KEYCODE_BACK`, {
+      stdio: 'ignore',
+      timeout: 5_000,
+    })
+    execSync(`"${ADB}" -s ${serial} shell input keyevent KEYCODE_HOME`, {
+      stdio: 'ignore',
+      timeout: 5_000,
+    })
   } catch {
     // warm-up is best-effort; the suite still runs if it fails
   }
@@ -532,8 +440,8 @@ if (process.env.RELEASE_SKIP_E2E) {
 }
 
 const allSuites = [
-  ['ios', 'iOS', 'iOS simulator', 'pnpm --filter mobile e2e:ios'],
-  ['android', 'Android', 'Android emulator', 'pnpm --filter mobile e2e:android'],
+  ['ios', 'iOS', SIM.name, 'pnpm --filter mobile e2e:ios'],
+  ['android', 'Android', AVD.displayName, 'pnpm --filter mobile e2e:android'],
 ]
 const suites = only ? allSuites.filter(([id]) => id === only) : allSuites
 
@@ -591,9 +499,14 @@ for (const [id, label, device, cmd] of suites) {
     continue
   }
 
-  console.log(`\n— ${label}: ${cmd}`)
+  if (!deviceId) {
+    booted.forEach(teardown)
+    console.error(`\n✖  pre-release: ${device} isn't booted — aborting.\n`)
+    process.exit(1)
+  }
+  console.log(`\n— ${label}: ${cmd} --device ${deviceId}`)
   try {
-    execSync(cmd, {stdio: 'inherit'})
+    execSync(`${cmd} --device ${deviceId}`, {stdio: 'inherit'})
   } catch {
     booted.forEach(teardown)
     console.error(
