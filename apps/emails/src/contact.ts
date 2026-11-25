@@ -27,14 +27,18 @@ export async function sendContactMessage({
   name,
   email,
   message,
+  about,
+  platform,
+  version,
 }: SendContactMessageInput) {
+  const props = {name, email, message, about, platform, version}
   return sendEmail({
     apiKey,
     from,
     to,
     replyTo: email,
-    subject: contactMessageSubject(name),
-    html: createElement(ContactMessageEmail, {name, email, message}),
-    text: contactMessageText({name, email, message}),
+    subject: contactMessageSubject(name, about),
+    html: createElement(ContactMessageEmail, props),
+    text: contactMessageText(props),
   })
 }
