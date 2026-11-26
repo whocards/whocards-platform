@@ -30,7 +30,7 @@
   "dependencies": {
     "@expo/metro-runtime": "~58.0.17",
     "@expo/vector-icons": "^15.1.1",
-    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-async-storage/async-storage": "3.1.1",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "@whocards/api": "workspace:*",
