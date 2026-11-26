@@ -15,11 +15,15 @@ import * as Sharing from 'expo-sharing'
  * server error) or if the OS has no share targets available — callers surface
  * this as a graceful inline message and leave the sheet usable (issue #154).
  */
-export const downloadAndShareImage = async (url: string): Promise<void> => {
+export const downloadAndShareImage = async (
+  url: string,
+  onSheetOpening?: () => void
+): Promise<void> => {
   const canShare = await Sharing.isAvailableAsync()
   if (!canShare) throw new Error('Sharing is not available on this device')
 
   const destination = new File(Paths.cache, `share-card-${Date.now()}.png`)
   const file = await File.downloadFileAsync(url, destination)
+  onSheetOpening?.()
   await Sharing.shareAsync(file.uri, {mimeType: 'image/png', UTI: 'public.png'})
 }
