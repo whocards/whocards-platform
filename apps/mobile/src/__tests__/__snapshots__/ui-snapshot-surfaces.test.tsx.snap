@@ -687,21 +687,48 @@ exports[`Settings pages renders the Languages page 1`] = `
           | fontSize: 21
           | lineHeight: 28
           "Languages"
+    <View>
+      | alignItems: "center"
+      | paddingBottom: 7
+      | paddingInline: 17.5
+      | paddingTop: 10.5
+      <View>
+        | backgroundColor: "#dcdee9"
+        | borderRadius: 10.5
+        | flexDirection: "row"
+        | padding: 3.5
+        <View accessibilityRole="button" accessibilityLabel="Show: Language" accessibilityState={"selected":true}>
+          | alignItems: "center"
+          | backgroundColor: "#f5f5f5"
+          | borderRadius: 7
+          | elevation: 1
+          | paddingBlock: 7
+          | paddingInline: 12.25
+          | shadowColor: "#000"
+          | shadowOffset: {"height":1,"width":0}
+          | shadowOpacity: 0.12
+          | shadowRadius: 2
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 12.25
+            | fontWeight: 700
+            | lineHeight: 17.5
+            "Language"
+        <View accessibilityRole="button" accessibilityLabel="Show: Second language" accessibilityState={"selected":false}>
+          | alignItems: "center"
+          | borderRadius: 7
+          | paddingBlock: 7
+          | paddingInline: 12.25
+          <Text>
+            | color: "#111516"
+            | fontFamily: "golos-text"
+            | fontSize: 12.25
+            | lineHeight: 17.5
+            "Second language"
     <RCTScrollView>
       | maxHeight: 1067.2
       <View>
-        <Text>
-          | color: "#6b6d82"
-          | fontFamily: "golos-text"
-          | fontSize: 10.5
-          | fontWeight: 700
-          | letterSpacing: 0.26
-          | lineHeight: 14
-          | paddingBottom: 3.5
-          | paddingInline: 17.5
-          | paddingTop: 14
-          | textTransform: "uppercase"
-          "Language"
         <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"selected":true}>
           | alignItems: "center"
           | backgroundColor: "#ffe37e66"
@@ -734,65 +761,6 @@ exports[`Settings pages renders the Languages page 1`] = `
             | lineHeight: 24.5
             "Hebrew"
         <View accessibilityRole="button" accessibilityLabel="Language: Spanish" accessibilityState={"selected":false}>
-          | alignItems: "center"
-          | flexDirection: "row"
-          | justifyContent: "space-between"
-          | paddingBlock: 12.25
-          | paddingInline: 17.5
-          <Text>
-            | color: "#111516"
-            | fontFamily: "golos-text"
-            | fontSize: 15.75
-            | lineHeight: 24.5
-            "Spanish"
-        <Text>
-          | borderColor: "#dcdee9"
-          | borderTopStyle: "solid"
-          | borderTopWidth: 1
-          | color: "#6b6d82"
-          | fontFamily: "golos-text"
-          | fontSize: 10.5
-          | fontWeight: 700
-          | letterSpacing: 0.26
-          | lineHeight: 14
-          | marginTop: 7
-          | paddingBottom: 3.5
-          | paddingInline: 17.5
-          | paddingTop: 17.5
-          | textTransform: "uppercase"
-          "Second language"
-        <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"selected":false}>
-          | alignItems: "center"
-          | flexDirection: "row"
-          | justifyContent: "space-between"
-          | paddingBlock: 12.25
-          | paddingInline: 17.5
-          <Text>
-            | color: "#111516"
-            | fontFamily: "golos-text"
-            | fontSize: 15.75
-            | lineHeight: 24.5
-            "None"
-        <View accessibilityRole="button" accessibilityLabel="Second language: Hebrew" accessibilityState={"selected":true}>
-          | alignItems: "center"
-          | backgroundColor: "#ffe37e66"
-          | flexDirection: "row"
-          | justifyContent: "space-between"
-          | paddingBlock: 12.25
-          | paddingInline: 17.5
-          <Text>
-            | color: "#111516"
-            | fontFamily: "golos-text"
-            | fontSize: 15.75
-            | lineHeight: 24.5
-            "Hebrew"
-          <Text>
-            | color: "#9a3aac"
-            | fontSize: 15.75
-            | fontWeight: 700
-            | lineHeight: 24.5
-            "✓"
-        <View accessibilityRole="button" accessibilityLabel="Second language: Spanish" accessibilityState={"selected":false}>
           | alignItems: "center"
           | flexDirection: "row"
           | justifyContent: "space-between"

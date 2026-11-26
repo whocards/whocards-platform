@@ -247,6 +247,7 @@ describe('SettingsModal — in-play sheet (issue #197)', () => {
     mockedGetStoredLanguage.mockResolvedValue('en')
     await renderModal({currentLanguage: 'he'})
     await fireEvent.press(await screen.findByLabelText('Languages: Hebrew'))
+    await fireEvent.press(screen.getByLabelText('Show: Second language'))
     await screen.findByLabelText('Second language: English')
     expect(screen.queryByLabelText('Second language: Hebrew')).toBeNull()
   })
@@ -385,6 +386,7 @@ describe('SettingsModal — Languages page (issue #460)', () => {
   it('applies + persists a second language and tracks SECONDARY_LANGUAGES_CHANGED', async () => {
     await renderModal({languages: ['en', 'he']})
     await openLanguages()
+    await fireEvent.press(screen.getByLabelText('Show: Second language'))
     await fireEvent.press(screen.getByLabelText('Second language: Hebrew'))
     expect(mockedTrack).toHaveBeenCalledWith({
       name: 'secondary_languages_changed',
@@ -397,8 +399,11 @@ describe('SettingsModal — Languages page (issue #460)', () => {
   it('clears the second language when it becomes the primary, and None clears it too', async () => {
     await renderModal({languages: ['en', 'he', 'es']})
     await openLanguages()
+    await fireEvent.press(screen.getByLabelText('Show: Second language'))
     await fireEvent.press(screen.getByLabelText('Second language: Hebrew'))
+    await fireEvent.press(screen.getByLabelText('Show: Language'))
     await fireEvent.press(screen.getByLabelText('Language: Hebrew'))
+    await fireEvent.press(screen.getByLabelText('Show: Second language'))
     expect(screen.getByLabelText('Second language: None').props.accessibilityState).toEqual({
       selected: true,
     })

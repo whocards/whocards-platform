@@ -122,7 +122,7 @@ export const PickPlayer = ({
   const isDark = useIsDark()
 
   const reducer = useMemo(() => pickReducer(questionIds), [questionIds])
-  const [{nav, phase, dealt}, dispatch] = useReducer(reducer, questionIds, getInitialPick)
+  const [{nav, phase}, dispatch] = useReducer(reducer, questionIds, getInitialPick)
   const onCard = phase === 'card'
 
   const defaultLanguage = languages[0]
@@ -378,9 +378,9 @@ export const PickPlayer = ({
   }, [router, maybeRequestReview])
 
   const handleShare = useCallback(() => {
-    if (!onCard || !text) return
+    if (!text) return
     setShareModalOpen(true)
-  }, [onCard, text])
+  }, [text])
 
   const handleShareEvent = useCallback(
     (name: ShareEventName, format: ShareFormat) => {
@@ -546,7 +546,7 @@ export const PickPlayer = ({
           </View>
         </GestureDetector>
 
-        {/* bottom action bar — Share only once a card has been dealt. Exit lives
+        {/* bottom action bar — Share only while a Card is face up. Exit lives
             mid-bar now (issue #186); the top-right close chip is gone, so this bar
             is the only exit while the chrome is hidden. */}
         <Animated.View
@@ -556,7 +556,7 @@ export const PickPlayer = ({
           style={bottomChromeStyle}
         >
           <PlayerBar
-            showShare={dealt}
+            showShare={onCard}
             onPrevious={goPrevious}
             onNext={goNext}
             onShare={handleShare}

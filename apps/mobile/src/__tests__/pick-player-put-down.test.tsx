@@ -88,4 +88,11 @@ describe('PickPlayer — moving on (issue #456)', () => {
     expect(screen.queryByText(QUESTION)).toBeNull()
     expect(screen.getByLabelText('Pick a card')).toBeTruthy()
   })
+
+  it('offers Share only while a Card is face up, not back on the draw', async () => {
+    await revealCard()
+    expect(screen.getByLabelText('share question')).toBeTruthy()
+    await fireEvent.press(screen.getByLabelText('Tap for next card'))
+    expect(screen.queryByLabelText('share question')).toBeNull()
+  })
 })
