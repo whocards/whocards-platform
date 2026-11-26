@@ -77,21 +77,14 @@ export async function openQuestion(fixtures: Fixtures, q: number, {warm = false}
 export const startPlay = (screen: Screen) => tapUntil(play(screen), play(screen), 'hidden')
 
 /** The frame of the card's question: the largest text on screen (Android also lists the hidden controls' labels). */
-async function largestText(screen: Screen) {
-  const texts = await screen.getByText(/\S/).all()
-  const boxes = await Promise.all(texts.map((text) => text.boundingBox().catch(() => null)))
-  const area = (i: number) => (boxes[i] ? boxes[i].width * boxes[i].height : -1)
-  const i = boxes.reduce((best, _, j) => (area(j) > area(best) ? j : best), 0)
-  const box = boxes[i]
+async function card(screen: Screen) {
+  const boxes = await Promise.all(
+    (await screen.getByText(/\S/).all()).map((text) => text.boundingBox().catch(() => null))
+  )
+  const box = boxes.reduce((a, b) => (b && (!a || b.width * b.height > a.width * a.height) ? b : a))
   if (!box) throw new Error('e2e: no question on screen')
-  return {box, text: texts[i]}
+  return box
 }
-
-const card = async (screen: Screen) => (await largestText(screen)).box
-
-/** The question on screen, to tell one card from the next. */
-export const questionText = async (screen: Screen) =>
-  (await (await largestText(screen)).text.textContent()) ?? ''
 
 /** A tap on the card's question, which brings back the player's auto-hiding controls. */
 export async function revealControls(screen: Screen) {
