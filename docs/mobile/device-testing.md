@@ -23,6 +23,19 @@ protect local runs. Execute these commands only when explicitly ready to build.
 
 ## iOS — physical iPhone
 
+### Fastest: cabled install from this checkout
+
+Plug the iPhone in, unlock it, then:
+
+```sh
+pnpm -F mobile ios:device
+```
+
+It builds a Release app (JS embedded, no Metro, no EAS) signed with the team's
+development cert and installs it on the first cabled iPhone. `IOS_DEVICE=<udid>` picks a
+phone; `ENV=` uses the root `.env` instead of `.env.prod`. It replaces whatever WhoCards
+build is on the phone, dev client included.
+
 ### Option A: TestFlight internal testing (preferred)
 
 The app is already live. A new production build automatically lands in App Store Connect

@@ -9,6 +9,7 @@
     "android": "pnpm with-env expo start --dev-client --android",
     "android:build": "pnpm with-env expo run:android",
     "ios": "pnpm with-env expo start --dev-client --ios",
+    "ios:device": "bash scripts/install-ios-device.sh",
     "web": "pnpm with-env expo start --web",
     "typecheck": "tsc --noEmit",
     "test": "jest",
