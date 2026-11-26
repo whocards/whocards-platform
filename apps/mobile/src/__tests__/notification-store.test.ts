@@ -83,6 +83,8 @@ describe('notification permission ask', () => {
     await recordOpenAndMaybeAsk()
     expect(alert).toHaveBeenCalledTimes(1)
     expect(alert.mock.calls[0]?.[0]).toBe('Get a daily question?')
+    // Android draws an empty body for a missing message.
+    expect(alert.mock.calls[0]?.[1]).toBeTruthy()
 
     await recordOpenAndMaybeAsk()
     await recordOpenAndMaybeAsk()

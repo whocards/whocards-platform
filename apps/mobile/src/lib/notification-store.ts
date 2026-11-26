@@ -149,7 +149,7 @@ export const recordOpenAndMaybeAsk = async (): Promise<void> => {
   const {status, canAskAgain} = await Notifications.getPermissionsAsync()
   if (status === Notifications.PermissionStatus.GRANTED || !canAskAgain) return
 
-  Alert.alert('Get a daily question?', undefined, [
+  Alert.alert('Get a daily question?', 'One Question a day, at a time you pick in Settings.', [
     {text: 'Not now', style: 'cancel'},
     {text: 'Yes', onPress: () => void requestPermission().catch(() => {})},
   ])

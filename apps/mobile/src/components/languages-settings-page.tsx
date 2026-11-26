@@ -1,6 +1,8 @@
+import {useState} from 'react'
 import {Pressable, ScrollView, Text, useWindowDimensions, View} from 'react-native'
 import {getLanguageName} from '@whocards/decks'
 
+import {SegmentedControl} from '@/components/segmented-control'
 import {SettingsSheetHeader} from '@/components/settings-sheet-header'
 
 const SHEET_MAX_HEIGHT_RATIO = 0.8
@@ -35,17 +37,14 @@ const Option = ({label, a11yLabel, selected, onPress}: OptionProps) => (
   </Pressable>
 )
 
-const SectionLabel = ({children, first}: {children: string; first?: boolean}) => (
-  <Text
-    className={`text-mutedOnLight dark:text-gray-dark px-5 pb-1 font-sans text-xs font-bold uppercase tracking-wide ${
-      first ? 'pt-4' : 'border-gray-lighter dark:border-white/10 mt-2 border-t pt-5'
-    }`}
-  >
-    {children}
-  </Text>
-)
+type List = 'primary' | 'second'
 
-/** Both language pickers on one page (issue #460, layout C): the primary, then the second. */
+const LISTS = [
+  {value: 'primary', label: 'Language'},
+  {value: 'second', label: 'Second language'},
+] as const
+
+/** Both language pickers on one page (issue #460, layout C), one list at a time. */
 export const LanguagesSettingsPage = ({
   languages,
   current,
@@ -55,39 +54,46 @@ export const LanguagesSettingsPage = ({
   onBack,
 }: LanguagesSettingsPageProps) => {
   const {height: windowHeight} = useWindowDimensions()
+  const [list, setList] = useState<List>('primary')
 
   return (
     <View>
       <SettingsSheetHeader title="Languages" icon="back" onPress={onBack} />
+      <View className="items-center px-5 pb-2 pt-3">
+        <SegmentedControl label="Show" options={LISTS} current={list} onSelect={setList} />
+      </View>
       <ScrollView style={{maxHeight: windowHeight * SHEET_MAX_HEIGHT_RATIO}} bounces={false}>
-        <SectionLabel first>Language</SectionLabel>
-        {languages.map((code) => (
-          <Option
-            key={code}
-            label={name(code)}
-            a11yLabel={`Language: ${name(code)}`}
-            selected={code === current}
-            onPress={() => onSelect(code)}
-          />
-        ))}
-        <SectionLabel>Second language</SectionLabel>
-        <Option
-          label="None"
-          a11yLabel="Second language: None"
-          selected={secondary.length === 0}
-          onPress={() => onChangeSecondary([])}
-        />
-        {languages
-          .filter((code) => code !== current)
-          .map((code) => (
+        {list === 'primary' ? (
+          languages.map((code) => (
             <Option
               key={code}
               label={name(code)}
-              a11yLabel={`Second language: ${name(code)}`}
-              selected={secondary.includes(code)}
-              onPress={() => onChangeSecondary([code])}
+              a11yLabel={`Language: ${name(code)}`}
+              selected={code === current}
+              onPress={() => onSelect(code)}
             />
-          ))}
+          ))
+        ) : (
+          <>
+            <Option
+              label="None"
+              a11yLabel="Second language: None"
+              selected={secondary.length === 0}
+              onPress={() => onChangeSecondary([])}
+            />
+            {languages
+              .filter((code) => code !== current)
+              .map((code) => (
+                <Option
+                  key={code}
+                  label={name(code)}
+                  a11yLabel={`Second language: ${name(code)}`}
+                  selected={secondary.includes(code)}
+                  onPress={() => onChangeSecondary([code])}
+                />
+              ))}
+          </>
+        )}
       </ScrollView>
     </View>
   )
