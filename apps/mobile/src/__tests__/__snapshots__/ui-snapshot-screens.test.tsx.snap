@@ -265,7 +265,7 @@ exports[`Play screen renders a Question 1`] = `
           | justifyContent: "center"
           <View>
             | opacity: 1
-            | transform: [{"translateX":0}]
+            | transform: [{"perspective":1000},{"translateX":0},{"rotateY":"0deg"}]
             <Text>
               | color: "#111516"
               | fontFamily: "golos-text"
@@ -433,7 +433,7 @@ exports[`Play screen renders a Question in the Dark Theme Display setting 1`] = 
           | justifyContent: "center"
           <View>
             | opacity: 1
-            | transform: [{"translateX":0}]
+            | transform: [{"perspective":1000},{"translateX":0},{"rotateY":"0deg"}]
             <Text>
               | color: "#f5f5f5"
               | fontFamily: "golos-text"

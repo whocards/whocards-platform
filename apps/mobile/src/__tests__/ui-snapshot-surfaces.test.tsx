@@ -49,6 +49,10 @@ jest.mock('@/lib/notification-store', () => ({
   refillDailyQuestions: jest.fn(),
   setDailySetting: jest.fn(),
 }))
+jest.mock('@/lib/card-animation-store', () => ({
+  getStoredCardAnimation: jest.fn().mockResolvedValue('slide'),
+  setStoredCardAnimation: jest.fn().mockResolvedValue(undefined),
+}))
 jest.mock('@/lib/tabletop-store', () => ({
   getStoredTabletopMode: jest.fn().mockResolvedValue(false),
   setStoredTabletopMode: jest.fn().mockResolvedValue(undefined),
