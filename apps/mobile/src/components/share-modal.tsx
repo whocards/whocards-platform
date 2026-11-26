@@ -178,6 +178,14 @@ export const ShareModal = ({
       : []),
   ]
 
+  // iOS passes taps outside the OS share sheet through to our backdrop; closing this Modal under that sheet strands an empty, touch-eating screen.
+  const [osSheetOpen, setOsSheetOpen] = useState(false)
+  const close = useCallback(() => {
+    if (!osSheetOpen) onClose()
+  }, [osSheetOpen, onClose])
+  const openingOsSheet = useCallback(() => setOsSheetOpen(Platform.OS === 'ios'), [])
+  const osSheetClosed = useCallback(() => setOsSheetOpen(false), [])
+
   // Clear stale state whenever the sheet is (re)opened for a (possibly new) card.
   const [wasVisible, setWasVisible] = useState(visible)
   if (visible !== wasVisible) {
@@ -195,6 +203,7 @@ export const ShareModal = ({
     // `url` is read by iOS share sheet; `message` carries the link on Android (which
     // ignores the `url` field) and provides a fallback for any platform. Offline-safe
     // — exactly today's payload, no network involved.
+    openingOsSheet()
     Share.share({message: `${questionText}\n\n${shareUrl}`, url: shareUrl})
       .then((result) => {
         onShareEvent(EVENTS.SHARE_SHEET_OPENED, 'link')
@@ -224,13 +233,14 @@ export const ShareModal = ({
       .catch((err: unknown) => {
         logWarn('[share-modal] link share failed', err)
       })
-  }, [questionText, shareUrl, onShareEvent])
+      .finally(osSheetClosed)
+  }, [questionText, shareUrl, onShareEvent, openingOsSheet, osSheetClosed])
 
   const shareImage = useCallback(
     (format: Exclude<ShareFormat, 'link' | 'ask'>, url: string) => {
       setError(null)
       setPending(format)
-      downloadAndShareImage(url)
+      downloadAndShareImage(url, openingOsSheet)
         .then(() => {
           setPending(null)
           // expo-sharing resolves on any dismissal, so an image share never reports completion (issue #200).
@@ -251,13 +261,15 @@ export const ShareModal = ({
           setPending(null)
           setError("Couldn't load the image — check your connection and try again.")
         })
+        .finally(osSheetClosed)
     },
-    [onShareEvent]
+    [onShareEvent, openingOsSheet, osSheetClosed]
   )
 
   const sendAsk = useCallback(() => {
     if (pending) return
     const message = buildAskMessage(questionText, buildAskUrl(shareUrl, askerName))
+    openingOsSheet()
     Share.share({message})
       .then((result) => {
         // iOS reports a cancel; Android resolves as its chooser opens, so it counts there (issue #200).
@@ -267,7 +279,8 @@ export const ShareModal = ({
       .catch((err: unknown) => {
         logWarn('[share-modal] ask share failed', err)
       })
-  }, [pending, questionText, shareUrl, askerName, onShareEvent])
+      .finally(osSheetClosed)
+  }, [pending, questionText, shareUrl, askerName, onShareEvent, openingOsSheet, osSheetClosed])
 
   const handlePress = useCallback(
     (row: Row) => {
@@ -306,10 +319,10 @@ export const ShareModal = ({
             event.translationY > SWIPE_DISMISS_DISTANCE ||
             event.velocityY > SWIPE_DISMISS_VELOCITY
           ) {
-            onClose()
+            close()
           }
         }),
-    [onClose]
+    [close]
   )
 
   const {height: windowHeight} = useWindowDimensions()
@@ -320,7 +333,7 @@ export const ShareModal = ({
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={close}
       // Android only: without this, the status-bar strip isn't part of the
       // Modal's surface, so the backdrop dims everything below it but leaves
       // the status-bar area undimmed.
@@ -341,7 +354,7 @@ export const ShareModal = ({
               as the settings sheet). Tapping it dismisses; the sheet below
               swallows its own taps (see the no-op onPress) so tapping the
               sheet itself doesn't also close it. */}
-          <Pressable className="absolute inset-0" onPress={onClose} accessibilityLabel="dismiss" />
+          <Pressable className="absolute inset-0" onPress={close} accessibilityLabel="dismiss" />
           <View
             className="bg-white dark:bg-dark rounded-t-3xl"
             style={{paddingBottom: Math.max(insets.bottom, 24)}}
@@ -372,7 +385,7 @@ export const ShareModal = ({
               <Pressable onPress={() => {}} accessible={false}>
                 <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
                   <Text className="text-darker dark:text-white font-title text-2xl">Share</Text>
-                  <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
+                  <Pressable onPress={close} accessibilityLabel="close" hitSlop={12}>
                     <Ionicons name="close" size={24} color={iconColor} />
                   </Pressable>
                 </View>

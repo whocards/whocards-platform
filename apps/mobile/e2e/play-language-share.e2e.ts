@@ -7,6 +7,7 @@ import {
   closeSheet,
   launchClean,
   pickSetting,
+  questionText,
   revealControls,
   startPlay,
   swipeCard,
@@ -14,7 +15,7 @@ import {
 } from './support'
 
 test('Play in Hebrew, swipe both ways, open Settings mid-play, and share', async (fixtures) => {
-  const {screen} = fixtures
+  const {device, platform, screen} = fixtures
   await launchClean(fixtures)
   await pickSetting(screen, 'Language: English', 'Hebrew')
   await startPlay(screen)
@@ -32,4 +33,15 @@ test('Play in Hebrew, swipe both ways, open Settings mid-play, and share', async
   await revealControls(screen)
   await button(screen, 'share question').tap()
   await expect(button(screen, 'Share link')).toBeVisible()
+
+  // Dismissing the OS share sheet leaves the player live (iOS froze here: the outside tap reached our backdrop).
+  await tapUntil(button(screen, 'Share link'), button(screen, 'Share link'), 'hidden')
+  if (platform === 'ios') await screen.tapAt({x: 200, y: 150})
+  else await device.back()
+  await expect(button(screen, 'Share link')).toBeVisible()
+  await tapUntil(closeSheet(screen), closeSheet(screen), 'hidden')
+
+  const shared = await questionText(screen)
+  await swipeCard(screen, 'left')
+  await expect(screen.getByText(shared, {exact: true})).toBeHidden()
 })

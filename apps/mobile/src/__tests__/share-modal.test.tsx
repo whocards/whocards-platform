@@ -248,7 +248,10 @@ describe('ShareModal', () => {
       await fireEvent.press(screen.getByText('Story image'))
     })
 
-    expect(mockDownloadAndShareImage).toHaveBeenCalledWith(PROPS.storyImageUrl)
+    expect(mockDownloadAndShareImage).toHaveBeenCalledWith(
+      PROPS.storyImageUrl,
+      expect.any(Function)
+    )
     expect(onShareEvent).toHaveBeenCalledWith(EVENTS.SHARE_SHEET_OPENED, 'story')
     expect(onClose).not.toHaveBeenCalled()
 
@@ -258,7 +261,7 @@ describe('ShareModal', () => {
     await act(async () => {
       await fireEvent.press(screen.getByText('Post image'))
     })
-    expect(mockDownloadAndShareImage).toHaveBeenCalledWith(PROPS.postImageUrl)
+    expect(mockDownloadAndShareImage).toHaveBeenCalledWith(PROPS.postImageUrl, expect.any(Function))
     expect(onShareEvent).toHaveBeenCalledWith(EVENTS.SHARE_SHEET_OPENED, 'post')
     expect(onClose).not.toHaveBeenCalled()
   })
@@ -317,6 +320,51 @@ describe('ShareModal', () => {
     await fireEvent.press(screen.getByText('Share'))
 
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('ignores a close while the iOS share sheet is up, then closes normally once it is gone', async () => {
+    let resolveShare!: (result: {action: string}) => void
+    shareSpy.mockReturnValue(new Promise((resolve) => (resolveShare = resolve)))
+    const onClose = jest.fn()
+    await render(<ShareModal visible {...PROPS} onShareEvent={() => {}} onClose={onClose} />)
+
+    await fireEvent.press(screen.getByText('Share link'))
+    await fireEvent.press(screen.getByLabelText('dismiss'))
+    await fireEvent.press(screen.getByLabelText('close'))
+    expect(onClose).not.toHaveBeenCalled()
+
+    await act(async () => resolveShare({action: Share.dismissedAction}))
+    await fireEvent.press(screen.getByLabelText('dismiss'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores a close only once the image share sheet opens, not during the download (iOS)', async () => {
+    let openSheet!: () => void
+    mockDownloadAndShareImage.mockImplementation(
+      (_url: string, onSheetOpening: () => void) =>
+        new Promise<void>(() => (openSheet = onSheetOpening))
+    )
+    const onClose = jest.fn()
+    await render(<ShareModal visible {...PROPS} onShareEvent={() => {}} onClose={onClose} />)
+
+    await fireEvent.press(screen.getByText('Story image'))
+    await fireEvent.press(screen.getByLabelText('dismiss'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+
+    await act(async () => openSheet())
+    await fireEvent.press(screen.getByLabelText('dismiss'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('still closes while the Android chooser is up', async () => {
+    setPlatform('android')
+    shareSpy.mockReturnValue(new Promise(() => {}))
+    const onClose = jest.fn()
+    await render(<ShareModal visible {...PROPS} onShareEvent={() => {}} onClose={onClose} />)
+
+    await fireEvent.press(screen.getByText('Share link'))
+    await fireEvent.press(screen.getByLabelText('dismiss'))
+    expect(onClose).toHaveBeenCalled()
   })
 
   it('dismisses via the explicit close button', async () => {
