@@ -51,6 +51,8 @@ import {
   refillDailyQuestions,
   setDailySetting,
 } from '@/lib/notification-store'
+import {getStoredCardAnimation, setStoredCardAnimation} from '@/lib/card-animation-store'
+import type {CardAnimation} from '@/lib/card-animation-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '@/lib/tabletop-store'
 import type {ThemeSetting} from '@/lib/theme-store'
 
@@ -227,6 +229,8 @@ type SettingsModalProps = {
  * reader user should reach immediately rather than after a ~260ms rise
  * finishes.
  */
+const CARD_ANIMATION_LABEL: Record<CardAnimation, string> = {slide: 'Slide', flip: 'Flip'}
+
 export const SettingsModal = ({
   visible,
   onClose,
@@ -247,6 +251,7 @@ export const SettingsModal = ({
   const [language, setLanguage] = useState(languages[0])
   const [secondary, setSecondary] = useState<string[]>([])
   const [tabletop, setTabletop] = useState(false)
+  const [cardAnimation, setCardAnimation] = useState<CardAnimation>('slide')
   const [daily, setDaily] = useState<DailySetting>({enabled: true, hour: DAILY_HOUR})
   const [allowed, setAllowed] = useState(true)
   const [page, setPage] = useState<Page>('menu')
@@ -317,6 +322,7 @@ export const SettingsModal = ({
     mounted.current = true
     void getStoredGame().then(setGame)
     void getStoredTabletopMode().then(setTabletop)
+    void getStoredCardAnimation().then(setCardAnimation)
     void getDailySetting().then(setDaily)
     void notificationsAllowed().then(setAllowed, () => {})
     if (!currentLanguage) {
@@ -526,6 +532,26 @@ export const SettingsModal = ({
                         : colors.mutedOnLight
                   }
                 />
+              </Pressable>
+
+              {/* Card animation (issue #456, a Display setting): two options, so a tap toggles. */}
+              <Pressable
+                onPress={() => {
+                  selection()
+                  const next = cardAnimation === 'slide' ? 'flip' : 'slide'
+                  setCardAnimation(next)
+                  void setStoredCardAnimation(next)
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Card animation: ${CARD_ANIMATION_LABEL[cardAnimation]}`}
+                className="border-gray-lighter dark:border-white/10 flex-row items-center justify-between border-t px-5 py-4"
+              >
+                <Text className="text-darker dark:text-white font-sans text-lg">
+                  Card animation
+                </Text>
+                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base">
+                  {CARD_ANIMATION_LABEL[cardAnimation]}
+                </Text>
               </Pressable>
 
               {/* Appearance — how the app itself looks, never what you're playing

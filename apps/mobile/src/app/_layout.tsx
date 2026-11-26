@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {PostHogProvider} from 'posthog-react-native'
 import {useEffect} from 'react'
+import {Platform} from 'react-native'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
 import {identify} from '@whocards/observability'
 import {colors} from '@whocards/tokens'
@@ -65,6 +66,8 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: {backgroundColor: isDark ? colors.darkest : colors.canvasLight},
+          // iOS asks the native-stack screen for its bar style, whose default follows the device, not the Theme.
+          statusBarStyle: Platform.OS === 'ios' ? (isDark ? 'light' : 'dark') : undefined,
         }}
       />
     </VersionGate>
