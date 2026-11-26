@@ -62,7 +62,12 @@ export const LanguagesSettingsPage = ({
       <View className="items-center px-5 pb-2 pt-3">
         <SegmentedControl label="Show" options={LISTS} current={list} onSelect={setList} />
       </View>
-      <ScrollView style={{maxHeight: windowHeight * SHEET_MAX_HEIGHT_RATIO}} bounces={false}>
+      {/* Keyed so each list opens at the top, not at the other list's scroll. */}
+      <ScrollView
+        key={list}
+        style={{maxHeight: windowHeight * SHEET_MAX_HEIGHT_RATIO}}
+        bounces={false}
+      >
         {list === 'primary' ? (
           languages.map((code) => (
             <Option
