@@ -121,3 +121,19 @@ export async function pickSetting(screen: Screen, row: string, option: string) {
   await expect(button(screen, row)).toBeHidden()
   await closeSettings(screen)
 }
+
+/** Opens Settings from the landing, picks `to` on the Languages page, and closes it (issue #460). */
+export async function pickLanguage(screen: Screen, from: string, to: string) {
+  await openSettings(screen)
+  await tapUntil(button(screen, `Languages: ${from}`), button(screen, `Language: ${to}`))
+  await button(screen, `Language: ${to}`).tap()
+  await tapUntil(screen.getByLabel('back', {exact: true}), button(screen, `Languages: ${to}`))
+  await closeSettings(screen)
+}
+
+/** Opens Settings from the landing, taps a Theme segment, and closes it. */
+export async function pickTheme(screen: Screen, theme: string) {
+  await openSettings(screen)
+  await button(screen, `Theme: ${theme}`).tap()
+  await closeSettings(screen)
+}

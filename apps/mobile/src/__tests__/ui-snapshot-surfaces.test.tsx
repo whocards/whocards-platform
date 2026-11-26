@@ -76,12 +76,10 @@ jest.mock('@whocards/observability/events', () => {
 
 import {DailyTimeSettingsPage} from '../components/daily-time-settings-page'
 import {GameSettingsPage} from '../components/game-settings-page'
-import {LanguageSettingsPage} from '../components/language-settings-page'
+import {LanguagesSettingsPage} from '../components/languages-settings-page'
 import {PlayerBar} from '../components/player-bar'
-import {SecondLanguageSettingsPage} from '../components/second-language-settings-page'
 import {SettingsModal} from '../components/settings-modal'
 import {ShareModal} from '../components/share-modal'
-import {ThemeSettingsPage} from '../components/theme-settings-page'
 
 const noop = () => {}
 
@@ -151,37 +149,24 @@ describe('Settings pages', () => {
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders the Theme page', async () => {
-    await renderUi(<ThemeSettingsPage current="system" onSelect={noop} onBack={noop} />)
-    await screen.findByText('Theme')
-    expect(uiSnapshot(screen)).toMatchSnapshot()
-  })
-
-  it('renders the Language page', async () => {
+  it('renders the Languages page', async () => {
     await renderUi(
-      <LanguageSettingsPage languages={['en', 'he']} current="en" onSelect={noop} onBack={noop} />
+      <LanguagesSettingsPage
+        languages={['en', 'he', 'es']}
+        current="en"
+        secondary={['he']}
+        onSelect={noop}
+        onChangeSecondary={noop}
+        onBack={noop}
+      />
     )
-    await screen.findByText('Choose your language')
+    await screen.findByText('Languages')
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
   it('renders the Daily question time page', async () => {
     await renderUi(<DailyTimeSettingsPage current={18} onSelect={noop} onBack={noop} />)
     await screen.findByText('Daily question time')
-    expect(uiSnapshot(screen)).toMatchSnapshot()
-  })
-
-  it('renders the Second language page', async () => {
-    await renderUi(
-      <SecondLanguageSettingsPage
-        languages={['en', 'he', 'es']}
-        current="en"
-        secondary={['he']}
-        onChange={noop}
-        onBack={noop}
-      />
-    )
-    await screen.findByText('None')
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 })

@@ -348,9 +348,12 @@ describe('Play screen', () => {
     await settle()
     await fireEvent.press(screen.getByLabelText('open settings'))
     await fireEvent.press(
-      await screen.findByLabelText(`Language: ${getLanguageName(linked) ?? linked}`)
+      await screen.findByLabelText(`Languages: ${getLanguageName(linked) ?? linked}`)
     )
-    await fireEvent.press(await screen.findByText(getLanguageName(stored) ?? stored))
+    await fireEvent.press(
+      await screen.findByLabelText(`Language: ${getLanguageName(stored) ?? stored}`)
+    )
+    await fireEvent.press(screen.getByLabelText('back'))
     await settle()
     await fireEvent.press(screen.getByLabelText('close'))
     await settle()
