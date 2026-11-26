@@ -102,6 +102,10 @@ jest.mock('@/lib/notification-store', () => ({
   refillDailyQuestions: jest.fn().mockResolvedValue(undefined),
   setDailySetting: jest.fn().mockResolvedValue(undefined),
 }))
+jest.mock('@/lib/card-animation-store', () => ({
+  getStoredCardAnimation: jest.fn().mockResolvedValue('slide'),
+  setStoredCardAnimation: jest.fn().mockResolvedValue(undefined),
+}))
 jest.mock('@/lib/tabletop-store', () => ({
   getStoredTabletopMode: jest.fn().mockResolvedValue(false),
   setStoredTabletopMode: jest.fn().mockResolvedValue(undefined),
@@ -133,6 +137,7 @@ import {
   openNotificationSetting,
   setDailySetting,
 } from '../lib/notification-store'
+import {setStoredCardAnimation} from '../lib/card-animation-store'
 import {getStoredTabletopMode, setStoredTabletopMode} from '../lib/tabletop-store'
 
 const mockedGetStoredGame = jest.mocked(getStoredGame)
@@ -337,6 +342,16 @@ describe('SettingsModal — Send feedback (issue #455)', () => {
     expect(url.searchParams.get('about')).toBe('app-feedback')
     expect(url.searchParams.get('platform')).toBe(Platform.OS)
     openURL.mockRestore()
+  })
+})
+
+describe('SettingsModal — Card animation (issue #456)', () => {
+  it('toggles between Slide and Flip and stores the choice', async () => {
+    await renderModal()
+    await fireEvent.press(await screen.findByLabelText('Card animation: Slide'))
+    expect(setStoredCardAnimation).toHaveBeenLastCalledWith('flip')
+    await fireEvent.press(await screen.findByLabelText('Card animation: Flip'))
+    expect(setStoredCardAnimation).toHaveBeenLastCalledWith('slide')
   })
 })
 
