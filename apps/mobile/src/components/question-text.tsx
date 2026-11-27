@@ -452,6 +452,7 @@ export const QuestionText = ({
   // language change never flashes the new state before a flip/slide reaches its midpoint.
   const [displayed, setDisplayed] = useState<SplitSnapshot>(incoming)
   const displayedRef = useRef<SplitSnapshot>(incoming)
+  const pendingRef = useRef<SplitSnapshot | null>(null)
 
   // Sync immediately when navigating to a different Question (Classic Flip/Slide owns that motion).
   const isNewQuestion =
@@ -487,9 +488,39 @@ export const QuestionText = ({
 
   useEffect(() => {
     const prev = displayedRef.current
-    if (sameSnapshot(prev, incoming)) return
+
+    const snapTo = (snap: SplitSnapshot) => {
+      cancelAnimation(splitProgress)
+      cancelAnimation(resizeProgress)
+      cancelAnimation(topFlip)
+      cancelAnimation(bottomFlip)
+      cancelAnimation(topSlide)
+      cancelAnimation(bottomSlide)
+      cancelAnimation(singleSwapFlip)
+      cancelAnimation(singleSwapSlide)
+      splitProgress.set(snap.isSplit ? 1 : 0)
+      resizeProgress.set(snap.isSplit ? 1 : 0)
+      topFlip.set(0)
+      bottomFlip.set(0)
+      topSlide.set(0)
+      bottomSlide.set(0)
+      singleSwapFlip.set(0)
+      singleSwapSlide.set(0)
+      setClipMask({top: false, bottom: false})
+      setResizing(false)
+    }
+
+    if (sameSnapshot(prev, incoming)) {
+      // Switched back before the pending swap landed: cancelled callbacks never commit, so settle on what is shown.
+      if (pendingRef.current && !sameSnapshot(pendingRef.current, incoming)) {
+        pendingRef.current = null
+        snapTo(prev)
+      }
+      return
+    }
 
     const commit = (next: SplitSnapshot) => {
+      pendingRef.current = null
       displayedRef.current = next
       setDisplayed(next)
     }
@@ -502,27 +533,13 @@ export const QuestionText = ({
 
     // Different Question or Reduce Motion: snap cleanly with zero split/flip animation.
     if (navigated || dur === 0) {
-      cancelAnimation(splitProgress)
-      cancelAnimation(resizeProgress)
-      cancelAnimation(topFlip)
-      cancelAnimation(bottomFlip)
-      cancelAnimation(topSlide)
-      cancelAnimation(bottomSlide)
-      cancelAnimation(singleSwapFlip)
-      cancelAnimation(singleSwapSlide)
-      splitProgress.set(incoming.isSplit ? 1 : 0)
-      resizeProgress.set(incoming.isSplit ? 1 : 0)
-      topFlip.set(0)
-      bottomFlip.set(0)
-      topSlide.set(0)
-      bottomSlide.set(0)
-      singleSwapFlip.set(0)
-      singleSwapSlide.set(0)
-      setClipMask({top: false, bottom: false})
-      setResizing(false)
+      snapTo(incoming)
       commit(incoming)
       return
     }
+
+    // Until commit() runs, switching back to what is shown must drop this target.
+    pendingRef.current = incoming
 
     const useSlide = cardAnimation === 'slide'
 
@@ -616,6 +633,11 @@ export const QuestionText = ({
       }
 
       const half = Math.round(dur / 2)
+      // A collapse still running would otherwise land its Single commit after this swap.
+      cancelAnimation(splitProgress)
+      cancelAnimation(resizeProgress)
+      splitProgress.set(1)
+      resizeProgress.set(1)
       cancelAnimation(topFlip)
       cancelAnimation(bottomFlip)
       cancelAnimation(topSlide)

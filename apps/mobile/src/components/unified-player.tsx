@@ -722,6 +722,11 @@ export const UnifiedPlayer = ({
     [viewTracker, upcomingCycle]
   )
 
+  const releaseClassicStep = useCallback(() => {
+    setClassicPeerDir(0)
+    classicBusyRef.current = false
+  }, [])
+
   const animateClassicStep = useCallback(
     (dir: 1 | -1, withHaptic = false) => {
       if (classicBusyRef.current) return
@@ -729,9 +734,11 @@ export const UnifiedPlayer = ({
       classicBusyRef.current = true
       if (withHaptic) selection()
       setClassicPeerDir(dir)
-      const finish = () => {
+      // A deep link mid-step resets the offsets and cancels this; committing then would skip past the linked Question.
+      const finish = (finished?: boolean) => {
         'worklet'
-        runOnJS(commitClassicNav)(dir)
+        if (finished) runOnJS(commitClassicNav)(dir)
+        else runOnJS(releaseClassicStep)()
       }
       if (turnsClassic) {
         const fullDur = reduceMotion
@@ -757,7 +764,16 @@ export const UnifiedPlayer = ({
         )
       }
     },
-    [isAtFirst, turnsClassic, reduceMotion, classicFlip, classicSlideX, winWidth, commitClassicNav]
+    [
+      isAtFirst,
+      turnsClassic,
+      reduceMotion,
+      classicFlip,
+      classicSlideX,
+      winWidth,
+      commitClassicNav,
+      releaseClassicStep,
+    ]
   )
 
   // --- Pick a Card navigation (realistic deck + full slide + 4B slide-back) ---

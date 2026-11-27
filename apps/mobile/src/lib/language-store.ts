@@ -25,7 +25,7 @@ const cache: Record<string, string> = {}
 export const getStoredLanguage = async (deckSlug: string): Promise<string | undefined> => {
   if (cache[deckSlug]) return cache[deckSlug]
 
-  const stored = await AsyncStorage.getItem(storageKey(deckSlug))
+  const stored = await AsyncStorage.getItem(storageKey(deckSlug)).catch(() => null)
   if (stored) {
     cache[deckSlug] = stored
     return stored
@@ -58,7 +58,7 @@ export const getStoredSecondaryLanguages = async (deckSlug: string): Promise<str
   const cached = secondaryCache[deckSlug]
   if (cached) return cached
 
-  const stored = await AsyncStorage.getItem(secondaryKey(deckSlug))
+  const stored = await AsyncStorage.getItem(secondaryKey(deckSlug)).catch(() => null)
   if (stored) {
     try {
       const parsed: unknown = JSON.parse(stored)
