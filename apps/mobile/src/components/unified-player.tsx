@@ -942,6 +942,8 @@ export const UnifiedPlayer = ({
   )
 
   useEffect(() => {
+    // Until the bar and stage measure, bottomBarH is 0 and the overlay would aim its "?" off the bar.
+    if (!bottomBarH || !box) return
     reportPlayTargetMetrics({
       bottomBarH,
       classicQ: {
@@ -954,7 +956,7 @@ export const UnifiedPlayer = ({
       },
       deckWordmark: measuredDeckWordmark,
     })
-  }, [bottomBarH, classicQRight, classicQBottom, qMarkSize, measuredDeckWordmark])
+  }, [bottomBarH, box, classicQRight, classicQBottom, qMarkSize, measuredDeckWordmark])
 
   // Ensure Home's parting state & overlay always reset if Play unmounts via edge swipe / hardware back.
   useEffect(
@@ -1392,7 +1394,8 @@ export const UnifiedPlayer = ({
     return {transform: [{translateX: tx}, {rotate: `${rot}deg`}]}
   })
 
-  const showUnifiedMorphView = !isPick || isMorphing
+  // Both stages stay mounted in Pick a Card and swap visibility, so neither's Card texture decodes on screen.
+  const morphHidden = isPick && !isMorphing
 
   return (
     <ScreenBackground>
@@ -1414,196 +1417,210 @@ export const UnifiedPlayer = ({
         </View>
 
         {/* --- MODE 1: Classic OR Active Game-Switch Morph (one single QuestionText, zero fade!) --- */}
-        {showUnifiedMorphView ? (
-          <GestureDetector gesture={classicGesture}>
-            <View className="flex-1">
-              {/* Under-deck layers & morphing Card shell — only mounted during Game switch or Pick so Classic has zero extra layers. */}
-              {isMorphing || isPick ? (
-                <>
-                  <Animated.View
-                    pointerEvents="none"
-                    style={[
-                      {
-                        position: 'absolute',
-                        left: cardLeft,
-                        top: cardTop,
-                        width: cardWidth,
-                        height: cardHeight,
-                      },
-                      deckLayersStyle,
-                    ]}
-                  >
-                    {DECK_LAYERS.map(({rotate, translateY}) => (
-                      <View
-                        key={rotate}
-                        style={{transform: [{rotate}, {translateY}]}}
-                        className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
-                      />
-                    ))}
-                  </Animated.View>
+        <GestureDetector gesture={classicGesture}>
+          <View
+            className="flex-1"
+            pointerEvents={morphHidden ? 'none' : 'auto'}
+            accessibilityElementsHidden={morphHidden}
+            importantForAccessibility={morphHidden ? 'no-hide-descendants' : 'auto'}
+            style={morphHidden ? {opacity: 0} : undefined}
+          >
+            {/* Under-deck layers & morphing Card shell — only mounted during Game switch or Pick so Classic has zero extra layers. */}
+            {isMorphing || isPick ? (
+              <>
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    {
+                      position: 'absolute',
+                      left: cardLeft,
+                      top: cardTop,
+                      width: cardWidth,
+                      height: cardHeight,
+                    },
+                    deckLayersStyle,
+                  ]}
+                >
+                  {DECK_LAYERS.map(({rotate, translateY}) => (
+                    <View
+                      key={rotate}
+                      style={{transform: [{rotate}, {translateY}]}}
+                      className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
+                    />
+                  ))}
+                </Animated.View>
 
-                  <Animated.View
-                    pointerEvents="none"
-                    style={[
-                      {
-                        position: 'absolute',
-                        left: cardLeft,
-                        top: cardTop,
-                        width: cardWidth,
-                        height: cardHeight,
-                        overflow: 'hidden',
-                      },
-                      cardShellStyle,
-                    ]}
-                  >
-                    <View className="bg-darker absolute inset-0">
-                      <Image
-                        source={texture}
-                        resizeMode="cover"
-                        fadeDuration={0}
-                        style={[
-                          StyleSheet.absoluteFill,
-                          {width: '100%', height: '100%', opacity: 0.4},
-                        ]}
-                      />
-                    </View>
-                    <Animated.View style={[StyleSheet.absoluteFill, classicCoverStyle]}>
-                      <ScreenBackground>{null}</ScreenBackground>
-                    </Animated.View>
-                    <Animated.View
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    {
+                      position: 'absolute',
+                      left: cardLeft,
+                      top: cardTop,
+                      width: cardWidth,
+                      height: cardHeight,
+                      overflow: 'hidden',
+                    },
+                    cardShellStyle,
+                  ]}
+                >
+                  <View className="bg-darker absolute inset-0">
+                    <Image
+                      source={texture}
+                      resizeMode="cover"
+                      fadeDuration={0}
                       style={[
                         StyleSheet.absoluteFill,
-                        {borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)'},
-                        cardBorderStyle,
+                        {width: '100%', height: '100%', opacity: 0.4},
                       ]}
                     />
+                  </View>
+                  <Animated.View style={[StyleSheet.absoluteFill, classicCoverStyle]}>
+                    <ScreenBackground>{null}</ScreenBackground>
                   </Animated.View>
-                </>
-              ) : null}
-
-              {/* 2A / 2B: Quiet mid-violet vertical bar at 90° during Classic flip (outside rotateY & elevated in Z). */}
-              {classicPeerDir !== 0 && turnsClassic && !reduceMotion ? (
-                <Animated.View
-                  pointerEvents="none"
-                  className="items-center justify-center"
-                  style={[
-                    {
-                      position: 'absolute',
-                      left: winWidth / 2 - 2,
-                      top: classicCenterY - spineHeight / 2,
-                      width: 4,
-                      height: spineHeight,
-                      zIndex: 510,
-                    },
-                    classicSpineStyle,
-                  ]}
-                >
-                  <View className="bg-primary-dark/25 absolute h-full w-full rounded-full" />
-                  <View
-                    className="bg-primary-dark/55 absolute w-full rounded-full"
-                    style={{height: Math.round(spineHeight * 0.62)}}
-                  />
-                  <View
-                    className="bg-primary-dark/80 absolute w-full rounded-full"
-                    style={{height: Math.round(spineHeight * 0.28)}}
+                  <Animated.View
+                    style={[
+                      StyleSheet.absoluteFill,
+                      {borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)'},
+                      cardBorderStyle,
+                    ]}
                   />
                 </Animated.View>
-              ) : null}
+              </>
+            ) : null}
 
-              {/* ONE single active QuestionText — stays on screen through Game switch! Elevated zIndex prevents 3D rotateY from intersecting the z=0 canvas on iOS. */}
-              {languageReady ? (
-                <Animated.View
-                  pointerEvents="box-none"
-                  style={[
-                    {
-                      position: 'absolute',
-                      left: cardLeft + CARD_PADDING_X,
-                      top: cardTop + CARD_PADDING_Y,
-                      width: cardInner.width,
-                      height: cardInner.height,
-                      justifyContent: 'center',
-                      zIndex: 500,
-                    },
-                    primaryTextTransformStyle,
-                  ]}
-                >
-                  <QuestionText
-                    themedText
-                    verticalCenter
-                    questionKey={questionId}
-                    cardAnimation={cardAnimation}
-                    morphColor={morph}
-                    flipMid={flipMid}
-                    text={text}
-                    language={language}
-                    box={cardInner}
-                    secondaries={activeSecondaries}
-                    mirrored={tabletop}
-                    onContentHeight={setCurrContentH}
-                  />
-                </Animated.View>
-              ) : null}
-
-              {/* Live incoming neighbor face during Classic flip (>90°) or full slide. */}
-              {languageReady && classicPeerDir !== 0 && peerQuestionId ? (
-                <Animated.View
-                  pointerEvents="none"
-                  style={[
-                    {
-                      position: 'absolute',
-                      left: cardLeft + CARD_PADDING_X,
-                      top: cardTop + CARD_PADDING_Y,
-                      width: cardInner.width,
-                      height: cardInner.height,
-                      justifyContent: 'center',
-                      zIndex: 500,
-                    },
-                    peerTextTransformStyle,
-                  ]}
-                >
-                  <QuestionText
-                    themedText
-                    questionKey={peerQuestionId}
-                    flipMid={isSplit ? flipMid : undefined}
-                    text={textOf(peerQuestionId)}
-                    language={language}
-                    box={cardInner}
-                    secondaries={secondariesOf(peerQuestionId)}
-                    mirrored={tabletop}
-                    onContentHeight={setPeerContentH}
-                  />
-                </Animated.View>
-              ) : null}
-
-              {/* ONE continuous "?" mark gliding between Classic corner and Card corner.
-                  Always mounted so onLayout measures exact native bounds on frame 0;
-                  sharedQMarkStyle sets opacity: 0 while PlayTransitionOverlay is active. */}
-              <Animated.Text
+            {/* 2A / 2B: Quiet mid-violet vertical bar at 90° during Classic flip (outside rotateY & elevated in Z). */}
+            {classicPeerDir !== 0 && turnsClassic && !reduceMotion ? (
+              <Animated.View
                 pointerEvents="none"
-                onLayout={onQMarkLayout}
-                className="text-primary-dark font-title"
+                className="items-center justify-center"
                 style={[
                   {
                     position: 'absolute',
-                    right: cardQRight,
-                    bottom: cardQBottom,
-                    fontSize: QUESTION_MARK_SIZE,
-                    lineHeight: QUESTION_MARK_LINE_HEIGHT,
-                    zIndex: 520,
+                    left: winWidth / 2 - 2,
+                    top: classicCenterY - spineHeight / 2,
+                    width: 4,
+                    height: spineHeight,
+                    zIndex: 510,
                   },
-                  sharedQMarkStyle,
+                  classicSpineStyle,
                 ]}
               >
-                ?
-              </Animated.Text>
-            </View>
-          </GestureDetector>
-        ) : (
-          /* --- MODE 2: Pick a Card Interactive Stage (settled at morph = 1) --- */
+                <View className="bg-primary-dark/25 absolute h-full w-full rounded-full" />
+                <View
+                  className="bg-primary-dark/55 absolute w-full rounded-full"
+                  style={{height: Math.round(spineHeight * 0.62)}}
+                />
+                <View
+                  className="bg-primary-dark/80 absolute w-full rounded-full"
+                  style={{height: Math.round(spineHeight * 0.28)}}
+                />
+              </Animated.View>
+            ) : null}
+
+            {/* ONE single active QuestionText — stays on screen through Game switch! Elevated zIndex prevents 3D rotateY from intersecting the z=0 canvas on iOS. */}
+            {languageReady ? (
+              <Animated.View
+                pointerEvents="box-none"
+                style={[
+                  {
+                    position: 'absolute',
+                    left: cardLeft + CARD_PADDING_X,
+                    top: cardTop + CARD_PADDING_Y,
+                    width: cardInner.width,
+                    height: cardInner.height,
+                    justifyContent: 'center',
+                    zIndex: 500,
+                  },
+                  primaryTextTransformStyle,
+                ]}
+              >
+                <QuestionText
+                  themedText
+                  verticalCenter
+                  questionKey={questionId}
+                  cardAnimation={cardAnimation}
+                  morphColor={morph}
+                  flipMid={flipMid}
+                  text={text}
+                  language={language}
+                  box={cardInner}
+                  secondaries={activeSecondaries}
+                  mirrored={tabletop}
+                  onContentHeight={setCurrContentH}
+                />
+              </Animated.View>
+            ) : null}
+
+            {/* Live incoming neighbor face during Classic flip (>90°) or full slide. */}
+            {languageReady && classicPeerDir !== 0 && peerQuestionId ? (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  {
+                    position: 'absolute',
+                    left: cardLeft + CARD_PADDING_X,
+                    top: cardTop + CARD_PADDING_Y,
+                    width: cardInner.width,
+                    height: cardInner.height,
+                    justifyContent: 'center',
+                    zIndex: 500,
+                  },
+                  peerTextTransformStyle,
+                ]}
+              >
+                <QuestionText
+                  themedText
+                  questionKey={peerQuestionId}
+                  flipMid={isSplit ? flipMid : undefined}
+                  text={textOf(peerQuestionId)}
+                  language={language}
+                  box={cardInner}
+                  secondaries={secondariesOf(peerQuestionId)}
+                  mirrored={tabletop}
+                  onContentHeight={setPeerContentH}
+                />
+              </Animated.View>
+            ) : null}
+
+            {/* ONE continuous "?" mark gliding between Classic corner and Card corner.
+                  Always mounted so onLayout measures exact native bounds on frame 0;
+                  sharedQMarkStyle sets opacity: 0 while PlayTransitionOverlay is active. */}
+            <Animated.Text
+              pointerEvents="none"
+              onLayout={onQMarkLayout}
+              className="text-primary-dark font-title"
+              style={[
+                {
+                  position: 'absolute',
+                  right: cardQRight,
+                  bottom: cardQBottom,
+                  fontSize: QUESTION_MARK_SIZE,
+                  lineHeight: QUESTION_MARK_LINE_HEIGHT,
+                  zIndex: 520,
+                },
+                sharedQMarkStyle,
+              ]}
+            >
+              ?
+            </Animated.Text>
+          </View>
+        </GestureDetector>
+
+        {/* --- MODE 2: Pick a Card Interactive Stage (shown once morph = 1) --- */}
+        {isPick ? (
           <GestureDetector gesture={pickGesture}>
             <View
-              className="flex-1 px-8"
-              style={{paddingTop: insets.top, paddingBottom: bottomBarH}}
+              testID="pick-stage"
+              className="absolute inset-0 px-8"
+              pointerEvents={isMorphing ? 'none' : 'auto'}
+              accessibilityElementsHidden={isMorphing}
+              importantForAccessibility={isMorphing ? 'no-hide-descendants' : 'auto'}
+              style={{
+                paddingTop: insets.top,
+                paddingBottom: bottomBarH,
+                opacity: isMorphing ? 0 : 1,
+              }}
             >
               <View className="flex-1 items-center justify-center">
                 {!languageReady ? null : phase === 'card' ? (
@@ -1818,7 +1835,7 @@ export const UnifiedPlayer = ({
               </View>
             </View>
           </GestureDetector>
-        )}
+        ) : null}
 
         {/* Single mounted bottom action bar — never remounts on Game switch. */}
         <Animated.View

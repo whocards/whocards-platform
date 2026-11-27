@@ -87,7 +87,7 @@ export default function LandingScreen() {
   const isDark = resolvedScheme !== 'light'
 
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
-  // 5B Home → Play parting exit state: null at rest so snapshots stay untouched.
+  // 5B Home → Play parting exit state: null at rest.
   const [exitingTo, setExitingTo] = useState<GameId | null>(null)
   const exitProgress = useSharedValue(0)
   const exitTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
@@ -290,65 +290,74 @@ export default function LandingScreen() {
               deliberately not meant to be discoverable at all, screen reader or not. */}
           <Pressable onLongPress={toggleInternalMarker} accessible={false}>
             <Animated.View ref={logoRef} onLayout={onLogoLayout} style={logoStyle}>
-              {exitingTo === null ? (
-                <Image
-                  source={logo}
-                  contentFit="contain"
-                  accessibilityLabel="WhoCards"
-                  // explicit width AND height — native sizes a required image to its
-                  // intrinsic pixels otherwise (aspectRatio alone only works on web)
-                  style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
-                />
-              ) : exitingTo === 'pick' ? (
-                /* Full WHO?CARDS logo is carried by PlayTransitionOverlay onto CardBack. */
-                <View style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}} />
-              ) : (
-                /* 5B Classic exit/return: exact clipped gradient logo.png splits into WHO left & CARDS right while "?" flies via overlay. */
-                <View style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}>
-                  <Animated.View
-                    style={[
-                      {
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        width: WHO_CLIP_WIDTH,
-                        height: LOGO_HEIGHT,
-                        overflow: 'hidden',
-                      },
-                      whoPartStyle,
-                    ]}
-                  >
-                    <Image
-                      source={logo}
-                      contentFit="contain"
-                      style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
-                    />
-                  </Animated.View>
-                  <Animated.View
-                    style={[
-                      {
-                        position: 'absolute',
-                        left: CARDS_CLIP_LEFT,
-                        top: 0,
-                        width: CARDS_CLIP_WIDTH,
-                        height: LOGO_HEIGHT,
-                        overflow: 'hidden',
-                      },
-                      cardsPartStyle,
-                    ]}
-                  >
-                    <Image
-                      source={logo}
-                      contentFit="contain"
-                      style={{
-                        width: LOGO_WIDTH,
-                        height: LOGO_HEIGHT,
-                        marginLeft: -CARDS_CLIP_LEFT,
-                      }}
-                    />
-                  </Animated.View>
-                </View>
-              )}
+              {/* Every logo image stays mounted and swaps by opacity: a fresh expo-image decodes a frame late. */}
+              <Image
+                source={logo}
+                contentFit="contain"
+                accessibilityLabel="WhoCards"
+                // explicit width AND height — native sizes a required image to its
+                // intrinsic pixels otherwise (aspectRatio alone only works on web)
+                style={{
+                  width: LOGO_WIDTH,
+                  height: LOGO_HEIGHT,
+                  opacity: exitingTo === null ? 1 : 0,
+                }}
+              />
+              {/* Classic: the clipped halves part around the flying "?"; Pick a Card: the overlay carries it all. */}
+              <View
+                pointerEvents="none"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={{
+                  position: 'absolute',
+                  width: LOGO_WIDTH,
+                  height: LOGO_HEIGHT,
+                  opacity: exitingTo === 'wh' ? 1 : 0,
+                }}
+              >
+                <Animated.View
+                  style={[
+                    {
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      width: WHO_CLIP_WIDTH,
+                      height: LOGO_HEIGHT,
+                      overflow: 'hidden',
+                    },
+                    whoPartStyle,
+                  ]}
+                >
+                  <Image
+                    source={logo}
+                    contentFit="contain"
+                    style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
+                  />
+                </Animated.View>
+                <Animated.View
+                  style={[
+                    {
+                      position: 'absolute',
+                      left: CARDS_CLIP_LEFT,
+                      top: 0,
+                      width: CARDS_CLIP_WIDTH,
+                      height: LOGO_HEIGHT,
+                      overflow: 'hidden',
+                    },
+                    cardsPartStyle,
+                  ]}
+                >
+                  <Image
+                    source={logo}
+                    contentFit="contain"
+                    style={{
+                      width: LOGO_WIDTH,
+                      height: LOGO_HEIGHT,
+                      marginLeft: -CARDS_CLIP_LEFT,
+                    }}
+                  />
+                </Animated.View>
+              </View>
             </Animated.View>
           </Pressable>
           <Animated.Text

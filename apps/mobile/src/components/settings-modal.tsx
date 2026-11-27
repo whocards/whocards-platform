@@ -21,7 +21,6 @@ import {colors} from '@whocards/tokens'
 import {Choice} from '@/components/choice'
 import {SegmentedControl} from '@/components/segmented-control'
 import {useIsDark} from '@/lib/color-scheme'
-import {getEntitlement} from '@/lib/entitlements'
 import {buildFeedbackUrl} from '@/lib/feedback-url'
 import {getStoredGame, setStoredGame} from '@/lib/game-store'
 import {selection} from '@/lib/haptics'
@@ -157,7 +156,6 @@ export const SettingsModal = ({
   const {height: windowHeight} = useWindowDimensions()
 
   const [game, setGame] = useState<GameId>(DEFAULT_GAME)
-  const [earlyAccess, setEarlyAccess] = useState(false)
   const [language, setLanguage] = useState(languages[0])
   const [secondary, setSecondary] = useState<string[]>([])
   const [tabletop, setTabletop] = useState(false)
@@ -189,19 +187,6 @@ export const SettingsModal = ({
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckSlug, visible, currentLanguage])
-
-  // Players learn a Game is a paid feature before purchases exist (ADR-0006).
-  useEffect(() => {
-    let cancelled = false
-    const tier = GAME_CATALOG.find((entry) => entry.id === game)?.tier
-    if (!tier) return undefined
-    void getEntitlement(tier).then((entitlement) => {
-      if (!cancelled) setEarlyAccess(entitlement.granted && entitlement.reason === 'early_access')
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [game])
 
   // Coming back from the OS setting with the sheet still open: show the new permission and schedule.
   useEffect(() => {
@@ -271,7 +256,7 @@ export const SettingsModal = ({
             </Pressable>
           </View>
           <ScrollView style={{maxHeight: windowHeight * SHEET_MAX_HEIGHT_RATIO}} bounces={false}>
-            <Row label="Game" hint={earlyAccess ? 'Included in early access' : undefined}>
+            <Row label="Game">
               <Choice
                 label="Game"
                 options={GAME_OPTIONS}
@@ -320,10 +305,7 @@ export const SettingsModal = ({
                 }}
               />
             </Row>
-            <Row
-              label="Tabletop mode"
-              hint="Mirror the Question so both sides of the table can read it."
-            >
+            <Row label="Tabletop mode" hint="Readable from both sides of the table">
               <Toggle
                 label="Tabletop mode"
                 value={tabletop}

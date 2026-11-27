@@ -1,5 +1,5 @@
 import React from 'react'
-import {fireEvent, render, screen} from '@testing-library/react-native'
+import {fireEvent, render, screen, within} from '@testing-library/react-native'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
 
 jest.setTimeout(20_000)
@@ -71,12 +71,16 @@ const hiddenFromA11y = (node: Node) => {
 describe('PickPlayer — Tabletop mode (issue #170)', () => {
   it('renders the revealed question once when Tabletop is off', async () => {
     await revealCard(false)
-    expect(screen.getAllByText(QUESTION, {includeHiddenElements: true})).toHaveLength(1)
+    const stage = within(screen.getByTestId('pick-stage'))
+    expect(stage.getAllByText(QUESTION, {includeHiddenElements: true})).toHaveLength(1)
   })
 
   it('mirrors the revealed question with the rotated copy hidden from screen readers', async () => {
     await revealCard(true)
-    const copies = screen.getAllByText(QUESTION, {includeHiddenElements: true})
+    // Only the Pick a Card stage: the Classic stage stays mounted, hidden, for the Game switch.
+    const copies = within(screen.getByTestId('pick-stage')).getAllByText(QUESTION, {
+      includeHiddenElements: true,
+    })
     expect(copies).toHaveLength(2)
     expect(copies.filter((node) => hiddenFromA11y(node))).toHaveLength(1)
     expect(screen.getAllByText(QUESTION)).toHaveLength(1)

@@ -434,7 +434,7 @@ exports[`Settings sheet renders the menu 1`] = `
                 | fontFamily: "golos-text"
                 | fontSize: 12.25
                 | lineHeight: 17.5
-                "Mirror the Question so both sides of the table can read it."
+                "Readable from both sides of the table"
             <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
           <View>
             | alignItems: "center"
@@ -745,7 +745,7 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                 | fontFamily: "golos-text"
                 | fontSize: 12.25
                 | lineHeight: 17.5
-                "Mirror the Question so both sides of the table can read it."
+                "Readable from both sides of the table"
             <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
           <View>
             | alignItems: "center"

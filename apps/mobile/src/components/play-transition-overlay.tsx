@@ -1,5 +1,5 @@
 import {Image} from 'expo-image'
-import {useEffect, useState} from 'react'
+import {useEffect, useMemo, useState} from 'react'
 import {StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import Animated, {
   interpolate,
@@ -48,24 +48,29 @@ const CARDBACK_WORDMARK_FONT = 26
 export const PlayTransitionOverlay = () => {
   const [event, setEvent] = useState<PlayTransitionEvent | null>(null)
   const [metrics, setMetrics] = useState<PlayTargetMetrics>(() => getPlayTargetMetrics())
-  const reduceMotion = useReducedMotion()
-  const {width: winWidth, height: winHeight} = useWindowDimensions()
-  const insets = useSafeAreaInsets()
-  // progress: 0 = Home position, 1 = Play position (0→1 on enter, 1→0 on exit).
-  const progress = useSharedValue(0)
 
   useEffect(() => subscribePlayTransition(setEvent), [])
   useEffect(() => subscribePlayTargetMetrics(setMetrics), [])
 
+  // Keyed per flight: Reanimated paints a newly mounted view with its hook's first-render style,
+  // so each flight's hooks must be born with that flight's own start pose.
+  return event ? <Flight key={event.id} event={event} metrics={metrics} /> : null
+}
+
+const Flight = ({event, metrics}: {event: PlayTransitionEvent; metrics: PlayTargetMetrics}) => {
+  const reduceMotion = useReducedMotion()
+  const {width: winWidth, height: winHeight} = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+  // progress: 0 = Home position, 1 = Play position (0→1 on enter, 1→0 on exit).
+  const progress = useSharedValue(event.direction === 'exit' ? 1 : 0)
+
   useEffect(() => {
-    if (!event) return
     const dur = motionDuration(MOTION_DURATION.homeToPlay, reduceMotion)
     if (dur === 0) {
       clearPlayTransition(event.id)
       return
     }
     const isExit = event.direction === 'exit'
-    progress.set(isExit ? 1 : 0)
     const eventId = event.id
     progress.set(
       withTiming(isExit ? 0 : 1, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
@@ -77,7 +82,7 @@ export const PlayTransitionOverlay = () => {
 
   // Target coordinates matching UnifiedPlayer's exact measured layout (updates live if
   // UnifiedPlayer mounts mid-flight on the very first launch).
-  const barH = event?.bottomBarH ?? metrics.bottomBarH ?? 74 + Math.max(insets.bottom, 10)
+  const barH = event.bottomBarH ?? metrics.bottomBarH ?? 74 + Math.max(insets.bottom, 10)
   const measuredW = winWidth - 64
   const measuredH = winHeight - insets.top - barH
   const cardWidth = Math.round(
@@ -87,24 +92,47 @@ export const PlayTransitionOverlay = () => {
   const cardLeft = (winWidth - cardWidth) / 2
   const cardTop = insets.top + (measuredH - cardHeight - HINT_SPACE - HINT_GAP) / 2
 
-  const rect = event?.logoRect ?? {x: 0, y: 0, width: 280, height: 53}
+  const rect = event.logoRect ?? {x: 0, y: 0, width: 280, height: 53}
 
   // "?" endpoint anchored to the EXACT right/bottom edge of UnifiedPlayer's corner "?".
   // On enter, refine live with metrics.classicQ as soon as UnifiedPlayer lays out.
   const qAnchor =
-    event?.direction === 'exit' ? event.playQAnchor : (metrics.classicQ ?? event?.playQAnchor)
-  const playQRight = qAnchor?.right ?? 28
-  const playQBottom = qAnchor?.bottom ?? barH + 20
+    event.direction === 'exit' ? event.playQAnchor : (metrics.classicQ ?? event.playQAnchor)
+  // Layout keeps the anchor known at takeoff; a later refinement moves only the transform, so
+  // layout and the (frame-later) transform can never disagree mid-flight.
+  const takeoff = useMemo(
+    () => ({
+      q:
+        event.direction === 'exit'
+          ? event.playQAnchor
+          : (getPlayTargetMetrics().classicQ ?? event.playQAnchor),
+      deck:
+        event.direction === 'exit'
+          ? (event.deckWordmark ?? getPlayTargetMetrics().deckWordmark)
+          : (getPlayTargetMetrics().deckWordmark ?? event.deckWordmark),
+    }),
+    [event]
+  )
+  const qBox = (anchor: typeof qAnchor) => {
+    const right = anchor?.right ?? 28
+    const bottom = anchor?.bottom ?? barH + 20
+    const width = anchor?.width ?? 28
+    const height = anchor?.height ?? QUESTION_MARK_LINE_HEIGHT
+    return {
+      right,
+      bottom,
+      centerX: winWidth - right - width * 0.5,
+      centerY: winHeight - bottom - height * 0.5,
+    }
+  }
+  const layoutQ = qBox(takeoff.q)
+  const liveQ = qBox(qAnchor)
   const playQOpacity = qAnchor?.opacity ?? 0.28
   const playQScale = qAnchor?.scale ?? 1.08
-  const playQWidth = qAnchor?.width ?? 28
-  const playQHeight = qAnchor?.height ?? QUESTION_MARK_LINE_HEIGHT
 
   // Home "?" center vs Play "?" center.
   const homeQCenterX = rect.x + rect.width * LOGO_QMARK_X_RATIO
   const homeQCenterY = rect.y + rect.height * 0.5
-  const playQCenterX = winWidth - playQRight - playQWidth * 0.5
-  const playQCenterY = winHeight - playQBottom - playQHeight * 0.5
 
   const qMarkStyle = useAnimatedStyle(() => {
     const t = progress.get()
@@ -112,8 +140,22 @@ export const PlayTransitionOverlay = () => {
       color: interpolateColor(t, [0, 0.75], [LOGO_QMARK_COLOR, colors.primary.dark]),
       opacity: interpolate(t, [0, 1], [1, playQOpacity], 'clamp'),
       transform: [
-        {translateX: interpolate(t, [0, 1], [homeQCenterX - playQCenterX, 0], 'clamp')},
-        {translateY: interpolate(t, [0, 1], [homeQCenterY - playQCenterY, 0], 'clamp')},
+        {
+          translateX: interpolate(
+            t,
+            [0, 1],
+            [homeQCenterX - layoutQ.centerX, liveQ.centerX - layoutQ.centerX],
+            'clamp'
+          ),
+        },
+        {
+          translateY: interpolate(
+            t,
+            [0, 1],
+            [homeQCenterY - layoutQ.centerY, liveQ.centerY - layoutQ.centerY],
+            'clamp'
+          ),
+        },
         {scale: interpolate(t, [0, 1], [rect.height / QUESTION_MARK_SIZE, playQScale], 'clamp')},
       ],
     }
@@ -123,18 +165,33 @@ export const PlayTransitionOverlay = () => {
   // Render the target wordmark at its real native 26pt size landing at scale = 1.000 so the
   // handoff to CardBack is bit-for-bit identical (0.0px shift, zero font-hinting jump).
   const deckWordmark =
-    event?.direction === 'exit'
+    event.direction === 'exit'
       ? (event.deckWordmark ?? metrics.deckWordmark)
-      : (metrics.deckWordmark ?? event?.deckWordmark)
-  const wordmarkW = deckWordmark?.width ?? CARDBACK_WORDMARK_FONT * 4.55
-  const wordmarkH = deckWordmark?.height ?? CARDBACK_WORDMARK_FONT * 1.15
-  const wordmarkX = deckWordmark?.x ?? cardLeft + cardWidth - 1 - 20 - wordmarkW
-  const wordmarkY = deckWordmark?.y ?? cardTop + cardHeight - 1 - 20 - wordmarkH
+      : (metrics.deckWordmark ?? event.deckWordmark)
+  const wordmarkBox = (mark: typeof deckWordmark) => {
+    const width = mark?.width ?? CARDBACK_WORDMARK_FONT * 4.55
+    const height = mark?.height ?? CARDBACK_WORDMARK_FONT * 1.15
+    return {
+      width,
+      height,
+      x: mark?.x ?? cardLeft + cardWidth - 1 - 20 - width,
+      y: mark?.y ?? cardTop + cardHeight - 1 - 20 - height,
+    }
+  }
+  const layoutMark = wordmarkBox(takeoff.deck)
+  const {
+    width: wordmarkW,
+    height: wordmarkH,
+    x: wordmarkX,
+    y: wordmarkY,
+  } = wordmarkBox(deckWordmark)
 
   const startLogoCX = rect.x + rect.width / 2
   const startLogoCY = rect.y + rect.height / 2
   const endLogoCX = wordmarkX + wordmarkW / 2
   const endLogoCY = wordmarkY + wordmarkH / 2
+  const layoutMarkCX = layoutMark.x + layoutMark.width / 2
+  const layoutMarkCY = layoutMark.y + layoutMark.height / 2
   const gradientEndScale = wordmarkW / Math.max(1, rect.width)
   const wordmarkStartScale = rect.width / Math.max(1, wordmarkW)
 
@@ -158,14 +215,26 @@ export const PlayTransitionOverlay = () => {
     return {
       opacity: interpolate(t, [0.08, 0.42], [0, 1], 'clamp'),
       transform: [
-        {translateX: interpolate(t, [0, 1], [startLogoCX - endLogoCX, 0], 'clamp')},
-        {translateY: interpolate(t, [0, 1], [startLogoCY - endLogoCY, 0], 'clamp')},
+        {
+          translateX: interpolate(
+            t,
+            [0, 1],
+            [startLogoCX - layoutMarkCX, endLogoCX - layoutMarkCX],
+            'clamp'
+          ),
+        },
+        {
+          translateY: interpolate(
+            t,
+            [0, 1],
+            [startLogoCY - layoutMarkCY, endLogoCY - layoutMarkCY],
+            'clamp'
+          ),
+        },
         {scale: interpolate(t, [0, 1], [wordmarkStartScale, 1], 'clamp')},
       ],
     }
   })
-
-  if (!event) return null
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -175,10 +244,10 @@ export const PlayTransitionOverlay = () => {
             style={[
               {
                 position: 'absolute',
-                left: wordmarkX,
-                top: wordmarkY,
-                width: wordmarkW,
-                height: wordmarkH,
+                left: layoutMark.x,
+                top: layoutMark.y,
+                width: layoutMark.width,
+                height: layoutMark.height,
                 alignItems: 'center',
                 justifyContent: 'center',
                 overflow: 'visible',
@@ -216,8 +285,8 @@ export const PlayTransitionOverlay = () => {
           style={[
             {
               position: 'absolute',
-              right: playQRight,
-              bottom: playQBottom,
+              right: layoutQ.right,
+              bottom: layoutQ.bottom,
               fontSize: QUESTION_MARK_SIZE,
               lineHeight: QUESTION_MARK_LINE_HEIGHT,
             },

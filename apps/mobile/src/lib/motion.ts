@@ -27,6 +27,8 @@ export const MOTION_DURATION = {
   fade: 200,
   /** Home → Play parting WHO|CARDS transition. */
   homeToPlay: 480,
+  /** Theme (Light / Dark) crossfade over the whole window, open sheet included. */
+  theme: 500,
 } as const
 
 export const MOTION_EASING = {

@@ -173,12 +173,6 @@ describe('SettingsModal — Game', () => {
     await renderModal({currentGame: 'wh'})
     await waitFor(() => expect(selected('Game: Classic')).toBe(true))
   })
-
-  it('says a paid Game is included in early access (ADR-0006)', async () => {
-    mockedGetStoredGame.mockResolvedValue('pick')
-    await renderModal()
-    expect(await screen.findByText('Included in early access')).toBeTruthy()
-  })
 })
 
 describe('SettingsModal — languages, one picker each', () => {
