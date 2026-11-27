@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from 'react'
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react'
 import {Text, View} from 'react-native'
 import type {SharedValue} from 'react-native-reanimated'
 import Animated, {
@@ -15,6 +15,7 @@ import Animated, {
 import {getDirection} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
 
+import type {CardAnimation} from '@/lib/card-animation-store'
 import {useIsDark} from '@/lib/color-scheme'
 import {MOTION_DURATION, MOTION_EASING, motionDuration} from '@/lib/motion'
 
@@ -187,6 +188,11 @@ type QuestionTextProps = {
    */
   questionKey?: string
   /**
+   * Active Card animation setting (`'slide'` | `'flip'`): determines whether in-place
+   * language & Tabletop swaps slide into/out of the divider or flip via rotateX/rotateY.
+   */
+  cardAnimation?: CardAnimation
+  /**
    * Secondary display language rendered in the unified 50/50 split layout.
    */
   secondaries?: LanguageText[]
@@ -211,9 +217,22 @@ type QuestionTextProps = {
    * split divider is visible, shrinks it horizontally into the quiet vertical mid-flip bar.
    */
   flipMid?: SharedValue<number>
-  /** Reports the rendered content height so Classic's 1-language flip spine matches the text. */
+  /** Reports the rendered Single-language content height so Classic centers & aligns its flip spine. */
   onContentHeight?: (height: number) => void
+  /**
+   * Called synchronously in the same React batch when QuestionText switches between
+   * Single and Split layout so parent containers (Classic centering) stay 0px locked.
+   */
+  onSplitRendered?: (split: boolean) => void
+  /**
+   * True when Single-language text is vertically centered inside `box` (Classic play);
+   * false when Single-language text is top-aligned inside `box` (Pick a Card).
+   */
+  verticalCenter?: boolean
 }
+
+/** Closed-form cubic in-out matching `MOTION_EASING.standard` (`Easing.inOut(Easing.cubic)`). */
+const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
 
 /** One language's text block with the right script font, bidi direction, and alignment. */
 const LanguageBlock = ({
@@ -282,6 +301,8 @@ type QuestionFaceProps = {
   compact?: boolean
   themedText?: boolean
   morphColor?: SharedValue<number>
+  /** Live font size override during Single ↔ Split transition so Yoga reflows lines cleanly. */
+  fontSizeOverride?: number
 }
 
 /** One language sized to fill `box`. Shared by single-language and split halves. */
@@ -292,6 +313,7 @@ const QuestionFace = ({
   compact = false,
   themedText,
   morphColor,
+  fontSizeOverride,
 }: QuestionFaceProps) => {
   const {fontSize, maxFontSizeMultiplier} = useMemo(
     () => fitStack({text, secondaries: [], width: box.width, height: box.height, compact}),
@@ -301,7 +323,7 @@ const QuestionFace = ({
     <LanguageBlock
       text={text}
       language={language}
-      fontSize={fontSize}
+      fontSize={fontSizeOverride ?? fontSize}
       maxFontSizeMultiplier={maxFontSizeMultiplier}
       themedText={themedText}
       morphColor={morphColor}
@@ -376,34 +398,37 @@ const sameSnapshot = (a: SplitSnapshot, b: SplitSnapshot) =>
   a.mirrored === b.mirrored &&
   a.isSplit === b.isSplit
 
+type ClipMask = {top: boolean; bottom: boolean}
+
 /**
  * The question face: single language fills its box; with a second language or
  * Tabletop mode, the box splits evenly around the violet divider with exact
  * symmetric spacing above and below the bar.
  *
- * Minimum-movement transitions across all 4 states (1-lang, 1-lang Tabletop,
- * 2-lang upright, 2-lang Tabletop):
- * - Entering split from 1 language: the existing primary stays visible and gently
- *   settles into its half (unclipped) while ONLY the new half slides cleanly out
- *   from behind the seam and the divider draws in once clear.
- * - Leaving split back to 1 language: the departing half tucks back behind the seam,
- *   the divider retracts, and primary glides back to center.
- * - Changing settings while already split (Tabletop on/off, adding/removing 2nd lang
- *   in Tabletop, switching primary or secondary language): any unchanged half stays
- *   0px still; ONLY the half(ves) whose content/orientation changed do a quiet rotateX
- *   flip, swapping at 90° edge-on with zero frame-0 flash or teleport.
+ * Transitions across all 4 states (1-lang, 1-lang Tabletop, 2-lang upright, 2-lang Tabletop)
+ * + primary language changes:
+ * - Single ↔ Split: the primary smoothly scales & glides between single-language size/center
+ *   and its split half (left/RTL-edge locked, zero hard size jump!), while ONLY the emerging /
+ *   departing half slides cleanly out from / into the seam (full halfHeight tuck, zero overlap).
+ * - Split ↔ Split & language changes: any unchanged half stays 0px still; ONLY the changed
+ *   half(ves) animate using the user's `Card animation` setting:
+ *   - `'slide'`: outgoing tucks cleanly into the divider, swaps behind it, incoming slides back out.
+ *   - `'flip'`: quiet `rotateX` (split) / `rotateY` (single-lang) flip swapping at 90° edge-on.
  */
 export const QuestionText = ({
   text,
   language,
   box,
   questionKey,
+  cardAnimation = 'slide',
   secondaries = [],
   mirrored = false,
   themedText = false,
   morphColor,
   flipMid,
   onContentHeight,
+  onSplitRendered,
+  verticalCenter = false,
 }: QuestionTextProps) => {
   const reduceMotion = useReducedMotion()
   const shown = secondaries.filter((entry) => entry.text)
@@ -424,9 +449,23 @@ export const QuestionText = ({
   )
 
   // `displayed` holds the currently rendered layout/content so frame 0 of a Tabletop or
-  // language change never flashes the new state before a flip reaches 90° or a collapse finishes.
+  // language change never flashes the new state before a flip/slide reaches its midpoint.
   const [displayed, setDisplayed] = useState<SplitSnapshot>(incoming)
   const displayedRef = useRef<SplitSnapshot>(incoming)
+  const onSplitRenderedRef = useRef(onSplitRendered)
+  const [singleMeasured, setSingleMeasured] = useState<{key: string; height: number}>({
+    key: '',
+    height: 0,
+  })
+
+  // Keep callback ref fresh and sync initial rendered split state before first paint.
+  useLayoutEffect(() => {
+    onSplitRenderedRef.current = onSplitRendered
+  }, [onSplitRendered])
+
+  useLayoutEffect(() => {
+    onSplitRenderedRef.current?.(displayedRef.current.isSplit)
+  }, [])
 
   // Sync immediately when navigating to a different Question (Classic Flip/Slide owns that motion).
   const isNewQuestion =
@@ -436,20 +475,72 @@ export const QuestionText = ({
 
   const activeSnap = isNewQuestion ? incoming : displayed
 
-  // Only clip the emerging/departing half during S1 ↔ split slide animations so primary
-  // text and rotateX flips never get clipped by half-box bounds.
-  const [clipSide, setClipSide] = useState<'none' | 'top' | 'bottom'>('none')
+  // Active clipping mask: enabled ONLY on halves currently sliding behind the divider so
+  // resting text, resizing primary, and 3D flips never get clipped by half-box bounds.
+  const [clipMask, setClipMask] = useState<ClipMask>({top: false, bottom: false})
+  // Live Yoga-laid-out fontSize during Single ↔ Split transitions (null at rest!).
+  const [livePrimaryFont, setLivePrimaryFont] = useState<number | null>(null)
+  const fontTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fontRafRef = useRef<number | null>(null)
 
-  // 0 = collapsed behind seam, 1 = full resting split.
+  const stopFontAnim = useCallback(() => {
+    if (fontTimerRef.current !== null) {
+      clearTimeout(fontTimerRef.current)
+      fontTimerRef.current = null
+    }
+    if (fontRafRef.current !== null) {
+      cancelAnimationFrame(fontRafRef.current)
+      fontRafRef.current = null
+    }
+  }, [])
+
+  useEffect(() => () => stopFontAnim(), [stopFontAnim])
+
+  // 0 = collapsed behind seam (single-lang pose), 1 = full resting split.
   const splitProgress = useSharedValue(activeSnap.isSplit ? 1 : 0)
-  // Which half is the emerging/departing one during S1 ↔ split:
-  // +1 = bottom emerges (S1 ↔ 2-lang upright: top primary stays anchored)
-  // -1 = top emerges (S1 ↔ Tabletop: bottom upright primary stays anchored)
-  const emergingSide = useSharedValue<number>(activeSnap.mirrored ? -1 : 1)
-  // Quiet rotateX flips (0 = face-on, ±1 = ±90° edge-on) independently per half so an
-  // unchanged half stays 100% still.
+
+  // Per-half in-place swap progress (0 = rest, ±1 = 90° edge-on for flip OR tucked behind divider for slide).
   const topFlip = useSharedValue(0)
   const bottomFlip = useSharedValue(0)
+  const topSlide = useSharedValue(0)
+  const bottomSlide = useSharedValue(0)
+
+  // Single-language primary-language swap (when 1 language changes e.g. EN → ES).
+  const singleSwapFlip = useSharedValue(0)
+  const singleSwapSlide = useSharedValue(0)
+
+  const halfHeight = Math.max(0, (box.height - MIRROR_GAP) / 2)
+  const halfBox = useMemo(() => ({width: box.width, height: halfHeight}), [box.width, halfHeight])
+
+  const startFontAnim = useCallback(
+    (fromSize: number, toSize: number, delayMs: number, durMs: number) => {
+      stopFontAnim()
+      setLivePrimaryFont(fromSize)
+      if (Math.abs(toSize - fromSize) < 0.25 || durMs <= 0) return
+      let lastQuant = fromSize
+      fontTimerRef.current = setTimeout(() => {
+        fontTimerRef.current = null
+        const started = performance.now()
+        const tick = () => {
+          const raw = Math.min(1, (performance.now() - started) / durMs)
+          const eased = easeInOutCubic(raw)
+          const next = Math.round((fromSize + (toSize - fromSize) * eased) * 2) / 2
+          if (next !== lastQuant) {
+            lastQuant = next
+            setLivePrimaryFont(next)
+          }
+          if (raw < 1) {
+            fontRafRef.current = requestAnimationFrame(tick)
+          } else {
+            fontRafRef.current = null
+            setLivePrimaryFont(toSize)
+          }
+        }
+        fontRafRef.current = requestAnimationFrame(tick)
+      }, delayMs)
+    },
+    [stopFontAnim]
+  )
 
   useEffect(() => {
     const prev = displayedRef.current
@@ -458,6 +549,7 @@ export const QuestionText = ({
     const commit = (next: SplitSnapshot) => {
       displayedRef.current = next
       setDisplayed(next)
+      onSplitRenderedRef.current?.(next.isSplit)
     }
 
     const dur = motionDuration(MOTION_DURATION.layoutSplit, reduceMotion)
@@ -468,39 +560,71 @@ export const QuestionText = ({
 
     // Different Question or Reduce Motion: snap cleanly with zero split/flip animation.
     if (navigated || dur === 0) {
+      stopFontAnim()
       cancelAnimation(splitProgress)
       cancelAnimation(topFlip)
       cancelAnimation(bottomFlip)
+      cancelAnimation(topSlide)
+      cancelAnimation(bottomSlide)
+      cancelAnimation(singleSwapFlip)
+      cancelAnimation(singleSwapSlide)
       splitProgress.set(incoming.isSplit ? 1 : 0)
-      emergingSide.set(incoming.mirrored ? -1 : 1)
       topFlip.set(0)
       bottomFlip.set(0)
-      setClipSide('none')
+      topSlide.set(0)
+      bottomSlide.set(0)
+      singleSwapFlip.set(0)
+      singleSwapSlide.set(0)
+      setClipMask({top: false, bottom: false})
+      setLivePrimaryFont(null)
       commit(incoming)
       return
     }
 
     const delay = motionDuration(SHEET_REVEAL_DELAY_MS, reduceMotion)
+    const useSlide = cardAnimation === 'slide'
 
     // Case 1: Single → Split (S1 → S2 / S3 / S4)
-    // Existing primary stays unclipped and settles gently into its half while ONLY the new
-    // half slides out from behind the seam.
+    // Primary smoothly animates its Yoga-laid-out fontSize & glides from exact single-lang pose
+    // into its half while ONLY the emerging half slides cleanly out from behind the seam.
     if (!prev.isSplit && incoming.isSplit) {
       cancelAnimation(splitProgress)
       cancelAnimation(topFlip)
       cancelAnimation(bottomFlip)
+      cancelAnimation(topSlide)
+      cancelAnimation(bottomSlide)
       topFlip.set(0)
       bottomFlip.set(0)
-      emergingSide.set(incoming.mirrored ? -1 : 1)
-      setClipSide(incoming.mirrored ? 'top' : 'bottom')
+      topSlide.set(0)
+      bottomSlide.set(0)
+      const fromSize = fitStack({
+        text: incoming.text,
+        secondaries: [],
+        width: box.width,
+        height: box.height,
+      }).fontSize
+      const toSize = fitStack({
+        text: incoming.text,
+        secondaries: [],
+        width: halfBox.width,
+        height: halfBox.height,
+        compact: true,
+      }).fontSize
+      setClipMask({top: incoming.mirrored, bottom: !incoming.mirrored})
+      startFontAnim(fromSize, toSize, delay, dur)
       splitProgress.set(0)
       commit(incoming)
+      const finishEnter = () => {
+        stopFontAnim()
+        setClipMask({top: false, bottom: false})
+        setLivePrimaryFont(null)
+      }
       splitProgress.set(
         withDelay(
           delay,
           withTiming(1, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
             'worklet'
-            if (finished) runOnJS(setClipSide)('none')
+            if (finished) runOnJS(finishEnter)()
           })
         )
       )
@@ -508,33 +632,54 @@ export const QuestionText = ({
     }
 
     // Case 2: Split → Single (S2 / S3 / S4 → S1)
-    // Keep the departing split mounted while the leaving half tucks cleanly back behind primary.
+    // Leaving half tucks cleanly back behind the seam while primary smoothly grows its fontSize
+    // & glides back to exact single-lang pose, then hands off to S1 with 0px jump!
     if (prev.isSplit && !incoming.isSplit) {
       cancelAnimation(splitProgress)
       cancelAnimation(topFlip)
       cancelAnimation(bottomFlip)
+      cancelAnimation(topSlide)
+      cancelAnimation(bottomSlide)
       topFlip.set(0)
       bottomFlip.set(0)
-      emergingSide.set(prev.mirrored ? -1 : 1)
-      setClipSide(prev.mirrored ? 'top' : 'bottom')
+      topSlide.set(0)
+      bottomSlide.set(0)
+      const fromSize = fitStack({
+        text: prev.text,
+        secondaries: [],
+        width: halfBox.width,
+        height: halfBox.height,
+        compact: true,
+      }).fontSize
+      const toSize = fitStack({
+        text: prev.text,
+        secondaries: [],
+        width: box.width,
+        height: box.height,
+      }).fontSize
+      setClipMask({top: prev.mirrored, bottom: !prev.mirrored})
+      startFontAnim(fromSize, toSize, delay, dur)
       splitProgress.set(1)
+      const finishCollapse = () => {
+        stopFontAnim()
+        setClipMask({top: false, bottom: false})
+        setLivePrimaryFont(null)
+        commit(incoming)
+      }
       splitProgress.set(
         withDelay(
           delay,
           withTiming(0, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
             'worklet'
-            if (finished) {
-              runOnJS(setClipSide)('none')
-              runOnJS(commit)(incoming)
-            }
+            if (finished) runOnJS(finishCollapse)()
           })
         )
       )
       return
     }
 
-    // Case 3: Split → Split (S2 ↔ S4, S3 ↔ S4, or language change while split)
-    // Keep any unchanged half 100% still; flip ONLY the half(ves) whose text/orientation changed!
+    // Case 3: Split → Split (S2 ↔ S4, S3 ↔ S4, or primary/secondary language change while split)
+    // Keep any unchanged half 100% still; animate ONLY the changed half(ves) using Slide or Flip!
     if (prev.isSplit && incoming.isSplit) {
       const prevH = halvesOf(prev)
       const nextH = halvesOf(incoming)
@@ -551,97 +696,269 @@ export const QuestionText = ({
       }
 
       const half = Math.round(dur / 2)
-      const swap = () => {
-        commit(incoming)
-        if (topChanged) {
-          topFlip.set(-1)
-          topFlip.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
-        }
-        if (bottomChanged) {
-          bottomFlip.set(-1)
-          bottomFlip.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
-        }
-      }
-
       cancelAnimation(topFlip)
       cancelAnimation(bottomFlip)
-      if (topChanged) {
-        topFlip.set(0)
-        topFlip.set(
-          withDelay(
-            delay,
-            withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
-              'worklet'
-              if (finished) runOnJS(swap)()
-            })
+      cancelAnimation(topSlide)
+      cancelAnimation(bottomSlide)
+      topFlip.set(0)
+      bottomFlip.set(0)
+      topSlide.set(0)
+      bottomSlide.set(0)
+
+      if (useSlide) {
+        // Slide mode: changed half(ves) tuck cleanly into the divider, swap behind it, and
+        // slide cleanly back out from the divider!
+        setClipMask({top: topChanged, bottom: bottomChanged})
+        const clearMask = () => setClipMask({top: false, bottom: false})
+        const swapSlide = () => {
+          commit(incoming)
+          if (topChanged) {
+            topSlide.set(1)
+            topSlide.set(
+              withTiming(0, {duration: half, easing: MOTION_EASING.enter}, (finished) => {
+                'worklet'
+                if (finished) runOnJS(clearMask)()
+              })
+            )
+          }
+          if (bottomChanged) {
+            bottomSlide.set(1)
+            bottomSlide.set(
+              withTiming(0, {duration: half, easing: MOTION_EASING.enter}, (finished) => {
+                'worklet'
+                if (finished && !topChanged) runOnJS(clearMask)()
+              })
+            )
+          }
+        }
+        if (topChanged) {
+          topSlide.set(
+            withDelay(
+              delay,
+              withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+                'worklet'
+                if (finished) runOnJS(swapSlide)()
+              })
+            )
           )
-        )
-      }
-      if (bottomChanged) {
-        bottomFlip.set(0)
-        bottomFlip.set(
-          withDelay(
-            delay,
-            withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
-              'worklet'
-              // Only drive `swap` from bottomFlip when topFlip isn't already driving it.
-              if (finished && !topChanged) runOnJS(swap)()
-            })
+        }
+        if (bottomChanged) {
+          bottomSlide.set(
+            withDelay(
+              delay,
+              withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+                'worklet'
+                if (finished && !topChanged) runOnJS(swapSlide)()
+              })
+            )
           )
-        )
+        }
+      } else {
+        // Flip mode: changed half(ves) perform a quiet rotateX flip, swapping at 90° edge-on.
+        setClipMask({top: false, bottom: false})
+        const swapFlip = () => {
+          commit(incoming)
+          if (topChanged) {
+            topFlip.set(-1)
+            topFlip.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
+          }
+          if (bottomChanged) {
+            bottomFlip.set(-1)
+            bottomFlip.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
+          }
+        }
+        if (topChanged) {
+          topFlip.set(
+            withDelay(
+              delay,
+              withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+                'worklet'
+                if (finished) runOnJS(swapFlip)()
+              })
+            )
+          )
+        }
+        if (bottomChanged) {
+          bottomFlip.set(
+            withDelay(
+              delay,
+              withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+                'worklet'
+                if (finished && !topChanged) runOnJS(swapFlip)()
+              })
+            )
+          )
+        }
       }
       return
     }
 
     // Case 4: Single → Single (primary language changed while in 1-language view)
-    commit(incoming)
-  }, [incoming, reduceMotion, splitProgress, emergingSide, topFlip, bottomFlip])
+    // Respects Card animation: Slide slides out/in cleanly; Flip rotates quietly in place.
+    const half = Math.round(dur / 2)
+    cancelAnimation(singleSwapFlip)
+    cancelAnimation(singleSwapSlide)
+    singleSwapFlip.set(0)
+    singleSwapSlide.set(0)
 
-  const halfHeight = Math.max(0, (box.height - MIRROR_GAP) / 2)
-  const halfBox = {width: box.width, height: halfHeight}
+    if (useSlide) {
+      const swapSingleSlide = () => {
+        commit(incoming)
+        singleSwapSlide.set(1)
+        singleSwapSlide.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
+      }
+      singleSwapSlide.set(
+        withDelay(
+          delay,
+          withTiming(-1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+            'worklet'
+            if (finished) runOnJS(swapSingleSlide)()
+          })
+        )
+      )
+    } else {
+      const swapSingleFlip = () => {
+        commit(incoming)
+        singleSwapFlip.set(-1)
+        singleSwapFlip.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
+      }
+      singleSwapFlip.set(
+        withDelay(
+          delay,
+          withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+            'worklet'
+            if (finished) runOnJS(swapSingleFlip)()
+          })
+        )
+      )
+    }
+  }, [
+    incoming,
+    cardAnimation,
+    reduceMotion,
+    box.width,
+    box.height,
+    halfBox.width,
+    halfBox.height,
+    startFontAnim,
+    stopFontAnim,
+    splitProgress,
+    topFlip,
+    bottomFlip,
+    topSlide,
+    bottomSlide,
+    singleSwapFlip,
+    singleSwapSlide,
+  ])
 
-  // Anchor half settles gently without crossing the seam; emerging/departing half travels
-  // the full halfHeight so even multi-line Questions tuck 100% cleanly behind the seam with
-  // zero overlap or peeking lines.
+  // --- Exact Single ↔ Split geometry (0.0px handoff, zero crossfade double-vision!) ---
+  const primaryText = activeSnap.text
+  const primaryLang = activeSnap.language
+  const singleKey = `${activeSnap.questionKey ?? ''}:${primaryLang}:${primaryText}`
+  const singleFont = useMemo(
+    () =>
+      fitStack({
+        text: primaryText,
+        secondaries: [],
+        width: box.width,
+        height: box.height,
+      }).fontSize,
+    [primaryText, box.width, box.height]
+  )
+  const measuredSingleH =
+    singleMeasured.key === singleKey && singleMeasured.height > 0
+      ? singleMeasured.height
+      : estimateBlockHeight(primaryText, singleFont, box.width)
+
+  // Exact translateY offsets at p = 0 so the primary half's bounding box sits at the EXACT
+  // pixel position of Single (vertically centered in Classic, top-aligned in Pick a Card).
+  const startDyTop = verticalCenter
+    ? (measuredSingleH + MIRROR_GAP) / 2
+    : measuredSingleH - halfHeight
+  const startDyBottom = verticalCenter
+    ? -(measuredSingleH + MIRROR_GAP) / 2
+    : -(halfHeight + MIRROR_GAP)
+
   const slideOffset = halfHeight
-  const anchorSettle = Math.min(14, halfHeight * 0.1)
+  // Synchronous per-render emerging side (impossible to lag 1 frame behind mount!).
+  const topIsEmerging = activeSnap.mirrored
+  const bottomIsEmerging = !activeSnap.mirrored
 
   const topHalfStyle = useAnimatedStyle(() => {
     const p = splitProgress.get()
     const flip = topFlip.get()
-    // If top is emerging (emergingSide < 0, Tabletop), slide up from +slideOffset;
-    // otherwise top is the upright primary anchor and settles gently from +anchorSettle.
-    const startY = emergingSide.get() < 0 ? slideOffset : anchorSettle
+    const slide = topSlide.get()
+    if (topIsEmerging) {
+      return {
+        transform: [
+          {perspective: 800},
+          {translateY: interpolate(p, [0.42, 1], [slideOffset, 0], 'clamp') + slide * slideOffset},
+          {rotateX: `${flip * 90}deg`},
+        ],
+      }
+    }
     return {
       transform: [
         {perspective: 800},
-        {translateY: interpolate(p, [0, 1], [startY, 0], 'clamp')},
+        {translateY: interpolate(p, [0, 1], [startDyTop, 0], 'clamp') + slide * slideOffset},
         {rotateX: `${flip * 90}deg`},
       ],
     }
-  })
+  }, [topIsEmerging, slideOffset, startDyTop])
 
   const bottomHalfStyle = useAnimatedStyle(() => {
     const p = splitProgress.get()
     const flip = bottomFlip.get()
-    // If bottom is emerging (emergingSide > 0, 2-lang upright), slide down from -slideOffset;
-    // otherwise bottom is the upright primary anchor and settles gently from -anchorSettle.
-    const startY = emergingSide.get() > 0 ? -slideOffset : -anchorSettle
+    const slide = bottomSlide.get()
+    if (bottomIsEmerging) {
+      return {
+        transform: [
+          {perspective: 800},
+          {
+            translateY: interpolate(p, [0.42, 1], [-slideOffset, 0], 'clamp') - slide * slideOffset,
+          },
+          {rotateX: `${flip * 90}deg`},
+        ],
+      }
+    }
     return {
       transform: [
         {perspective: 800},
-        {translateY: interpolate(p, [0, 1], [startY, 0], 'clamp')},
+        {translateY: interpolate(p, [0, 1], [startDyBottom, 0], 'clamp') - slide * slideOffset},
         {rotateX: `${flip * 90}deg`},
       ],
+    }
+  }, [bottomIsEmerging, slideOffset, startDyBottom])
+
+  const primaryFontOverride = livePrimaryFont ?? undefined
+
+  // Single-language primary-language swap style (0 at rest, no-op in snapshots!).
+  const singleSwapStyle = useAnimatedStyle(() => {
+    const flip = singleSwapFlip.get()
+    const slide = singleSwapSlide.get()
+    if (Math.abs(flip) < 0.001 && Math.abs(slide) < 0.001) return {}
+    if (Math.abs(slide) >= 0.001) {
+      return {
+        opacity: 1 - Math.abs(slide) * 0.85,
+        transform: [{translateX: slide * Math.min(80, box.width * 0.28)}],
+      }
+    }
+    return {
+      transform: [{perspective: 800}, {rotateY: `${flip * 90}deg`}],
     }
   })
 
   if (!activeSnap.isSplit) {
     return (
-      <View
-        onLayout={
-          onContentHeight ? (event) => onContentHeight(event.nativeEvent.layout.height) : undefined
-        }
+      <Animated.View
+        style={singleSwapStyle}
+        onLayout={(event) => {
+          const h = event.nativeEvent.layout.height
+          setSingleMeasured((prev) =>
+            prev.key === singleKey && prev.height === h ? prev : {key: singleKey, height: h}
+          )
+          onContentHeight?.(h)
+        }}
       >
         <QuestionFace
           text={activeSnap.text}
@@ -650,28 +967,24 @@ export const QuestionText = ({
           themedText={themedText}
           morphColor={morphColor}
         />
-      </View>
+      </Animated.View>
     )
   }
 
   const {topText, topLang, bottomText, bottomLang, topIsDuplicate} = halvesOf(activeSnap)
 
   return (
-    <View
-      onLayout={
-        onContentHeight ? (event) => onContentHeight(event.nativeEvent.layout.height) : undefined
-      }
-    >
+    <View>
       <View
         accessibilityElementsHidden={topIsDuplicate}
         importantForAccessibility={topIsDuplicate ? 'no-hide-descendants' : 'auto'}
         style={{
           height: halfHeight,
           justifyContent: 'flex-end',
-          overflow: clipSide === 'top' ? 'hidden' : 'visible',
+          overflow: clipMask.top ? 'hidden' : 'visible',
         }}
       >
-        <Animated.View style={topHalfStyle}>
+        <Animated.View style={[{position: 'absolute', left: 0, right: 0, bottom: 0}, topHalfStyle]}>
           <View style={activeSnap.mirrored ? {transform: [{rotate: '180deg'}]} : undefined}>
             <QuestionFace
               text={topText}
@@ -680,6 +993,7 @@ export const QuestionText = ({
               compact
               themedText={themedText}
               morphColor={morphColor}
+              fontSizeOverride={!topIsEmerging ? primaryFontOverride : undefined}
             />
           </View>
         </Animated.View>
@@ -689,10 +1003,10 @@ export const QuestionText = ({
         style={{
           height: halfHeight,
           justifyContent: 'flex-start',
-          overflow: clipSide === 'bottom' ? 'hidden' : 'visible',
+          overflow: clipMask.bottom ? 'hidden' : 'visible',
         }}
       >
-        <Animated.View style={bottomHalfStyle}>
+        <Animated.View style={[{position: 'absolute', left: 0, right: 0, top: 0}, bottomHalfStyle]}>
           <QuestionFace
             text={bottomText}
             language={bottomLang}
@@ -700,6 +1014,7 @@ export const QuestionText = ({
             compact
             themedText={themedText}
             morphColor={morphColor}
+            fontSizeOverride={!bottomIsEmerging ? primaryFontOverride : undefined}
           />
         </Animated.View>
       </View>

@@ -490,7 +490,13 @@ export const UnifiedPlayer = ({
   )
 
   const [currContentH, setCurrContentH] = useState(0)
+  const [renderedSplit, setRenderedSplit] = useState<boolean | null>(null)
   const [peerContentH, setPeerContentH] = useState(0)
+  const peerContentHRef = useRef(0)
+  const handlePeerContentHeight = useCallback((height: number) => {
+    peerContentHRef.current = height
+    setPeerContentH(height)
+  }, [])
   // Frame-0 height estimate so Classic's vertical centering never jumps on mount before onLayout fires.
   const estimatedContentH = useMemo(() => {
     if (!text) return cardInner.height * 0.45
@@ -639,6 +645,11 @@ export const UnifiedPlayer = ({
       const action: NavAction = dir === 1 ? {type: 'next'} : {type: 'previous'}
       lastNavActionRef.current = action
       viewTracker.endView(dir === 1 ? 'advanced' : 'previous')
+      // Hand off the peer's already-measured native height so `textDy === peerTextDy` on
+      // the commit frame (0.0px vertical shift when the incoming Question becomes active!).
+      setCurrContentH(peerContentHRef.current)
+      peerContentHRef.current = 0
+      setPeerContentH(0)
       setClassicPeerDir(0)
       classicBusyRef.current = false
       dispatch({type: 'classic_nav', action})
@@ -1203,17 +1214,39 @@ export const UnifiedPlayer = ({
   }))
 
   // ONE single QuestionText positioning & proportional scale between Classic (0) and Card (1).
-  const measuredContentH = isSplit ? cardInner.height : currContentH || estimatedContentH
+  // `textDy` stays anchored to Single height while `splitTopOffset` shifts `top` synchronously
+  // in Yoga on the exact commit frame QuestionText swaps Single ↔ Split — eliminating any
+  // 1-frame Reanimated worklet lag when leaving or entering Split!
+  const effectiveSplit = renderedSplit ?? isSplit
+  const singleContentH = currContentH || estimatedContentH
+  const splitTopOffset = effectiveSplit ? singleContentH / 2 - cardInner.height / 2 : 0
   const classicCenterY = insets.top + measured.height / 2
-  const cardTextCenterY = cardTop + CARD_PADDING_Y + measuredContentH / 2
+  const cardTextCenterY = cardTop + CARD_PADDING_Y + singleContentH / 2
   const textDy = classicCenterY - cardTextCenterY
+
+  // Peer Question's own vertical centering so incoming Questions slide & flip in dead-centered
+  // with 0.0px vertical shift on commit (even when outgoing and incoming have different line counts!).
+  const peerQuestionId = classicPeerDir === 1 ? nextQuestionId : prevQuestionId
+  const peerText = textOf(peerQuestionId)
+  const estimatedPeerContentH = useMemo(() => {
+    if (!peerText) return estimatedContentH
+    const {fontSize} = fitStack({
+      text: peerText,
+      secondaries: [],
+      width: cardInner.width,
+      height: cardInner.height,
+    })
+    return estimateBlockHeight(peerText, fontSize, cardInner.width)
+  }, [peerText, estimatedContentH, cardInner.width, cardInner.height])
+  const measuredPeerContentH = isSplit ? cardInner.height : peerContentH || estimatedPeerContentH
+  const peerTextDy = classicCenterY - (cardTop + CARD_PADDING_Y + measuredPeerContentH / 2)
 
   const primaryTextTransformStyle = useAnimatedStyle(() => {
     const p = morph.get()
     const t = classicFlip.get()
     const sx = classicSlideX.get()
     const rise = interpolate(homeRise.get(), [0, 1], [0, winHeight * 0.62], 'clamp')
-    const morphTy = interpolate(p, [0, 1], [textDy, 0], 'clamp') + rise
+    const morphTy = interpolate(p, [0, 1], [textDy, -splitTopOffset], 'clamp') + rise
     const morphScale = interpolate(p, [0, 1], [classicScale, 1], 'clamp')
 
     if (reduceMotion) {
@@ -1244,7 +1277,11 @@ export const UnifiedPlayer = ({
       const flipOpacity = Math.max(0, (Math.abs(t) - 0.5) * 2)
       return {
         opacity: flipOpacity,
-        transform: [{translateX: sx + dir * winWidth}, {translateY: textDy}, {scale: classicScale}],
+        transform: [
+          {translateX: sx + dir * winWidth},
+          {translateY: peerTextDy},
+          {scale: classicScale},
+        ],
       }
     }
     const isFlipping = Math.abs(t) > 0.001
@@ -1255,7 +1292,7 @@ export const UnifiedPlayer = ({
         opacity: visible,
         transform: [
           {perspective: 1000},
-          {translateY: textDy},
+          {translateY: peerTextDy},
           {rotateY: `${deg}deg`},
           {scale: classicScale},
         ],
@@ -1263,7 +1300,11 @@ export const UnifiedPlayer = ({
     }
     return {
       opacity: 1,
-      transform: [{translateX: sx + dir * winWidth}, {translateY: textDy}, {scale: classicScale}],
+      transform: [
+        {translateX: sx + dir * winWidth},
+        {translateY: peerTextDy},
+        {scale: classicScale},
+      ],
     }
   })
 
@@ -1350,7 +1391,6 @@ export const UnifiedPlayer = ({
     return {transform: [{translateX: tx}, {rotate: `${rot}deg`}]}
   })
 
-  const peerQuestionId = classicPeerDir === 1 ? nextQuestionId : prevQuestionId
   const showUnifiedMorphView = !isPick || isMorphing
 
   return (
@@ -1476,7 +1516,7 @@ export const UnifiedPlayer = ({
                     {
                       position: 'absolute',
                       left: cardLeft + CARD_PADDING_X,
-                      top: cardTop + CARD_PADDING_Y,
+                      top: cardTop + CARD_PADDING_Y + splitTopOffset,
                       width: cardInner.width,
                       zIndex: 500,
                     },
@@ -1485,15 +1525,18 @@ export const UnifiedPlayer = ({
                 >
                   <QuestionText
                     themedText
+                    verticalCenter
                     questionKey={questionId}
+                    cardAnimation={cardAnimation}
                     morphColor={morph}
-                    flipMid={isSplit ? flipMid : undefined}
+                    flipMid={effectiveSplit ? flipMid : undefined}
                     text={text}
                     language={language}
                     box={cardInner}
                     secondaries={activeSecondaries}
                     mirrored={tabletop}
                     onContentHeight={setCurrContentH}
+                    onSplitRendered={setRenderedSplit}
                   />
                 </Animated.View>
               ) : null}
@@ -1522,7 +1565,7 @@ export const UnifiedPlayer = ({
                     box={cardInner}
                     secondaries={secondariesOf(peerQuestionId)}
                     mirrored={tabletop}
-                    onContentHeight={setPeerContentH}
+                    onContentHeight={handlePeerContentHeight}
                   />
                 </Animated.View>
               ) : null}
@@ -1667,6 +1710,7 @@ export const UnifiedPlayer = ({
                             >
                               <QuestionText
                                 questionKey={questionId}
+                                cardAnimation={cardAnimation}
                                 text={text}
                                 language={language}
                                 box={cardInner}
