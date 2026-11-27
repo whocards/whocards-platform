@@ -281,11 +281,13 @@ exports[`Play screen renders a Question 1`] = `
         | flexGrow: 1
         | flexShrink: 1
         <View>
+          | height: 865
+          | justifyContent: "center"
           | left: 60
           | opacity: 1
           | position: "absolute"
           | top: 200.5
-          | transform: [{"perspective":1000},{"translateX":0},{"translateY":149.1},{"rotateY":"0deg"},{"scale":1.0889}]
+          | transform: [{"perspective":1000},{"translateX":0},{"translateY":34},{"rotateY":"0deg"},{"scale":1.0889}]
           | width: 630
           | zIndex: 500
           <View>
@@ -488,11 +490,13 @@ exports[`Play screen renders a Question in the Dark Theme Display setting 1`] = 
         | flexGrow: 1
         | flexShrink: 1
         <View>
+          | height: 865
+          | justifyContent: "center"
           | left: 60
           | opacity: 1
           | position: "absolute"
           | top: 200.5
-          | transform: [{"perspective":1000},{"translateX":0},{"translateY":149.1},{"rotateY":"0deg"},{"scale":1.0889}]
+          | transform: [{"perspective":1000},{"translateX":0},{"translateY":34},{"rotateY":"0deg"},{"scale":1.0889}]
           | width: 630
           | zIndex: 500
           <View>

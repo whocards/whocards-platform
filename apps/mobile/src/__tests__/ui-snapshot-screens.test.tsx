@@ -190,6 +190,7 @@ jest.mock('@whocards/observability/events', () => {
 })
 
 import {getDeck, getLanguageName} from '@whocards/decks'
+import {SHEET_CLOSE_MS} from '@/components/settings-modal'
 import {getStoredGame} from '@/lib/game-store'
 import {getStoredLanguage} from '@/lib/language-store'
 import {setStoredCardAnimation} from '@/lib/card-animation-store'
@@ -232,6 +233,21 @@ const settle = async () => {
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 250))
   })
+}
+
+/** Stage changes from the in-play Settings sheet apply once it has closed. */
+const settleSheetClose = async () => {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, SHEET_CLOSE_MS + 250))
+  })
+}
+
+/** Picks a Game in the in-play Settings sheet and lets it apply. */
+const switchTo = async (game: string) => {
+  await fireEvent.press(screen.getByLabelText('open settings'))
+  await fireEvent.press(await screen.findByLabelText(`Game: ${game}`))
+  await fireEvent.press(screen.getByLabelText('close'))
+  await settleSheetClose()
 }
 
 /** A drag of `translationX` points across the Question, then a release. */
@@ -313,8 +329,7 @@ describe('Play screen', () => {
     await fireEvent.press(screen.getByLabelText('open settings'))
     jest.mocked(getStoredTabletopMode).mockResolvedValueOnce(true)
     await fireEvent.press(screen.getByLabelText('close'))
-    await settle()
-    await settle()
+    await settleSheetClose()
     expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(2)
   })
 
@@ -371,15 +386,6 @@ describe('Play screen', () => {
     const question = getDeck('library')?.questions['1']?.en ?? ''
     await renderUi(<PlayScreen />)
     await settle()
-    const switchTo = async (game: string) => {
-      await fireEvent.press(screen.getByLabelText('open settings'))
-      await fireEvent.press(await screen.findByLabelText(`Game: ${game}`))
-      await fireEvent.press(screen.getByLabelText('close'))
-      // The players swap once the sheet has had time to leave.
-      await settle()
-      await settle()
-      await settle()
-    }
     await switchTo('Pick a Card')
     // The Question is now a dealt Card: Next puts it down to the draw.
     expect(screen.getByText(question)).toBeTruthy()
@@ -418,8 +424,7 @@ describe('Play screen', () => {
       await screen.findByLabelText(`Language: ${getLanguageName(stored) ?? stored}`)
     )
     await fireEvent.press(screen.getByLabelText('close'))
-    await settle()
-    await settle()
+    await settleSheetClose()
     expect(screen.getByText(deck?.questions['1']?.[stored] ?? '')).toBeTruthy()
   })
 

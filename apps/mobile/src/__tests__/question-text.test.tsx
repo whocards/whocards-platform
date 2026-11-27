@@ -15,7 +15,12 @@ import {colors} from '@whocards/tokens'
 
 import {setColorScheme} from '@/lib/color-scheme'
 import {resolvedStyle} from '@/test-utils/resolved-style'
-import {QuestionText, fitFontSize, fitSecondaryFontSize} from '../components/question-text'
+import {
+  MIRROR_GAP,
+  QuestionText,
+  fitFontSize,
+  fitSecondaryFontSize,
+} from '../components/question-text'
 
 describe('fitFontSize — minFont override', () => {
   it('defaults to a 22px floor when the box cannot be computed from', () => {
@@ -66,6 +71,13 @@ describe('fitSecondaryFontSize — headroom growth (issue #189)', () => {
 type Node = ReturnType<typeof screen.getByText>
 const isRotated = (node: Node | null | undefined): boolean =>
   !!node && (JSON.stringify(node.props.style ?? null).includes('180deg') || isRotated(node.parent))
+
+const ancestor = (label: string, match: (s: Record<string, unknown>) => boolean) => {
+  for (let node = screen.getByText(label).parent; node; node = node.parent) {
+    if (match(resolvedStyle(node))) return node
+  }
+  throw new Error(`no matching ancestor for ${label}`)
+}
 
 describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
   const box = {width: 300, height: 400}
@@ -125,21 +137,21 @@ describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
         mirrored
       />
     )
-    const halfHeight = (box.height - 28) / 2
-    const findHalfStyle = (label: string) => {
-      for (let node = screen.getByText(label).parent; node; node = node.parent) {
-        const s = resolvedStyle(node)
-        if (s.height === halfHeight) return s
-      }
-      return {}
-    }
-    expect(findHalfStyle('Una pregunta mucho más larga que ocupa varias líneas')).toMatchObject({
+    const halfHeight = (box.height - MIRROR_GAP) / 2
+    // The far (rotated) half hangs from the divider…
+    const far = 'Una pregunta mucho más larga que ocupa varias líneas'
+    expect(resolvedStyle(ancestor(far, (s) => s.height === halfHeight))).toMatchObject({
       height: halfHeight,
-      justifyContent: 'flex-end',
     })
-    expect(findHalfStyle(question)).toMatchObject({
-      height: halfHeight,
-      justifyContent: 'flex-start',
+    expect(resolvedStyle(ancestor(far, (s) => s.position === 'absolute'))).toMatchObject({
+      bottom: 0,
+    })
+    // …and the near primary starts right below it: its lead spacer spans the far half and the gap.
+    const near = ancestor(question, (s) => s.height === box.height)
+    const lead = near.children[0]
+    expect(typeof lead === 'string' ? {} : resolvedStyle(lead)).toMatchObject({
+      height: halfHeight + MIRROR_GAP,
+      flexGrow: 0,
     })
   })
 
