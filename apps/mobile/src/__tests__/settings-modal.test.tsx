@@ -179,6 +179,10 @@ describe('SettingsModal — Game', () => {
     await toggle('Pick a Card')
     expect(mockedSetStoredGame).toHaveBeenCalledWith('pick')
     expect(onSelectGame).toHaveBeenCalledWith('pick')
+    expect(mockedTrack).toHaveBeenCalledWith({
+      name: 'game_changed',
+      props: {from: 'wh', to: 'pick'},
+    })
     expect(checked('Pick a Card')).toBe(true)
     await toggle('Pick a Card')
     expect(onSelectGame).toHaveBeenLastCalledWith('wh')
@@ -265,6 +269,10 @@ describe('SettingsModal — inline controls', () => {
     await openGameplay()
     await fireEvent.press(await screen.findByLabelText('Card animation: Flip'))
     expect(setStoredCardAnimation).toHaveBeenLastCalledWith('flip')
+    expect(mockedTrack).toHaveBeenCalledWith({
+      name: 'card_animation_changed',
+      props: {animation: 'flip'},
+    })
     expect(selected('Card animation: Flip')).toBe(true)
     await fireEvent.press(screen.getByLabelText('Card animation: Slide'))
     expect(setStoredCardAnimation).toHaveBeenLastCalledWith('slide')
@@ -289,6 +297,10 @@ describe('SettingsModal — Daily question (issues #361, #364)', () => {
     await screen.findByLabelText('Time: 18:0')
     await toggle('Daily question')
     expect(setDailySetting).toHaveBeenCalledWith({enabled: false, hour: 18, minute: 0})
+    expect(mockedTrack).toHaveBeenCalledWith({
+      name: 'daily_question_changed',
+      props: {enabled: false, hour: 18, minute: 0},
+    })
     expect(screen.getByLabelText('Time: 18:0').props.accessibilityState).toEqual({disabled: true})
   })
 

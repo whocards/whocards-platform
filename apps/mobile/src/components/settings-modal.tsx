@@ -318,6 +318,10 @@ export const SettingsModal = ({
   }, [visible])
 
   const changeDaily = (next: DailySetting) => {
+    track({
+      name: EVENTS.DAILY_QUESTION_CHANGED,
+      props: {enabled: next.enabled, hour: next.hour, minute: next.minute},
+    })
     setDaily(next)
     void setDailySetting(next).catch(() => {})
   }
@@ -513,6 +517,7 @@ export const SettingsModal = ({
                       onChange={(on) => {
                         const next: GameId = on ? 'pick' : 'wh'
                         selection()
+                        track({name: EVENTS.GAME_CHANGED, props: {from: game, to: next}})
                         setGame(next)
                         void setStoredGame(next)
                         onSelectGame?.(next)
@@ -577,6 +582,7 @@ export const SettingsModal = ({
                       current={cardAnimation}
                       onSelect={(next) => {
                         selection()
+                        track({name: EVENTS.CARD_ANIMATION_CHANGED, props: {animation: next}})
                         setCardAnimation(next)
                         void setStoredCardAnimation(next)
                       }}
