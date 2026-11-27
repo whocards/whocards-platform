@@ -82,6 +82,17 @@ const CLASSIC_Q_RIGHT = 28
 const CLASSIC_Q_BOTTOM = 20
 
 const texture = require('../../assets/images/background.png')
+// Face-up Cards are printed on linen stock; tiled at device pixels so each thread is one pixel.
+const linen = require('../../assets/images/linen.png')
+
+const CardFaceLinen = () => (
+  <Image
+    source={linen}
+    resizeMode="repeat"
+    fadeDuration={0}
+    style={[StyleSheet.absoluteFill, {width: '100%', height: '100%'}]}
+  />
+)
 
 /**
  * The card back, styled after the printed WhoCards deck: the brand squiggle
@@ -1503,15 +1514,7 @@ export const UnifiedPlayer = ({
                   ]}
                 >
                   <View className="bg-darker absolute inset-0">
-                    <Image
-                      source={texture}
-                      resizeMode="cover"
-                      fadeDuration={0}
-                      style={[
-                        StyleSheet.absoluteFill,
-                        {width: '100%', height: '100%', opacity: 0.4},
-                      ]}
-                    />
+                    <CardFaceLinen />
                   </View>
                   <Animated.View style={[StyleSheet.absoluteFill, classicCoverStyle]}>
                     <ScreenBackground>{null}</ScreenBackground>
@@ -1691,15 +1694,7 @@ export const UnifiedPlayer = ({
                           >
                             {hasSeenNext && nextQuestionId ? (
                               <View className="bg-darker absolute inset-0 overflow-hidden rounded-[20px]">
-                                <Image
-                                  source={texture}
-                                  resizeMode="cover"
-                                  fadeDuration={0}
-                                  style={[
-                                    StyleSheet.absoluteFill,
-                                    {width: '100%', height: '100%', opacity: 0.4},
-                                  ]}
-                                />
+                                <CardFaceLinen />
                                 <Text
                                   className="text-primary-dark font-title"
                                   style={{
@@ -1747,15 +1742,7 @@ export const UnifiedPlayer = ({
                               style={pickFrontFaceStyle}
                               className="bg-darker absolute inset-0 overflow-hidden rounded-[20px]"
                             >
-                              <Image
-                                source={texture}
-                                resizeMode="cover"
-                                fadeDuration={0}
-                                style={[
-                                  StyleSheet.absoluteFill,
-                                  {width: '100%', height: '100%', opacity: 0.4},
-                                ]}
-                              />
+                              <CardFaceLinen />
                               {!homeExiting ? (
                                 <Text
                                   className="text-primary-dark font-title"
@@ -1798,15 +1785,7 @@ export const UnifiedPlayer = ({
                               style={[StyleSheet.absoluteFill, {zIndex: 400}, slidingBackStyle]}
                               className="bg-darker overflow-hidden rounded-[20px]"
                             >
-                              <Image
-                                source={texture}
-                                resizeMode="cover"
-                                fadeDuration={0}
-                                style={[
-                                  StyleSheet.absoluteFill,
-                                  {width: '100%', height: '100%', opacity: 0.4},
-                                ]}
-                              />
+                              <CardFaceLinen />
                               <Text
                                 className="text-primary-dark font-title"
                                 style={{

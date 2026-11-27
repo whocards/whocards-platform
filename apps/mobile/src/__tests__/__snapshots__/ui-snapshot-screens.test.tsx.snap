@@ -799,7 +799,6 @@ exports[`Play screen renders the Pick a Card deck before a deal 1`] = `
               | bottom: 0
               | height: "100%"
               | left: 0
-              | opacity: 0.4
               | position: "absolute"
               | right: 0
               | top: 0
@@ -1000,7 +999,6 @@ exports[`Play screen renders the Pick a Card deck before a deal 1`] = `
                       | bottom: 0
                       | height: "100%"
                       | left: 0
-                      | opacity: 0.4
                       | position: "absolute"
                       | right: 0
                       | top: 0
