@@ -314,6 +314,7 @@ describe('Play screen', () => {
     jest.mocked(getStoredTabletopMode).mockResolvedValueOnce(true)
     await fireEvent.press(screen.getByLabelText('close'))
     await settle()
+    await settle()
     expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(2)
   })
 
@@ -417,6 +418,7 @@ describe('Play screen', () => {
       await screen.findByLabelText(`Language: ${getLanguageName(stored) ?? stored}`)
     )
     await fireEvent.press(screen.getByLabelText('close'))
+    await settle()
     await settle()
     expect(screen.getByText(deck?.questions['1']?.[stored] ?? '')).toBeTruthy()
   })

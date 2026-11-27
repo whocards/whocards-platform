@@ -9,7 +9,6 @@ import Animated, {
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withDelay,
   withTiming,
 } from 'react-native-reanimated'
 import {getDirection} from '@whocards/decks'
@@ -128,8 +127,6 @@ export const fitSecondaryFontSize = (primaryFontSize: number, primaryMinFont: nu
 const MIN_FONT_MIRRORED = 16
 export const MIRROR_GAP = 28
 export const SECONDARY_GAP = 14
-// Wait briefly for the in-play Settings sheet to clear before animating layout splits/flips.
-const SHEET_REVEAL_DELAY_MS = 160
 
 type LanguageText = {language: string; text: string}
 
@@ -480,14 +477,9 @@ export const QuestionText = ({
   const [clipMask, setClipMask] = useState<ClipMask>({top: false, bottom: false})
   // Live Yoga-laid-out fontSize during Single ↔ Split transitions (null at rest!).
   const [livePrimaryFont, setLivePrimaryFont] = useState<number | null>(null)
-  const fontTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fontRafRef = useRef<number | null>(null)
 
   const stopFontAnim = useCallback(() => {
-    if (fontTimerRef.current !== null) {
-      clearTimeout(fontTimerRef.current)
-      fontTimerRef.current = null
-    }
     if (fontRafRef.current !== null) {
       cancelAnimationFrame(fontRafRef.current)
       fontRafRef.current = null
@@ -513,31 +505,28 @@ export const QuestionText = ({
   const halfBox = useMemo(() => ({width: box.width, height: halfHeight}), [box.width, halfHeight])
 
   const startFontAnim = useCallback(
-    (fromSize: number, toSize: number, delayMs: number, durMs: number) => {
+    (fromSize: number, toSize: number, durMs: number) => {
       stopFontAnim()
       setLivePrimaryFont(fromSize)
       if (Math.abs(toSize - fromSize) < 0.25 || durMs <= 0) return
       let lastQuant = fromSize
-      fontTimerRef.current = setTimeout(() => {
-        fontTimerRef.current = null
-        const started = performance.now()
-        const tick = () => {
-          const raw = Math.min(1, (performance.now() - started) / durMs)
-          const eased = easeInOutCubic(raw)
-          const next = Math.round((fromSize + (toSize - fromSize) * eased) * 2) / 2
-          if (next !== lastQuant) {
-            lastQuant = next
-            setLivePrimaryFont(next)
-          }
-          if (raw < 1) {
-            fontRafRef.current = requestAnimationFrame(tick)
-          } else {
-            fontRafRef.current = null
-            setLivePrimaryFont(toSize)
-          }
+      const started = performance.now()
+      const tick = () => {
+        const raw = Math.min(1, (performance.now() - started) / durMs)
+        const eased = easeInOutCubic(raw)
+        const next = Math.round((fromSize + (toSize - fromSize) * eased) * 2) / 2
+        if (next !== lastQuant) {
+          lastQuant = next
+          setLivePrimaryFont(next)
         }
-        fontRafRef.current = requestAnimationFrame(tick)
-      }, delayMs)
+        if (raw < 1) {
+          fontRafRef.current = requestAnimationFrame(tick)
+        } else {
+          fontRafRef.current = null
+          setLivePrimaryFont(toSize)
+        }
+      }
+      fontRafRef.current = requestAnimationFrame(tick)
     },
     [stopFontAnim]
   )
@@ -581,7 +570,6 @@ export const QuestionText = ({
       return
     }
 
-    const delay = motionDuration(SHEET_REVEAL_DELAY_MS, reduceMotion)
     const useSlide = cardAnimation === 'slide'
 
     // Case 1: Single → Split (S1 → S2 / S3 / S4)
@@ -611,7 +599,7 @@ export const QuestionText = ({
         compact: true,
       }).fontSize
       setClipMask({top: incoming.mirrored, bottom: !incoming.mirrored})
-      startFontAnim(fromSize, toSize, delay, dur)
+      startFontAnim(fromSize, toSize, dur)
       splitProgress.set(0)
       commit(incoming)
       const finishEnter = () => {
@@ -620,13 +608,10 @@ export const QuestionText = ({
         setLivePrimaryFont(null)
       }
       splitProgress.set(
-        withDelay(
-          delay,
-          withTiming(1, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
-            'worklet'
-            if (finished) runOnJS(finishEnter)()
-          })
-        )
+        withTiming(1, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
+          'worklet'
+          if (finished) runOnJS(finishEnter)()
+        })
       )
       return
     }
@@ -658,7 +643,7 @@ export const QuestionText = ({
         height: box.height,
       }).fontSize
       setClipMask({top: prev.mirrored, bottom: !prev.mirrored})
-      startFontAnim(fromSize, toSize, delay, dur)
+      startFontAnim(fromSize, toSize, dur)
       splitProgress.set(1)
       const finishCollapse = () => {
         stopFontAnim()
@@ -667,13 +652,10 @@ export const QuestionText = ({
         commit(incoming)
       }
       splitProgress.set(
-        withDelay(
-          delay,
-          withTiming(0, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
-            'worklet'
-            if (finished) runOnJS(finishCollapse)()
-          })
-        )
+        withTiming(0, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
+          'worklet'
+          if (finished) runOnJS(finishCollapse)()
+        })
       )
       return
     }
@@ -733,24 +715,18 @@ export const QuestionText = ({
         }
         if (topChanged) {
           topSlide.set(
-            withDelay(
-              delay,
-              withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
-                'worklet'
-                if (finished) runOnJS(swapSlide)()
-              })
-            )
+            withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+              'worklet'
+              if (finished) runOnJS(swapSlide)()
+            })
           )
         }
         if (bottomChanged) {
           bottomSlide.set(
-            withDelay(
-              delay,
-              withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
-                'worklet'
-                if (finished && !topChanged) runOnJS(swapSlide)()
-              })
-            )
+            withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+              'worklet'
+              if (finished && !topChanged) runOnJS(swapSlide)()
+            })
           )
         }
       } else {
@@ -769,24 +745,18 @@ export const QuestionText = ({
         }
         if (topChanged) {
           topFlip.set(
-            withDelay(
-              delay,
-              withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
-                'worklet'
-                if (finished) runOnJS(swapFlip)()
-              })
-            )
+            withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+              'worklet'
+              if (finished) runOnJS(swapFlip)()
+            })
           )
         }
         if (bottomChanged) {
           bottomFlip.set(
-            withDelay(
-              delay,
-              withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
-                'worklet'
-                if (finished && !topChanged) runOnJS(swapFlip)()
-              })
-            )
+            withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+              'worklet'
+              if (finished && !topChanged) runOnJS(swapFlip)()
+            })
           )
         }
       }
@@ -808,13 +778,10 @@ export const QuestionText = ({
         singleSwapSlide.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
       }
       singleSwapSlide.set(
-        withDelay(
-          delay,
-          withTiming(-1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
-            'worklet'
-            if (finished) runOnJS(swapSingleSlide)()
-          })
-        )
+        withTiming(-1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+          'worklet'
+          if (finished) runOnJS(swapSingleSlide)()
+        })
       )
     } else {
       const swapSingleFlip = () => {
@@ -823,13 +790,10 @@ export const QuestionText = ({
         singleSwapFlip.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
       }
       singleSwapFlip.set(
-        withDelay(
-          delay,
-          withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
-            'worklet'
-            if (finished) runOnJS(swapSingleFlip)()
-          })
-        )
+        withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+          'worklet'
+          if (finished) runOnJS(swapSingleFlip)()
+        })
       )
     }
   }, [

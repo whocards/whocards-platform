@@ -66,9 +66,10 @@ const NO_LANGUAGE = ''
 // Caps the rows at this fraction of the window; they only scroll under max Dynamic Type or in landscape.
 const SHEET_MAX_HEIGHT_RATIO = 0.8
 
-// shortcut: the sheet reports its dismissal when it starts, not when it ends, so callers that
-// unmount with it wait this long; switch to swift-ui BottomSheet's own onDismiss if it drifts.
-export const SHEET_CLOSE_MS = 350
+// Unified post-sheet timing: the native sheet reports dismissal when it starts (~285ms on iOS),
+// not when it finishes. Every stage transformation (Game switch, Language, Second language,
+// Tabletop) waits this long so it plays cleanly once the menu has cleared; Theme stays live.
+export const SHEET_CLOSE_MS = 320
 
 const languageName = (code: string) => getLanguageName(code) ?? code
 

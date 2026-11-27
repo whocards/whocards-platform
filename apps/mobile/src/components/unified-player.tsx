@@ -280,6 +280,14 @@ export const UnifiedPlayer = ({
 
   const pickedLanguageRef = useRef<string | undefined>(undefined)
   const pickedGameRef = useRef<GameId | undefined>(undefined)
+  const sheetCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(
+    () => () => {
+      if (sheetCloseTimerRef.current) clearTimeout(sheetCloseTimerRef.current)
+    },
+    []
+  )
 
   const readSettings = useCallback(
     (keepLanguage: boolean) =>
@@ -578,59 +586,80 @@ export const UnifiedPlayer = ({
   const switchGameTo = useCallback(
     (nextGame: GameId) => {
       if (nextGame === game) return
-      setTimeout(() => {
-        setIsMorphing(true)
-        onChangeGame?.(nextGame)
-        if (nextGame === 'pick') {
-          dispatch({type: 'switch_game', to: 'pick'})
-          setGame('pick')
+      setIsMorphing(true)
+      onChangeGame?.(nextGame)
+      if (nextGame === 'pick') {
+        dispatch({type: 'switch_game', to: 'pick'})
+        setGame('pick')
+        cardFlip.set(1)
+        dragX.set(0)
+        morph.set(
+          withTiming(
+            1,
+            {
+              duration: motionDuration(MOTION_DURATION.gameMorph, reduceMotion),
+              easing: MOTION_EASING.standard,
+            },
+            () => {
+              'worklet'
+              runOnJS(setIsMorphing)(false)
+            }
+          )
+        )
+      } else {
+        // Pick → Classic: ensure a Question is dealt if leaving from face-down Deck.
+        if (!dealt) {
+          dispatch({type: 'switch_game', to: 'wh'})
           cardFlip.set(1)
-          dragX.set(0)
-          morph.set(
-            withTiming(
-              1,
-              {
-                duration: motionDuration(MOTION_DURATION.gameMorph, reduceMotion),
-                easing: MOTION_EASING.standard,
-              },
-              () => {
-                'worklet'
-                runOnJS(setIsMorphing)(false)
-              }
-            )
-          )
-        } else {
-          // Pick → Classic: ensure a Question is dealt if leaving from face-down Deck.
-          if (!dealt) {
-            dispatch({type: 'switch_game', to: 'wh'})
-            cardFlip.set(1)
-          } else if (phase === 'pick') {
-            dispatch({type: 'switch_game', to: 'wh'})
-            cardFlip.set(1)
-          }
-          dragX.set(0)
-          const finish = () => {
-            setGame('wh')
-            setIsMorphing(false)
-          }
-          morph.set(
-            withTiming(
-              0,
-              {
-                duration: motionDuration(MOTION_DURATION.gameMorph, reduceMotion),
-                easing: MOTION_EASING.standard,
-              },
-              () => {
-                'worklet'
-                runOnJS(finish)()
-              }
-            )
-          )
+        } else if (phase === 'pick') {
+          dispatch({type: 'switch_game', to: 'wh'})
+          cardFlip.set(1)
         }
-      }, SHEET_CLOSE_MS)
+        dragX.set(0)
+        const finish = () => {
+          setGame('wh')
+          setIsMorphing(false)
+        }
+        morph.set(
+          withTiming(
+            0,
+            {
+              duration: motionDuration(MOTION_DURATION.gameMorph, reduceMotion),
+              easing: MOTION_EASING.standard,
+            },
+            () => {
+              'worklet'
+              runOnJS(finish)()
+            }
+          )
+        )
+      }
     },
     [game, onChangeGame, cardFlip, dragX, morph, reduceMotion, dealt, phase]
   )
+
+  // Single choreography rule: every stage-affecting Settings change (Game, Language,
+  // Second language, Tabletop, Card animation) applies once the Settings sheet clears.
+  const handleSettingsClose = useCallback(() => {
+    setSettingsModalOpen(false)
+    const nextLanguage = pickedLanguageRef.current
+    const nextGame = pickedGameRef.current
+    pickedLanguageRef.current = undefined
+    pickedGameRef.current = undefined
+    if (sheetCloseTimerRef.current) clearTimeout(sheetCloseTimerRef.current)
+    const apply = () => {
+      sheetCloseTimerRef.current = null
+      if (nextLanguage) setLanguage(nextLanguage)
+      void readSettings(true)
+      if (nextGame && nextGame !== game) switchGameTo(nextGame)
+    }
+    const wait = motionDuration(SHEET_CLOSE_MS ?? 320, reduceMotion)
+    if (wait === 0) {
+      apply()
+      return
+    }
+    sheetCloseTimerRef.current = setTimeout(apply, wait)
+  }, [readSettings, game, switchGameTo, reduceMotion])
 
   // Reset Classic flip/slide offsets synchronously BEFORE native paint once React commits
   // the new questionId, preventing both a 1-frame blank flash and Jest mock overwrite.
@@ -1843,15 +1872,7 @@ export const UnifiedPlayer = ({
 
         <SettingsModal
           visible={settingsModalOpen}
-          onClose={() => {
-            setSettingsModalOpen(false)
-            if (pickedLanguageRef.current) setLanguage(pickedLanguageRef.current)
-            pickedLanguageRef.current = undefined
-            void readSettings(true)
-            const nextGame = pickedGameRef.current
-            pickedGameRef.current = undefined
-            if (nextGame && nextGame !== game) switchGameTo(nextGame)
-          }}
+          onClose={handleSettingsClose}
           deckSlug={deckSlug}
           languages={languages}
           currentGame={game}
