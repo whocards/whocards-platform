@@ -2,7 +2,7 @@ import {Ionicons} from '@expo/vector-icons'
 import {BottomSheet, Host, RNHostView, Switch} from '@expo/ui'
 import {DateTimePicker} from '@expo/ui/community/datetime-picker'
 import type {ReactNode} from 'react'
-import {useEffect, useRef, useState} from 'react'
+import {createContext, useContext, useEffect, useRef, useState} from 'react'
 import {
   AppState,
   Linking,
@@ -87,26 +87,79 @@ type SettingsModalProps = {
   currentLanguage?: string
   /** Every Language pick, even one equal to the stored value. */
   onSelectLanguage?: (language: string) => void
+  /** Window x of the edges the rows line up with (the Card's, in Card view); the sheet's own otherwise. */
+  alignTo?: {left: number; right: number}
 }
 
-type RowProps = {label: string; hint?: string; last?: boolean; children: ReactNode}
+/** Where the rows' visible left and right edges sit, in points from the window's edges. */
+type Inset = {left: number; right: number}
+const DEFAULT_INSET: Inset = {left: 26, right: 26}
+const RowInset = createContext<Inset>(DEFAULT_INSET)
+
+type Trailing = 'picker' | 'switch' | 'segmented' | 'close' | 'none'
+// Where each piece is drawn relative to its layout edge inside the iOS 26 sheet (measured on device).
+const DRAWN_AT: Record<Trailing | 'label', number> =
+  Platform.OS === 'ios'
+    ? {label: 8, picker: -21.3, switch: -5.7, segmented: -7.7, close: -13.7, none: 0}
+    : {label: 0, picker: 0, switch: 0, segmented: 0, close: 0, none: 0}
+
+/** Puts a row's label and trailing control on the shared edges (the Card's, in Card view). */
+const useEdges = (trailing: Trailing) => {
+  const inset = useContext(RowInset)
+  return {
+    row: {paddingLeft: inset.left - DRAWN_AT.label, paddingRight: inset.right},
+    trailing: {marginRight: DRAWN_AT[trailing]},
+  }
+}
+
+type RowProps = {
+  label: string
+  hint?: string
+  last?: boolean
+  trailing?: Trailing
+  children: ReactNode
+}
 
 /** One setting: its label on the left, its control inline on the right. Every row shares one min height. */
-const Row = ({label, hint, last = false, children}: RowProps) => (
-  <View
-    className={`border-gray-lighter dark:border-white/10 min-h-14 flex-row items-center justify-between gap-3 px-5 py-2 ${
-      last ? '' : 'border-b'
-    }`}
-  >
-    <View className="flex-1">
-      <Text className="text-darker dark:text-white font-sans text-lg">{label}</Text>
-      {hint ? (
-        <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">{hint}</Text>
-      ) : null}
+const Row = ({label, hint, last = false, trailing = 'none', children}: RowProps) => {
+  const edges = useEdges(trailing)
+  return (
+    <View
+      className={`border-gray-lighter dark:border-white/10 min-h-14 flex-row items-center justify-between gap-3 py-2 ${
+        last ? '' : 'border-b'
+      }`}
+      style={edges.row}
+    >
+      <View className="flex-1">
+        <Text className="text-darker dark:text-white font-sans text-lg">{label}</Text>
+        {hint ? (
+          <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">{hint}</Text>
+        ) : null}
+      </View>
+      <View className="flex-row items-center gap-3" style={edges.trailing}>
+        {children}
+      </View>
     </View>
-    {children}
-  </View>
-)
+  )
+}
+
+const Header = ({onClose, isDark}: {onClose: () => void; isDark: boolean}) => {
+  const edges = useEdges('close')
+  return (
+    <View className="flex-row items-center justify-between pb-2 pt-6" style={edges.row}>
+      <Text className="text-darker dark:text-white font-title text-2xl">Settings</Text>
+      <Pressable
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="close"
+        hitSlop={12}
+        style={edges.trailing}
+      >
+        <Ionicons name="close" size={24} color={isDark ? colors.white : colors.darker} />
+      </Pressable>
+    </View>
+  )
+}
 
 type NativeProps = {isDark: boolean}
 
@@ -147,10 +200,14 @@ export const SettingsModal = ({
   onSelectGame,
   currentLanguage,
   onSelectLanguage,
+  alignTo,
 }: SettingsModalProps) => {
   const isDark = useIsDark()
   const mutedColor = isDark ? colors.gray.dark : colors.mutedOnLight
-  const {height: windowHeight} = useWindowDimensions()
+  const {height: windowHeight, width: windowWidth} = useWindowDimensions()
+  const inset: Inset = alignTo
+    ? {left: alignTo.left, right: windowWidth - alignTo.right}
+    : DEFAULT_INSET
 
   const [game, setGame] = useState<GameId>(DEFAULT_GAME)
   const [language, setLanguage] = useState(languages[0])
@@ -250,187 +307,184 @@ export const SettingsModal = ({
       {/* The sheet is SwiftUI / Compose: its React Native rows take its width and report their height. */}
       <RNHostView matchContents={{vertical: true}}>
         <View>
-          <View className="flex-row items-center justify-between px-5 pb-2 pt-6">
-            <Text className="text-darker dark:text-white font-title text-2xl">Settings</Text>
-            <Pressable
-              onPress={() => onClose()}
-              accessibilityRole="button"
-              accessibilityLabel="close"
-              hitSlop={12}
-            >
-              <Ionicons name="close" size={24} color={isDark ? colors.white : colors.darker} />
-            </Pressable>
-          </View>
-          <ScrollView style={{maxHeight: windowHeight * SHEET_MAX_HEIGHT_RATIO}} bounces={false}>
-            <Row label="Game">
-              <Choice
-                label="Game"
-                options={GAME_OPTIONS}
-                current={game}
-                onSelect={(next) => {
-                  selection()
-                  setGame(next)
-                  void setStoredGame(next)
-                  onSelectGame?.(next)
-                }}
-                isDark={isDark}
-              />
-            </Row>
-            <Row label="Language">
-              <Choice
-                label="Language"
-                options={languageOptions}
-                current={language}
-                onSelect={selectLanguage}
-                enabled={hasLanguageChoice}
-                isDark={isDark}
-              />
-            </Row>
-            {hasLanguageChoice ? (
-              <Row label="Second language" last={secondary[0] !== undefined}>
-                <Toggle
-                  label="Second language"
-                  value={secondary[0] !== undefined}
-                  onChange={(on) =>
-                    setSecondaryLanguages(on && restoredSecondary ? [restoredSecondary] : [])
-                  }
-                  isDark={isDark}
-                />
-              </Row>
-            ) : null}
-            {secondary[0] ? (
-              // Its own row, so every picker shares one right edge.
-              <Row label="">
+          <RowInset.Provider value={inset}>
+            <Header onClose={() => onClose()} isDark={isDark} />
+            <ScrollView style={{maxHeight: windowHeight * SHEET_MAX_HEIGHT_RATIO}} bounces={false}>
+              <Row label="Game" trailing="picker">
                 <Choice
-                  label="Second language"
-                  options={secondaryOptions}
-                  current={secondary[0]}
-                  onSelect={(next) => setSecondaryLanguages([next])}
+                  label="Game"
+                  options={GAME_OPTIONS}
+                  current={game}
+                  onSelect={(next) => {
+                    selection()
+                    setGame(next)
+                    void setStoredGame(next)
+                    onSelectGame?.(next)
+                  }}
                   isDark={isDark}
                 />
               </Row>
-            ) : null}
-            <Row label="Card animation">
-              <SegmentedControl
-                label="Card animation"
-                options={CARD_ANIMATION_OPTIONS}
-                current={cardAnimation}
-                onSelect={(next) => {
-                  selection()
-                  setCardAnimation(next)
-                  void setStoredCardAnimation(next)
-                }}
-              />
-            </Row>
-            <Row label="Tabletop mode" hint="Readable from both sides of the table">
-              <Toggle
+              <Row label="Language" trailing="picker">
+                <Choice
+                  label="Language"
+                  options={languageOptions}
+                  current={language}
+                  onSelect={selectLanguage}
+                  enabled={hasLanguageChoice}
+                  isDark={isDark}
+                />
+              </Row>
+              {hasLanguageChoice ? (
+                <Row label="Second language" last={secondary[0] !== undefined} trailing="switch">
+                  <Toggle
+                    label="Second language"
+                    value={secondary[0] !== undefined}
+                    onChange={(on) =>
+                      setSecondaryLanguages(on && restoredSecondary ? [restoredSecondary] : [])
+                    }
+                    isDark={isDark}
+                  />
+                </Row>
+              ) : null}
+              {secondary[0] ? (
+                // Its own row, so every picker shares one right edge.
+                <Row label="" trailing="picker">
+                  <Choice
+                    label="Second language"
+                    options={secondaryOptions}
+                    current={secondary[0]}
+                    onSelect={(next) => setSecondaryLanguages([next])}
+                    isDark={isDark}
+                  />
+                </Row>
+              ) : null}
+              <Row label="Card animation" trailing="segmented">
+                <SegmentedControl
+                  label="Card animation"
+                  options={CARD_ANIMATION_OPTIONS}
+                  current={cardAnimation}
+                  onSelect={(next) => {
+                    selection()
+                    setCardAnimation(next)
+                    void setStoredCardAnimation(next)
+                  }}
+                />
+              </Row>
+              <Row
                 label="Tabletop mode"
-                value={tabletop}
-                onChange={(next) => {
-                  selection()
-                  // Global setting with no deck context, so no deck_id (same shape as THEME_CHANGED).
-                  track({name: EVENTS.TABLETOP_MODE_CHANGED, props: {enabled: next}})
-                  setTabletop(next)
-                  void setStoredTabletopMode(next)
-                }}
-                isDark={isDark}
-              />
-            </Row>
-            <Row label="Theme">
-              <SegmentedControl
-                label="Theme"
-                options={THEME_OPTIONS}
-                current={theme}
-                onSelect={(next) => {
-                  selection()
-                  onSelectTheme(next)
-                }}
-              />
-            </Row>
-            <Row label="Daily question" last={!daily.enabled || allowed}>
-              {/* Off disables the time, never removes it: the row must not jump. */}
-              {Platform.OS === 'android' ? (
-                <Pressable
-                  onPress={() => setTimeOpen(true)}
-                  disabled={!daily.enabled}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Time: ${formatTime(daily)}`}
-                  accessibilityState={{disabled: !daily.enabled}}
-                  className={`bg-gray-lighter dark:bg-white/10 rounded-full px-3 py-1.5 ${
-                    daily.enabled ? '' : 'opacity-40'
-                  }`}
-                >
-                  <Text className="text-darker dark:text-white font-sans text-base font-semibold">
-                    {formatTime(daily)}
-                  </Text>
-                </Pressable>
-              ) : (
+                hint="Readable from both sides of the table"
+                trailing="switch"
+              >
+                <Toggle
+                  label="Tabletop mode"
+                  value={tabletop}
+                  onChange={(next) => {
+                    selection()
+                    // Global setting with no deck context, so no deck_id (same shape as THEME_CHANGED).
+                    track({name: EVENTS.TABLETOP_MODE_CHANGED, props: {enabled: next}})
+                    setTabletop(next)
+                    void setStoredTabletopMode(next)
+                  }}
+                  isDark={isDark}
+                />
+              </Row>
+              <Row label="Theme" trailing="segmented">
+                <SegmentedControl
+                  label="Theme"
+                  options={THEME_OPTIONS}
+                  current={theme}
+                  onSelect={(next) => {
+                    selection()
+                    onSelectTheme(next)
+                  }}
+                />
+              </Row>
+              <Row label="Daily question" last={!daily.enabled || allowed} trailing="switch">
+                {/* Off disables the time, never removes it: the row must not jump. */}
+                {Platform.OS === 'android' ? (
+                  <Pressable
+                    onPress={() => setTimeOpen(true)}
+                    disabled={!daily.enabled}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Time: ${formatTime(daily)}`}
+                    accessibilityState={{disabled: !daily.enabled}}
+                    className={`bg-gray-lighter dark:bg-white/10 rounded-full px-3 py-1.5 ${
+                      daily.enabled ? '' : 'opacity-40'
+                    }`}
+                  >
+                    <Text className="text-darker dark:text-white font-sans text-base font-semibold">
+                      {formatTime(daily)}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <DateTimePicker
+                    value={time}
+                    mode="time"
+                    display="compact"
+                    disabled={!daily.enabled}
+                    themeVariant={isDark ? 'dark' : 'light'}
+                    accentColor={accent(isDark)}
+                    onValueChange={(_, date) => changeTime(date)}
+                  />
+                )}
+                <Toggle
+                  label="Daily question"
+                  value={daily.enabled}
+                  onChange={(enabled) => {
+                    selection()
+                    changeDaily({...daily, enabled})
+                  }}
+                  isDark={isDark}
+                />
+              </Row>
+              {timeOpen ? (
                 <DateTimePicker
                   value={time}
                   mode="time"
-                  display="compact"
-                  disabled={!daily.enabled}
+                  is24Hour
                   themeVariant={isDark ? 'dark' : 'light'}
-                  accentColor={accent(isDark)}
-                  onValueChange={(_, date) => changeTime(date)}
+                  onValueChange={(_, date) => {
+                    setTimeOpen(false)
+                    changeTime(date)
+                  }}
+                  onDismiss={() => setTimeOpen(false)}
                 />
-              )}
-              <Toggle
-                label="Daily question"
-                value={daily.enabled}
-                onChange={(enabled) => {
-                  selection()
-                  changeDaily({...daily, enabled})
-                }}
-                isDark={isDark}
-              />
-            </Row>
-            {timeOpen ? (
-              <DateTimePicker
-                value={time}
-                mode="time"
-                is24Hour
-                themeVariant={isDark ? 'dark' : 'light'}
-                onValueChange={(_, date) => {
-                  setTimeOpen(false)
-                  changeTime(date)
-                }}
-                onDismiss={() => setTimeOpen(false)}
-              />
-            ) : null}
-            {daily.enabled && !allowed ? (
-              <Pressable
-                onPress={() => void allowNotifications().catch(() => {})}
-                accessibilityRole="button"
-                accessibilityLabel="Allow notifications"
-                className="min-h-14 flex-row items-center justify-between gap-3 px-5 py-2"
-              >
-                <View className="flex-1">
-                  <Text className="text-darker dark:text-white font-sans text-lg">
-                    Allow notifications
+              ) : null}
+              {daily.enabled && !allowed ? (
+                <Pressable
+                  onPress={() => void allowNotifications().catch(() => {})}
+                  accessibilityRole="button"
+                  accessibilityLabel="Allow notifications"
+                  className="min-h-14 flex-row items-center justify-between gap-3 py-2"
+                  style={{paddingLeft: inset.left - DRAWN_AT.label, paddingRight: inset.right}}
+                >
+                  <View className="flex-1">
+                    <Text className="text-darker dark:text-white font-sans text-lg">
+                      Allow notifications
+                    </Text>
+                    <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
+                      WhoCards can't send you notifications yet.
+                    </Text>
+                  </View>
+                  <Ionicons name="open-outline" size={16} color={mutedColor} />
+                </Pressable>
+              ) : null}
+              <View className="border-gray-lighter dark:border-white/10 min-h-14 items-center justify-center border-t">
+                <Pressable
+                  onPress={() => void Linking.openURL(buildFeedbackUrl()).catch(() => {})}
+                  accessibilityRole="link"
+                  accessibilityLabel="Send feedback"
+                  hitSlop={12}
+                  className="flex-row items-center gap-1.5"
+                >
+                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base font-semibold">
+                    Send feedback
                   </Text>
-                  <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-                    WhoCards can't send you notifications yet.
-                  </Text>
-                </View>
-                <Ionicons name="open-outline" size={16} color={mutedColor} />
-              </Pressable>
-            ) : null}
-            <View className="border-gray-lighter dark:border-white/10 min-h-14 items-center justify-center border-t">
-              <Pressable
-                onPress={() => void Linking.openURL(buildFeedbackUrl()).catch(() => {})}
-                accessibilityRole="link"
-                accessibilityLabel="Send feedback"
-                hitSlop={12}
-                className="flex-row items-center gap-1.5"
-              >
-                <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base font-semibold">
-                  Send feedback
-                </Text>
-                <Ionicons name="open-outline" size={15} color={mutedColor} />
-              </Pressable>
-            </View>
-          </ScrollView>
+                  <Ionicons name="open-outline" size={15} color={mutedColor} />
+                </Pressable>
+              </View>
+            </ScrollView>
+          </RowInset.Provider>
         </View>
       </RNHostView>
     </BottomSheet>

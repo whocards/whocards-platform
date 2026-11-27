@@ -250,7 +250,8 @@ exports[`Settings sheet renders the menu 1`] = `
         | flexDirection: "row"
         | justifyContent: "space-between"
         | paddingBottom: 7
-        | paddingInline: 17.5
+        | paddingLeft: 18
+        | paddingRight: 26
         | paddingTop: 21
         <Text>
           | color: "#111516"
@@ -259,6 +260,7 @@ exports[`Settings sheet renders the menu 1`] = `
           | lineHeight: 28
           "Settings"
         <View accessibilityRole="button" accessibilityLabel="close" accessibilityState={}>
+          | marginRight: -13.7
           <Text>
             | color: "#111516"
             | fontFamily: "ionicons"
@@ -279,7 +281,8 @@ exports[`Settings sheet renders the menu 1`] = `
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -291,12 +294,17 @@ exports[`Settings sheet renders the menu 1`] = `
                 | lineHeight: 24.5
                 "Game"
             <View>
-              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={"disabled":false,"selected":true}>
-                <Text>
-                  "Classic"
-              <View accessibilityRole="button" accessibilityLabel="Game: Pick a Card" accessibilityState={"disabled":false,"selected":false}>
-                <Text>
-                  "Pick a Card"
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 10.5
+              | marginRight: -21.3
+              <View>
+                <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={"disabled":false,"selected":true}>
+                  <Text>
+                    "Classic"
+                <View accessibilityRole="button" accessibilityLabel="Game: Pick a Card" accessibilityState={"disabled":false,"selected":false}>
+                  <Text>
+                    "Pick a Card"
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -307,7 +315,8 @@ exports[`Settings sheet renders the menu 1`] = `
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -319,12 +328,17 @@ exports[`Settings sheet renders the menu 1`] = `
                 | lineHeight: 24.5
                 "Language"
             <View>
-              <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false,"selected":true}>
-                <Text>
-                  "English"
-              <View accessibilityRole="button" accessibilityLabel="Language: Hebrew" accessibilityState={"disabled":false,"selected":false}>
-                <Text>
-                  "Hebrew"
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 10.5
+              | marginRight: -21.3
+              <View>
+                <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false,"selected":true}>
+                  <Text>
+                    "English"
+                <View accessibilityRole="button" accessibilityLabel="Language: Hebrew" accessibilityState={"disabled":false,"selected":false}>
+                  <Text>
+                    "Hebrew"
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -335,7 +349,8 @@ exports[`Settings sheet renders the menu 1`] = `
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -346,7 +361,12 @@ exports[`Settings sheet renders the menu 1`] = `
                 | fontSize: 15.75
                 | lineHeight: 24.5
                 "Second language"
-            <View accessibilityRole="switch" accessibilityLabel="Second language" accessibilityState={"checked":false}>
+            <View>
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 10.5
+              | marginRight: -5.7
+              <View accessibilityRole="switch" accessibilityLabel="Second language" accessibilityState={"checked":false}>
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -357,7 +377,8 @@ exports[`Settings sheet renders the menu 1`] = `
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -369,39 +390,44 @@ exports[`Settings sheet renders the menu 1`] = `
                 | lineHeight: 24.5
                 "Card animation"
             <View>
-              | backgroundColor: "#dcdee9"
-              | borderRadius: 10.5
+              | alignItems: "center"
               | flexDirection: "row"
-              | padding: 3.5
-              <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={"selected":true}>
-                | alignItems: "center"
-                | backgroundColor: "#f5f5f5"
-                | borderRadius: 7
-                | elevation: 1
-                | paddingBlock: 7
-                | paddingInline: 12.25
-                | shadowColor: "#000"
-                | shadowOffset: {"height":1,"width":0}
-                | shadowOpacity: 0.12
-                | shadowRadius: 2
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | fontWeight: 700
-                  | lineHeight: 17.5
-                  "Slide"
-              <View accessibilityRole="button" accessibilityLabel="Card animation: Flip" accessibilityState={"selected":false}>
-                | alignItems: "center"
-                | borderRadius: 7
-                | paddingBlock: 7
-                | paddingInline: 12.25
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | lineHeight: 17.5
-                  "Flip"
+              | gap: 10.5
+              | marginRight: -7.7
+              <View>
+                | backgroundColor: "#dcdee9"
+                | borderRadius: 10.5
+                | flexDirection: "row"
+                | padding: 3.5
+                <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={"selected":true}>
+                  | alignItems: "center"
+                  | backgroundColor: "#f5f5f5"
+                  | borderRadius: 7
+                  | elevation: 1
+                  | paddingBlock: 7
+                  | paddingInline: 12.25
+                  | shadowColor: "#000"
+                  | shadowOffset: {"height":1,"width":0}
+                  | shadowOpacity: 0.12
+                  | shadowRadius: 2
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 12.25
+                    | fontWeight: 700
+                    | lineHeight: 17.5
+                    "Slide"
+                <View accessibilityRole="button" accessibilityLabel="Card animation: Flip" accessibilityState={"selected":false}>
+                  | alignItems: "center"
+                  | borderRadius: 7
+                  | paddingBlock: 7
+                  | paddingInline: 12.25
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 12.25
+                    | lineHeight: 17.5
+                    "Flip"
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -412,7 +438,8 @@ exports[`Settings sheet renders the menu 1`] = `
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -429,7 +456,12 @@ exports[`Settings sheet renders the menu 1`] = `
                 | fontSize: 12.25
                 | lineHeight: 17.5
                 "Readable from both sides of the table"
-            <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+            <View>
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 10.5
+              | marginRight: -5.7
+              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -440,7 +472,8 @@ exports[`Settings sheet renders the menu 1`] = `
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -452,50 +485,55 @@ exports[`Settings sheet renders the menu 1`] = `
                 | lineHeight: 24.5
                 "Theme"
             <View>
-              | backgroundColor: "#dcdee9"
-              | borderRadius: 10.5
+              | alignItems: "center"
               | flexDirection: "row"
-              | padding: 3.5
-              <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":true}>
-                | alignItems: "center"
-                | backgroundColor: "#f5f5f5"
-                | borderRadius: 7
-                | elevation: 1
-                | paddingBlock: 7
-                | paddingInline: 12.25
-                | shadowColor: "#000"
-                | shadowOffset: {"height":1,"width":0}
-                | shadowOpacity: 0.12
-                | shadowRadius: 2
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | fontWeight: 700
-                  | lineHeight: 17.5
-                  "System"
-              <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
-                | alignItems: "center"
-                | borderRadius: 7
-                | paddingBlock: 7
-                | paddingInline: 12.25
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | lineHeight: 17.5
-                  "Light"
-              <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":false}>
-                | alignItems: "center"
-                | borderRadius: 7
-                | paddingBlock: 7
-                | paddingInline: 12.25
-                <Text>
-                  | color: "#111516"
-                  | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | lineHeight: 17.5
-                  "Dark"
+              | gap: 10.5
+              | marginRight: -7.7
+              <View>
+                | backgroundColor: "#dcdee9"
+                | borderRadius: 10.5
+                | flexDirection: "row"
+                | padding: 3.5
+                <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":true}>
+                  | alignItems: "center"
+                  | backgroundColor: "#f5f5f5"
+                  | borderRadius: 7
+                  | elevation: 1
+                  | paddingBlock: 7
+                  | paddingInline: 12.25
+                  | shadowColor: "#000"
+                  | shadowOffset: {"height":1,"width":0}
+                  | shadowOpacity: 0.12
+                  | shadowRadius: 2
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 12.25
+                    | fontWeight: 700
+                    | lineHeight: 17.5
+                    "System"
+                <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
+                  | alignItems: "center"
+                  | borderRadius: 7
+                  | paddingBlock: 7
+                  | paddingInline: 12.25
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 12.25
+                    | lineHeight: 17.5
+                    "Light"
+                <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":false}>
+                  | alignItems: "center"
+                  | borderRadius: 7
+                  | paddingBlock: 7
+                  | paddingInline: 12.25
+                  <Text>
+                    | color: "#111516"
+                    | fontFamily: "golos-text"
+                    | fontSize: 12.25
+                    | lineHeight: 17.5
+                    "Dark"
           <View>
             | alignItems: "center"
             | borderColor: "#dcdee9"
@@ -504,7 +542,8 @@ exports[`Settings sheet renders the menu 1`] = `
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -515,8 +554,13 @@ exports[`Settings sheet renders the menu 1`] = `
                 | fontSize: 15.75
                 | lineHeight: 24.5
                 "Daily question"
-            <View accessibilityLabel="Time: 18:0" accessibilityState={"disabled":false}>
-            <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
+            <View>
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 10.5
+              | marginRight: -5.7
+              <View accessibilityLabel="Time: 18:0" accessibilityState={"disabled":false}>
+              <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
           <View>
             | alignItems: "center"
             | borderColor: "#dcdee9"
@@ -555,7 +599,8 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
         | flexDirection: "row"
         | justifyContent: "space-between"
         | paddingBottom: 7
-        | paddingInline: 17.5
+        | paddingLeft: 18
+        | paddingRight: 26
         | paddingTop: 21
         <Text>
           | color: "#f5f5f5"
@@ -564,6 +609,7 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
           | lineHeight: 28
           "Settings"
         <View accessibilityRole="button" accessibilityLabel="close" accessibilityState={}>
+          | marginRight: -13.7
           <Text>
             | color: "#f5f5f5"
             | fontFamily: "ionicons"
@@ -584,7 +630,8 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -596,12 +643,17 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                 | lineHeight: 24.5
                 "Game"
             <View>
-              <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={"disabled":false,"selected":true}>
-                <Text>
-                  "Classic"
-              <View accessibilityRole="button" accessibilityLabel="Game: Pick a Card" accessibilityState={"disabled":false,"selected":false}>
-                <Text>
-                  "Pick a Card"
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 10.5
+              | marginRight: -21.3
+              <View>
+                <View accessibilityRole="button" accessibilityLabel="Game: Classic" accessibilityState={"disabled":false,"selected":true}>
+                  <Text>
+                    "Classic"
+                <View accessibilityRole="button" accessibilityLabel="Game: Pick a Card" accessibilityState={"disabled":false,"selected":false}>
+                  <Text>
+                    "Pick a Card"
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -612,7 +664,8 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -624,12 +677,17 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                 | lineHeight: 24.5
                 "Language"
             <View>
-              <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false,"selected":true}>
-                <Text>
-                  "English"
-              <View accessibilityRole="button" accessibilityLabel="Language: Hebrew" accessibilityState={"disabled":false,"selected":false}>
-                <Text>
-                  "Hebrew"
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 10.5
+              | marginRight: -21.3
+              <View>
+                <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false,"selected":true}>
+                  <Text>
+                    "English"
+                <View accessibilityRole="button" accessibilityLabel="Language: Hebrew" accessibilityState={"disabled":false,"selected":false}>
+                  <Text>
+                    "Hebrew"
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -640,7 +698,8 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -651,7 +710,12 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                 | fontSize: 15.75
                 | lineHeight: 24.5
                 "Second language"
-            <View accessibilityRole="switch" accessibilityLabel="Second language" accessibilityState={"checked":false}>
+            <View>
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 10.5
+              | marginRight: -5.7
+              <View accessibilityRole="switch" accessibilityLabel="Second language" accessibilityState={"checked":false}>
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -662,7 +726,8 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -674,39 +739,44 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                 | lineHeight: 24.5
                 "Card animation"
             <View>
-              | backgroundColor: "#f5f5f51a"
-              | borderRadius: 10.5
+              | alignItems: "center"
               | flexDirection: "row"
-              | padding: 3.5
-              <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={"selected":true}>
-                | alignItems: "center"
-                | backgroundColor: "#262432"
-                | borderRadius: 7
-                | elevation: 1
-                | paddingBlock: 7
-                | paddingInline: 12.25
-                | shadowColor: "#000"
-                | shadowOffset: {"height":1,"width":0}
-                | shadowOpacity: 0.12
-                | shadowRadius: 2
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | fontWeight: 700
-                  | lineHeight: 17.5
-                  "Slide"
-              <View accessibilityRole="button" accessibilityLabel="Card animation: Flip" accessibilityState={"selected":false}>
-                | alignItems: "center"
-                | borderRadius: 7
-                | paddingBlock: 7
-                | paddingInline: 12.25
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | lineHeight: 17.5
-                  "Flip"
+              | gap: 10.5
+              | marginRight: -7.7
+              <View>
+                | backgroundColor: "#f5f5f51a"
+                | borderRadius: 10.5
+                | flexDirection: "row"
+                | padding: 3.5
+                <View accessibilityRole="button" accessibilityLabel="Card animation: Slide" accessibilityState={"selected":true}>
+                  | alignItems: "center"
+                  | backgroundColor: "#262432"
+                  | borderRadius: 7
+                  | elevation: 1
+                  | paddingBlock: 7
+                  | paddingInline: 12.25
+                  | shadowColor: "#000"
+                  | shadowOffset: {"height":1,"width":0}
+                  | shadowOpacity: 0.12
+                  | shadowRadius: 2
+                  <Text>
+                    | color: "#f5f5f5"
+                    | fontFamily: "golos-text"
+                    | fontSize: 12.25
+                    | fontWeight: 700
+                    | lineHeight: 17.5
+                    "Slide"
+                <View accessibilityRole="button" accessibilityLabel="Card animation: Flip" accessibilityState={"selected":false}>
+                  | alignItems: "center"
+                  | borderRadius: 7
+                  | paddingBlock: 7
+                  | paddingInline: 12.25
+                  <Text>
+                    | color: "#f5f5f5"
+                    | fontFamily: "golos-text"
+                    | fontSize: 12.25
+                    | lineHeight: 17.5
+                    "Flip"
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -717,7 +787,8 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -734,7 +805,12 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                 | fontSize: 12.25
                 | lineHeight: 17.5
                 "Readable from both sides of the table"
-            <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
+            <View>
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 10.5
+              | marginRight: -5.7
+              <View accessibilityRole="switch" accessibilityLabel="Tabletop mode" accessibilityState={"checked":false}>
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -745,7 +821,8 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -757,50 +834,55 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                 | lineHeight: 24.5
                 "Theme"
             <View>
-              | backgroundColor: "#f5f5f51a"
-              | borderRadius: 10.5
+              | alignItems: "center"
               | flexDirection: "row"
-              | padding: 3.5
-              <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":false}>
-                | alignItems: "center"
-                | borderRadius: 7
-                | paddingBlock: 7
-                | paddingInline: 12.25
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | lineHeight: 17.5
-                  "System"
-              <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
-                | alignItems: "center"
-                | borderRadius: 7
-                | paddingBlock: 7
-                | paddingInline: 12.25
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | lineHeight: 17.5
-                  "Light"
-              <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":true}>
-                | alignItems: "center"
-                | backgroundColor: "#262432"
-                | borderRadius: 7
-                | elevation: 1
-                | paddingBlock: 7
-                | paddingInline: 12.25
-                | shadowColor: "#000"
-                | shadowOffset: {"height":1,"width":0}
-                | shadowOpacity: 0.12
-                | shadowRadius: 2
-                <Text>
-                  | color: "#f5f5f5"
-                  | fontFamily: "golos-text"
-                  | fontSize: 12.25
-                  | fontWeight: 700
-                  | lineHeight: 17.5
-                  "Dark"
+              | gap: 10.5
+              | marginRight: -7.7
+              <View>
+                | backgroundColor: "#f5f5f51a"
+                | borderRadius: 10.5
+                | flexDirection: "row"
+                | padding: 3.5
+                <View accessibilityRole="button" accessibilityLabel="Theme: System" accessibilityState={"selected":false}>
+                  | alignItems: "center"
+                  | borderRadius: 7
+                  | paddingBlock: 7
+                  | paddingInline: 12.25
+                  <Text>
+                    | color: "#f5f5f5"
+                    | fontFamily: "golos-text"
+                    | fontSize: 12.25
+                    | lineHeight: 17.5
+                    "System"
+                <View accessibilityRole="button" accessibilityLabel="Theme: Light" accessibilityState={"selected":false}>
+                  | alignItems: "center"
+                  | borderRadius: 7
+                  | paddingBlock: 7
+                  | paddingInline: 12.25
+                  <Text>
+                    | color: "#f5f5f5"
+                    | fontFamily: "golos-text"
+                    | fontSize: 12.25
+                    | lineHeight: 17.5
+                    "Light"
+                <View accessibilityRole="button" accessibilityLabel="Theme: Dark" accessibilityState={"selected":true}>
+                  | alignItems: "center"
+                  | backgroundColor: "#262432"
+                  | borderRadius: 7
+                  | elevation: 1
+                  | paddingBlock: 7
+                  | paddingInline: 12.25
+                  | shadowColor: "#000"
+                  | shadowOffset: {"height":1,"width":0}
+                  | shadowOpacity: 0.12
+                  | shadowRadius: 2
+                  <Text>
+                    | color: "#f5f5f5"
+                    | fontFamily: "golos-text"
+                    | fontSize: 12.25
+                    | fontWeight: 700
+                    | lineHeight: 17.5
+                    "Dark"
           <View>
             | alignItems: "center"
             | borderColor: "#f5f5f51a"
@@ -809,7 +891,8 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
             | justifyContent: "space-between"
             | minHeight: 49
             | paddingBlock: 7
-            | paddingInline: 17.5
+            | paddingLeft: 18
+            | paddingRight: 26
             <View>
               | flexBasis: "0%"
               | flexGrow: 1
@@ -820,8 +903,13 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                 | fontSize: 15.75
                 | lineHeight: 24.5
                 "Daily question"
-            <View accessibilityLabel="Time: 18:0" accessibilityState={"disabled":false}>
-            <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
+            <View>
+              | alignItems: "center"
+              | flexDirection: "row"
+              | gap: 10.5
+              | marginRight: -5.7
+              <View accessibilityLabel="Time: 18:0" accessibilityState={"disabled":false}>
+              <View accessibilityRole="switch" accessibilityLabel="Daily question" accessibilityState={"checked":true}>
           <View>
             | alignItems: "center"
             | borderColor: "#f5f5f51a"

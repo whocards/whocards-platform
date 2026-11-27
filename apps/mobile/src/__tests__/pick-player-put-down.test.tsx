@@ -96,7 +96,6 @@ describe('PickPlayer — moving on (issue #456)', () => {
 
   it.each([
     ['slide', -120],
-    ['slide', 120],
     ['flip', -120],
   ])('with Card animation %s, a swipe of %d puts the Card down', async (animation, distance) => {
     mockCardAnimation.mockResolvedValue(animation)
@@ -104,6 +103,14 @@ describe('PickPlayer — moving on (issue #456)', () => {
     await swipe(distance)
     expect(screen.queryByText(QUESTION)).toBeNull()
     expect(screen.getByLabelText('Pick a card')).toBeTruthy()
+  })
+
+  it('treats a swipe right as Back, so the first Card stays put', async () => {
+    mockCardAnimation.mockResolvedValue('slide')
+    await revealCard()
+    await swipe(120)
+    expect(screen.getByText(QUESTION)).toBeTruthy()
+    expect(screen.queryByLabelText('Pick a card')).toBeNull()
   })
 
   it('keeps the Card after a swipe that stops short', async () => {

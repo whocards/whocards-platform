@@ -592,8 +592,6 @@ export const UnifiedPlayer = ({
   const cardFlip = useSharedValue(initialGame === 'pick' && !startId ? 0 : 1)
   const dragX = useSharedValue(0)
   // Incoming previous card sliding back onto an already-open Card (4B).
-  const backSlideX = useSharedValue(-(winWidth + 60))
-  const [slidingBackCardId, setSlidingBackCardId] = useState<string | null>(null)
   const pickBusyRef = useRef(false)
 
   const turnsClassic = reduceMotion || cardAnimation === 'flip'
@@ -759,14 +757,39 @@ export const UnifiedPlayer = ({
     cardFlip.set(withTiming(1, {duration: dur, easing: MOTION_EASING.standard}))
   }, [deckSlug, revealChrome, dragX, cardFlip, reduceMotion])
 
-  // Re-centre a slid-away Card only once its new Question commits, or the old one flashes back.
+  const releasePickBusy = useCallback(() => {
+    pickBusyRef.current = false
+  }, [])
+
+  // Move the Card only once its new Question commits, or the old one flashes in the new spot.
   const pickResetOnCommit = useRef(false)
+  const pickSlideInOnCommit = useRef(false)
   useLayoutEffect(() => {
-    if (!pickResetOnCommit.current) return
-    pickResetOnCommit.current = false
-    dragX.set(0)
-    cardFlip.set(1)
-  }, [questionId, dragX, cardFlip])
+    if (pickResetOnCommit.current) {
+      pickResetOnCommit.current = false
+      dragX.set(0)
+      cardFlip.set(1)
+    }
+    if (pickSlideInOnCommit.current) {
+      // Back: the previous Card itself slides in from the left over the one it replaces.
+      pickSlideInOnCommit.current = false
+      cardFlip.set(1)
+      dragX.set(-(winWidth + 60))
+      dragX.set(
+        withTiming(
+          0,
+          {
+            duration: motionDuration(MOTION_DURATION.slide, reduceMotion),
+            easing: MOTION_EASING.enter,
+          },
+          () => {
+            'worklet'
+            runOnJS(releasePickBusy)()
+          }
+        )
+      )
+    }
+  }, [questionId, dragX, cardFlip, winWidth, reduceMotion, releasePickBusy])
 
   const commitPickNext = useCallback(
     (advanceSeen: boolean) => {
@@ -784,72 +807,77 @@ export const UnifiedPlayer = ({
     [viewTracker]
   )
 
-  const pickPutDown = useCallback(
-    (dir: 1 | -1 = 1) => {
-      if (pickBusyRef.current) return
-      pickBusyRef.current = true
-      selection()
-      const advanceSeen = hasSeenNext
-      const done = () => {
-        'worklet'
-        runOnJS(commitPickNext)(advanceSeen)
+  const pickPutDown = useCallback(() => {
+    if (pickBusyRef.current) return
+    pickBusyRef.current = true
+    selection()
+    const advanceSeen = hasSeenNext
+    const done = () => {
+      'worklet'
+      runOnJS(commitPickNext)(advanceSeen)
+    }
+    if (slidesPick) {
+      const fullDur = motionDuration(MOTION_DURATION.slide, reduceMotion)
+      const remaining = Math.max(0.25, 1 - Math.abs(dragX.get()) / (winWidth + 60))
+      dragX.set(
+        withTiming(
+          -(winWidth + 60),
+          {
+            duration: Math.round(fullDur * remaining),
+            easing: MOTION_EASING.standard,
+          },
+          done
+        )
+      )
+    } else if (advanceSeen) {
+      // Flip mode moving forward through already-seen Cards: turn edge-on, swap, turn face-up.
+      const half = Math.round(
+        (reduceMotion ? MOTION_DURATION.fade : motionDuration(MOTION_DURATION.flip, false)) / 2
+      )
+      const remainingFirstHalf = Math.max(0.25, (cardFlip.get() - 0.5) / 0.5)
+      const swapToNextSeen = () => {
+        pickBusyRef.current = false
+        viewTracker.endView('advanced')
+        lastNavActionRef.current = {type: 'next'}
+        dispatch({type: 'pick_advance_seen'})
+        cardFlip.set(withTiming(1, {duration: half, easing: MOTION_EASING.enter}))
       }
-      if (slidesPick) {
-        const fullDur = motionDuration(MOTION_DURATION.slide, reduceMotion)
-        const remaining = Math.max(0.25, 1 - Math.abs(dragX.get()) / (winWidth + 60))
-        dragX.set(
-          withTiming(
-            -dir * (winWidth + 60),
-            {
-              duration: Math.round(fullDur * remaining),
-              easing: MOTION_EASING.standard,
-            },
-            done
-          )
+      cardFlip.set(
+        withTiming(
+          0.5,
+          {duration: Math.round(half * remainingFirstHalf), easing: MOTION_EASING.exit},
+          () => {
+            'worklet'
+            runOnJS(swapToNextSeen)()
+          }
         )
-      } else if (advanceSeen) {
-        // Flip mode moving forward through already-seen Cards: turn edge-on, swap, turn face-up.
-        const half = Math.round(
-          (reduceMotion ? MOTION_DURATION.fade : motionDuration(MOTION_DURATION.flip, false)) / 2
+      )
+    } else {
+      const fullDur = reduceMotion
+        ? MOTION_DURATION.fade
+        : motionDuration(MOTION_DURATION.flip, false)
+      const remaining = Math.max(0.25, cardFlip.get())
+      cardFlip.set(
+        withTiming(
+          0,
+          {duration: Math.round(fullDur * remaining), easing: MOTION_EASING.standard},
+          done
         )
-        const remainingFirstHalf = Math.max(0.25, (cardFlip.get() - 0.5) / 0.5)
-        const swapToNextSeen = () => {
-          pickBusyRef.current = false
-          viewTracker.endView('advanced')
-          lastNavActionRef.current = {type: 'next'}
-          dispatch({type: 'pick_advance_seen'})
-          cardFlip.set(withTiming(1, {duration: half, easing: MOTION_EASING.enter}))
-        }
-        cardFlip.set(
-          withTiming(
-            0.5,
-            {duration: Math.round(half * remainingFirstHalf), easing: MOTION_EASING.exit},
-            () => {
-              'worklet'
-              runOnJS(swapToNextSeen)()
-            }
-          )
-        )
-      } else {
-        const fullDur = reduceMotion
-          ? MOTION_DURATION.fade
-          : motionDuration(MOTION_DURATION.flip, false)
-        const remaining = Math.max(0.25, cardFlip.get())
-        cardFlip.set(
-          withTiming(
-            0,
-            {duration: Math.round(fullDur * remaining), easing: MOTION_EASING.standard},
-            done
-          )
-        )
-      }
-    },
-    [hasSeenNext, slidesPick, dragX, winWidth, reduceMotion, cardFlip, commitPickNext, viewTracker]
-  )
+      )
+    }
+  }, [
+    hasSeenNext,
+    slidesPick,
+    dragX,
+    winWidth,
+    reduceMotion,
+    cardFlip,
+    commitPickNext,
+    viewTracker,
+  ])
 
   const commitPickPreviousFromCard = useCallback(() => {
     pickBusyRef.current = false
-    setSlidingBackCardId(null)
     lastNavActionRef.current = {type: 'previous'}
     viewTracker.endView('previous')
     dispatch({type: 'pick_previous'})
@@ -886,23 +914,12 @@ export const UnifiedPlayer = ({
     if (isAtFirst || !prevQuestionId) return
     selection()
     if (slidesPick) {
-      // 4B: Previous Card slides straight in from left right onto the stack.
+      // 4B: the previous Card slides in from the left; the one it replaces waits underneath.
       pickBusyRef.current = true
-      setSlidingBackCardId(prevQuestionId)
-      backSlideX.set(-(winWidth + 60))
-      backSlideX.set(
-        withTiming(
-          0,
-          {
-            duration: motionDuration(MOTION_DURATION.slide, reduceMotion),
-            easing: MOTION_EASING.enter,
-          },
-          () => {
-            'worklet'
-            runOnJS(commitPickPreviousFromCard)()
-          }
-        )
-      )
+      pickSlideInOnCommit.current = true
+      lastNavActionRef.current = {type: 'previous'}
+      viewTracker.endView('previous')
+      dispatch({type: 'pick_previous'})
     } else {
       // Flip mode going back between already-seen Cards: turn edge-on, swap, turn face-up.
       pickBusyRef.current = true
@@ -932,15 +949,15 @@ export const UnifiedPlayer = ({
     cardFlip,
     isAtFirst,
     prevQuestionId,
-    backSlideX,
     commitPickPreviousFromCard,
+    viewTracker,
   ])
 
   const goNext = useCallback(() => {
     revealChrome()
     if (isPick) {
       if (phase === 'pick') handlePickCard()
-      else pickPutDown(1)
+      else pickPutDown()
       return
     }
     animateClassicStep(1, false)
@@ -1193,14 +1210,11 @@ export const UnifiedPlayer = ({
     goNext,
   ])
 
-  const swipeAwayPick = useCallback(
-    (dir: 1 | -1) => {
-      impact('medium')
-      revealChrome()
-      pickPutDown(dir)
-    },
-    [revealChrome, pickPutDown]
-  )
+  const swipeAwayPick = useCallback(() => {
+    impact('medium')
+    revealChrome()
+    pickPutDown()
+  }, [revealChrome, pickPutDown])
 
   const pickCardTap = useMemo(
     () =>
@@ -1222,7 +1236,9 @@ export const UnifiedPlayer = ({
         'worklet'
         if (!onCard) return
         if (slidesPickSV.get()) {
-          dragX.set(event.translationX)
+          const tx = event.translationX
+          // Right means Back, which brings the previous Card over this one, so this one only gives a little.
+          dragX.set(tx > 0 ? tx * 0.25 : tx)
         } else {
           const minFlip = hasSeenNextSV.get() ? 0.5 : 0
           cardFlip.set(Math.max(minFlip, 1 - Math.min(Math.abs(event.translationX) / FLIP_DRAG, 1)))
@@ -1237,12 +1253,13 @@ export const UnifiedPlayer = ({
           if (swiped) runOnJS((tx || event.velocityX) < 0 ? goNext : goPrevious)()
           return
         }
-        if (swiped) {
-          runOnJS(swipeAwayPick)((tx || event.velocityX) < 0 ? 1 : -1)
+        const back = (tx || event.velocityX) > 0
+        if (swiped && !back) {
+          runOnJS(swipeAwayPick)()
           return
         }
-        dragX.set(withSpring(0, {damping: 20, stiffness: 300}))
-        cardFlip.set(withTiming(1, {duration: 150}))
+        if (swiped && back && !isAtFirstSV.get()) runOnJS(goPrevious)()
+        if (!(swiped && back && !isAtFirstSV.get())) cardFlip.set(withTiming(1, {duration: 150}))
       })
     return Gesture.Race(tap, pan)
   }, [
@@ -1255,6 +1272,7 @@ export const UnifiedPlayer = ({
     swipeAwayPick,
     goNext,
     goPrevious,
+    isAtFirstSV,
   ])
 
   // --- Animated Styles (100% GPU transforms + opacity, zero layout thrash) ---
@@ -1394,15 +1412,12 @@ export const UnifiedPlayer = ({
     const tilt = slidesPickSV.get()
       ? interpolate(tx, [-winWidth, 0, winWidth], [-11, 0, 11], 'clamp')
       : 0
-    const backTuck = slidingBackCardId
-      ? interpolate(backSlideX.get(), [-(winWidth + 60), 0], [1, 0.95], 'clamp')
-      : 1
     return {
       transform: [
         {translateX: tx},
         {rotate: `${tilt}deg`},
         {translateY: interpolate(cardFlip.get(), [0, 0.5, 1], [0, -16, 0], 'clamp')},
-        {scale: interpolate(cardFlip.get(), [0, 0.5, 1], [1, 1.04, 1], 'clamp') * backTuck},
+        {scale: interpolate(cardFlip.get(), [0, 0.5, 1], [1, 1.04, 1], 'clamp')},
       ],
     }
   })
@@ -1436,12 +1451,6 @@ export const UnifiedPlayer = ({
           backfaceVisibility: 'hidden' as const,
         }
   )
-
-  const slidingBackStyle = useAnimatedStyle(() => {
-    const tx = backSlideX.get()
-    const rot = interpolate(tx, [-(winWidth + 60), 0], [-10, 0], 'clamp')
-    return {transform: [{translateX: tx}, {rotate: `${rot}deg`}]}
-  })
 
   // Both stages stay mounted in Pick a Card and swap visibility, so neither's Card texture decodes on screen.
   const morphHidden = isPick && !isMorphing
@@ -1777,46 +1786,6 @@ export const UnifiedPlayer = ({
                               <CardEdge />
                             </Animated.View>
                           </Animated.View>
-
-                          {/* 4B: Previous Card sliding straight back onto the stack from the left */}
-                          {slidingBackCardId ? (
-                            <Animated.View
-                              pointerEvents="none"
-                              style={[StyleSheet.absoluteFill, {zIndex: 400}, slidingBackStyle]}
-                              className="bg-darker overflow-hidden rounded-[20px]"
-                            >
-                              <CardFaceLinen />
-                              <Text
-                                className="text-primary-dark font-title"
-                                style={{
-                                  position: 'absolute',
-                                  bottom: CARD_Q_BOTTOM,
-                                  right: CARD_Q_RIGHT,
-                                  fontSize: QUESTION_MARK_SIZE,
-                                  lineHeight: QUESTION_MARK_LINE_HEIGHT,
-                                }}
-                              >
-                                ?
-                              </Text>
-                              <View
-                                className="flex-1 justify-start"
-                                style={{
-                                  paddingHorizontal: CARD_PADDING_X,
-                                  paddingVertical: CARD_PADDING_Y,
-                                }}
-                              >
-                                <QuestionText
-                                  questionKey={slidingBackCardId}
-                                  text={textOf(slidingBackCardId)}
-                                  language={language}
-                                  box={cardInner}
-                                  secondaries={secondariesOf(slidingBackCardId)}
-                                  mirrored={tabletop}
-                                />
-                              </View>
-                              <CardEdge />
-                            </Animated.View>
-                          ) : null}
                         </View>
                       </GestureDetector>
                       <View style={{height: HINT_SPACE, marginTop: HINT_GAP}} />
@@ -1923,6 +1892,7 @@ export const UnifiedPlayer = ({
           }}
           theme={theme}
           onSelectTheme={selectTheme}
+          alignTo={isPick ? {left: cardLeft, right: cardLeft + cardWidth} : undefined}
         />
       </View>
     </ScreenBackground>
