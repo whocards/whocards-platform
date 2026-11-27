@@ -90,11 +90,13 @@ describe('PlayerBar — no Language/Display button (issue #176)', () => {
     expect(screen.getByLabelText('next question')).toBeTruthy()
   })
 
-  it('hides Share when showShare is false, keeping Back and Next', async () => {
-    await renderBar({showShare: false})
-    expect(screen.queryByLabelText('share question')).toBeNull()
-    expect(screen.getByLabelText('previous question')).toBeTruthy()
-    expect(screen.getByLabelText('next question')).toBeTruthy()
+  it('disables Share, rather than removing it, while there is no card to share', async () => {
+    const onShare = jest.fn()
+    await renderBar({shareDisabled: true, onShare})
+    const share = screen.getByLabelText('share question')
+    expect(share.props.accessibilityState).toEqual({disabled: true})
+    await fireEvent.press(share)
+    expect(onShare).not.toHaveBeenCalled()
   })
 })
 
@@ -110,11 +112,6 @@ describe('PlayerBar — Exit button (issue #186)', () => {
     await renderBar({onExit})
     await fireEvent.press(screen.getByLabelText('exit deck'))
     expect(onExit).toHaveBeenCalledTimes(1)
-  })
-
-  it('is present regardless of showShare — Exit is the only exit once the top chip is gone', async () => {
-    await renderBar({showShare: false})
-    expect(screen.getByLabelText('exit deck')).toBeTruthy()
   })
 })
 
@@ -133,11 +130,6 @@ describe('PlayerBar — Settings gear (issue #197)', () => {
     expect(screen.getByText('Settings')).toBeTruthy()
     await fireEvent.press(screen.getByLabelText('open settings'))
     expect(onSettings).toHaveBeenCalledTimes(1)
-  })
-
-  it('stays when Share is hidden (Pick a Card before a deal)', async () => {
-    await renderBar({showShare: false})
-    expect(screen.getByLabelText('open settings')).toBeTruthy()
   })
 })
 

@@ -7,7 +7,7 @@ import {button, launchClean, pickSetting, startPlay} from './support'
 test('Pick a Card deals a card, puts it down, and Back re-reads it', async (fixtures) => {
   const {screen} = fixtures
   await launchClean(fixtures)
-  await pickSetting(screen, 'Game: Classic', 'Pick a Card')
+  await pickSetting(screen, 'Game', 'Pick a Card')
   await startPlay(screen)
 
   const pick = button(screen, 'Pick a card')
@@ -16,9 +16,8 @@ test('Pick a Card deals a card, puts it down, and Back re-reads it', async (fixt
   await pick.tap()
   await expect(pick).toBeHidden()
 
-  const next = button(screen, 'Tap for next card')
-  await expect(next).toBeVisible()
-  await next.tap()
+  // A tap anywhere on the dealt card puts it down.
+  await screen.tapAt({x: 200, y: 400})
   await expect(pick).toBeVisible()
 
   // Above the deck, so the tap only brings the controls back.

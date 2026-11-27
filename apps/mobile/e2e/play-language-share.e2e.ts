@@ -7,6 +7,7 @@ import {
   closeSheet,
   launchClean,
   pickLanguage,
+  picker,
   revealControls,
   startPlay,
   swipeCard,
@@ -16,17 +17,17 @@ import {
 test('Play in Hebrew, swipe both ways, open Settings mid-play, and share', async (fixtures) => {
   const {screen} = fixtures
   await launchClean(fixtures)
-  await pickLanguage(screen, 'English', 'Hebrew')
+  await pickLanguage(screen, 'Hebrew')
   await startPlay(screen)
 
   await swipeCard(screen, 'left')
   await swipeCard(screen, 'right')
 
-  // The player's gear shows the same sheet, without the Game row.
+  // The player's gear shows the same sheet, Game included.
   await revealControls(screen)
   await tapUntil(button(screen, 'open settings'), closeSheet(screen))
-  await expect(button(screen, 'Languages: Hebrew')).toBeVisible()
-  await expect(button(screen, /^Game: /)).toBeHidden()
+  await expect(screen.getByText('Hebrew')).toBeVisible()
+  await expect(picker(screen, 'Game')).toBeVisible()
   await closeSettings(screen)
 
   await revealControls(screen)

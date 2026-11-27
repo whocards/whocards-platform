@@ -112,24 +112,21 @@ export const openSettings = (screen: Screen) =>
 export const closeSettings = (screen: Screen) =>
   tapUntil(closeSheet(screen), closeSheet(screen), 'hidden')
 
-/** Opens Settings from the landing, picks `option` on the page behind `row`, and closes it. */
-export async function pickSetting(screen: Screen, row: string, option: string) {
+/** A Settings picker, by its row's label: "Language" on iOS, "Language: English" on Android, never Second language. */
+export const picker = (screen: Screen, label: string) =>
+  button(screen, new RegExp(`^${label}(: .*)?$`))
+
+/** Opens Settings from the landing, picks `option` in the popup menu of the `label` picker, and closes it. */
+export async function pickSetting(screen: Screen, label: string, option: string) {
   await openSettings(screen)
-  await tapUntil(button(screen, row), screen.getByText(option))
+  await tapUntil(picker(screen, label), screen.getByText(option))
+  // The pick sets the value and closes the menu on its own.
   await screen.getByText(option).tap()
-  // The pick slides back to the menu on its own (settings-modal.tsx goBack()).
-  await expect(button(screen, row)).toBeHidden()
   await closeSettings(screen)
 }
 
-/** Opens Settings from the landing, picks `to` on the Languages page, and closes it (issue #460). */
-export async function pickLanguage(screen: Screen, from: string, to: string) {
-  await openSettings(screen)
-  await tapUntil(button(screen, `Languages: ${from}`), button(screen, `Language: ${to}`))
-  await button(screen, `Language: ${to}`).tap()
-  await tapUntil(screen.getByLabel('back', {exact: true}), button(screen, `Languages: ${to}`))
-  await closeSettings(screen)
-}
+/** Opens Settings from the landing, picks the Language `to`, and closes it. */
+export const pickLanguage = (screen: Screen, to: string) => pickSetting(screen, 'Language', to)
 
 /** Opens Settings from the landing, taps a Theme segment, and closes it. */
 export async function pickTheme(screen: Screen, theme: string) {

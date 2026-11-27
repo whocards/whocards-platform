@@ -1,89 +1,8 @@
-/**
- * Tests for src/components/settings-modal.tsx (issue #176) — the one Settings
- * menu (home screen, and the play bar gear since #197), replacing the old Library
- * chips (Game, Theme) and the play-screen language sheet (Language, secondary
- * language, Tabletop mode).
- *
- * Issue #189, third pass: this sheet is now a single `Modal` with internal
- * pages (menu, Game, Theme, Language) rather than a stack of separate,
- * on-top-of-each-other `Modal`s (the second #189 pass's approach, dropped
- * after on-device feedback found the modal-swap handoff flickered).
- *
- * Issue #189, fourth pass: two more owner on-device rounds.
- * - Motion: pages now rise from the bottom over the menu (translateY-driven)
- *   instead of sliding in horizontally — the horizontal version "read like
- *   page navigation," jarring next to every other sheet in the app. The menu
- *   stays mounted and dims underneath rather than sliding away.
- * - Dismiss semantics shifted with the motion: a tap on the dim behind a
- *   risen page now pops that page (same as Android back), not a full close —
- *   the *outer* sheet's own backdrop still fully closes, but it's covered
- *   while a page is risen so it isn't reachable in that state.
- *
- * Issue #460: layout C. One screen with Game, a combined Languages page, inline
- * Card animation and Theme segmented controls, Tabletop mode and Daily question
- * checkboxes, the Daily question time as a chip, and Send feedback as a footer link.
- *
- * The storage libs (game-store, tabletop-store, language-store) are mocked
- * outright rather than run for real: they already have their own dedicated
- * test files (game-store.test.ts, tabletop-store.test.ts,
- * language-store.test.ts), and their module-level in-memory caches would
- * otherwise bleed state between the `it()` blocks in this file. This file's
- * job is the component's wiring — not the storage layer itself.
- */
 import React from 'react'
 import {Linking, Platform} from 'react-native'
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native'
+import {fireEvent, render, screen, waitFor} from '@testing-library/react-native'
 
-// Jest's default is 5s PER TEST, which this file alone outgrew on CI's 4-vCPU
-// runners: its first `render()` also pays NativeWind's one-off style-registry
-// init, and jest runs its workers alongside the website's vitest run in the
-// same `turbo run test`. The whole file took 12.4s there before the jest 30 /
-// @testing-library/react-native 14 bump and 19.6s after it — enough for that
-// first test to cross 5s and fail CI, while the file runs in 1.8s locally.
-// Nothing hangs; it's wall-clock contention. Scoped to this file so a
-// genuinely stuck test elsewhere still fails fast on the 5s default.
 jest.setTimeout(20_000)
-
-jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
-}))
-
-// react-native-reanimated's native Worklets module isn't available under plain
-// jest-expo — importing it for real (even just to spread its official jest mock's
-// exports via jest.requireActual, which bypasses moduleNameMapper) throws
-// "Native part of Worklets doesn't seem to be initialized" (see
-// pressable-scale.tsx / player-bar.test.tsx's own mock for the identical,
-// pre-existing issue — that one sidesteps it by mocking the *component* that
-// uses reanimated instead, but settings-modal.tsx uses it directly). So this is
-// a small, self-contained mock of just the reanimated surface settings-modal.tsx
-// actually uses, never touching the real package: withTiming jumps straight to
-// the end value and fires its completion callback synchronously (no timers to
-// fake), runOnJS is the identity function, and useReducedMotion (which the
-// official mock doesn't implement either — its own source flags it "ADD ME IF
-// NEEDED") returns `false`. `__esModule: true` matters here — without it,
-// Babel's CJS interop resolves `import Animated from '...'` to this whole mock
-// object instead of its `default` property, and `Animated.View` silently
-// becomes `undefined`.
-jest.mock('react-native-reanimated', () => {
-  const {View} = jest.requireActual('react-native')
-  return {
-    __esModule: true,
-    default: {View},
-    // Only ever called here as `.set(withTiming(...))` — a plain value, never
-    // the functional-updater form — so this doesn't need to support that form.
-    useSharedValue: (init: unknown) => {
-      const ref = {value: init}
-      return {get: () => ref.value, set: (next: unknown) => (ref.value = next)}
-    },
-    useAnimatedStyle: (factory: () => unknown) => factory(),
-    useReducedMotion: () => false,
-    withTiming: (toValue: unknown, _config?: unknown, callback?: (finished: boolean) => void) => {
-      callback?.(true)
-      return toValue
-    },
-    runOnJS: (fn: (...args: unknown[]) => unknown) => fn,
-  }
-})
 
 jest.mock('@/lib/game-store', () => ({
   getStoredGame: jest.fn().mockResolvedValue('wh'),
@@ -151,7 +70,7 @@ beforeEach(() => {
   mockedGetStoredTabletopMode.mockResolvedValue(false)
   mockedGetStoredLanguage.mockResolvedValue(undefined)
   mockedGetStoredSecondaryLanguages.mockResolvedValue([])
-  jest.mocked(getDailySetting).mockResolvedValue({enabled: true, hour: 18})
+  jest.mocked(getDailySetting).mockResolvedValue({enabled: true, hour: 18, minute: 0})
   jest.mocked(notificationsAllowed).mockResolvedValue(true)
 })
 
@@ -168,26 +87,21 @@ const renderModal = (overrides: Partial<React.ComponentProps<typeof SettingsModa
     />
   )
 
-/**
- * Fires the sheet's Android hardware-back handler (`<Modal onRequestClose>`).
- *
- * @testing-library/react-native 14 removed the composite `UNSAFE_getByType`
- * query (https://github.com/callstack/react-native-testing-library/releases/tag/v14.0.0);
- * RN's `<Modal>` does render a host element that carries `onRequestClose`, so
- * match on the host type instead.
- */
-const pressAndroidBack = async () => {
-  const [modal] = screen.root?.queryAll((node) => node.type === 'Modal', {includeSelf: true}) ?? []
-  if (!modal) throw new Error('no <Modal> in the rendered tree')
-  await act(() => modal.props.onRequestClose())
-}
+const selected = (label: string) => screen.getByLabelText(label).props.accessibilityState.selected
 
-describe('SettingsModal — menu (layout C, issue #460)', () => {
-  it('shows every setting on one screen', async () => {
+/** What a screen reader's double-tap on a native switch does. */
+const toggle = (label: string) =>
+  fireEvent(screen.getByLabelText(label), 'accessibilityAction', {
+    nativeEvent: {actionName: 'activate'},
+  })
+
+describe('SettingsModal — one screen, every control inline', () => {
+  it('shows every setting, each with its control', async () => {
     await renderModal()
     await screen.findByText('Settings')
     expect(screen.getByLabelText('Game: Classic')).toBeTruthy()
-    expect(screen.getByLabelText('Languages: English')).toBeTruthy()
+    expect(screen.getByLabelText('Language: English')).toBeTruthy()
+    expect(screen.getByLabelText('Second language: None')).toBeTruthy()
     expect(screen.getByLabelText('Card animation: Slide')).toBeTruthy()
     expect(screen.getByLabelText('Tabletop mode')).toBeTruthy()
     expect(screen.getByLabelText('Theme: System')).toBeTruthy()
@@ -195,65 +109,34 @@ describe('SettingsModal — menu (layout C, issue #460)', () => {
     expect(screen.getByLabelText('Send feedback')).toBeTruthy()
   })
 
-  it('reflects the loaded Game, Theme and Languages', async () => {
+  it('reflects the loaded Game, Theme and languages', async () => {
     mockedGetStoredGame.mockResolvedValue('pick')
     mockedGetStoredLanguage.mockResolvedValue('he')
     mockedGetStoredSecondaryLanguages.mockResolvedValue(['en'])
-    await renderModal({theme: 'dark', languages: ['en', 'he']})
-    await waitFor(() => expect(screen.getByLabelText('Game: Pick a Card')).toBeTruthy())
-    expect(screen.getByLabelText('Theme: Dark').props.accessibilityState).toEqual({selected: true})
-    expect(await screen.findByLabelText('Languages: Hebrew + English')).toBeTruthy()
+    await renderModal({theme: 'dark'})
+    await waitFor(() => expect(selected('Game: Pick a Card')).toBe(true))
+    expect(selected('Theme: Dark')).toBe(true)
+    expect(selected('Language: Hebrew')).toBe(true)
+    expect(selected('Second language: English')).toBe(true)
   })
 
-  it('disables the Languages row for a single-language deck', async () => {
+  it('disables both language pickers for a single-language deck', async () => {
     await renderModal({languages: ['en']})
-    const row = await screen.findByLabelText('Languages: English')
-    expect(row.props.accessibilityState).toEqual({disabled: true})
-    await fireEvent.press(row)
-    expect(screen.queryByLabelText('back')).toBeNull()
+    const language = await screen.findByLabelText('Language: English')
+    expect(language.props.accessibilityState.disabled).toBe(true)
+    expect(screen.getByLabelText('Second language: None').props.accessibilityState.disabled).toBe(
+      true
+    )
   })
 
-  it('switches Theme inline, without opening a page', async () => {
-    const onSelectTheme = jest.fn()
-    await renderModal({onSelectTheme})
-    await fireEvent.press(await screen.findByLabelText('Theme: Dark'))
-    expect(onSelectTheme).toHaveBeenCalledWith('dark')
-    expect(screen.queryByLabelText('back')).toBeNull()
-  })
-})
-
-describe('SettingsModal — in-play sheet (issue #197)', () => {
-  it('hides the Game row when showGame is false, keeping every other setting', async () => {
-    await renderModal({showGame: false})
-    await screen.findByText('Settings')
-    expect(screen.queryByLabelText(/^Game:/)).toBeNull()
-    expect(screen.getByLabelText('Languages: English')).toBeTruthy()
-    expect(screen.getByLabelText('Card animation: Slide')).toBeTruthy()
-    expect(screen.getByLabelText('Tabletop mode')).toBeTruthy()
-    expect(screen.getByLabelText('Theme: System')).toBeTruthy()
-    expect(screen.getByLabelText('Daily question')).toBeTruthy()
+  it('closes from the X and from the sheet itself', async () => {
+    const onClose = jest.fn()
+    await renderModal({onClose})
+    await fireEvent.press(await screen.findByLabelText('close'))
+    await fireEvent.press(screen.getByLabelText('dismiss'))
+    expect(onClose).toHaveBeenCalledTimes(2)
   })
 
-  it("shows a shared link's language over the stored one and reports a pick of the stored one", async () => {
-    mockedGetStoredLanguage.mockResolvedValue('en')
-    const onSelectLanguage = jest.fn()
-    await renderModal({showGame: false, currentLanguage: 'he', onSelectLanguage})
-    await fireEvent.press(await screen.findByLabelText('Languages: Hebrew'))
-    await fireEvent.press(await screen.findByLabelText('Language: English'))
-    expect(onSelectLanguage).toHaveBeenCalledWith('en')
-  })
-
-  it('never offers the language on screen as the Second language', async () => {
-    mockedGetStoredLanguage.mockResolvedValue('en')
-    await renderModal({currentLanguage: 'he'})
-    await fireEvent.press(await screen.findByLabelText('Languages: Hebrew'))
-    await fireEvent.press(screen.getByLabelText('Show: Second language'))
-    await screen.findByLabelText('Second language: English')
-    expect(screen.queryByLabelText('Second language: Hebrew')).toBeNull()
-  })
-})
-
-describe('SettingsModal — reopening (issue #197)', () => {
   it('re-reads stored settings on every open, so a change made in another sheet shows', async () => {
     const {rerender} = await renderModal({visible: false})
     mockedGetStoredTabletopMode.mockResolvedValue(true)
@@ -267,34 +150,128 @@ describe('SettingsModal — reopening (issue #197)', () => {
     }
     await rerender(<SettingsModal visible {...props} />)
     await waitFor(() =>
-      expect(screen.getByLabelText('Tabletop mode').props.accessibilityState).toMatchObject({
+      expect(screen.getByLabelText('Tabletop mode').props.accessibilityState).toEqual({
         checked: true,
       })
     )
-    expect(screen.getByLabelText('Languages: Hebrew')).toBeTruthy()
+    expect(selected('Language: Hebrew')).toBe(true)
   })
 })
 
-describe('SettingsModal — Notifications (issues #361, #364)', () => {
-  it('turns the daily question off, hiding its time', async () => {
-    await renderModal()
-    await screen.findByLabelText('Time: 18:00')
-    await fireEvent.press(screen.getByLabelText('Daily question'))
-    expect(setDailySetting).toHaveBeenCalledWith({enabled: false, hour: 18})
-    expect(screen.getByLabelText('Daily question').props.accessibilityState).toEqual({
-      checked: false,
-    })
-    expect(screen.queryByLabelText('Time: 18:00')).toBeNull()
+describe('SettingsModal — Game', () => {
+  it('stores a pick and reports it, in play too', async () => {
+    const onSelectGame = jest.fn()
+    await renderModal({onSelectGame})
+    await fireEvent.press(await screen.findByLabelText('Game: Pick a Card'))
+    expect(mockedSetStoredGame).toHaveBeenCalledWith('pick')
+    expect(onSelectGame).toHaveBeenCalledWith('pick')
+    expect(selected('Game: Pick a Card')).toBe(true)
   })
 
-  it('picks a new time from its page and returns to the menu', async () => {
-    jest.mocked(getDailySetting).mockResolvedValue({enabled: true, hour: 9})
+  it('shows the Game on screen over the stored one (a deep link always opens Classic)', async () => {
+    mockedGetStoredGame.mockResolvedValue('pick')
+    await renderModal({currentGame: 'wh'})
+    await waitFor(() => expect(selected('Game: Classic')).toBe(true))
+  })
+
+  it('says a paid Game is included in early access (ADR-0006)', async () => {
+    mockedGetStoredGame.mockResolvedValue('pick')
     await renderModal()
-    await fireEvent.press(await screen.findByLabelText('Time: 09:00'))
-    await fireEvent.press(await screen.findByText('20:00'))
-    expect(setDailySetting).toHaveBeenCalledWith({enabled: true, hour: 20})
-    expect(await screen.findByLabelText('Time: 20:00')).toBeTruthy()
-    expect(screen.queryByText('Daily question time')).toBeNull()
+    expect(await screen.findByText('Included in early access')).toBeTruthy()
+  })
+})
+
+describe('SettingsModal — languages, one picker each', () => {
+  it('applies + persists a primary pick and tracks LANGUAGE_CHANGED', async () => {
+    await renderModal()
+    await fireEvent.press(await screen.findByLabelText('Language: Hebrew'))
+    expect(mockedSetStoredLanguage).toHaveBeenCalledWith('library', 'he')
+    expect(mockedTrack).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'language_changed',
+        props: expect.objectContaining({deck_id: 'library', from: 'en', to: 'he'}),
+      })
+    )
+    expect(selected('Language: Hebrew')).toBe(true)
+  })
+
+  it('applies + persists a second language and tracks SECONDARY_LANGUAGES_CHANGED', async () => {
+    await renderModal()
+    await fireEvent.press(await screen.findByLabelText('Second language: Hebrew'))
+    expect(mockedTrack).toHaveBeenCalledWith({
+      name: 'secondary_languages_changed',
+      props: {deck_id: 'library', secondary: ['he']},
+    })
+    expect(selected('Second language: Hebrew')).toBe(true)
+  })
+
+  it('clears the second language when it becomes the primary, and None clears it too', async () => {
+    await renderModal({languages: ['en', 'he', 'es']})
+    await fireEvent.press(await screen.findByLabelText('Second language: Hebrew'))
+    await fireEvent.press(screen.getByLabelText('Language: Hebrew'))
+    expect(selected('Second language: None')).toBe(true)
+    expect(screen.queryByLabelText('Second language: Hebrew')).toBeNull()
+    await fireEvent.press(screen.getByLabelText('Second language: Spanish'))
+    await fireEvent.press(screen.getByLabelText('Second language: None'))
+    expect(selected('Second language: None')).toBe(true)
+  })
+
+  it("shows a shared link's language over the stored one and reports a pick of the stored one", async () => {
+    mockedGetStoredLanguage.mockResolvedValue('en')
+    const onSelectLanguage = jest.fn()
+    await renderModal({currentLanguage: 'he', onSelectLanguage})
+    await waitFor(() => expect(selected('Language: Hebrew')).toBe(true))
+    expect(screen.queryByLabelText('Second language: Hebrew')).toBeNull()
+    await fireEvent.press(screen.getByLabelText('Language: English'))
+    expect(onSelectLanguage).toHaveBeenCalledWith('en')
+  })
+})
+
+describe('SettingsModal — inline controls', () => {
+  it('switches Theme', async () => {
+    const onSelectTheme = jest.fn()
+    await renderModal({onSelectTheme})
+    await fireEvent.press(await screen.findByLabelText('Theme: Dark'))
+    expect(onSelectTheme).toHaveBeenCalledWith('dark')
+  })
+
+  it('picks Slide or Flip and stores the choice', async () => {
+    await renderModal()
+    await fireEvent.press(await screen.findByLabelText('Card animation: Flip'))
+    expect(setStoredCardAnimation).toHaveBeenLastCalledWith('flip')
+    expect(selected('Card animation: Flip')).toBe(true)
+    await fireEvent.press(screen.getByLabelText('Card animation: Slide'))
+    expect(setStoredCardAnimation).toHaveBeenLastCalledWith('slide')
+  })
+
+  it('flips Tabletop mode, persists it, and tracks it with no deck_id (global setting)', async () => {
+    await renderModal()
+    await screen.findByLabelText('Tabletop mode')
+    await toggle('Tabletop mode')
+    expect(mockedSetStoredTabletopMode).toHaveBeenCalledWith(true)
+    expect(mockedTrack).toHaveBeenCalledWith({
+      name: 'tabletop_mode_changed',
+      props: {enabled: true},
+    })
+    expect(screen.getByLabelText('Tabletop mode').props.accessibilityState).toEqual({checked: true})
+  })
+})
+
+describe('SettingsModal — Daily question (issues #361, #364)', () => {
+  it('turning it off disables the time and keeps it on the row', async () => {
+    await renderModal()
+    await screen.findByLabelText('Time: 18:0')
+    await toggle('Daily question')
+    expect(setDailySetting).toHaveBeenCalledWith({enabled: false, hour: 18, minute: 0})
+    expect(screen.getByLabelText('Time: 18:0').props.accessibilityState).toEqual({disabled: true})
+  })
+
+  it('stores a time picked in the system picker, minutes included', async () => {
+    jest.mocked(getDailySetting).mockResolvedValue({enabled: true, hour: 9, minute: 0})
+    await renderModal()
+    await fireEvent.press(await screen.findByLabelText('Time: 9:0'))
+    expect(setDailySetting).toHaveBeenCalledWith({enabled: true, hour: 7, minute: 30})
+    expect(screen.getByLabelText('Time: 7:30')).toBeTruthy()
   })
 
   it('links to the OS setting only while notifications are not allowed', async () => {
@@ -308,7 +285,7 @@ describe('SettingsModal — Notifications (issues #361, #364)', () => {
   })
 
   it('does not nag about OS permission while the daily question is off', async () => {
-    jest.mocked(getDailySetting).mockResolvedValue({enabled: false, hour: 18})
+    jest.mocked(getDailySetting).mockResolvedValue({enabled: false, hour: 18, minute: 0})
     jest.mocked(notificationsAllowed).mockResolvedValue(false)
     await renderModal()
     await waitFor(() =>
@@ -330,205 +307,5 @@ describe('SettingsModal — Send feedback (issue #455)', () => {
     expect(url.searchParams.get('about')).toBe('app-feedback')
     expect(url.searchParams.get('platform')).toBe(Platform.OS)
     openURL.mockRestore()
-  })
-})
-
-describe('SettingsModal — Card animation (issues #456, #460)', () => {
-  it('picks Slide or Flip inline and stores the choice', async () => {
-    await renderModal()
-    await fireEvent.press(await screen.findByLabelText('Card animation: Flip'))
-    expect(setStoredCardAnimation).toHaveBeenLastCalledWith('flip')
-    expect(screen.getByLabelText('Card animation: Flip').props.accessibilityState).toEqual({
-      selected: true,
-    })
-    await fireEvent.press(screen.getByLabelText('Card animation: Slide'))
-    expect(setStoredCardAnimation).toHaveBeenLastCalledWith('slide')
-  })
-})
-
-describe('SettingsModal — Game page', () => {
-  it('navigates on press, applies + persists a selection, and returns to the menu', async () => {
-    await renderModal()
-    const gameRow = await screen.findByLabelText('Game: Classic')
-    await fireEvent.press(gameRow)
-    const pick = await screen.findByLabelText('Pick a Card')
-    await fireEvent.press(pick)
-    expect(mockedSetStoredGame).toHaveBeenCalledWith('pick')
-    // Back on the menu (not left on the Game page) — updated value shown.
-    await waitFor(() => expect(screen.queryByText('Choose your game')).toBeNull())
-    expect(screen.getByText('Settings')).toBeTruthy()
-    expect(screen.getByText('Pick a Card')).toBeTruthy()
-  })
-})
-
-const openLanguages = async () => {
-  await fireEvent.press(await screen.findByLabelText('Languages: English'))
-  await screen.findByLabelText('Language: English')
-}
-
-describe('SettingsModal — Languages page (issue #460)', () => {
-  it('applies + persists a primary pick, tracks LANGUAGE_CHANGED, and stays open for the second', async () => {
-    await renderModal()
-    await openLanguages()
-    await fireEvent.press(screen.getByLabelText('Language: Hebrew'))
-    expect(mockedSetStoredLanguage).toHaveBeenCalledWith('library', 'he')
-    expect(mockedTrack).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'language_changed',
-        props: expect.objectContaining({deck_id: 'library', from: 'en', to: 'he'}),
-      })
-    )
-    expect(screen.getByLabelText('back')).toBeTruthy()
-    await fireEvent.press(screen.getByLabelText('back'))
-    expect(await screen.findByLabelText('Languages: Hebrew')).toBeTruthy()
-  })
-
-  it('applies + persists a second language and tracks SECONDARY_LANGUAGES_CHANGED', async () => {
-    await renderModal({languages: ['en', 'he']})
-    await openLanguages()
-    await fireEvent.press(screen.getByLabelText('Show: Second language'))
-    await fireEvent.press(screen.getByLabelText('Second language: Hebrew'))
-    expect(mockedTrack).toHaveBeenCalledWith({
-      name: 'secondary_languages_changed',
-      props: {deck_id: 'library', secondary: ['he']},
-    })
-    await fireEvent.press(screen.getByLabelText('back'))
-    expect(await screen.findByLabelText('Languages: English + Hebrew')).toBeTruthy()
-  })
-
-  it('clears the second language when it becomes the primary, and None clears it too', async () => {
-    await renderModal({languages: ['en', 'he', 'es']})
-    await openLanguages()
-    await fireEvent.press(screen.getByLabelText('Show: Second language'))
-    await fireEvent.press(screen.getByLabelText('Second language: Hebrew'))
-    await fireEvent.press(screen.getByLabelText('Show: Language'))
-    await fireEvent.press(screen.getByLabelText('Language: Hebrew'))
-    await fireEvent.press(screen.getByLabelText('Show: Second language'))
-    expect(screen.getByLabelText('Second language: None').props.accessibilityState).toEqual({
-      selected: true,
-    })
-    await fireEvent.press(screen.getByLabelText('Second language: Spanish'))
-    await fireEvent.press(screen.getByLabelText('Second language: None'))
-    expect(screen.getByLabelText('Second language: None').props.accessibilityState).toEqual({
-      selected: true,
-    })
-  })
-})
-
-describe('SettingsModal — Tabletop mode (inline switch, issue #148/#176)', () => {
-  it('reflects the loaded preference as the switch checked state', async () => {
-    mockedGetStoredTabletopMode.mockResolvedValue(true)
-    await renderModal()
-    const toggle = await screen.findByLabelText('Tabletop mode')
-    await waitFor(() => expect(toggle.props.accessibilityState).toEqual({checked: true}))
-  })
-
-  it('flips, persists, and tracks TABLETOP_MODE_CHANGED with no deck_id (global setting)', async () => {
-    await renderModal()
-    const toggle = await screen.findByLabelText('Tabletop mode')
-    await waitFor(() => expect(toggle.props.accessibilityState).toEqual({checked: false}))
-    await fireEvent.press(toggle)
-    expect(mockedSetStoredTabletopMode).toHaveBeenCalledWith(true)
-    expect(mockedTrack).toHaveBeenCalledWith({
-      name: 'tabletop_mode_changed',
-      props: {enabled: true},
-    })
-  })
-})
-
-describe('SettingsModal — single Modal, internal pages (issue #189, third/fourth pass)', () => {
-  it('hides the menu from the accessibility tree while a page is risen', async () => {
-    await renderModal()
-    const gameRow = await screen.findByLabelText('Game: Classic')
-    await fireEvent.press(gameRow)
-    await screen.findByText('Choose your game')
-    // includeHiddenElements bypasses RNTL's default accessibility-hidden filter —
-    // the menu's "Tabletop mode" text still exists in the tree (not unmounted,
-    // just hidden/dimmed underneath), same technique question-text.test.tsx uses
-    // for Tabletop mode's own rotated, hidden half.
-    expect(screen.getAllByText('Tabletop mode', {includeHiddenElements: true})).toHaveLength(1)
-    expect(screen.queryByText('Tabletop mode')).toBeNull()
-  })
-
-  it('reveals the menu again once back on it', async () => {
-    await renderModal()
-    const gameRow = await screen.findByLabelText('Game: Classic')
-    await fireEvent.press(gameRow)
-    await fireEvent.press(screen.getByLabelText('back'))
-    await waitFor(() => expect(screen.queryByText('Choose your game')).toBeNull())
-    expect(screen.getByText('Tabletop mode')).toBeTruthy()
-  })
-
-  it('Android back pops to the menu first, then closes only from the menu', async () => {
-    const onClose = jest.fn()
-    await renderModal({onClose})
-    const gameRow = await screen.findByLabelText('Game: Classic')
-    await fireEvent.press(gameRow)
-    await screen.findByText('Choose your game')
-
-    // Re-read `onRequestClose` after the first press rather than reusing one
-    // reference for both: it's a closure over `page`, freshly recreated on
-    // every render (like any prop), so the version bound to "still on the
-    // Game page" would forever evaluate that same branch — a stale-closure
-    // testing artifact, not how a real re-render behaves.
-    await pressAndroidBack()
-    // First press: popped back to the menu, sheet still open.
-    await waitFor(() => expect(screen.queryByText('Choose your game')).toBeNull())
-    expect(onClose).not.toHaveBeenCalled()
-
-    await pressAndroidBack()
-    // Second press, now on the menu: closes the sheet.
-    expect(onClose).toHaveBeenCalled()
-  })
-
-  it('tapping the dim behind a risen page pops it, same as Android back — not a full close', async () => {
-    const onClose = jest.fn()
-    await renderModal({onClose})
-    const gameRow = await screen.findByLabelText('Game: Classic')
-    await fireEvent.press(gameRow)
-    await screen.findByText('Choose your game')
-    await fireEvent.press(screen.getByLabelText('dismiss page'))
-    await waitFor(() => expect(screen.queryByText('Choose your game')).toBeNull())
-    expect(onClose).not.toHaveBeenCalled()
-    expect(screen.getByText('Settings')).toBeTruthy()
-  })
-
-  it('the outer backdrop still fully closes the sheet from the menu', async () => {
-    const onClose = jest.fn()
-    await renderModal({onClose})
-    await screen.findByText('Settings')
-    await fireEvent.press(screen.getByLabelText('dismiss'))
-    expect(onClose).toHaveBeenCalled()
-  })
-
-  it('starts back at the menu on every fresh open, regardless of where it was left', async () => {
-    const {rerender} = await renderModal()
-    const gameRow = await screen.findByLabelText('Game: Classic')
-    await fireEvent.press(gameRow)
-    await screen.findByText('Choose your game')
-
-    await rerender(
-      <SettingsModal
-        visible={false}
-        onClose={() => {}}
-        deckSlug="library"
-        languages={['en', 'he']}
-        theme="system"
-        onSelectTheme={() => {}}
-      />
-    )
-    await rerender(
-      <SettingsModal
-        visible
-        onClose={() => {}}
-        deckSlug="library"
-        languages={['en', 'he']}
-        theme="system"
-        onSelectTheme={() => {}}
-      />
-    )
-
-    await screen.findByText('Settings')
-    expect(screen.queryByText('Choose your game')).toBeNull()
   })
 })

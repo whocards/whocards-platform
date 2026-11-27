@@ -16,7 +16,7 @@
  * the awaited form on 14, and none of the removed `UNSAFE_*` queries appear.
  */
 import React from 'react'
-import {act, fireEvent, render, screen} from '@testing-library/react-native'
+import {act, render, screen} from '@testing-library/react-native'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
 import {setColorScheme} from '@/lib/color-scheme'
 
@@ -43,7 +43,7 @@ jest.mock('@/lib/game-store', () => ({
 
 jest.mock('@/lib/notification-store', () => ({
   DAILY_HOUR: 18,
-  getDailySetting: jest.fn().mockResolvedValue({enabled: true, hour: 18}),
+  getDailySetting: jest.fn().mockResolvedValue({enabled: true, hour: 18, minute: 0}),
   notificationsAllowed: jest.fn().mockResolvedValue(true),
   openNotificationSetting: jest.fn(),
   refillDailyQuestions: jest.fn(),
@@ -74,9 +74,6 @@ jest.mock('@whocards/observability/events', () => {
   return {...actual, track: jest.fn()}
 })
 
-import {DailyTimeSettingsPage} from '../components/daily-time-settings-page'
-import {GameSettingsPage} from '../components/game-settings-page'
-import {LanguagesSettingsPage} from '../components/languages-settings-page'
 import {PlayerBar} from '../components/player-bar'
 import {SettingsModal} from '../components/settings-modal'
 import {ShareModal} from '../components/share-modal'
@@ -127,48 +124,6 @@ describe('Settings sheet', () => {
     await screen.findByText('Settings')
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
-
-  it('renders the in-play menu, without the Game row (issue #197)', async () => {
-    await renderSettings({showGame: false})
-    await screen.findByText('Settings')
-    expect(uiSnapshot(screen)).toMatchSnapshot()
-  })
-
-  it('renders a risen page over the dimmed menu', async () => {
-    await renderSettings()
-    await fireEvent.press(await screen.findByLabelText('Game: Classic'))
-    await screen.findByText('Choose your game')
-    expect(uiSnapshot(screen)).toMatchSnapshot()
-  })
-})
-
-describe('Settings pages', () => {
-  it('renders the Game page', async () => {
-    await renderUi(<GameSettingsPage current="wh" onSelect={noop} onBack={noop} />)
-    await screen.findByText('Choose your game')
-    expect(uiSnapshot(screen)).toMatchSnapshot()
-  })
-
-  it('renders the Languages page', async () => {
-    await renderUi(
-      <LanguagesSettingsPage
-        languages={['en', 'he', 'es']}
-        current="en"
-        secondary={['he']}
-        onSelect={noop}
-        onChangeSecondary={noop}
-        onBack={noop}
-      />
-    )
-    await screen.findByText('Languages')
-    expect(uiSnapshot(screen)).toMatchSnapshot()
-  })
-
-  it('renders the Daily question time page', async () => {
-    await renderUi(<DailyTimeSettingsPage current={18} onSelect={noop} onBack={noop} />)
-    await screen.findByText('Daily question time')
-    expect(uiSnapshot(screen)).toMatchSnapshot()
-  })
 })
 
 describe('Share sheet', () => {
@@ -208,10 +163,10 @@ describe('Player bar', () => {
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
-  it('renders without Share (the pick screen before a deal)', async () => {
+  it('renders Share disabled (the pick screen before a deal)', async () => {
     await renderUi(
       <PlayerBar
-        showShare={false}
+        shareDisabled
         onPrevious={noop}
         onNext={noop}
         onShare={noop}

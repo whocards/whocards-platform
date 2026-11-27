@@ -16,12 +16,16 @@ jest.mock('@/lib/app-review', () => ({
 }))
 jest.mock('@/lib/device-id', () => ({getDeviceId: jest.fn().mockResolvedValue('device')}))
 jest.mock('@/lib/answer-queue', () => ({enqueue: jest.fn(), flush: jest.fn()}))
+jest.mock('@/lib/notification-store', () => ({notePromptShown: jest.fn()}))
 // The in-play Settings sheet and Theme hook (issue #197) read storage this test doesn't cover.
 jest.mock('@/components/settings-modal', () => ({SettingsModal: () => null}))
 jest.mock('@/hooks/use-theme-setting', () => ({
   useThemeSetting: () => ({theme: 'system', select: jest.fn()}),
 }))
 jest.mock('@/lib/tabletop-store', () => ({getStoredTabletopMode: jest.fn()}))
+jest.mock('@/lib/card-animation-store', () => ({
+  getStoredCardAnimation: jest.fn().mockResolvedValue('slide'),
+}))
 jest.mock('@/lib/language-store', () => ({
   getStoredLanguage: jest.fn().mockResolvedValue(undefined),
   getStoredSecondaryLanguages: jest.fn().mockResolvedValue([]),
@@ -47,6 +51,8 @@ const revealCard = async (tabletop: boolean) => {
         questions={{q1: {en: QUESTION}}}
         languages={['en']}
         poolBacked={false}
+        carryRef={{current: undefined}}
+        onChangeGame={() => {}}
       />
     </GestureHandlerRootView>
   )

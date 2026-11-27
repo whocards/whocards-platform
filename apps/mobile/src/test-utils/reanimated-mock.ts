@@ -145,6 +145,13 @@ export const reanimatedMock = () => ({
     createAnimatedComponent: <T>(Component: T): T => Component,
   },
   useSharedValue,
+  useDerivedValue: <T>(updater: () => T) => ({
+    get: updater,
+    set: () => {},
+    get value() {
+      return updater()
+    },
+  }),
   // The gesture event handler never fires in these tests — nothing here
   // simulates a native gesture — so it only has to exist.
   useEvent: () => () => {},
@@ -156,6 +163,7 @@ export const reanimatedMock = () => ({
   useReducedMotion: () => false,
   withTiming: settle,
   withSpring: settle,
+  cancelAnimation: () => {},
   // The delay is irrelevant once the animation it wraps is already at its end.
   withDelay: <T>(_delay: number, animation: T): T => animation,
   runOnJS:
@@ -163,4 +171,15 @@ export const reanimatedMock = () => ({
     (...args: A): R =>
       fn(...args),
   interpolate,
+  interpolateColor: (value: number, input: number[], output: string[]): string =>
+    value <= input[0] ? output[0] : output[output.length - 1],
+  Easing: {
+    linear: (t: number) => t,
+    quad: (t: number) => t * t,
+    cubic: (t: number) => t * t * t,
+    in: (fn: (t: number) => number) => fn,
+    out: (fn: (t: number) => number) => fn,
+    inOut: (fn: (t: number) => number) => fn,
+    bezier: () => (t: number) => t,
+  },
 })

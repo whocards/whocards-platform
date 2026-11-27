@@ -1,7 +1,8 @@
 import React from 'react'
 import {StyleSheet} from 'react-native'
-import {fireEvent, render, screen} from '@testing-library/react-native'
-import {GestureHandlerRootView} from 'react-native-gesture-handler'
+import {act, fireEvent, render, screen} from '@testing-library/react-native'
+import {GestureHandlerRootView, State} from 'react-native-gesture-handler'
+import {fireGestureHandler, getByGestureTestId} from 'react-native-gesture-handler/jest-utils'
 
 jest.setTimeout(20_000)
 
@@ -21,9 +22,14 @@ jest.mock('@/lib/app-review', () => ({
 }))
 jest.mock('@/lib/device-id', () => ({getDeviceId: jest.fn().mockResolvedValue('device')}))
 jest.mock('@/lib/answer-queue', () => ({enqueue: jest.fn(), flush: jest.fn()}))
+jest.mock('@/lib/notification-store', () => ({notePromptShown: jest.fn()}))
 jest.mock('@/components/settings-modal', () => ({SettingsModal: () => null}))
 jest.mock('@/hooks/use-theme-setting', () => ({
   useThemeSetting: () => ({theme: 'system', select: jest.fn()}),
+}))
+const mockCardAnimation = jest.fn()
+jest.mock('@/lib/card-animation-store', () => ({
+  getStoredCardAnimation: () => mockCardAnimation(),
 }))
 jest.mock('@/lib/tabletop-store', () => ({
   getStoredTabletopMode: jest.fn().mockResolvedValue(false),
@@ -51,6 +57,8 @@ const revealCard = async () => {
         questions={{q1: {en: QUESTION}, q2: {en: QUESTION}}}
         languages={['en']}
         poolBacked={false}
+        carryRef={{current: undefined}}
+        onChangeGame={() => {}}
       />
     </GestureHandlerRootView>
   )
@@ -66,15 +74,49 @@ const faceStyle = () => {
   throw new Error('no animated face above the question')
 }
 
+/** A drag of `translationX` points across the revealed Card, then a release. */
+const swipe = (translationX: number) =>
+  act(() =>
+    fireGestureHandler(getByGestureTestId('card-pan'), [
+      {state: State.BEGAN},
+      {state: State.ACTIVE, translationX},
+      {state: State.END, translationX},
+    ])
+  )
+
+const shareState = () => screen.getByLabelText('share question').props.accessibilityState
+
 describe('PickPlayer — moving on (issue #456)', () => {
+  beforeEach(() => {
+    mockCardAnimation.mockResolvedValue('flip')
+  })
   afterEach(() => {
     mockReduceMotion = false
+  })
+
+  it.each([
+    ['slide', -120],
+    ['slide', 120],
+    ['flip', -120],
+  ])('with Card animation %s, a swipe of %d puts the Card down', async (animation, distance) => {
+    mockCardAnimation.mockResolvedValue(animation)
+    await revealCard()
+    await swipe(distance)
+    expect(screen.queryByText(QUESTION)).toBeNull()
+    expect(screen.getByLabelText('Pick a card')).toBeTruthy()
+  })
+
+  it('keeps the Card after a swipe that stops short', async () => {
+    await revealCard()
+    await swipe(20)
+    expect(screen.getByText(QUESTION)).toBeTruthy()
+    expect(faceStyle()).toMatchObject({backfaceVisibility: 'hidden'})
   })
 
   it('flips the read Card face-down and hands back to the draw', async () => {
     await revealCard()
     expect(faceStyle()).toMatchObject({backfaceVisibility: 'hidden'})
-    await fireEvent.press(screen.getByLabelText('Tap for next card'))
+    await fireEvent.press(screen.getByLabelText('next question'))
     expect(screen.queryByText(QUESTION)).toBeNull()
     expect(screen.getByLabelText('Pick a card')).toBeTruthy()
   })
@@ -84,15 +126,15 @@ describe('PickPlayer — moving on (issue #456)', () => {
     await revealCard()
     expect(faceStyle()).toMatchObject({opacity: 1})
     expect(faceStyle()).not.toHaveProperty('transform')
-    await fireEvent.press(screen.getByLabelText('Tap for next card'))
+    await fireEvent.press(screen.getByLabelText('next question'))
     expect(screen.queryByText(QUESTION)).toBeNull()
     expect(screen.getByLabelText('Pick a card')).toBeTruthy()
   })
 
-  it('offers Share only while a Card is face up, not back on the draw', async () => {
+  it('enables Share only while a Card is face up, not back on the draw', async () => {
     await revealCard()
-    expect(screen.getByLabelText('share question')).toBeTruthy()
-    await fireEvent.press(screen.getByLabelText('Tap for next card'))
-    expect(screen.queryByLabelText('share question')).toBeNull()
+    expect(shareState()).toBeUndefined()
+    await fireEvent.press(screen.getByLabelText('next question'))
+    expect(shareState()).toEqual({disabled: true})
   })
 })

@@ -34,5 +34,7 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     // Point Reanimated to its official jest mock so no worklet/JSI is needed.
     '^react-native-reanimated$': '<rootDir>/node_modules/react-native-reanimated/mock',
+    // SwiftUI / Compose views don't exist under jest.
+    '^@expo/ui(/.*)?$': '<rootDir>/src/test-utils/expo-ui-mock.tsx',
   },
 }

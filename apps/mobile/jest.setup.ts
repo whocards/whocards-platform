@@ -5,6 +5,8 @@
 // that imports react-native-gesture-handler.
 import 'react-native-gesture-handler/jestSetup'
 
+jest.mock('react-native-reanimated', () => require('@/test-utils/reanimated-mock').reanimatedMock())
+
 import {readFileSync} from 'node:fs'
 import {act} from '@testing-library/react-native'
 import {StyleCollection} from 'react-native-css/native'

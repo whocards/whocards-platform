@@ -1,12 +1,15 @@
 import {Ionicons} from '@expo/vector-icons'
 import {Image} from 'expo-image'
-import {Link} from 'expo-router'
+import {useRouter} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {useCallback, useEffect, useRef, useState} from 'react'
 import type {HostInstance} from 'react-native'
 import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
 import Animated, {
+  cancelAnimation,
+  interpolate,
+  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -14,6 +17,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
+import type {GameId} from '@whocards/decks'
 import {DEFAULT_DECK_SLUG, libraryDeck, resolveDeck} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
 
@@ -23,7 +27,11 @@ import {SecondaryButton} from '@/components/secondary-button'
 import {SettingsModal} from '@/components/settings-modal'
 import {useInternalMarker} from '@/hooks/use-internal-marker'
 import {useThemeSetting} from '@/hooks/use-theme-setting'
+import {getStoredGame} from '@/lib/game-store'
 import {impact} from '@/lib/haptics'
+import {MOTION_DURATION, MOTION_EASING, motionDuration} from '@/lib/motion'
+import type {HomeReturnEvent} from '@/lib/play-transition'
+import {startPlayTransition, subscribeReturnedHome} from '@/lib/play-transition'
 import {trpc} from '@/lib/trpc'
 
 // We launch with the original WhoCards deck; its content ships in-app for offline play.
@@ -34,6 +42,10 @@ const logo = require('../../assets/images/logo.png')
 // is the same size in the splash and on the landing, and the handoff is seamless.
 const LOGO_WIDTH = 280
 const LOGO_HEIGHT = Math.round((LOGO_WIDTH * 226) / 1200)
+// Exact glyph gap ratios in logo.png (1200×226): WHO ends at 0.352, "?" is 0.380..0.461, CARDS starts at 0.485.
+const WHO_CLIP_WIDTH = Math.round(LOGO_WIDTH * 0.365)
+const CARDS_CLIP_LEFT = Math.round(LOGO_WIDTH * 0.473)
+const CARDS_CLIP_WIDTH = LOGO_WIDTH - CARDS_CLIP_LEFT
 // Entrance: the logo glides into place first (LOGO_MS), then the tagline/Play fade
 // in (FADE_MS) so nothing crosses the moving logo. The background fades with the logo.
 const LOGO_MS = 450
@@ -57,8 +69,9 @@ export const libraryContainerStyle = StyleSheet.create({
 }).root
 
 export default function LandingScreen() {
+  const router = useRouter()
   const [serverMeta, setServerMeta] = useState<{cards: number; languages: number} | null>(null)
-  const {height: winHeight} = useWindowDimensions()
+  const {width: winWidth, height: winHeight} = useWindowDimensions()
   const reduceMotion = useReducedMotion()
 
   // the Theme Display setting (issue #163) — System-follow by default, with a
@@ -71,6 +84,55 @@ export default function LandingScreen() {
   const isDark = resolvedScheme !== 'light'
 
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+  // 5B Home → Play parting exit state: null at rest so snapshots stay untouched.
+  const [exitingTo, setExitingTo] = useState<GameId | null>(null)
+  const exitProgress = useSharedValue(0)
+  const exitTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const launchingRef = useRef(false)
+
+  const resetExitState = useCallback(() => {
+    for (const id of exitTimersRef.current) clearTimeout(id)
+    exitTimersRef.current = []
+    launchingRef.current = false
+    cancelAnimation(exitProgress)
+    exitProgress.set(0)
+    setExitingTo(null)
+  }, [exitProgress])
+
+  const handleReturnedHome = useCallback(
+    (animated?: HomeReturnEvent) => {
+      for (const id of exitTimersRef.current) clearTimeout(id)
+      exitTimersRef.current = []
+      launchingRef.current = false
+      cancelAnimation(exitProgress)
+      if (!animated || reduceMotion) {
+        exitProgress.set(0)
+        setExitingTo(null)
+        return
+      }
+      // Symmetric reverse of 5B: WHO & CARDS close back around the arriving "?"
+      // (or full logo lands from CardBack) while subtitle & buttons rise up cleanly.
+      setExitingTo(animated.kind === 'deck' ? 'pick' : 'wh')
+      exitProgress.set(1)
+      exitProgress.set(
+        withTiming(0, {duration: animated.duration, easing: MOTION_EASING.enter}, (finished) => {
+          'worklet'
+          if (finished) runOnJS(setExitingTo)(null)
+        })
+      )
+      const safetyTimer = setTimeout(resetExitState, animated.duration + 90)
+      exitTimersRef.current.push(safetyTimer)
+    },
+    [exitProgress, reduceMotion, resetExitState]
+  )
+
+  useEffect(() => {
+    const unsubscribe = subscribeReturnedHome(handleReturnedHome)
+    return () => {
+      unsubscribe()
+      for (const id of exitTimersRef.current) clearTimeout(id)
+    }
+  }, [handleReturnedHome])
 
   // The hidden dev marker (issue #178) — a long-press on the wordmark below
   // toggles it. See use-internal-marker.ts.
@@ -133,7 +195,67 @@ export default function LandingScreen() {
   }, [runEntrance])
 
   const logoStyle = useAnimatedStyle(() => ({transform: [{translateY: logoShift.get()}]}))
-  const contentStyle = useAnimatedStyle(() => ({opacity: contentOpacity.get()}))
+  // Keep translateY always attached on the same animated style so Fabric never strands
+  // the native view off-screen when exitProgress resets back to 0.
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacity.get(),
+    transform: [{translateY: interpolate(exitProgress.get(), [0, 1], [0, winHeight * 0.48])}],
+  }))
+  const whoPartStyle = useAnimatedStyle(() => ({
+    transform: [{translateX: interpolate(exitProgress.get(), [0, 1], [0, -winWidth * 0.75])}],
+  }))
+  const cardsPartStyle = useAnimatedStyle(() => ({
+    transform: [{translateX: interpolate(exitProgress.get(), [0, 1], [0, winWidth * 0.75])}],
+  }))
+
+  // 5B Home → Play: WHO parts left, CARDS parts right (or full WHO?CARDS flies to CardBack),
+  // subtitle + buttons drop off the bottom while Play rises cleanly through the opening.
+  const handlePlay = useCallback(() => {
+    impact('light')
+    const playHref = `/play/${DEFAULT_DECK_SLUG}` as const
+    const dur = motionDuration(MOTION_DURATION.homeToPlay, reduceMotion)
+    if (dur === 0) {
+      router.push(playHref)
+      return
+    }
+    if (launchingRef.current || exitingTo !== null) return
+    launchingRef.current = true
+    void getStoredGame().then((targetGame) => {
+      const launch = (rect: {x: number; y: number; width: number; height: number}) => {
+        setExitingTo(targetGame)
+        cancelAnimation(exitProgress)
+        exitProgress.set(0)
+        startPlayTransition(targetGame, rect)
+        exitProgress.set(
+          withTiming(1, {duration: Math.round(dur * 0.48), easing: MOTION_EASING.exit})
+        )
+        const pushTimer = setTimeout(() => router.push(playHref), Math.round(dur * 0.44))
+        const resetTimer = setTimeout(resetExitState, dur + 80)
+        exitTimersRef.current.push(pushTimer, resetTimer)
+      }
+      if (logoRef.current?.measureInWindow) {
+        logoRef.current.measureInWindow((x, y, width, height) => {
+          launch(
+            width && height
+              ? {x, y, width, height}
+              : {
+                  x: (winWidth - LOGO_WIDTH) / 2,
+                  y: winHeight * 0.36,
+                  width: LOGO_WIDTH,
+                  height: LOGO_HEIGHT,
+                }
+          )
+        })
+      } else {
+        launch({
+          x: (winWidth - LOGO_WIDTH) / 2,
+          y: winHeight * 0.36,
+          width: LOGO_WIDTH,
+          height: LOGO_HEIGHT,
+        })
+      }
+    })
+  }, [exitingTo, exitProgress, reduceMotion, resetExitState, router, winHeight, winWidth])
 
   const cards = serverMeta?.cards ?? deck.questionIds.length
   const languages = serverMeta?.languages ?? deck.languages.length
@@ -157,14 +279,65 @@ export default function LandingScreen() {
               deliberately not meant to be discoverable at all, screen reader or not. */}
           <Pressable onLongPress={toggleInternalMarker} accessible={false}>
             <Animated.View ref={logoRef} onLayout={onLogoLayout} style={logoStyle}>
-              <Image
-                source={logo}
-                contentFit="contain"
-                accessibilityLabel="WhoCards"
-                // explicit width AND height — native sizes a required image to its
-                // intrinsic pixels otherwise (aspectRatio alone only works on web)
-                style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
-              />
+              {exitingTo === null ? (
+                <Image
+                  source={logo}
+                  contentFit="contain"
+                  accessibilityLabel="WhoCards"
+                  // explicit width AND height — native sizes a required image to its
+                  // intrinsic pixels otherwise (aspectRatio alone only works on web)
+                  style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
+                />
+              ) : exitingTo === 'pick' ? (
+                /* Full WHO?CARDS logo is carried by PlayTransitionOverlay onto CardBack. */
+                <View style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}} />
+              ) : (
+                /* 5B Classic exit/return: exact clipped gradient logo.png splits into WHO left & CARDS right while "?" flies via overlay. */
+                <View style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}>
+                  <Animated.View
+                    style={[
+                      {
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        width: WHO_CLIP_WIDTH,
+                        height: LOGO_HEIGHT,
+                        overflow: 'hidden',
+                      },
+                      whoPartStyle,
+                    ]}
+                  >
+                    <Image
+                      source={logo}
+                      contentFit="contain"
+                      style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
+                    />
+                  </Animated.View>
+                  <Animated.View
+                    style={[
+                      {
+                        position: 'absolute',
+                        left: CARDS_CLIP_LEFT,
+                        top: 0,
+                        width: CARDS_CLIP_WIDTH,
+                        height: LOGO_HEIGHT,
+                        overflow: 'hidden',
+                      },
+                      cardsPartStyle,
+                    ]}
+                  >
+                    <Image
+                      source={logo}
+                      contentFit="contain"
+                      style={{
+                        width: LOGO_WIDTH,
+                        height: LOGO_HEIGHT,
+                        marginLeft: -CARDS_CLIP_LEFT,
+                      }}
+                    />
+                  </Animated.View>
+                </View>
+              )}
             </Animated.View>
           </Pressable>
           <Animated.Text
@@ -180,17 +353,15 @@ export default function LandingScreen() {
           <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
             {cards} cards · {languages} languages
           </Text>
-          <Link href={`/play/${DEFAULT_DECK_SLUG}`} asChild>
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel="Play"
-              onPress={() => impact('light')}
-              className="active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
-            >
-              <Ionicons name="play" size={18} color={colors.darker} style={{marginRight: 8}} />
-              <Text className="text-darker font-sans text-base font-bold">Play</Text>
-            </PressableScale>
-          </Link>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Play"
+            onPress={handlePlay}
+            className="active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
+          >
+            <Ionicons name="play" size={18} color={colors.darker} style={{marginRight: 8}} />
+            <Text className="text-darker font-sans text-base font-bold">Play</Text>
+          </PressableScale>
           {/* the single Settings entry point (issue #176) — the app's first
               secondary-button, ported from the website's `.btn-secondary`
               (see secondary-button.tsx). Everything that used to be two

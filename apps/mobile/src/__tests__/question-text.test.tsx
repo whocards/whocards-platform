@@ -14,7 +14,7 @@ import {act, render, screen} from '@testing-library/react-native'
 import {colors} from '@whocards/tokens'
 
 import {setColorScheme} from '@/lib/color-scheme'
-import {resolvedStyle, withOpacity} from '@/test-utils/resolved-style'
+import {resolvedStyle} from '@/test-utils/resolved-style'
 import {QuestionText, fitFontSize, fitSecondaryFontSize} from '../components/question-text'
 
 describe('fitFontSize — minFont override', () => {
@@ -113,7 +113,7 @@ describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
     expect(isRotated(secondaries[0])).toBe(true)
   })
 
-  it('gives both halves the same height, each language centred, so the divider stays put', async () => {
+  it('gives both halves the same height, aligned symmetrically to the divider', async () => {
     await render(
       <QuestionText
         text={question}
@@ -126,11 +126,21 @@ describe('QuestionText — Tabletop mode (mirrored, issue #148)', () => {
       />
     )
     const halfHeight = (box.height - 28) / 2
-    for (const text of [question, 'Una pregunta mucho más larga que ocupa varias líneas']) {
-      const half = resolvedStyle(screen.getByText(text).parent ?? {props: {}})
-      expect(half.height).toBe(halfHeight)
-      expect(half.justifyContent).toBe('center')
+    const findHalfStyle = (label: string) => {
+      for (let node = screen.getByText(label).parent; node; node = node.parent) {
+        const s = resolvedStyle(node)
+        if (s.height === halfHeight) return s
+      }
+      return {}
     }
+    expect(findHalfStyle('Una pregunta mucho más larga que ocupa varias líneas')).toMatchObject({
+      height: halfHeight,
+      justifyContent: 'flex-end',
+    })
+    expect(findHalfStyle(question)).toMatchObject({
+      height: halfHeight,
+      justifyContent: 'flex-start',
+    })
   })
 
   it('keeps the rotated second language readable by a screen reader', async () => {
@@ -197,7 +207,7 @@ describe('QuestionText — themedText (issue #173, final)', () => {
       />
     )
     expect(textColor(question)).toBe(colors.white)
-    expect(textColor(secondaryText)).toBe(withOpacity(colors.white, 70))
+    expect(textColor(secondaryText)).toBe(colors.white)
   })
 
   it('stays white on a card surface even in light mode — the card is always dark', async () => {
@@ -211,7 +221,7 @@ describe('QuestionText — themedText (issue #173, final)', () => {
       />
     )
     expect(textColor(question)).toBe(colors.white)
-    expect(textColor(secondaryText)).toBe(withOpacity(colors.white, 70))
+    expect(textColor(secondaryText)).toBe(colors.white)
   })
 
   it('follows the theme when themedText is set — classic play on the themed canvas', async () => {
@@ -226,7 +236,7 @@ describe('QuestionText — themedText (issue #173, final)', () => {
       />
     )
     expect(textColor(question)).toBe(colors.darker)
-    expect(textColor(secondaryText)).toBe(withOpacity(colors.darker, 70))
+    expect(textColor(secondaryText)).toBe(colors.darker)
   })
 
   it('flips to white when themedText meets the dark scheme', async () => {
@@ -241,7 +251,7 @@ describe('QuestionText — themedText (issue #173, final)', () => {
       />
     )
     expect(textColor(question)).toBe(colors.white)
-    expect(textColor(secondaryText)).toBe(withOpacity(colors.white, 70))
+    expect(textColor(secondaryText)).toBe(colors.white)
   })
 
   it('threads themedText through both mirrored (Tabletop) halves', async () => {
@@ -253,37 +263,33 @@ describe('QuestionText — themedText (issue #173, final)', () => {
   })
 })
 
-describe('QuestionText — secondary language sizing (issue #189)', () => {
+describe('QuestionText — unified 50/50 split sizing', () => {
   const box = {width: 300, height: 400}
-  const secondaryText = 'Hola'
 
-  it('renders the secondary noticeably bigger under a short primary than a long one', async () => {
-    // Each render is queried through its own RenderResult (rather than the
-    // shared `screen`) so the two independent trees can't cross-match.
-    const short = await render(
+  it('fits each language independently in its own equal half', async () => {
+    const shortSecondary = 'Hola'
+    const longSecondary =
+      'Una pregunta mucho más larga y detallada que ocupa varias líneas en la mitad inferior'
+    const shortRender = await render(
       <QuestionText
-        text="Hi?"
+        text="What matters most?"
         language="en"
         box={box}
-        secondaries={[{language: 'es', text: secondaryText}]}
+        secondaries={[{language: 'es', text: shortSecondary}]}
       />
     )
-    const shortPrimarySecondarySize = Number(resolvedStyle(short.getByText(secondaryText)).fontSize)
+    const shortSize = Number(resolvedStyle(shortRender.getByText(shortSecondary)).fontSize)
 
-    const long = await render(
+    const longRender = await render(
       <QuestionText
-        text="What is the most complicated, layered thing you have ever had to explain to someone you love?"
+        text="What matters most?"
         language="en"
         box={box}
-        secondaries={[{language: 'es', text: secondaryText}]}
+        secondaries={[{language: 'es', text: longSecondary}]}
       />
     )
-    const longPrimarySecondarySize = Number(resolvedStyle(long.getByText(secondaryText)).fontSize)
+    const longSize = Number(resolvedStyle(longRender.getByText(longSecondary)).fontSize)
 
-    // A short question leaves the primary's fit with headroom (issue #189) —
-    // the secondary grows to use some of it. A long question pins the primary
-    // near its floor, leaving no headroom, so the secondary stays at its
-    // original, more conservative size.
-    expect(shortPrimarySecondarySize).toBeGreaterThan(longPrimarySecondarySize)
+    expect(shortSize).toBeGreaterThan(longSize)
   })
 })

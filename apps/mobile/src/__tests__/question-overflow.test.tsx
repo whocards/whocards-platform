@@ -238,7 +238,7 @@ describe('estimateBlockHeight: hand-computed expectations', () => {
 describe('QuestionText: rendering', () => {
   const box = playBox(SE_PORTRAIT)
 
-  it('renders the worst stacked question inside its box, with one cap on every block', async () => {
+  it('renders the worst two-language question inside its split halves, each capped cleanly', async () => {
     const screen = await render(
       <QuestionText
         text={worstStack.text}
@@ -247,21 +247,16 @@ describe('QuestionText: rendering', () => {
         secondaries={worstSecondaries}
       />
     )
-    const primary = screen.getByText(worstStack.text)
-    const cap = primary.props.maxFontSizeMultiplier
-    const primarySize = Number(resolvedStyle(primary).fontSize)
-    expect(cap).toBeGreaterThanOrEqual(1)
-    // RN's default, true: the cap bounds the OS setting rather than disabling it
-    expect(primary.props.allowFontScaling).toBeUndefined()
-
-    let stack = oracleBlockHeight(worstStack.text, primarySize * cap, box.width)
-    for (const secondary of worstSecondaries) {
-      const block = screen.getByText(secondary.text)
+    const halfHeight = (box.height - MIRROR_GAP) / 2
+    for (const entry of [{text: worstStack.text}, ...worstSecondaries]) {
+      const block = screen.getByText(entry.text)
+      const cap = block.props.maxFontSizeMultiplier
       const size = Number(resolvedStyle(block).fontSize)
-      expect(block.props.maxFontSizeMultiplier).toBe(cap)
-      expect(size).toBeLessThanOrEqual(primarySize)
-      stack += SECONDARY_GAP + oracleBlockHeight(secondary.text, size * cap, box.width)
+      expect(cap).toBeGreaterThanOrEqual(1)
+      expect(block.props.allowFontScaling).toBeUndefined()
+      expect(oracleBlockHeight(entry.text, size * cap, box.width)).toBeLessThanOrEqual(
+        halfHeight * HEADROOM
+      )
     }
-    expect(stack).toBeLessThanOrEqual(box.height * HEADROOM)
   })
 })

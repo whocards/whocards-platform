@@ -15,7 +15,7 @@ const PRESSED_SCALE = 0.96
 
 type PressableScaleProps = Pick<
   PressableProps,
-  'accessibilityRole' | 'accessibilityLabel' | 'hitSlop' | 'disabled'
+  'accessibilityRole' | 'accessibilityLabel' | 'accessibilityState' | 'hitSlop' | 'disabled'
 > & {
   className?: string
   onPress?: () => void
@@ -73,7 +73,7 @@ export const PressableScale = ({
     <GestureDetector gesture={gesture}>
       <Animated.View
         accessible
-        onAccessibilityTap={onPress}
+        onAccessibilityTap={disabled ? undefined : onPress}
         // animatedStyle last so a caller-supplied `style` can't clobber the scale spring
         style={[style, animatedStyle]}
         {...accessibility}

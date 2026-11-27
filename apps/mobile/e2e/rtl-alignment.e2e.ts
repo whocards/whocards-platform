@@ -21,7 +21,7 @@ test('A card reads left-aligned in English and right-aligned in Hebrew', async (
   await app.screenshot('en-ltr')
 
   await tapUntil(button(screen, 'exit deck'), play(screen))
-  await pickLanguage(screen, 'English', 'Hebrew')
+  await pickLanguage(screen, 'Hebrew')
   await startPlay(screen)
   await revealControls(screen)
   await app.screenshot('he-rtl')

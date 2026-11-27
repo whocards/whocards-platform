@@ -22,6 +22,7 @@ const KEY_OPEN_COUNT = 'whocards-notifications:open-count'
 const KEY_ASKED = 'whocards-notifications:asked'
 const KEY_DAILY_OFF = 'whocards-notifications:daily-off'
 const KEY_DAILY_HOUR = 'whocards-notifications:daily-hour'
+const KEY_DAILY_MINUTE = 'whocards-notifications:daily-minute'
 
 /** App opens before the ask: never on a fresh install, once on the second open (issue #361). */
 export const ASK_ON_OPEN = 2
@@ -53,26 +54,30 @@ const localDateKey = (date: Date) =>
     .map((part) => String(part).padStart(2, '0'))
     .join('-')
 
-export type DailySetting = {enabled: boolean; hour: number}
+export type DailySetting = {enabled: boolean; hour: number; minute: number}
 
 export const getDailySetting = async (): Promise<DailySetting> => {
-  const [off, stored] = await Promise.all([
+  const [off, stored, storedMinute] = await Promise.all([
     AsyncStorage.getItem(KEY_DAILY_OFF),
     AsyncStorage.getItem(KEY_DAILY_HOUR),
+    AsyncStorage.getItem(KEY_DAILY_MINUTE),
   ])
   const hour = stored ? Number(stored) : DAILY_HOUR
+  const minute = Number(storedMinute)
   return {
     enabled: !off,
     hour: Number.isInteger(hour) && hour >= 0 && hour < 24 ? hour : DAILY_HOUR,
+    minute: Number.isInteger(minute) && minute >= 0 && minute < 60 ? minute : 0,
   }
 }
 
 /** Saves the setting and reschedules at once; off cancels every scheduled prompt. */
-export const setDailySetting = async ({enabled, hour}: DailySetting): Promise<void> => {
+export const setDailySetting = async ({enabled, hour, minute}: DailySetting): Promise<void> => {
   await (enabled
     ? AsyncStorage.removeItem(KEY_DAILY_OFF)
     : AsyncStorage.setItem(KEY_DAILY_OFF, '1'))
   await AsyncStorage.setItem(KEY_DAILY_HOUR, String(hour))
+  await AsyncStorage.setItem(KEY_DAILY_MINUTE, String(minute))
   const {status, canAskAgain} = await Notifications.getPermissionsAsync()
   await (enabled && status === Notifications.PermissionStatus.UNDETERMINED && canAskAgain
     ? requestPermission()
@@ -83,7 +88,7 @@ export const notificationsAllowed = async (): Promise<boolean> =>
   (await Notifications.getPermissionsAsync()).status === Notifications.PermissionStatus.GRANTED
 
 const refill = async (now = new Date()): Promise<void> => {
-  const {enabled, hour} = await getDailySetting()
+  const {enabled, hour, minute} = await getDailySetting()
   if (!enabled) {
     await Notifications.cancelAllScheduledNotificationsAsync()
     return
@@ -98,7 +103,7 @@ const refill = async (now = new Date()): Promise<void> => {
 
   let count = 0
   for (let day = 0; count < WINDOW_DAYS; day++) {
-    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + day, hour)
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + day, hour, minute)
     if (date <= now) continue
     const id = questionOfTheDay(localDateKey(date))
     await Notifications.scheduleNotificationAsync({
@@ -123,7 +128,7 @@ const refill = async (now = new Date()): Promise<void> => {
 // Serialized: a quick off-then-on would otherwise interleave a cancel with another run's scheduling.
 let refilling: Promise<void> = Promise.resolve()
 
-/** Replaces the scheduled window with one Question of the Day per local day at the chosen hour, once the OS allows notifications. */
+/** Replaces the scheduled window with one Question of the Day per local day at the chosen time, once the OS allows notifications. */
 export const refillDailyQuestions = (now?: Date): Promise<void> => {
   const run = refilling.catch(() => {}).then(() => refill(now))
   refilling = run

@@ -38,7 +38,8 @@
  */
 import React from 'react'
 import {act, fireEvent, render, screen} from '@testing-library/react-native'
-import {GestureHandlerRootView} from 'react-native-gesture-handler'
+import {GestureHandlerRootView, State} from 'react-native-gesture-handler'
+import {fireGestureHandler, getByGestureTestId} from 'react-native-gesture-handler/jest-utils'
 import {setColorScheme} from '@/lib/color-scheme'
 
 import {flattenStyle, uiSnapshot} from '@/test-utils/ui-snapshot'
@@ -233,6 +234,16 @@ const settle = async () => {
   })
 }
 
+/** A drag of `translationX` points across the Question, then a release. */
+const swipe = (translationX: number) =>
+  act(() =>
+    fireGestureHandler(getByGestureTestId('question-pan'), [
+      {state: State.BEGAN},
+      {state: State.ACTIVE, translationX},
+      {state: State.END, translationX},
+    ])
+  )
+
 beforeEach(async () => {
   mockParams = {}
   // The Deck engine shuffles with Math.random; a snapshot needs one deal.
@@ -300,7 +311,6 @@ describe('Play screen', () => {
     // The mirrored half is hidden from screen readers, so count hidden nodes too.
     expect(screen.getAllByText(question, {includeHiddenElements: true})).toHaveLength(1)
     await fireEvent.press(screen.getByLabelText('open settings'))
-    expect(screen.queryByLabelText(/^Game:/)).toBeNull()
     jest.mocked(getStoredTabletopMode).mockResolvedValueOnce(true)
     await fireEvent.press(screen.getByLabelText('close'))
     await settle()
@@ -321,6 +331,62 @@ describe('Play screen', () => {
     await settle()
     expect(rotation(questions?.['1']?.en ?? '')).toContainEqual({rotateY: '0deg'})
     expect(screen.queryByText(second)).toBeNull()
+  })
+
+  it('with Card animation Flip, a swipe turns the Question over only past the threshold', async () => {
+    mockParams = {deck: 'library', q: '1'}
+    await setStoredCardAnimation('flip')
+    const questions = getDeck('library')?.questions
+    const first = questions?.['1']?.en ?? ''
+    await renderUi(<PlayScreen />)
+    await settle()
+    await swipe(-40)
+    await settle()
+    expect(rotation(first)).toContainEqual({rotateY: '0deg'})
+    await swipe(-100)
+    await settle()
+    expect(rotation(questions?.['2']?.en ?? '')).toContainEqual({rotateY: '0deg'})
+  })
+
+  it('moves on with a tap anywhere on the Question', async () => {
+    mockParams = {deck: 'library', q: '1'}
+    await setStoredCardAnimation('slide')
+    const questions = getDeck('library')?.questions
+    await renderUi(<PlayScreen />)
+    await settle()
+    await act(() =>
+      fireGestureHandler(getByGestureTestId('question-tap'), [
+        {state: State.BEGAN},
+        {state: State.ACTIVE},
+        {state: State.END},
+      ])
+    )
+    await settle()
+    expect(screen.getByText(questions?.['2']?.en ?? '')).toBeTruthy()
+  })
+
+  it('switches Game once the in-play Settings sheet closes, keeping the Question both ways', async () => {
+    mockParams = {deck: 'library', q: '1'}
+    const question = getDeck('library')?.questions['1']?.en ?? ''
+    await renderUi(<PlayScreen />)
+    await settle()
+    const switchTo = async (game: string) => {
+      await fireEvent.press(screen.getByLabelText('open settings'))
+      await fireEvent.press(await screen.findByLabelText(`Game: ${game}`))
+      await fireEvent.press(screen.getByLabelText('close'))
+      // The players swap once the sheet has had time to leave.
+      await settle()
+      await settle()
+      await settle()
+    }
+    await switchTo('Pick a Card')
+    // The Question is now a dealt Card: Next puts it down to the draw.
+    expect(screen.getByText(question)).toBeTruthy()
+    await fireEvent.press(screen.getByLabelText('next question'))
+    expect(screen.getByLabelText('Pick a card')).toBeTruthy()
+    await switchTo('Classic')
+    expect(screen.getByText(question)).toBeTruthy()
+    expect(screen.queryByLabelText('Pick a card')).toBeNull()
   })
 
   it("keeps a link's language when the in-play Settings sheet closes unchanged (issue #197)", async () => {
@@ -348,13 +414,8 @@ describe('Play screen', () => {
     await settle()
     await fireEvent.press(screen.getByLabelText('open settings'))
     await fireEvent.press(
-      await screen.findByLabelText(`Languages: ${getLanguageName(linked) ?? linked}`)
-    )
-    await fireEvent.press(
       await screen.findByLabelText(`Language: ${getLanguageName(stored) ?? stored}`)
     )
-    await fireEvent.press(screen.getByLabelText('back'))
-    await settle()
     await fireEvent.press(screen.getByLabelText('close'))
     await settle()
     expect(screen.getByText(deck?.questions['1']?.[stored] ?? '')).toBeTruthy()

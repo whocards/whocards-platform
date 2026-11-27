@@ -21,12 +21,10 @@ const CARDS = [
 test('A Mandarin and a Japanese card render, in Light and in Dark', async (fixtures) => {
   const {app, screen} = fixtures
   await launchClean(fixtures)
-  let language = 'English'
   for (const theme of ['Light', 'Dark']) {
     await pickTheme(screen, theme)
     for (const card of CARDS) {
-      await pickLanguage(screen, language, card.language)
-      language = card.language
+      await pickLanguage(screen, card.language)
       await startPlay(screen)
       await expect(screen.getByText(card.text)).toBeVisible()
       await app.screenshot(`${card.code}-${theme.toLowerCase()}`)

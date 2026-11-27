@@ -9,6 +9,7 @@ import {identify} from '@whocards/observability'
 import {colors} from '@whocards/tokens'
 
 import {ErrorBoundary} from '@/components/error-boundary'
+import {PlayTransitionOverlay} from '@/components/play-transition-overlay'
 import {VersionGate} from '@/components/version-gate'
 import {setColorScheme, useColorScheme} from '@/lib/color-scheme'
 import {getDeviceId} from '@/lib/device-id'
@@ -68,6 +69,7 @@ export default function RootLayout() {
           contentStyle: {backgroundColor: isDark ? colors.darkest : colors.canvasLight},
           // iOS asks the native-stack screen for its bar style, whose default follows the device, not the Theme.
           statusBarStyle: Platform.OS === 'ios' ? (isDark ? 'light' : 'dark') : undefined,
+          animation: 'none',
         }}
       />
     </VersionGate>
@@ -101,6 +103,7 @@ export default function RootLayout() {
         ) : (
           navigator
         )}
+        <PlayTransitionOverlay />
       </ErrorBoundary>
     </GestureHandlerRootView>
   )

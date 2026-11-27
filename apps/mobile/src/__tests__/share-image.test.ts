@@ -45,10 +45,8 @@ describe('downloadAndShareImage', () => {
   it('downloads the PNG to a local cache file and hands its URI to the OS share sheet', async () => {
     mockDownloadFileAsync.mockResolvedValue({uri: 'file:///mock-cache/share-card.png'})
 
-    const onSheetOpening = jest.fn(() => expect(mockShareAsync).not.toHaveBeenCalled())
-    await downloadAndShareImage('https://whocards.cc/share-card/story/en/q-1.png', onSheetOpening)
+    await downloadAndShareImage('https://whocards.cc/share-card/story/en/q-1.png')
 
-    expect(onSheetOpening).toHaveBeenCalledTimes(1)
     expect(mockDownloadFileAsync).toHaveBeenCalledWith(
       'https://whocards.cc/share-card/story/en/q-1.png',
       expect.anything()
