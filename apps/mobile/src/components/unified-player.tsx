@@ -748,21 +748,29 @@ export const UnifiedPlayer = ({
     cardFlip.set(withTiming(1, {duration: dur, easing: MOTION_EASING.standard}))
   }, [deckSlug, revealChrome, dragX, cardFlip, reduceMotion])
 
+  // Re-centre a slid-away Card only once its new Question commits, or the old one flashes back.
+  const pickResetOnCommit = useRef(false)
+  useLayoutEffect(() => {
+    if (!pickResetOnCommit.current) return
+    pickResetOnCommit.current = false
+    dragX.set(0)
+    cardFlip.set(1)
+  }, [questionId, dragX, cardFlip])
+
   const commitPickNext = useCallback(
     (advanceSeen: boolean) => {
       pickBusyRef.current = false
       viewTracker.endView('advanced')
       if (advanceSeen) {
         lastNavActionRef.current = {type: 'next'}
+        pickResetOnCommit.current = true
         dispatch({type: 'pick_advance_seen'})
-        dragX.set(0)
-        cardFlip.set(1)
       } else {
+        // The Card stays off-screen until the Deck replaces it; the next deal re-centres it.
         dispatch({type: 'pick_put_down'})
-        dragX.set(0)
       }
     },
-    [viewTracker, dragX, cardFlip]
+    [viewTracker]
   )
 
   const pickPutDown = useCallback(
@@ -1198,10 +1206,10 @@ export const UnifiedPlayer = ({
       runOnJS(revealChromeStable)()
     })
     const pan = Gesture.Pan()
-      .enabled(onCard)
       .withTestId('card-pan')
       .onUpdate((event) => {
         'worklet'
+        if (!onCard) return
         if (slidesPickSV.get()) {
           dragX.set(event.translationX)
         } else {
@@ -1212,7 +1220,13 @@ export const UnifiedPlayer = ({
       .onEnd((event) => {
         'worklet'
         const tx = event.translationX
-        if (Math.abs(tx) >= SWIPE_THRESHOLD || Math.abs(event.velocityX) > 500) {
+        const swiped = Math.abs(tx) >= SWIPE_THRESHOLD || Math.abs(event.velocityX) > 500
+        // Face-down Deck: a swipe does what the bar's Next / Back do.
+        if (!onCard) {
+          if (swiped) runOnJS((tx || event.velocityX) < 0 ? goNext : goPrevious)()
+          return
+        }
+        if (swiped) {
           runOnJS(swipeAwayPick)((tx || event.velocityX) < 0 ? 1 : -1)
           return
         }
@@ -1220,7 +1234,17 @@ export const UnifiedPlayer = ({
         cardFlip.set(withTiming(1, {duration: 150}))
       })
     return Gesture.Race(tap, pan)
-  }, [revealChromeStable, onCard, slidesPickSV, hasSeenNextSV, dragX, cardFlip, swipeAwayPick])
+  }, [
+    revealChromeStable,
+    onCard,
+    slidesPickSV,
+    hasSeenNextSV,
+    dragX,
+    cardFlip,
+    swipeAwayPick,
+    goNext,
+    goPrevious,
+  ])
 
   // --- Animated Styles (100% GPU transforms + opacity, zero layout thrash) ---
   // Smoothly cross-blend Dark mode's mid-tone table (#332b4a) over the darkest canvas (#08001a)
@@ -1636,29 +1660,144 @@ export const UnifiedPlayer = ({
                 opacity: isMorphing ? 0 : 1,
               }}
             >
-              <View className="flex-1 items-center justify-center">
-                {!languageReady ? null : phase === 'card' ? (
-                  <Animated.View className="items-center" style={homeRiseStyle}>
-                    <GestureDetector gesture={pickCardTap}>
-                      <View style={{width: cardWidth, height: cardHeight}}>
-                        {/* Deck under-layers */}
-                        <View className="absolute inset-0" pointerEvents="none">
-                          {DECK_LAYERS.map(({rotate, translateY}) => (
-                            <View
-                              key={rotate}
-                              style={{transform: [{rotate}, {translateY}]}}
-                              className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
-                            />
-                          ))}
-                        </View>
+              {/* Card and Deck both stay mounted and swap visibility: a Card texture mounted mid-move paints a frame late. */}
+              <View className="flex-1">
+                {!languageReady ? null : (
+                  <View
+                    className="absolute inset-0 items-center justify-center"
+                    pointerEvents={phase === 'card' ? 'box-none' : 'none'}
+                    accessibilityElementsHidden={phase !== 'card'}
+                    importantForAccessibility={phase === 'card' ? 'auto' : 'no-hide-descendants'}
+                    style={{opacity: phase === 'card' ? 1 : 0}}
+                  >
+                    <Animated.View className="items-center" style={homeRiseStyle}>
+                      <GestureDetector gesture={pickCardTap}>
+                        <View style={{width: cardWidth, height: cardHeight}}>
+                          {/* Deck under-layers */}
+                          <View className="absolute inset-0" pointerEvents="none">
+                            {DECK_LAYERS.map(({rotate, translateY}) => (
+                              <View
+                                key={rotate}
+                                style={{transform: [{rotate}, {translateY}]}}
+                                className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
+                              />
+                            ))}
+                          </View>
 
-                        {/* Real colorful CardBack (or next already-seen Card face!) directly underneath when sliding. */}
-                        <Animated.View
-                          pointerEvents="none"
-                          style={[StyleSheet.absoluteFill, pickUnderCardStyle]}
-                        >
-                          {hasSeenNext && nextQuestionId ? (
-                            <View className="bg-darker absolute inset-0 overflow-hidden rounded-[20px]">
+                          {/* Real colorful CardBack (or next already-seen Card face!) directly underneath when sliding. */}
+                          <Animated.View
+                            pointerEvents="none"
+                            style={[StyleSheet.absoluteFill, pickUnderCardStyle]}
+                          >
+                            {hasSeenNext && nextQuestionId ? (
+                              <View className="bg-darker absolute inset-0 overflow-hidden rounded-[20px]">
+                                <Image
+                                  source={texture}
+                                  resizeMode="cover"
+                                  fadeDuration={0}
+                                  style={[
+                                    StyleSheet.absoluteFill,
+                                    {width: '100%', height: '100%', opacity: 0.4},
+                                  ]}
+                                />
+                                <Text
+                                  className="text-primary-dark font-title"
+                                  style={{
+                                    position: 'absolute',
+                                    bottom: CARD_Q_BOTTOM,
+                                    right: CARD_Q_RIGHT,
+                                    fontSize: QUESTION_MARK_SIZE,
+                                    lineHeight: QUESTION_MARK_LINE_HEIGHT,
+                                  }}
+                                >
+                                  ?
+                                </Text>
+                                <View
+                                  className="flex-1 justify-start"
+                                  style={{
+                                    paddingHorizontal: CARD_PADDING_X,
+                                    paddingVertical: CARD_PADDING_Y,
+                                  }}
+                                >
+                                  <QuestionText
+                                    questionKey={nextQuestionId}
+                                    text={textOf(nextQuestionId)}
+                                    language={language}
+                                    box={cardInner}
+                                    secondaries={secondariesOf(nextQuestionId)}
+                                    mirrored={tabletop}
+                                  />
+                                </View>
+                                <CardEdge />
+                              </View>
+                            ) : (
+                              <CardBack />
+                            )}
+                          </Animated.View>
+
+                          {/* Active revealed Card — elevated zIndex prevents 3D flip from intersecting the Deck beneath. */}
+                          <Animated.View
+                            style={[{zIndex: 300}, pickWrapperStyle]}
+                            className="absolute inset-0"
+                          >
+                            <Animated.View style={pickBackFaceStyle} className="absolute inset-0">
+                              <CardBack />
+                            </Animated.View>
+                            <Animated.View
+                              style={pickFrontFaceStyle}
+                              className="bg-darker absolute inset-0 overflow-hidden rounded-[20px]"
+                            >
+                              <Image
+                                source={texture}
+                                resizeMode="cover"
+                                fadeDuration={0}
+                                style={[
+                                  StyleSheet.absoluteFill,
+                                  {width: '100%', height: '100%', opacity: 0.4},
+                                ]}
+                              />
+                              {!homeExiting ? (
+                                <Text
+                                  className="text-primary-dark font-title"
+                                  style={{
+                                    position: 'absolute',
+                                    bottom: CARD_Q_BOTTOM,
+                                    right: CARD_Q_RIGHT,
+                                    fontSize: QUESTION_MARK_SIZE,
+                                    lineHeight: QUESTION_MARK_LINE_HEIGHT,
+                                  }}
+                                >
+                                  ?
+                                </Text>
+                              ) : null}
+                              <View
+                                className="flex-1 justify-start"
+                                style={{
+                                  paddingHorizontal: CARD_PADDING_X,
+                                  paddingVertical: CARD_PADDING_Y,
+                                }}
+                              >
+                                <QuestionText
+                                  questionKey={questionId}
+                                  cardAnimation={cardAnimation}
+                                  text={text}
+                                  language={language}
+                                  box={cardInner}
+                                  secondaries={activeSecondaries}
+                                  mirrored={tabletop}
+                                />
+                              </View>
+                              <CardEdge />
+                            </Animated.View>
+                          </Animated.View>
+
+                          {/* 4B: Previous Card sliding straight back onto the stack from the left */}
+                          {slidingBackCardId ? (
+                            <Animated.View
+                              pointerEvents="none"
+                              style={[StyleSheet.absoluteFill, {zIndex: 400}, slidingBackStyle]}
+                              className="bg-darker overflow-hidden rounded-[20px]"
+                            >
                               <Image
                                 source={texture}
                                 resizeMode="cover"
@@ -1688,170 +1827,73 @@ export const UnifiedPlayer = ({
                                 }}
                               >
                                 <QuestionText
-                                  questionKey={nextQuestionId}
-                                  text={textOf(nextQuestionId)}
+                                  questionKey={slidingBackCardId}
+                                  text={textOf(slidingBackCardId)}
                                   language={language}
                                   box={cardInner}
-                                  secondaries={secondariesOf(nextQuestionId)}
+                                  secondaries={secondariesOf(slidingBackCardId)}
                                   mirrored={tabletop}
                                 />
                               </View>
                               <CardEdge />
-                            </View>
-                          ) : (
-                            <CardBack />
-                          )}
-                        </Animated.View>
-
-                        {/* Active revealed Card — elevated zIndex prevents 3D flip from intersecting the Deck beneath. */}
-                        <Animated.View
-                          style={[{zIndex: 300}, pickWrapperStyle]}
+                            </Animated.View>
+                          ) : null}
+                        </View>
+                      </GestureDetector>
+                      <View style={{height: HINT_SPACE, marginTop: HINT_GAP}} />
+                    </Animated.View>
+                  </View>
+                )}
+                {!languageReady ? null : (
+                  <View
+                    className="absolute inset-0 items-center justify-center"
+                    pointerEvents={phase === 'pick' ? 'box-none' : 'none'}
+                    accessibilityElementsHidden={phase !== 'pick'}
+                    importantForAccessibility={phase === 'pick' ? 'auto' : 'no-hide-descendants'}
+                    style={{opacity: phase === 'pick' ? 1 : 0}}
+                  >
+                    <Animated.View className="items-center" style={homeRiseStyle}>
+                      <View
+                        style={{
+                          width: cardWidth,
+                          height: cardHeight,
+                          opacity: deckTextureReady ? undefined : 0,
+                        }}
+                      >
+                        {DECK_LAYERS.map(({rotate, translateY}) => (
+                          <View
+                            key={rotate}
+                            style={{transform: [{rotate}, {translateY}]}}
+                            className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
+                          />
+                        ))}
+                        <PressableScale
+                          onPress={handlePickCard}
+                          accessibilityRole="button"
+                          accessibilityLabel="Pick a card"
                           className="absolute inset-0"
                         >
-                          <Animated.View style={pickBackFaceStyle} className="absolute inset-0">
-                            <CardBack />
-                          </Animated.View>
-                          <Animated.View
-                            style={pickFrontFaceStyle}
-                            className="bg-darker absolute inset-0 overflow-hidden rounded-[20px]"
-                          >
-                            <Image
-                              source={texture}
-                              resizeMode="cover"
-                              fadeDuration={0}
-                              style={[
-                                StyleSheet.absoluteFill,
-                                {width: '100%', height: '100%', opacity: 0.4},
-                              ]}
-                            />
-                            {!homeExiting ? (
-                              <Text
-                                className="text-primary-dark font-title"
-                                style={{
-                                  position: 'absolute',
-                                  bottom: CARD_Q_BOTTOM,
-                                  right: CARD_Q_RIGHT,
-                                  fontSize: QUESTION_MARK_SIZE,
-                                  lineHeight: QUESTION_MARK_LINE_HEIGHT,
-                                }}
-                              >
-                                ?
-                              </Text>
-                            ) : null}
-                            <View
-                              className="flex-1 justify-start"
-                              style={{
-                                paddingHorizontal: CARD_PADDING_X,
-                                paddingVertical: CARD_PADDING_Y,
-                              }}
-                            >
-                              <QuestionText
-                                questionKey={questionId}
-                                cardAnimation={cardAnimation}
-                                text={text}
-                                language={language}
-                                box={cardInner}
-                                secondaries={activeSecondaries}
-                                mirrored={tabletop}
-                              />
-                            </View>
-                            <CardEdge />
-                          </Animated.View>
-                        </Animated.View>
-
-                        {/* 4B: Previous Card sliding straight back onto the stack from the left */}
-                        {slidingBackCardId ? (
-                          <Animated.View
-                            pointerEvents="none"
-                            style={[StyleSheet.absoluteFill, {zIndex: 400}, slidingBackStyle]}
-                            className="bg-darker overflow-hidden rounded-[20px]"
-                          >
-                            <Image
-                              source={texture}
-                              resizeMode="cover"
-                              fadeDuration={0}
-                              style={[
-                                StyleSheet.absoluteFill,
-                                {width: '100%', height: '100%', opacity: 0.4},
-                              ]}
-                            />
-                            <Text
-                              className="text-primary-dark font-title"
-                              style={{
-                                position: 'absolute',
-                                bottom: CARD_Q_BOTTOM,
-                                right: CARD_Q_RIGHT,
-                                fontSize: QUESTION_MARK_SIZE,
-                                lineHeight: QUESTION_MARK_LINE_HEIGHT,
-                              }}
-                            >
-                              ?
-                            </Text>
-                            <View
-                              className="flex-1 justify-start"
-                              style={{
-                                paddingHorizontal: CARD_PADDING_X,
-                                paddingVertical: CARD_PADDING_Y,
-                              }}
-                            >
-                              <QuestionText
-                                questionKey={slidingBackCardId}
-                                text={textOf(slidingBackCardId)}
-                                language={language}
-                                box={cardInner}
-                                secondaries={secondariesOf(slidingBackCardId)}
-                                mirrored={tabletop}
-                              />
-                            </View>
-                            <CardEdge />
-                          </Animated.View>
-                        ) : null}
+                          <CardBack
+                            hideWordmark={transitionActive || homeExiting}
+                            onWordmarkLayout={onWordmarkLayout}
+                            onTextureLoad={onDeckTextureLoad}
+                          />
+                        </PressableScale>
                       </View>
-                    </GestureDetector>
-                    <View style={{height: HINT_SPACE, marginTop: HINT_GAP}} />
-                  </Animated.View>
-                ) : (
-                  <Animated.View className="items-center" style={homeRiseStyle}>
-                    <View
-                      style={{
-                        width: cardWidth,
-                        height: cardHeight,
-                        opacity: deckTextureReady ? undefined : 0,
-                      }}
-                    >
-                      {DECK_LAYERS.map(({rotate, translateY}) => (
-                        <View
-                          key={rotate}
-                          style={{transform: [{rotate}, {translateY}]}}
-                          className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
-                        />
-                      ))}
-                      <PressableScale
+                      <Pressable
                         onPress={handlePickCard}
+                        hitSlop={12}
                         accessibilityRole="button"
-                        accessibilityLabel="Pick a card"
-                        className="absolute inset-0"
+                        accessibilityLabel="Tap to pick a card"
+                        style={{height: HINT_SPACE, marginTop: HINT_GAP}}
+                        className="justify-center"
                       >
-                        <CardBack
-                          hideWordmark={transitionActive || homeExiting}
-                          onWordmarkLayout={onWordmarkLayout}
-                          onTextureLoad={onDeckTextureLoad}
-                        />
-                      </PressableScale>
-                    </View>
-                    <Pressable
-                      onPress={handlePickCard}
-                      hitSlop={12}
-                      accessibilityRole="button"
-                      accessibilityLabel="Tap to pick a card"
-                      style={{height: HINT_SPACE, marginTop: HINT_GAP}}
-                      className="justify-center"
-                    >
-                      <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-                        Tap to pick a card
-                      </Text>
-                    </Pressable>
-                  </Animated.View>
+                        <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
+                          Tap to pick a card
+                        </Text>
+                      </Pressable>
+                    </Animated.View>
+                  </View>
                 )}
               </View>
             </View>
