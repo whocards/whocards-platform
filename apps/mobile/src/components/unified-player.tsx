@@ -87,6 +87,11 @@ const texture = require('../../assets/images/background.png')
  * The card back, styled after the printed WhoCards deck: the brand squiggle
  * texture over the darkest base and the one-line WHO?CARDS wordmark bottom-right.
  */
+/** A Question face's edge, drawn over it so the border never insets the text the Game switch lands on. */
+const CardEdge = () => (
+  <View pointerEvents="none" className="absolute inset-0 rounded-[20px] border border-white/10" />
+)
+
 export const CardBack = ({
   hideWordmark = false,
   onWordmarkLayout,
@@ -634,26 +639,29 @@ export const UnifiedPlayer = ({
 
   // Single choreography rule: every stage-affecting Settings change (Game, Language,
   // Second language, Tabletop, Card animation) applies once the Settings sheet clears.
-  const handleSettingsClose = useCallback(() => {
-    setSettingsModalOpen(false)
-    const nextLanguage = pickedLanguageRef.current
-    const nextGame = pickedGameRef.current
-    pickedLanguageRef.current = undefined
-    pickedGameRef.current = undefined
-    if (sheetCloseTimerRef.current) clearTimeout(sheetCloseTimerRef.current)
-    const apply = () => {
-      sheetCloseTimerRef.current = null
-      if (nextLanguage) setLanguage(nextLanguage)
-      void readSettings(true)
-      if (nextGame && nextGame !== game) switchGameTo(nextGame)
-    }
-    const wait = motionDuration(SHEET_CLOSE_MS, reduceMotion)
-    if (wait === 0) {
-      apply()
-      return
-    }
-    sheetCloseTimerRef.current = setTimeout(apply, wait)
-  }, [readSettings, game, switchGameTo, reduceMotion])
+  const handleSettingsClose = useCallback(
+    (sheetGone = false) => {
+      setSettingsModalOpen(false)
+      const nextLanguage = pickedLanguageRef.current
+      const nextGame = pickedGameRef.current
+      pickedLanguageRef.current = undefined
+      pickedGameRef.current = undefined
+      if (sheetCloseTimerRef.current) clearTimeout(sheetCloseTimerRef.current)
+      const apply = () => {
+        sheetCloseTimerRef.current = null
+        if (nextLanguage) setLanguage(nextLanguage)
+        void readSettings(true)
+        if (nextGame && nextGame !== game) switchGameTo(nextGame)
+      }
+      const wait = sheetGone ? 0 : motionDuration(SHEET_CLOSE_MS, reduceMotion)
+      if (wait === 0) {
+        apply()
+        return
+      }
+      sheetCloseTimerRef.current = setTimeout(apply, wait)
+    },
+    [readSettings, game, switchGameTo, reduceMotion]
+  )
 
   // Reset Classic flip/slide offsets synchronously BEFORE native paint once React commits
   // the new questionId, preventing both a 1-frame blank flash and Jest mock overwrite.
@@ -1619,7 +1627,7 @@ export const UnifiedPlayer = ({
                           style={[StyleSheet.absoluteFill, pickUnderCardStyle]}
                         >
                           {hasSeenNext && nextQuestionId ? (
-                            <View className="bg-darker absolute inset-0 overflow-hidden rounded-[20px] border border-white/10">
+                            <View className="bg-darker absolute inset-0 overflow-hidden rounded-[20px]">
                               <Image
                                 source={texture}
                                 resizeMode="cover"
@@ -1657,6 +1665,7 @@ export const UnifiedPlayer = ({
                                   mirrored={tabletop}
                                 />
                               </View>
+                              <CardEdge />
                             </View>
                           ) : (
                             <CardBack />
@@ -1673,7 +1682,7 @@ export const UnifiedPlayer = ({
                           </Animated.View>
                           <Animated.View
                             style={pickFrontFaceStyle}
-                            className="bg-darker absolute inset-0 overflow-hidden rounded-[20px] border border-white/10"
+                            className="bg-darker absolute inset-0 overflow-hidden rounded-[20px]"
                           >
                             <Image
                               source={texture}
@@ -1715,6 +1724,7 @@ export const UnifiedPlayer = ({
                                 mirrored={tabletop}
                               />
                             </View>
+                            <CardEdge />
                           </Animated.View>
                         </Animated.View>
 
@@ -1723,7 +1733,7 @@ export const UnifiedPlayer = ({
                           <Animated.View
                             pointerEvents="none"
                             style={[StyleSheet.absoluteFill, {zIndex: 400}, slidingBackStyle]}
-                            className="bg-darker overflow-hidden rounded-[20px] border border-white/10"
+                            className="bg-darker overflow-hidden rounded-[20px]"
                           >
                             <Image
                               source={texture}
@@ -1762,6 +1772,7 @@ export const UnifiedPlayer = ({
                                 mirrored={tabletop}
                               />
                             </View>
+                            <CardEdge />
                           </Animated.View>
                         ) : null}
                       </View>

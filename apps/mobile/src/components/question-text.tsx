@@ -469,6 +469,8 @@ export const QuestionText = ({
 
   // 0 = collapsed behind seam (single-lang pose), 1 = full resting split.
   const splitProgress = useSharedValue(activeSnap.isSplit ? 1 : 0)
+  // The primary's own 0→1 (Single → its half), so a collapse can finish resizing before the tail.
+  const resizeProgress = useSharedValue(activeSnap.isSplit ? 1 : 0)
 
   // Per-half in-place swap progress (0 = rest, ±1 = 90° edge-on for flip OR tucked behind divider for slide).
   const topFlip = useSharedValue(0)
@@ -501,6 +503,7 @@ export const QuestionText = ({
     // Different Question or Reduce Motion: snap cleanly with zero split/flip animation.
     if (navigated || dur === 0) {
       cancelAnimation(splitProgress)
+      cancelAnimation(resizeProgress)
       cancelAnimation(topFlip)
       cancelAnimation(bottomFlip)
       cancelAnimation(topSlide)
@@ -508,6 +511,7 @@ export const QuestionText = ({
       cancelAnimation(singleSwapFlip)
       cancelAnimation(singleSwapSlide)
       splitProgress.set(incoming.isSplit ? 1 : 0)
+      resizeProgress.set(incoming.isSplit ? 1 : 0)
       topFlip.set(0)
       bottomFlip.set(0)
       topSlide.set(0)
@@ -526,6 +530,7 @@ export const QuestionText = ({
     // Primary resizes into its half while only the emerging half slides out from the seam.
     if (!prev.isSplit && incoming.isSplit) {
       cancelAnimation(splitProgress)
+      cancelAnimation(resizeProgress)
       cancelAnimation(topFlip)
       cancelAnimation(bottomFlip)
       cancelAnimation(topSlide)
@@ -537,11 +542,13 @@ export const QuestionText = ({
       setClipMask({top: incoming.mirrored, bottom: !incoming.mirrored})
       setResizing(true)
       splitProgress.set(0)
+      resizeProgress.set(0)
       commit(incoming)
       const finishEnter = () => {
         setClipMask({top: false, bottom: false})
         setResizing(false)
       }
+      resizeProgress.set(withTiming(1, {duration: dur, easing: MOTION_EASING.standard}))
       splitProgress.set(
         withTiming(1, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
           'worklet'
@@ -555,6 +562,7 @@ export const QuestionText = ({
     // Leaving half tucks behind the seam while the primary resizes back to its Single pose.
     if (prev.isSplit && !incoming.isSplit) {
       cancelAnimation(splitProgress)
+      cancelAnimation(resizeProgress)
       cancelAnimation(topFlip)
       cancelAnimation(bottomFlip)
       cancelAnimation(topSlide)
@@ -566,16 +574,26 @@ export const QuestionText = ({
       setClipMask({top: prev.mirrored, bottom: !prev.mirrored})
       setResizing(true)
       splitProgress.set(1)
+      resizeProgress.set(1)
       const finishCollapse = () => {
         setClipMask({top: false, bottom: false})
         setResizing(false)
         commit(incoming)
       }
+      // Leaving half clears the seam first, so the growing primary never overlaps it, and the
+      // whole collapse lands at 70% of the split duration instead of in a slow tail.
       splitProgress.set(
-        withTiming(0, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
-          'worklet'
-          if (finished) runOnJS(finishCollapse)()
-        })
+        withTiming(0, {duration: Math.round(dur * 0.55), easing: MOTION_EASING.standard})
+      )
+      resizeProgress.set(
+        withTiming(
+          0,
+          {duration: Math.round(dur * 0.7), easing: MOTION_EASING.standard},
+          (finished) => {
+            'worklet'
+            if (finished) runOnJS(finishCollapse)()
+          }
+        )
       )
       return
     }
@@ -721,6 +739,7 @@ export const QuestionText = ({
     cardAnimation,
     reduceMotion,
     splitProgress,
+    resizeProgress,
     topFlip,
     bottomFlip,
     topSlide,
@@ -729,7 +748,7 @@ export const QuestionText = ({
     singleSwapSlide,
   ])
 
-  // Primary fontSize and spacers share splitProgress on the UI thread: p = 0 is exactly the Single layout.
+  // Primary fontSize and spacers share resizeProgress on the UI thread: 0 is exactly the Single layout.
   const primaryText = activeSnap.text
   const singleFont = useMemo(
     () =>
@@ -748,23 +767,23 @@ export const QuestionText = ({
     [primaryText, halfBox.width, halfBox.height]
   )
   const resizeFontStyle = useAnimatedStyle(() => {
-    const size = interpolate(splitProgress.get(), [0, 1], [singleFont, splitFont])
+    const size = interpolate(resizeProgress.get(), [0, 1], [singleFont, splitFont])
     return {fontSize: size, lineHeight: size * LINE_HEIGHT_RATIO}
   }, [singleFont, splitFont])
 
   // Primary above the seam (upright): text bottom on the seam at p = 1, Single pose at p = 0.
   const seamTravel = halfHeight + MIRROR_GAP
   const topLeadStyle = useAnimatedStyle(
-    () => ({flexGrow: verticalCenter ? 1 : splitProgress.get()}),
+    () => ({flexGrow: verticalCenter ? 1 : resizeProgress.get()}),
     [verticalCenter]
   )
   const topTrailStyle = useAnimatedStyle(() => {
-    const p = splitProgress.get()
+    const p = resizeProgress.get()
     return {height: p * seamTravel, flexGrow: 1 - p}
   }, [seamTravel])
   // Primary below the seam (Tabletop): text top on the seam at p = 1.
   const bottomLeadStyle = useAnimatedStyle(() => {
-    const p = splitProgress.get()
+    const p = resizeProgress.get()
     return {height: p * seamTravel, flexGrow: verticalCenter ? 1 - p : 0}
   }, [seamTravel, verticalCenter])
 

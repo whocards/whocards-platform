@@ -66,7 +66,7 @@ const NO_LANGUAGE = ''
 // Caps the rows at this fraction of the window; they only scroll under max Dynamic Type or in landscape.
 const SHEET_MAX_HEIGHT_RATIO = 0.8
 
-// Stage changes wait out the sheet's native teardown (~100ms main-thread block ending ~690ms after close).
+// After an X close, stage changes wait out the sheet's native teardown (~100ms block ending ~690ms in).
 export const SHEET_CLOSE_MS = 720
 
 const languageName = (code: string) => getLanguageName(code) ?? code
@@ -76,7 +76,8 @@ const formatTime = ({hour, minute}: Pick<DailySetting, 'hour' | 'minute'>) =>
 
 type SettingsModalProps = {
   visible: boolean
-  onClose: () => void
+  /** `sheetGone` when iOS reports the sheet fully dismissed (a swipe-down); an X close gets no report. */
+  onClose: (sheetGone?: boolean) => void
   /** The deck whose languages the Language rows edit: they are stored per deck. */
   deckSlug: string
   languages: string[]
@@ -250,7 +251,8 @@ export const SettingsModal = ({
   return (
     <BottomSheet
       isPresented={visible}
-      onDismiss={onClose}
+      // iOS reports this once the sheet is gone; Android's fires as a swipe starts dismissing.
+      onDismiss={() => onClose(Platform.OS === 'ios')}
       contentPadding={0}
       {...sheetTheme(isDark)}
     >
@@ -260,7 +262,7 @@ export const SettingsModal = ({
           <View className="flex-row items-center justify-between px-5 pb-2 pt-6">
             <Text className="text-darker dark:text-white font-title text-2xl">Settings</Text>
             <Pressable
-              onPress={onClose}
+              onPress={() => onClose()}
               accessibilityRole="button"
               accessibilityLabel="close"
               hitSlop={12}
