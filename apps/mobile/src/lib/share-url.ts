@@ -36,8 +36,11 @@ export const buildAskUrl = (shareUrl: string, name: string): string => {
 }
 
 /** The message an ask goes out with; the OS share sheet adds nothing else. */
-export const buildAskMessage = (questionText: string, askUrl: string): string =>
-  `I want to hear your answer to this one:\n\n“${questionText}”\n\n${askUrl}`
+export const buildAskMessage = (
+  questionText: string,
+  askUrl: string,
+  intro = 'I want to hear your answer to this one:'
+): string => `${intro}\n\n“${questionText}”\n\n${askUrl}`
 
 /** The two Share Card sizes the on-demand endpoint renders (ADR-0007). */
 export type ShareCardSize = 'story' | 'post'

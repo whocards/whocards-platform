@@ -1,8 +1,7 @@
-import {deviceLanguage} from '../lib/language-store'
+import {deviceLanguage} from '../lib/device-language'
 
 const mockLocales = jest.fn<{languageTag: string; languageCode: string | null}[], []>()
 jest.mock('expo-localization', () => ({getLocales: () => mockLocales()}))
-jest.mock('@react-native-async-storage/async-storage', () => ({}))
 
 const locales = (...tags: [string, string | null][]) =>
   mockLocales.mockReturnValue(

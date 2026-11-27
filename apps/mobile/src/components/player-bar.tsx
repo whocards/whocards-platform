@@ -7,6 +7,7 @@ import {colors} from '@whocards/tokens'
 import {PressableScale} from '@/components/pressable-scale'
 import {useIsDark} from '@/lib/color-scheme'
 import {impact} from '@/lib/haptics'
+import {useT} from '@/lib/i18n'
 
 type IconName = keyof typeof Ionicons.glyphMap
 
@@ -88,43 +89,44 @@ export const PlayerBar = ({
   const insets = useSafeAreaInsets()
   const isDark = useIsDark()
   const iconColor = isDark ? colors.white : colors.darker
+  const t = useT()
 
   const buttons = (
     <>
       <BarButton
         icon="chevron-back"
-        label="Back"
+        label={t('bar.back')}
         onPress={onPrevious}
-        accessibilityLabel="previous question"
+        accessibilityLabel={t('a11y.previousQuestion')}
         iconColor={iconColor}
       />
       <BarButton
         icon="close-outline"
-        label="Exit"
+        label={t('bar.exit')}
         onPress={onExit}
-        accessibilityLabel="exit deck"
+        accessibilityLabel={t('a11y.exitDeck')}
         iconColor={iconColor}
       />
       <BarButton
         icon="settings-outline"
-        label="Settings"
+        label={t('bar.settings')}
         onPress={onSettings}
-        accessibilityLabel="open settings"
+        accessibilityLabel={t('a11y.openSettings')}
         iconColor={iconColor}
       />
       <BarButton
         icon="share-outline"
-        label="Share"
+        label={t('bar.share')}
         onPress={onShare}
-        accessibilityLabel="share question"
+        accessibilityLabel={t('a11y.shareQuestion')}
         iconColor={iconColor}
         disabled={shareDisabled}
       />
       <BarButton
         icon="chevron-forward"
-        label="Next"
+        label={t('bar.next')}
         onPress={onNext}
-        accessibilityLabel="next question"
+        accessibilityLabel={t('a11y.nextQuestion')}
         iconColor={iconColor}
       />
     </>

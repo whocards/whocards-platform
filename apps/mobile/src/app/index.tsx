@@ -28,6 +28,7 @@ import {useInternalMarker} from '@/hooks/use-internal-marker'
 import {useThemeSetting} from '@/hooks/use-theme-setting'
 import {getStoredGame} from '@/lib/game-store'
 import {impact} from '@/lib/haptics'
+import {useT} from '@/lib/i18n'
 import {MOTION_DURATION, MOTION_EASING, motionDuration} from '@/lib/motion'
 import type {HomeReturnEvent} from '@/lib/play-transition'
 import {
@@ -85,6 +86,7 @@ export default function LandingScreen() {
   // expressed as a `dark:` class.
   const {theme, resolvedScheme, select: selectTheme} = useThemeSetting()
   const isDark = resolvedScheme !== 'light'
+  const t = useT()
 
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   // 5B Home → Play parting exit state: null at rest.
@@ -392,22 +394,22 @@ export default function LandingScreen() {
             // 26.25px line height, kept since the NativeWind 5 migration; rc reads leading-* as 0.25rem steps.
             className="text-darker/80 dark:text-white/80 mt-7 text-center font-sans text-xl font-semibold leading-7.5"
           >
-            Change your world,{'\n'}one conversation at a time.
+            {t('home.tagline')}
           </Animated.Text>
         </View>
 
         <Animated.View style={contentStyle} className="w-full items-center gap-5">
           <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-            {cards} cards · {languages} languages
+            {t('home.count', {cards, languages})}
           </Text>
           <PressableScale
             accessibilityRole="button"
-            accessibilityLabel="Play"
+            accessibilityLabel={t('home.play')}
             onPress={handlePlay}
             className="active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
           >
             <Ionicons name="play" size={18} color={colors.darker} style={{marginRight: 8}} />
-            <Text className="text-darker font-sans text-base font-bold">Play</Text>
+            <Text className="text-darker font-sans text-base font-bold">{t('home.play')}</Text>
           </PressableScale>
           {/* the single Settings entry point (issue #176) — the app's first
               secondary-button, ported from the website's `.btn-secondary`
@@ -415,7 +417,7 @@ export default function LandingScreen() {
               outline chips here (Game, Theme) plus the play-screen language
               sheet (Language, Tabletop mode) now lives behind this one menu. */}
           <SecondaryButton
-            label="Settings"
+            label={t('home.settings')}
             icon={<Ionicons name="settings-outline" size={18} color={colors.white} />}
             onPress={() => setSettingsModalOpen(true)}
           />

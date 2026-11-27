@@ -8,6 +8,7 @@ import {DEFAULT_GAME, getDeck, isPoolBacked} from '@whocards/decks'
 import {ScreenBackground} from '@/components/screen-background'
 import {UnifiedPlayer} from '@/components/unified-player'
 import {getStoredGame} from '@/lib/game-store'
+import {translate} from '@/lib/i18n'
 import {peekPendingTargetGame} from '@/lib/play-transition'
 
 // react-native-css's safe-area adapter re-exports the platform SafeAreaView,
@@ -35,7 +36,9 @@ export default function PlayScreen() {
     return (
       <ScreenBackground>
         <SafeAreaView style={missingDeckContainerStyle}>
-          <Text className="text-darker dark:text-white font-sans">Deck not found.</Text>
+          <Text className="text-darker dark:text-white font-sans">
+            {translate('deck.notFound')}
+          </Text>
         </SafeAreaView>
       </ScreenBackground>
     )

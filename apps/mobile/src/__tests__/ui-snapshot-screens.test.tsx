@@ -147,8 +147,10 @@ jest.mock('@/lib/tabletop-store', () => ({
   setStoredTabletopMode: jest.fn().mockResolvedValue(undefined),
 }))
 
+// The UI language is app-wide: these tests keep it English while the Language changes under them.
+jest.mock('@/lib/i18n', () => ({...jest.requireActual('@/lib/i18n'), setUiLanguage: jest.fn()}))
+
 jest.mock('@/lib/language-store', () => ({
-  deviceLanguage: (languages: string[]) => languages[0],
   getStoredLanguage: jest.fn().mockResolvedValue(undefined),
   getStoredSecondaryLanguages: jest.fn().mockResolvedValue([]),
   setStoredLanguage: jest.fn().mockResolvedValue(undefined),
@@ -190,8 +192,9 @@ jest.mock('@whocards/observability/events', () => {
   return {...actual, track: jest.fn()}
 })
 
-import {getDeck, getLanguageName} from '@whocards/decks'
+import {getDeck} from '@whocards/decks'
 import {SHEET_CLOSE_MS} from '@/components/settings-modal'
+import {NATIVE_LANGUAGE_NAMES} from '@/lib/i18n'
 import {getStoredGame} from '@/lib/game-store'
 import {getStoredLanguage} from '@/lib/language-store'
 import {setStoredCardAnimation} from '@/lib/card-animation-store'
@@ -433,7 +436,7 @@ describe('Play screen', () => {
     await settle()
     await fireEvent.press(screen.getByLabelText('open settings'))
     await fireEvent.press(
-      await screen.findByLabelText(`Language: ${getLanguageName(stored) ?? stored}`)
+      await screen.findByLabelText(`Language: ${NATIVE_LANGUAGE_NAMES[stored] ?? stored}`)
     )
     await fireEvent.press(screen.getByLabelText('close'))
     await settleSheetClose()

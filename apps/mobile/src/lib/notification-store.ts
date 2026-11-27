@@ -16,7 +16,9 @@ import type {
   PromptScheduledProps,
 } from '@whocards/observability/events'
 
-import {deviceLanguage, getStoredLanguage} from './language-store'
+import {translate} from './i18n'
+import {deviceLanguage} from './device-language'
+import {getStoredLanguage} from './language-store'
 import {parsePlayLink} from './play-link'
 
 const KEY_OPEN_COUNT = 'whocards-notifications:open-count'
@@ -45,7 +47,7 @@ export const PROMPT_SOURCE = 'question_of_the_day'
 const createChannel = async () => {
   if (Platform.OS !== 'android') return
   await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-    name: 'Daily question',
+    name: translate('notifications.channel'),
     importance: Notifications.AndroidImportance.DEFAULT,
   })
 }
@@ -158,9 +160,9 @@ export const recordOpenAndMaybeAsk = async (): Promise<void> => {
   const {status, canAskAgain} = await Notifications.getPermissionsAsync()
   if (status === Notifications.PermissionStatus.GRANTED || !canAskAgain) return
 
-  Alert.alert('Get a daily question?', 'One Question a day, at a time you pick in Settings.', [
-    {text: 'Not now', style: 'cancel'},
-    {text: 'Yes', onPress: () => void requestPermission().catch(() => {})},
+  Alert.alert(translate('prompt.title'), translate('prompt.body'), [
+    {text: translate('prompt.notNow'), style: 'cancel'},
+    {text: translate('prompt.yes'), onPress: () => void requestPermission().catch(() => {})},
   ])
 }
 

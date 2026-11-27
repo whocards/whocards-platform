@@ -75,9 +75,7 @@ exports[`Library screen renders the Library screen 1`] = `
           | opacity: 1
           | textAlign: "center"
           | transform: [{"translateY":0}]
-          "Change your world,"
-          "\\n"
-          "one conversation at a time."
+          "Change your world,\\none conversation at a time."
       <View>
         | alignItems: "center"
         | gap: 17.5
@@ -89,10 +87,7 @@ exports[`Library screen renders the Library screen 1`] = `
           | fontFamily: "golos-text"
           | fontSize: 12.25
           | lineHeight: 17.5
-          "66"
-          " cards · "
-          "14"
-          " languages"
+          "66 cards · 14 languages"
         <View accessibilityRole="button" accessibilityLabel="Play" accessibilityState={}>
           | alignItems: "center"
           | backgroundColor: "#f9d75f"
@@ -218,9 +213,7 @@ exports[`Library screen renders the Library screen in the Dark Theme Display set
           | opacity: 1
           | textAlign: "center"
           | transform: [{"translateY":0}]
-          "Change your world,"
-          "\\n"
-          "one conversation at a time."
+          "Change your world,\\none conversation at a time."
       <View>
         | alignItems: "center"
         | gap: 17.5
@@ -232,10 +225,7 @@ exports[`Library screen renders the Library screen in the Dark Theme Display set
           | fontFamily: "golos-text"
           | fontSize: 12.25
           | lineHeight: 17.5
-          "66"
-          " cards · "
-          "14"
-          " languages"
+          "66 cards · 14 languages"
         <View accessibilityRole="button" accessibilityLabel="Play" accessibilityState={}>
           | alignItems: "center"
           | backgroundColor: "#f9d75f"

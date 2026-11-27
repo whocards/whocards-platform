@@ -30,9 +30,8 @@ import {useIsDark} from '@/lib/color-scheme'
 import {buildFeedbackUrl} from '@/lib/feedback-url'
 import {getStoredGame, setStoredGame} from '@/lib/game-store'
 import {selection} from '@/lib/haptics'
-import {GAME_CATALOG} from '@/lib/games'
+import {deviceLanguage} from '@/lib/device-language'
 import {
-  deviceLanguage,
   getStoredLanguage,
   getStoredSecondaryLanguages,
   setStoredLanguage,
@@ -49,21 +48,23 @@ import {
 } from '@/lib/notification-store'
 import {getStoredCardAnimation, setStoredCardAnimation} from '@/lib/card-animation-store'
 import type {CardAnimation} from '@/lib/card-animation-store'
+import {NATIVE_LANGUAGE_NAMES, setUiLanguage, useT} from '@/lib/i18n'
+import type {MessageKey} from '@/lib/i18n'
 import {MOTION_DURATION, motionDuration} from '@/lib/motion'
 import {sheetTheme} from '@/lib/sheet-theme'
 import {getStoredTabletopMode, setStoredTabletopMode} from '@/lib/tabletop-store'
 import type {ThemeSetting} from '@/lib/theme-store'
 
 const THEME_OPTIONS = [
-  {value: 'system', label: 'System'},
-  {value: 'light', label: 'Light'},
-  {value: 'dark', label: 'Dark'},
-] as const satisfies readonly {value: ThemeSetting; label: string}[]
+  {value: 'system', key: 'settings.themeSystem'},
+  {value: 'light', key: 'settings.themeLight'},
+  {value: 'dark', key: 'settings.themeDark'},
+] as const satisfies readonly {value: ThemeSetting; key: MessageKey}[]
 
 const CARD_ANIMATION_OPTIONS = [
-  {value: 'slide', label: 'Slide'},
-  {value: 'flip', label: 'Flip'},
-] as const satisfies readonly {value: CardAnimation; label: string}[]
+  {value: 'slide', key: 'settings.slide'},
+  {value: 'flip', key: 'settings.flip'},
+] as const satisfies readonly {value: CardAnimation; key: MessageKey}[]
 
 // Caps the rows at this fraction of the window; they only scroll under max Dynamic Type or in landscape.
 const SHEET_MAX_HEIGHT_RATIO = 0.8
@@ -71,7 +72,7 @@ const SHEET_MAX_HEIGHT_RATIO = 0.8
 // After an X close, stage changes wait out the sheet's native teardown (~100ms block ending ~690ms in).
 export const SHEET_CLOSE_MS = 720
 
-const languageName = (code: string) => getLanguageName(code) ?? code
+const languageName = (code: string) => NATIVE_LANGUAGE_NAMES[code] ?? getLanguageName(code) ?? code
 
 const formatTime = ({hour, minute}: Pick<DailySetting, 'hour' | 'minute'>) =>
   `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
@@ -171,13 +172,14 @@ type HeaderProps = {title: string; onBack?: () => void; onClose: () => void; isD
 
 const Header = ({title, onBack, onClose, isDark}: HeaderProps) => {
   const edges = useEdges('close')
+  const t = useT()
   return (
     <View className="flex-row items-center justify-between pb-2 pt-6" style={edges.row}>
       {onBack ? (
         <Pressable
           onPress={onBack}
           accessibilityRole="button"
-          accessibilityLabel="Back to Settings"
+          accessibilityLabel={t('settings.backToSettings')}
           hitSlop={12}
           className="flex-row items-center gap-1"
           style={{marginLeft: -6}}
@@ -191,7 +193,7 @@ const Header = ({title, onBack, onClose, isDark}: HeaderProps) => {
       <Pressable
         onPress={onClose}
         accessibilityRole="button"
-        accessibilityLabel="close"
+        accessibilityLabel={t('a11y.close')}
         hitSlop={12}
         style={edges.trailing}
       >
@@ -244,6 +246,7 @@ export const SettingsModal = ({
 }: SettingsModalProps) => {
   const isDark = useIsDark()
   const reduceMotion = useReducedMotion()
+  const t = useT()
   const mutedColor = isDark ? colors.gray.dark : colors.mutedOnLight
   const {height: windowHeight, width: windowWidth} = useWindowDimensions()
   // The sheet is one page, or the Gameplay page pushed over it the way iOS Settings does.
@@ -340,6 +343,7 @@ export const SettingsModal = ({
       track({name: EVENTS.LANGUAGE_CHANGED, props: {deck_id: deckSlug, from: language, to: next}})
     }
     setLanguage(next)
+    setUiLanguage(next)
     // The daily Question already queued follows the new Language too.
     void setStoredLanguage(deckSlug, next)
       .then(() => refillDailyQuestions())
@@ -373,7 +377,7 @@ export const SettingsModal = ({
         >
           <RowInset.Provider value={inset}>
             <Header
-              title={page === 1 ? 'Gameplay' : 'Settings'}
+              title={page === 1 ? t('settings.gameplay') : t('settings.title')}
               onBack={page === 1 ? () => goTo(0) : undefined}
               onClose={() => onClose()}
               isDark={isDark}
@@ -381,9 +385,9 @@ export const SettingsModal = ({
             <ScrollView style={{maxHeight: windowHeight * SHEET_MAX_HEIGHT_RATIO}} bounces={false}>
               <Animated.View className="flex-row" style={[{width: pageWidth * 2}, pagerStyle]}>
                 <Page active={page === 0} width={pageWidth}>
-                  <Row label="Language" trailing="picker">
+                  <Row label={t('settings.language')} trailing="picker">
                     <Choice
-                      label="Language"
+                      label={t('settings.language')}
                       options={languageOptions}
                       current={language}
                       onSelect={selectLanguage}
@@ -391,16 +395,16 @@ export const SettingsModal = ({
                       isDark={isDark}
                     />
                   </Row>
-                  <Row label="Gameplay" trailing="chevron" onPress={() => goTo(1)}>
+                  <Row label={t('settings.gameplay')} trailing="chevron" onPress={() => goTo(1)}>
                     <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-lg">
-                      {GAME_CATALOG.find((entry) => entry.id === game)?.title}
+                      {t(game === 'pick' ? 'games.pick' : 'games.classic')}
                     </Text>
                     <Ionicons name="chevron-forward" size={20} color={mutedColor} />
                   </Row>
-                  <Row label="Theme" trailing="segmented">
+                  <Row label={t('settings.theme')} trailing="segmented">
                     <SegmentedControl
-                      label="Theme"
-                      options={THEME_OPTIONS}
+                      label={t('settings.theme')}
+                      options={THEME_OPTIONS.map(({value, key}) => ({value, label: t(key)}))}
                       current={theme}
                       onSelect={(next) => {
                         selection()
@@ -408,14 +412,18 @@ export const SettingsModal = ({
                       }}
                     />
                   </Row>
-                  <Row label="Daily question" last={!daily.enabled || allowed} trailing="switch">
+                  <Row
+                    label={t('settings.dailyQuestion')}
+                    last={!daily.enabled || allowed}
+                    trailing="switch"
+                  >
                     {/* Off disables the time, never removes it: the row must not jump. */}
                     {Platform.OS === 'android' ? (
                       <Pressable
                         onPress={() => setTimeOpen(true)}
                         disabled={!daily.enabled}
                         accessibilityRole="button"
-                        accessibilityLabel={`Time: ${formatTime(daily)}`}
+                        accessibilityLabel={t('settings.time', {time: formatTime(daily)})}
                         accessibilityState={{disabled: !daily.enabled}}
                         className={`bg-gray-lighter dark:bg-white/10 rounded-full px-3 py-1.5 ${
                           daily.enabled ? '' : 'opacity-40'
@@ -437,7 +445,7 @@ export const SettingsModal = ({
                       />
                     )}
                     <Toggle
-                      label="Daily question"
+                      label={t('settings.dailyQuestion')}
                       value={daily.enabled}
                       onChange={(enabled) => {
                         selection()
@@ -463,16 +471,16 @@ export const SettingsModal = ({
                     <Pressable
                       onPress={() => void allowNotifications().catch(() => {})}
                       accessibilityRole="button"
-                      accessibilityLabel="Allow notifications"
+                      accessibilityLabel={t('settings.allowNotifications')}
                       className="min-h-14 flex-row items-center justify-between gap-3 py-2"
                       style={{paddingLeft: inset.left - DRAWN_AT.label, paddingRight: inset.right}}
                     >
                       <View className="flex-1">
                         <Text className="text-darker dark:text-white font-sans text-lg">
-                          Allow notifications
+                          {t('settings.allowNotifications')}
                         </Text>
                         <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-                          WhoCards can't send you notifications yet.
+                          {t('settings.notificationsOff')}
                         </Text>
                       </View>
                       <Ionicons name="open-outline" size={16} color={mutedColor} />
@@ -482,21 +490,25 @@ export const SettingsModal = ({
                     <Pressable
                       onPress={() => void Linking.openURL(buildFeedbackUrl()).catch(() => {})}
                       accessibilityRole="link"
-                      accessibilityLabel="Send feedback"
+                      accessibilityLabel={t('settings.sendFeedback')}
                       hitSlop={12}
                       className="flex-row items-center gap-1.5"
                     >
                       <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-base font-semibold">
-                        Send feedback
+                        {t('settings.sendFeedback')}
                       </Text>
                       <Ionicons name="open-outline" size={15} color={mutedColor} />
                     </Pressable>
                   </View>
                 </Page>
                 <Page active={page === 1} width={pageWidth}>
-                  <Row label="Pick a Card" hint="Draw each Card from the Deck" trailing="switch">
+                  <Row
+                    label={t('settings.pickACard')}
+                    hint={t('settings.pickACardHint')}
+                    trailing="switch"
+                  >
                     <Toggle
-                      label="Pick a Card"
+                      label={t('settings.pickACard')}
                       value={game === 'pick'}
                       onChange={(on) => {
                         const next: GameId = on ? 'pick' : 'wh'
@@ -510,9 +522,9 @@ export const SettingsModal = ({
                   </Row>
                   {hasLanguageChoice ? (
                     <>
-                      <Row label="Second language" last trailing="switch">
+                      <Row label={t('settings.secondLanguage')} last trailing="switch">
                         <Toggle
-                          label="Second language"
+                          label={t('settings.secondLanguage')}
                           value={secondary[0] !== undefined}
                           onChange={(on) =>
                             setSecondaryLanguages(
@@ -526,7 +538,7 @@ export const SettingsModal = ({
                       <Row label="" trailing="picker">
                         <View style={{opacity: secondary[0] ? 1 : 0.35}}>
                           <Choice
-                            label="Second language"
+                            label={t('settings.secondLanguage')}
                             options={secondaryOptions}
                             current={secondary[0] ?? restoredSecondary ?? ''}
                             onSelect={(next) => setSecondaryLanguages([next])}
@@ -538,12 +550,12 @@ export const SettingsModal = ({
                     </>
                   ) : null}
                   <Row
-                    label="Tabletop mode"
-                    hint="Readable from both sides of the table"
+                    label={t('settings.tabletop')}
+                    hint={t('settings.tabletopHint')}
                     trailing="switch"
                   >
                     <Toggle
-                      label="Tabletop mode"
+                      label={t('settings.tabletop')}
                       value={tabletop}
                       onChange={(next) => {
                         selection()
@@ -555,10 +567,13 @@ export const SettingsModal = ({
                       isDark={isDark}
                     />
                   </Row>
-                  <Row label="Card animation" trailing="segmented" last>
+                  <Row label={t('settings.cardAnimation')} trailing="segmented" last>
                     <SegmentedControl
-                      label="Card animation"
-                      options={CARD_ANIMATION_OPTIONS}
+                      label={t('settings.cardAnimation')}
+                      options={CARD_ANIMATION_OPTIONS.map(({value, key}) => ({
+                        value,
+                        label: t(key),
+                      }))}
                       current={cardAnimation}
                       onSelect={(next) => {
                         selection()

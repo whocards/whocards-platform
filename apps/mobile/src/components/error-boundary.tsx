@@ -4,6 +4,8 @@ import {Component} from 'react'
 import {Pressable, Text, View} from 'react-native'
 import {colors} from '@whocards/tokens'
 
+import {translate} from '@/lib/i18n'
+
 type Props = {children: ReactNode}
 type State = {hasError: boolean}
 
@@ -42,15 +44,15 @@ export class ErrorBoundary extends Component<Props, State> {
         }}
       >
         <Text style={{color: colors.white, fontSize: 20, fontWeight: '600', textAlign: 'center'}}>
-          Something went wrong
+          {translate('error.title')}
         </Text>
         <Text style={{color: colors.gray.dark, fontSize: 15, textAlign: 'center'}}>
-          The app hit an unexpected error.
+          {translate('error.body')}
         </Text>
         <Pressable
           onPress={this.reset}
           accessibilityRole="button"
-          accessibilityLabel="try again"
+          accessibilityLabel={translate('a11y.tryAgain')}
           hitSlop={8}
           style={{
             backgroundColor: colors.yellow[400],
@@ -59,7 +61,9 @@ export class ErrorBoundary extends Component<Props, State> {
             paddingVertical: 14,
           }}
         >
-          <Text style={{color: colors.darker, fontSize: 16, fontWeight: '700'}}>Try again</Text>
+          <Text style={{color: colors.darker, fontSize: 16, fontWeight: '700'}}>
+            {translate('error.tryAgain')}
+          </Text>
         </Pressable>
       </View>
     )

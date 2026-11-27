@@ -45,7 +45,9 @@ import type {CardAnimation} from '@/lib/card-animation-store'
 import {useIsDark} from '@/lib/color-scheme'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
-import {deviceLanguage, getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
+import {useT} from '@/lib/i18n'
+import {deviceLanguage} from '@/lib/device-language'
+import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
 import {MOTION_DURATION, MOTION_EASING, motionDuration} from '@/lib/motion'
 import {notePromptShown} from '@/lib/notification-store'
 import {parsePlayLink} from '@/lib/play-link'
@@ -260,6 +262,7 @@ export const UnifiedPlayer = ({
   const router = useRouter()
   const reduceMotion = useReducedMotion()
   const isDark = useIsDark()
+  const copy = useT()
   const insets = useSafeAreaInsets()
   const {width: winWidth, height: winHeight} = useWindowDimensions()
 
@@ -1818,7 +1821,7 @@ export const UnifiedPlayer = ({
                         <PressableScale
                           onPress={handlePickCard}
                           accessibilityRole="button"
-                          accessibilityLabel="Pick a card"
+                          accessibilityLabel={copy('a11y.pickACard')}
                           className="absolute inset-0"
                         >
                           <CardBack
@@ -1832,12 +1835,12 @@ export const UnifiedPlayer = ({
                         onPress={handlePickCard}
                         hitSlop={12}
                         accessibilityRole="button"
-                        accessibilityLabel="Tap to pick a card"
+                        accessibilityLabel={copy('pick.tapToPick')}
                         style={{height: HINT_SPACE, marginTop: HINT_GAP}}
                         className="justify-center"
                       >
                         <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-                          Tap to pick a card
+                          {copy('pick.tapToPick')}
                         </Text>
                       </Pressable>
                     </Animated.View>

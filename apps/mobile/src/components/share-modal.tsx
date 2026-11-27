@@ -19,6 +19,7 @@ import {
 import {colors} from '@whocards/tokens'
 
 import {useIsDark} from '@/lib/color-scheme'
+import {useT} from '@/lib/i18n'
 import {downloadAndShareImage} from '@/lib/share-image'
 import {ASKER_NAME_MAX, buildAskMessage, buildAskUrl} from '@/lib/share-url'
 import {sheetTheme} from '@/lib/sheet-theme'
@@ -86,6 +87,7 @@ export const ShareModal = ({
   // Themed (issue #163, amendment 1): a dark surface in dark mode, the
   // pre-existing light sheet surface in light mode.
   const isDark = useIsDark()
+  const t = useT()
   const iconColor = isDark ? colors.white : colors.darker
   const spinnerColor = isDark ? colors.gray.dark : colors.mutedOnLight
 
@@ -93,20 +95,27 @@ export const ShareModal = ({
   // current deck is Pool-backed — see the prop docs above). A link-only sheet
   // is a normal, intentional state.
   const rows: Row[] = [
-    {format: 'link', icon: 'link-outline', label: 'Share link'},
-    {format: 'ask', icon: 'chatbubbles-outline', label: 'Ask someone'},
+    {format: 'link', icon: 'link-outline', label: t('share.link')},
+    {format: 'ask', icon: 'chatbubbles-outline', label: t('share.ask')},
     ...(storyImageUrl
       ? [
           {
             format: 'story',
             icon: 'phone-portrait-outline',
-            label: 'Story image',
+            label: t('share.story'),
             url: storyImageUrl,
           } as const,
         ]
       : []),
     ...(postImageUrl
-      ? [{format: 'post', icon: 'image-outline', label: 'Post image', url: postImageUrl} as const]
+      ? [
+          {
+            format: 'post',
+            icon: 'image-outline',
+            label: t('share.post'),
+            url: postImageUrl,
+          } as const,
+        ]
       : []),
   ]
 
@@ -171,15 +180,19 @@ export const ShareModal = ({
         .catch((err: unknown) => {
           logWarn(`[share-modal] ${format} image share failed`, err)
           setPending(null)
-          setError("Couldn't load the image — check your connection and try again.")
+          setError(t('share.imageError'))
         })
     },
-    [onShareEvent, closeAfterShare]
+    [onShareEvent, closeAfterShare, t]
   )
 
   const sendAsk = useCallback(() => {
     if (pending) return
-    const message = buildAskMessage(questionText, buildAskUrl(shareUrl, askerName))
+    const message = buildAskMessage(
+      questionText,
+      buildAskUrl(shareUrl, askerName),
+      t('share.askIntro')
+    )
     Share.share({message})
       .then((result) => {
         closeAfterShare(true)
@@ -190,7 +203,7 @@ export const ShareModal = ({
       .catch((err: unknown) => {
         logWarn('[share-modal] ask share failed', err)
       })
-  }, [pending, questionText, shareUrl, askerName, onShareEvent, closeAfterShare])
+  }, [pending, questionText, shareUrl, askerName, onShareEvent, closeAfterShare, t])
 
   const handlePress = useCallback(
     (row: Row) => {
@@ -229,8 +242,10 @@ export const ShareModal = ({
           keyboardShouldPersistTaps="handled"
         >
           <View className="flex-row items-center justify-between px-5 pb-2 pt-6">
-            <Text className="text-darker dark:text-white font-title text-2xl">Share</Text>
-            <Pressable onPress={onClose} accessibilityLabel="close" hitSlop={12}>
+            <Text className="text-darker dark:text-white font-title text-2xl">
+              {t('share.title')}
+            </Text>
+            <Pressable onPress={onClose} accessibilityLabel={t('a11y.close')} hitSlop={12}>
               <Ionicons name="close" size={24} color={iconColor} />
             </Pressable>
           </View>
@@ -251,21 +266,21 @@ export const ShareModal = ({
                     value={askerName}
                     onChangeText={setAskerName}
                     onSubmitEditing={sendAsk}
-                    placeholder="Your name (optional)"
+                    placeholder={t('share.namePlaceholder')}
                     placeholderTextColor={spinnerColor}
                     maxLength={ASKER_NAME_MAX}
                     returnKeyType="send"
-                    accessibilityLabel="Your name (optional)"
+                    accessibilityLabel={t('share.namePlaceholder')}
                     className="text-darker dark:text-white font-sans text-lg flex-1 py-2"
                   />
                   <Pressable
                     onPress={sendAsk}
                     accessibilityRole="button"
-                    accessibilityLabel="Send ask"
+                    accessibilityLabel={t('share.sendAsk')}
                     hitSlop={8}
                     className="active:bg-yellow-500 rounded-full bg-yellow-400 px-4 py-2"
                   >
-                    <Text className="text-darker font-sans text-base">Send</Text>
+                    <Text className="text-darker font-sans text-base">{t('share.send')}</Text>
                   </Pressable>
                 </View>
               )

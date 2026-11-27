@@ -8,6 +8,7 @@ import type {RouterOutputs} from '@whocards/api'
 import {PressableScale} from '@/components/pressable-scale'
 import {ScreenBackground} from '@/components/screen-background'
 import {useIsDark} from '@/lib/color-scheme'
+import {useT} from '@/lib/i18n'
 import {trpc} from '@/lib/trpc'
 import {isBelowMinimum} from '@/lib/version'
 
@@ -42,23 +43,24 @@ export const VersionGate = ({children}: {children: ReactNode}) => {
 
 const UpdateScreen = ({storeUrl}: {storeUrl: string}) => {
   const isDark = useIsDark()
+  const t = useT()
   return (
     <ScreenBackground>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <View className="flex-1 items-center justify-center gap-4 px-8">
         <Text className="text-darker dark:text-white text-center font-sans text-2xl font-bold">
-          Update WhoCards
+          {t('update.title')}
         </Text>
         <Text className="text-mutedOnLight dark:text-gray-dark mb-4 text-center font-sans text-base">
-          This version of the app is out of date. Update it to keep playing.
+          {t('update.body')}
         </Text>
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel="Update"
+          accessibilityLabel={t('update.button')}
           onPress={() => void Linking.openURL(storeUrl)}
           className="active:bg-yellow-500 w-full items-center justify-center rounded-full bg-yellow-400 py-4"
         >
-          <Text className="text-darker font-sans text-base font-bold">Update</Text>
+          <Text className="text-darker font-sans text-base font-bold">{t('update.button')}</Text>
         </PressableScale>
       </View>
     </ScreenBackground>

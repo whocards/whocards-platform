@@ -26,8 +26,10 @@ jest.mock('@/lib/tabletop-store', () => ({
   setStoredTabletopMode: jest.fn().mockResolvedValue(undefined),
 }))
 
+// The UI language is app-wide: these tests keep it English while the Language changes under them.
+jest.mock('@/lib/i18n', () => ({...jest.requireActual('@/lib/i18n'), setUiLanguage: jest.fn()}))
+
 jest.mock('@/lib/language-store', () => ({
-  deviceLanguage: (languages: string[]) => languages[0],
   getStoredLanguage: jest.fn().mockResolvedValue(undefined),
   getStoredSecondaryLanguages: jest.fn().mockResolvedValue([]),
   setStoredLanguage: jest.fn().mockResolvedValue(undefined),
@@ -129,7 +131,7 @@ describe('SettingsModal — Settings and its Gameplay page', () => {
     mockedGetStoredLanguage.mockResolvedValue('he')
     mockedGetStoredSecondaryLanguages.mockResolvedValue(['en'])
     await renderModal({theme: 'dark'})
-    await waitFor(() => expect(selected('Language: Hebrew')).toBe(true))
+    await waitFor(() => expect(selected('Language: עברית')).toBe(true))
     expect(selected('Theme: Dark')).toBe(true)
     await openGameplay()
     expect(checked('Pick a Card')).toBe(true)
@@ -163,7 +165,7 @@ describe('SettingsModal — Settings and its Gameplay page', () => {
       onSelectTheme: () => {},
     }
     await rerender(<SettingsModal visible {...props} />)
-    await waitFor(() => expect(selected('Language: Hebrew')).toBe(true))
+    await waitFor(() => expect(selected('Language: עברית')).toBe(true))
     await openGameplay()
     expect(checked('Tabletop mode')).toBe(true)
   })
@@ -194,7 +196,7 @@ describe('SettingsModal — Game', () => {
 describe('SettingsModal — languages, one picker each', () => {
   it('applies + persists a primary pick and tracks LANGUAGE_CHANGED', async () => {
     await renderModal()
-    await fireEvent.press(await screen.findByLabelText('Language: Hebrew'))
+    await fireEvent.press(await screen.findByLabelText('Language: עברית'))
     expect(mockedSetStoredLanguage).toHaveBeenCalledWith('library', 'he')
     expect(mockedTrack).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -202,7 +204,7 @@ describe('SettingsModal — languages, one picker each', () => {
         props: expect.objectContaining({deck_id: 'library', from: 'en', to: 'he'}),
       })
     )
-    expect(selected('Language: Hebrew')).toBe(true)
+    expect(selected('Language: עברית')).toBe(true)
   })
 
   it('applies + persists a second language and tracks SECONDARY_LANGUAGES_CHANGED', async () => {
@@ -213,38 +215,38 @@ describe('SettingsModal — languages, one picker each', () => {
       name: 'secondary_languages_changed',
       props: {deck_id: 'library', secondary: ['he']},
     })
-    expect(selected('Second language: Hebrew')).toBe(true)
+    expect(selected('Second language: עברית')).toBe(true)
   })
 
   it('clears the second language when it becomes the primary, and the switch clears and restores it', async () => {
     await renderModal({languages: ['en', 'he', 'es']})
     await openGameplay()
     await toggle('Second language')
-    expect(selected('Second language: Hebrew')).toBe(true)
+    expect(selected('Second language: עברית')).toBe(true)
     await fireEvent.press(screen.getByLabelText('Back to Settings'))
-    await fireEvent.press(screen.getByLabelText('Language: Hebrew'))
+    await fireEvent.press(screen.getByLabelText('Language: עברית'))
     await openGameplay()
     expect(checked('Second language')).toBe(false)
     await fireEvent.press(screen.getByLabelText('Back to Settings'))
     await fireEvent.press(screen.getByLabelText('Language: English'))
     await openGameplay()
     await toggle('Second language')
-    await fireEvent.press(screen.getByLabelText('Second language: Spanish'))
+    await fireEvent.press(screen.getByLabelText('Second language: Español'))
     await toggle('Second language')
     // Off keeps the picker in place, disabled, showing the language that comes back.
     expect(
-      screen.getByLabelText('Second language: Spanish').props.accessibilityState.disabled
+      screen.getByLabelText('Second language: Español').props.accessibilityState.disabled
     ).toBe(true)
     await toggle('Second language')
-    expect(selected('Second language: Spanish')).toBe(true)
+    expect(selected('Second language: Español')).toBe(true)
   })
 
   it("shows a shared link's language over the stored one and reports a pick of the stored one", async () => {
     mockedGetStoredLanguage.mockResolvedValue('en')
     const onSelectLanguage = jest.fn()
     await renderModal({currentLanguage: 'he', onSelectLanguage})
-    await waitFor(() => expect(selected('Language: Hebrew')).toBe(true))
-    expect(screen.queryByLabelText('Second language: Hebrew')).toBeNull()
+    await waitFor(() => expect(selected('Language: עברית')).toBe(true))
+    expect(screen.queryByLabelText('Second language: עברית')).toBeNull()
     await fireEvent.press(screen.getByLabelText('Language: English'))
     expect(onSelectLanguage).toHaveBeenCalledWith('en')
   })

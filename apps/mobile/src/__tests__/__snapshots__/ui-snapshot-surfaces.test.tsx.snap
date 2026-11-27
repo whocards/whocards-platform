@@ -309,9 +309,9 @@ exports[`Settings sheet renders the menu 1`] = `
                     <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false,"selected":true}>
                       <Text>
                         "English"
-                    <View accessibilityRole="button" accessibilityLabel="Language: Hebrew" accessibilityState={"disabled":false,"selected":false}>
+                    <View accessibilityRole="button" accessibilityLabel="Language: עברית" accessibilityState={"disabled":false,"selected":false}>
                       <Text>
-                        "Hebrew"
+                        "עברית"
               <View accessibilityRole="button" accessibilityLabel="Gameplay" accessibilityState={}>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
@@ -567,9 +567,9 @@ exports[`Settings sheet renders the menu 1`] = `
                   <View>
                     | opacity: 0.35
                     <View>
-                      <View accessibilityRole="button" accessibilityLabel="Second language: Hebrew" accessibilityState={"disabled":true,"selected":true}>
+                      <View accessibilityRole="button" accessibilityLabel="Second language: עברית" accessibilityState={"disabled":true,"selected":true}>
                         <Text>
-                          "Hebrew"
+                          "עברית"
               <View>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
@@ -735,9 +735,9 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                     <View accessibilityRole="button" accessibilityLabel="Language: English" accessibilityState={"disabled":false,"selected":true}>
                       <Text>
                         "English"
-                    <View accessibilityRole="button" accessibilityLabel="Language: Hebrew" accessibilityState={"disabled":false,"selected":false}>
+                    <View accessibilityRole="button" accessibilityLabel="Language: עברית" accessibilityState={"disabled":false,"selected":false}>
                       <Text>
-                        "Hebrew"
+                        "עברית"
               <View accessibilityRole="button" accessibilityLabel="Gameplay" accessibilityState={}>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"
@@ -993,9 +993,9 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                   <View>
                     | opacity: 0.35
                     <View>
-                      <View accessibilityRole="button" accessibilityLabel="Second language: Hebrew" accessibilityState={"disabled":true,"selected":true}>
+                      <View accessibilityRole="button" accessibilityLabel="Second language: עברית" accessibilityState={"disabled":true,"selected":true}>
                         <Text>
-                          "Hebrew"
+                          "עברית"
               <View>
                 | alignItems: "center"
                 | borderBottomStyle: "solid"

@@ -59,7 +59,6 @@ jest.mock('@/lib/tabletop-store', () => ({
 }))
 
 jest.mock('@/lib/language-store', () => ({
-  deviceLanguage: (languages: string[]) => languages[0],
   getStoredLanguage: jest.fn().mockResolvedValue(undefined),
   getStoredSecondaryLanguages: jest.fn().mockResolvedValue([]),
   setStoredLanguage: jest.fn().mockResolvedValue(undefined),
