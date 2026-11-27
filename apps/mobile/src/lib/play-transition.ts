@@ -11,6 +11,23 @@ export type PlayQAnchor = {
   opacity: number
   /** Resting scale on Play (1.08 in Classic, 1 on open Card). */
   scale: number
+  /** Measured glyph box width/height of "?" at fontSize 60 when known. */
+  width?: number
+  height?: number
+}
+
+export type MeasuredDeckWordmark = {
+  /** Exact resting window rect of CardBack's "WHO?CARDS" wordmark (at homeRise = 0). */
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export type PlayTargetMetrics = {
+  bottomBarH?: number
+  classicQ?: PlayQAnchor
+  deckWordmark?: MeasuredDeckWordmark
 }
 
 export type PlayTransitionEvent = {
@@ -26,7 +43,9 @@ export type PlayTransitionEvent = {
   logoRect: LogoRect
   /** Optional exact anchor measured by UnifiedPlayer (used on Exit for 0px handoff). */
   playQAnchor?: PlayQAnchor
-  /** Optional measured bottom bar height from UnifiedPlayer so Deck coords match to the pixel. */
+  /** Optional exact resting rect of CardBack's wordmark measured by UnifiedPlayer. */
+  deckWordmark?: MeasuredDeckWordmark
+  /** Optional measured bottom bar height from UnifiedPlayer so coords match to the pixel. */
   bottomBarH?: number
 }
 
@@ -36,6 +55,7 @@ export type HomeReturnEvent = {
 }
 
 type Listener = (event: PlayTransitionEvent | null) => void
+type TargetListener = (metrics: PlayTargetMetrics) => void
 type ReturnHomeListener = (animated?: HomeReturnEvent) => void
 
 let seq = 0
@@ -43,8 +63,9 @@ let active: PlayTransitionEvent | null = null
 let pendingPlayEntrance = false
 let pendingTargetGame: GameId | null = null
 let rememberedHomeLogoRect: LogoRect | null = null
-let rememberedBottomBarH: number | null = null
+let rememberedMetrics: PlayTargetMetrics = {}
 const listeners = new Set<Listener>()
+const targetListeners = new Set<TargetListener>()
 const returnHomeListeners = new Set<ReturnHomeListener>()
 
 const emit = (next: PlayTransitionEvent | null) => {
@@ -52,12 +73,43 @@ const emit = (next: PlayTransitionEvent | null) => {
   for (const listener of listeners) listener(next)
 }
 
-/** Remember the measured bottom bar height from UnifiedPlayer for pixel-exact handoffs. */
-export const setMeasuredPlayerBarHeight = (height: number) => {
-  if (height > 0) rememberedBottomBarH = height
+/**
+ * Reports exact native-measured Play target coordinates (bar height, corner "?",
+ * CardBack wordmark rect) so PlayTransitionOverlay lands at 0.0px offset even on
+ * the very first launch.
+ */
+export const reportPlayTargetMetrics = (patch: PlayTargetMetrics) => {
+  const prev = rememberedMetrics
+  const next: PlayTargetMetrics = {
+    bottomBarH: patch.bottomBarH ?? prev.bottomBarH,
+    classicQ: patch.classicQ ?? prev.classicQ,
+    deckWordmark: patch.deckWordmark ?? prev.deckWordmark,
+  }
+  const same =
+    next.bottomBarH === prev.bottomBarH &&
+    next.classicQ?.right === prev.classicQ?.right &&
+    next.classicQ?.bottom === prev.classicQ?.bottom &&
+    next.classicQ?.width === prev.classicQ?.width &&
+    next.classicQ?.height === prev.classicQ?.height &&
+    next.deckWordmark?.x === prev.deckWordmark?.x &&
+    next.deckWordmark?.y === prev.deckWordmark?.y &&
+    next.deckWordmark?.width === prev.deckWordmark?.width &&
+    next.deckWordmark?.height === prev.deckWordmark?.height
+  if (same) return
+  rememberedMetrics = next
+  for (const listener of targetListeners) listener(next)
 }
 
-export const getMeasuredPlayerBarHeight = (): number | null => rememberedBottomBarH
+export const getPlayTargetMetrics = (): PlayTargetMetrics => rememberedMetrics
+
+export const subscribePlayTargetMetrics = (listener: TargetListener) => {
+  targetListeners.add(listener)
+  return () => {
+    targetListeners.delete(listener)
+  }
+}
+
+export const getActivePlayTransition = (): PlayTransitionEvent | null => active
 
 /**
  * Starts the 5B Home → Play transition overlay (flying "?" into Classic or full
@@ -72,7 +124,9 @@ export const startPlayTransition = (targetGame: GameId, logoRect: LogoRect) => {
     direction: 'enter',
     kind: targetGame === 'pick' ? 'deck' : 'qmark',
     logoRect,
-    bottomBarH: rememberedBottomBarH ?? undefined,
+    playQAnchor: targetGame === 'pick' ? undefined : rememberedMetrics.classicQ,
+    deckWordmark: targetGame === 'pick' ? rememberedMetrics.deckWordmark : undefined,
+    bottomBarH: rememberedMetrics.bottomBarH,
   })
 }
 
@@ -85,11 +139,13 @@ export const startExitTransition = ({
   kind,
   fallbackLogoRect,
   playQAnchor,
+  deckWordmark,
   bottomBarH,
 }: {
   kind: 'qmark' | 'deck'
   fallbackLogoRect: LogoRect
   playQAnchor?: PlayQAnchor
+  deckWordmark?: MeasuredDeckWordmark
   bottomBarH?: number
 }) => {
   pendingPlayEntrance = false
@@ -101,7 +157,8 @@ export const startExitTransition = ({
     kind,
     logoRect,
     playQAnchor,
-    bottomBarH: bottomBarH ?? rememberedBottomBarH ?? undefined,
+    deckWordmark: deckWordmark ?? rememberedMetrics.deckWordmark,
+    bottomBarH: bottomBarH ?? rememberedMetrics.bottomBarH,
   })
 }
 

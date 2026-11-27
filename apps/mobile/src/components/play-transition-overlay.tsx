@@ -15,8 +15,13 @@ import {colors} from '@whocards/tokens'
 
 import {LINE_HEIGHT_RATIO} from '@/components/question-text'
 import {MOTION_DURATION, MOTION_EASING, motionDuration} from '@/lib/motion'
-import type {PlayTransitionEvent} from '@/lib/play-transition'
-import {clearPlayTransition, subscribePlayTransition} from '@/lib/play-transition'
+import type {PlayTargetMetrics, PlayTransitionEvent} from '@/lib/play-transition'
+import {
+  clearPlayTransition,
+  getPlayTargetMetrics,
+  subscribePlayTargetMetrics,
+  subscribePlayTransition,
+} from '@/lib/play-transition'
 
 const logo = require('../../assets/images/logo.png')
 
@@ -37,10 +42,12 @@ const CARDBACK_WORDMARK_FONT = 26
  * - `kind: 'qmark'` (Classic or open Card): the "?" glides between WHO?CARDS and
  *   the corner "?" while morphing color (#de9c93 ↔ #c058d2), opacity, and scale.
  * - `kind: 'deck'` (face-down Pick a Card Deck): the entire WHO?CARDS logo glides,
- *   scales, and cross-morphs between logo.png's gradient and CardBack's flat brand wordmark.
+ *   scales, and cross-morphs between logo.png's gradient and CardBack's exact 26pt
+ *   wordmark so the handoff at scale = 1.000 has 0.0px jump.
  */
 export const PlayTransitionOverlay = () => {
   const [event, setEvent] = useState<PlayTransitionEvent | null>(null)
+  const [metrics, setMetrics] = useState<PlayTargetMetrics>(() => getPlayTargetMetrics())
   const reduceMotion = useReducedMotion()
   const {width: winWidth, height: winHeight} = useWindowDimensions()
   const insets = useSafeAreaInsets()
@@ -48,6 +55,7 @@ export const PlayTransitionOverlay = () => {
   const progress = useSharedValue(0)
 
   useEffect(() => subscribePlayTransition(setEvent), [])
+  useEffect(() => subscribePlayTargetMetrics(setMetrics), [])
 
   useEffect(() => {
     if (!event) return
@@ -67,8 +75,9 @@ export const PlayTransitionOverlay = () => {
     )
   }, [event, progress, reduceMotion])
 
-  // Target coordinates matching UnifiedPlayer's exact layout.
-  const barH = event?.bottomBarH ?? 74 + Math.max(insets.bottom, 10)
+  // Target coordinates matching UnifiedPlayer's exact measured layout (updates live if
+  // UnifiedPlayer mounts mid-flight on the very first launch).
+  const barH = event?.bottomBarH ?? metrics.bottomBarH ?? 74 + Math.max(insets.bottom, 10)
   const measuredW = winWidth - 64
   const measuredH = winHeight - insets.top - barH
   const cardWidth = Math.round(
@@ -80,18 +89,22 @@ export const PlayTransitionOverlay = () => {
 
   const rect = event?.logoRect ?? {x: 0, y: 0, width: 280, height: 53}
 
-  // "?" endpoint anchored to the EXACT right/bottom edge of UnifiedPlayer's corner "?"
-  // so the handoff at progress = 1 has 0px jump.
-  const playQRight = event?.playQAnchor?.right ?? 28
-  const playQBottom = event?.playQAnchor?.bottom ?? barH + 20
-  const playQOpacity = event?.playQAnchor?.opacity ?? 0.28
-  const playQScale = event?.playQAnchor?.scale ?? 1.08
+  // "?" endpoint anchored to the EXACT right/bottom edge of UnifiedPlayer's corner "?".
+  // On enter, refine live with metrics.classicQ as soon as UnifiedPlayer lays out.
+  const qAnchor =
+    event?.direction === 'exit' ? event.playQAnchor : (metrics.classicQ ?? event?.playQAnchor)
+  const playQRight = qAnchor?.right ?? 28
+  const playQBottom = qAnchor?.bottom ?? barH + 20
+  const playQOpacity = qAnchor?.opacity ?? 0.28
+  const playQScale = qAnchor?.scale ?? 1.08
+  const playQWidth = qAnchor?.width ?? 28
+  const playQHeight = qAnchor?.height ?? QUESTION_MARK_LINE_HEIGHT
 
-  // Home "?" center vs Play "?" center (aptly "?" glyph at 60px is ~28px wide, 69px lineHeight).
+  // Home "?" center vs Play "?" center.
   const homeQCenterX = rect.x + rect.width * LOGO_QMARK_X_RATIO
   const homeQCenterY = rect.y + rect.height * 0.5
-  const playQCenterX = winWidth - playQRight - 14
-  const playQCenterY = winHeight - playQBottom - QUESTION_MARK_LINE_HEIGHT * 0.5
+  const playQCenterX = winWidth - playQRight - playQWidth * 0.5
+  const playQCenterY = winHeight - playQBottom - playQHeight * 0.5
 
   const qMarkStyle = useAnimatedStyle(() => {
     const t = progress.get()
@@ -106,79 +119,97 @@ export const PlayTransitionOverlay = () => {
     }
   })
 
-  // Deck target: CardBack's bottom-right WHO?CARDS wordmark (bottom: 20, right: 20, fontSize: 26).
-  // In aptly at 26px, "WHO?CARDS" measures ~118×28pt (CardBack right:20, bottom:20).
+  // Deck target: CardBack's exact measured WHO?CARDS wordmark rect (bottom: 20, right: 20, fontSize: 26).
+  // Render the target wordmark at its real native 26pt size landing at scale = 1.000 so the
+  // handoff to CardBack is bit-for-bit identical (0.0px shift, zero font-hinting jump).
+  const deckWordmark =
+    event?.direction === 'exit'
+      ? (event.deckWordmark ?? metrics.deckWordmark)
+      : (metrics.deckWordmark ?? event?.deckWordmark)
+  const wordmarkW = deckWordmark?.width ?? CARDBACK_WORDMARK_FONT * 4.55
+  const wordmarkH = deckWordmark?.height ?? CARDBACK_WORDMARK_FONT * 1.15
+  const wordmarkX = deckWordmark?.x ?? cardLeft + cardWidth - 1 - 20 - wordmarkW
+  const wordmarkY = deckWordmark?.y ?? cardTop + cardHeight - 1 - 20 - wordmarkH
+
   const startLogoCX = rect.x + rect.width / 2
   const startLogoCY = rect.y + rect.height / 2
-  const deckTextW = CARDBACK_WORDMARK_FONT * 4.55
-  const deckTextH = CARDBACK_WORDMARK_FONT * 1.08
-  const deckLogoScale = deckTextW / Math.max(1, rect.width)
-  const endLogoCX = cardLeft + cardWidth - 20 - deckTextW / 2
-  const endLogoCY = cardTop + cardHeight - 20 - deckTextH / 2
+  const endLogoCX = wordmarkX + wordmarkW / 2
+  const endLogoCY = wordmarkY + wordmarkH / 2
+  const gradientEndScale = wordmarkW / Math.max(1, rect.width)
+  const wordmarkStartScale = rect.width / Math.max(1, wordmarkW)
 
-  const fullLogoWrapStyle = useAnimatedStyle(() => {
+  // Both layers travel the exact same center-to-center trajectory:
+  // - gradientLogo starts at scale 1.0 (pixel-identical to Home logo.png) and shrinks to wordmark size.
+  // - cardBackWordmark starts scaled up to Home logo size and lands at scale 1.000 (pixel-identical to CardBack).
+  const gradientWrapStyle = useAnimatedStyle(() => {
     const t = progress.get()
     return {
+      opacity: interpolate(t, [0.35, 0.85], [1, 0], 'clamp'),
       transform: [
-        {translateX: interpolate(t, [0, 1], [startLogoCX - endLogoCX, 0], 'clamp')},
-        {translateY: interpolate(t, [0, 1], [startLogoCY - endLogoCY, 0], 'clamp')},
-        {scale: interpolate(t, [0, 1], [1, deckLogoScale], 'clamp')},
+        {translateX: interpolate(t, [0, 1], [0, endLogoCX - startLogoCX], 'clamp')},
+        {translateY: interpolate(t, [0, 1], [0, endLogoCY - startLogoCY], 'clamp')},
+        {scale: interpolate(t, [0, 1], [1, gradientEndScale], 'clamp')},
       ],
     }
   })
 
-  // Keep bottom wordmark at full opacity before top gradient fades out so combined alpha never dips pale.
-  const cardBackWordmarkOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.get(), [0.05, 0.35], [0, 1], 'clamp'),
-  }))
-
-  const gradientLogoOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.get(), [0.35, 0.85], [1, 0], 'clamp'),
-  }))
+  const wordmarkWrapStyle = useAnimatedStyle(() => {
+    const t = progress.get()
+    return {
+      opacity: interpolate(t, [0.08, 0.42], [0, 1], 'clamp'),
+      transform: [
+        {translateX: interpolate(t, [0, 1], [startLogoCX - endLogoCX, 0], 'clamp')},
+        {translateY: interpolate(t, [0, 1], [startLogoCY - endLogoCY, 0], 'clamp')},
+        {scale: interpolate(t, [0, 1], [wordmarkStartScale, 1], 'clamp')},
+      ],
+    }
+  })
 
   if (!event) return null
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {event.kind === 'deck' ? (
-        <Animated.View
-          style={[
-            {
-              position: 'absolute',
-              left: endLogoCX - rect.width / 2,
-              top: endLogoCY - rect.height / 2,
-              width: rect.width,
-              height: rect.height,
-              alignItems: 'center',
-              justifyContent: 'center',
-            },
-            fullLogoWrapStyle,
-          ]}
-        >
+        <>
           <Animated.View
             style={[
-              StyleSheet.absoluteFill,
-              {alignItems: 'center', justifyContent: 'center', overflow: 'visible'},
-              cardBackWordmarkOpacity,
+              {
+                position: 'absolute',
+                left: wordmarkX,
+                top: wordmarkY,
+                width: wordmarkW,
+                height: wordmarkH,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'visible',
+              },
+              wordmarkWrapStyle,
             ]}
           >
             <Text
               numberOfLines={1}
-              style={{
-                fontSize: Math.round(CARDBACK_WORDMARK_FONT / deckLogoScale),
-                lineHeight: Math.round((CARDBACK_WORDMARK_FONT / deckLogoScale) * 1.12),
-                includeFontPadding: false,
-              }}
+              style={{fontSize: CARDBACK_WORDMARK_FONT}}
               className="font-title text-yellow-400"
             >
               WHO<Text className="text-primary-dark">?</Text>
               <Text className="text-white">CARDS</Text>
             </Text>
           </Animated.View>
-          <Animated.View style={[StyleSheet.absoluteFill, gradientLogoOpacity]}>
+          <Animated.View
+            style={[
+              {
+                position: 'absolute',
+                left: rect.x,
+                top: rect.y,
+                width: rect.width,
+                height: rect.height,
+              },
+              gradientWrapStyle,
+            ]}
+          >
             <Image source={logo} contentFit="contain" style={StyleSheet.absoluteFill} />
           </Animated.View>
-        </Animated.View>
+        </>
       ) : (
         <Animated.Text
           className="font-title"

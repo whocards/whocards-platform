@@ -2,12 +2,14 @@ import {useEffect, useMemo, useRef, useState} from 'react'
 import {Text, View} from 'react-native'
 import type {SharedValue} from 'react-native-reanimated'
 import Animated, {
+  cancelAnimation,
   interpolate,
   interpolateColor,
   runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated'
 import {getDirection} from '@whocards/decks'
@@ -125,6 +127,8 @@ export const fitSecondaryFontSize = (primaryFontSize: number, primaryMinFont: nu
 const MIN_FONT_MIRRORED = 16
 export const MIRROR_GAP = 28
 export const SECONDARY_GAP = 14
+// Wait briefly for the in-play Settings sheet to clear before animating layout splits/flips.
+const SHEET_REVEAL_DELAY_MS = 160
 
 type LanguageText = {language: string; text: string}
 
@@ -176,6 +180,12 @@ type QuestionTextProps = {
   language: string
   /** The measured box the question grows to fill (see fitFontSize). */
   box: {width: number; height: number}
+  /**
+   * Stable Question identity (e.g. questionId). Changing `questionKey` updates the face
+   * immediately (Classic Flip/Slide owns that transition); keeping `questionKey` while
+   * changing language/secondaries/mirrored animates only the changed half cleanly.
+   */
+  questionKey?: string
   /**
    * Secondary display language rendered in the unified 50/50 split layout.
    */
@@ -302,8 +312,8 @@ const QuestionFace = ({
 /**
  * The seam between split halves (2 languages or Tabletop). Three concentric violet
  * bars create soft tapered ends without a gradient dependency. When `flipMid` peaks
- * at 90° during a Classic flip, the horizontal bar smoothly shrinks into a quiet
- * vertical bar in the same mid-violet colour.
+ * at 90° during a Classic flip, the horizontal bar smoothly shrinks into the quiet
+ * vertical mid-violet bar rendered outside the rotating layer.
  */
 export const SplitDivider = ({
   reveal,
@@ -335,21 +345,59 @@ export const SplitDivider = ({
   )
 }
 
+type SplitSnapshot = {
+  questionKey: string | undefined
+  text: string
+  language: string
+  secondaryText: string | undefined
+  secondaryLang: string | undefined
+  mirrored: boolean
+  isSplit: boolean
+}
+
+const halvesOf = (snap: SplitSnapshot) => {
+  // Language assignment (issue #366):
+  // - Tabletop (`mirrored`): near/bottom upright = primary, far/top rotated 180° = secondary (or mirrored primary).
+  // - Upright 2 languages: top = primary, bottom = secondary.
+  const topText = snap.mirrored ? (snap.secondaryText ?? snap.text) : snap.text
+  const topLang = snap.mirrored ? (snap.secondaryLang ?? snap.language) : snap.language
+  const bottomText = snap.mirrored ? snap.text : (snap.secondaryText ?? snap.text)
+  const bottomLang = snap.mirrored ? snap.language : (snap.secondaryLang ?? snap.language)
+  const topIsDuplicate = snap.mirrored && snap.secondaryText === undefined
+  return {topText, topLang, bottomText, bottomLang, topIsDuplicate}
+}
+
+const sameSnapshot = (a: SplitSnapshot, b: SplitSnapshot) =>
+  a.questionKey === b.questionKey &&
+  a.text === b.text &&
+  a.language === b.language &&
+  a.secondaryText === b.secondaryText &&
+  a.secondaryLang === b.secondaryLang &&
+  a.mirrored === b.mirrored &&
+  a.isSplit === b.isSplit
+
 /**
  * The question face: single language fills its box; with a second language or
  * Tabletop mode, the box splits evenly around the violet divider with exact
  * symmetric spacing above and below the bar.
  *
- * Animations (3A-i / 3B / 3C):
- * - Adding a 2nd language (or enabling 1-lang Tabletop): the emerging half slides
- *   out from behind the primary text and the divider draws only once the gap clears.
- * - Toggling Tabletop while 2 languages are active: the top half performs the same
- *   quiet 3D flip (`rotateX`) to invert cleanly in place.
+ * Minimum-movement transitions across all 4 states (1-lang, 1-lang Tabletop,
+ * 2-lang upright, 2-lang Tabletop):
+ * - Entering split from 1 language: the existing primary stays visible and gently
+ *   settles into its half (unclipped) while ONLY the new half slides cleanly out
+ *   from behind the seam and the divider draws in once clear.
+ * - Leaving split back to 1 language: the departing half tucks back behind the seam,
+ *   the divider retracts, and primary glides back to center.
+ * - Changing settings while already split (Tabletop on/off, adding/removing 2nd lang
+ *   in Tabletop, switching primary or secondary language): any unchanged half stays
+ *   0px still; ONLY the half(ves) whose content/orientation changed do a quiet rotateX
+ *   flip, swapping at 90° edge-on with zero frame-0 flash or teleport.
  */
 export const QuestionText = ({
   text,
   language,
   box,
+  questionKey,
   secondaries = [],
   mirrored = false,
   themedText = false,
@@ -362,81 +410,233 @@ export const QuestionText = ({
   const secondaryEntry = shown[0]
   const isSplit = mirrored || secondaryEntry !== undefined
 
-  // Smooth split entrance (0 → 1) when entering 2-language or 1-lang Tabletop from single view.
-  const splitProgress = useSharedValue(isSplit ? 1 : 0)
-  const prevSplitRef = useRef(isSplit)
+  const incoming: SplitSnapshot = useMemo(
+    () => ({
+      questionKey,
+      text,
+      language,
+      secondaryText: secondaryEntry?.text,
+      secondaryLang: secondaryEntry?.language,
+      mirrored,
+      isSplit,
+    }),
+    [questionKey, text, language, secondaryEntry?.text, secondaryEntry?.language, mirrored, isSplit]
+  )
 
-  // Quiet rotateX flip when toggling Tabletop while already split (3B).
-  // `overrideMirrored` only holds the outgoing orientation mid-flip; at rest it is null
-  // so `displayedMirrored` tracks the `mirrored` prop directly with no sync setState in effects.
-  const [overrideMirrored, setOverrideMirrored] = useState<boolean | null>(null)
-  const tabletopFlip = useSharedValue(0)
-  const prevMirroredRef = useRef(mirrored)
-  const displayedMirrored = overrideMirrored ?? mirrored
+  // `displayed` holds the currently rendered layout/content so frame 0 of a Tabletop or
+  // language change never flashes the new state before a flip reaches 90° or a collapse finishes.
+  const [displayed, setDisplayed] = useState<SplitSnapshot>(incoming)
+  const displayedRef = useRef<SplitSnapshot>(incoming)
+
+  // Sync immediately when navigating to a different Question (Classic Flip/Slide owns that motion).
+  const isNewQuestion =
+    questionKey !== undefined
+      ? displayed.questionKey !== questionKey
+      : displayed.text !== text && displayed.language === language
+
+  const activeSnap = isNewQuestion ? incoming : displayed
+
+  // Only clip the emerging/departing half during S1 ↔ split slide animations so primary
+  // text and rotateX flips never get clipped by half-box bounds.
+  const [clipSide, setClipSide] = useState<'none' | 'top' | 'bottom'>('none')
+
+  // 0 = collapsed behind seam, 1 = full resting split.
+  const splitProgress = useSharedValue(activeSnap.isSplit ? 1 : 0)
+  // Which half is the emerging/departing one during S1 ↔ split:
+  // +1 = bottom emerges (S1 ↔ 2-lang upright: top primary stays anchored)
+  // -1 = top emerges (S1 ↔ Tabletop: bottom upright primary stays anchored)
+  const emergingSide = useSharedValue<number>(activeSnap.mirrored ? -1 : 1)
+  // Quiet rotateX flips (0 = face-on, ±1 = ±90° edge-on) independently per half so an
+  // unchanged half stays 100% still.
+  const topFlip = useSharedValue(0)
+  const bottomFlip = useSharedValue(0)
 
   useEffect(() => {
-    const wasSplit = prevSplitRef.current
-    const wasMirrored = prevMirroredRef.current
-    prevSplitRef.current = isSplit
-    prevMirroredRef.current = mirrored
+    const prev = displayedRef.current
+    if (sameSnapshot(prev, incoming)) return
+
+    const commit = (next: SplitSnapshot) => {
+      displayedRef.current = next
+      setDisplayed(next)
+    }
 
     const dur = motionDuration(MOTION_DURATION.layoutSplit, reduceMotion)
+    const navigated =
+      incoming.questionKey !== undefined
+        ? prev.questionKey !== incoming.questionKey
+        : prev.text !== incoming.text && prev.language === incoming.language
 
-    if (isSplit !== wasSplit) {
-      if (isSplit) {
-        splitProgress.set(0)
-        splitProgress.set(withTiming(1, {duration: dur, easing: MOTION_EASING.standard}))
-      } else {
-        splitProgress.set(0)
-      }
-      return undefined
+    // Different Question or Reduce Motion: snap cleanly with zero split/flip animation.
+    if (navigated || dur === 0) {
+      cancelAnimation(splitProgress)
+      cancelAnimation(topFlip)
+      cancelAnimation(bottomFlip)
+      splitProgress.set(incoming.isSplit ? 1 : 0)
+      emergingSide.set(incoming.mirrored ? -1 : 1)
+      topFlip.set(0)
+      bottomFlip.set(0)
+      setClipSide('none')
+      commit(incoming)
+      return
     }
 
-    if (isSplit && mirrored !== wasMirrored && dur > 0) {
+    const delay = motionDuration(SHEET_REVEAL_DELAY_MS, reduceMotion)
+
+    // Case 1: Single → Split (S1 → S2 / S3 / S4)
+    // Existing primary stays unclipped and settles gently into its half while ONLY the new
+    // half slides out from behind the seam.
+    if (!prev.isSplit && incoming.isSplit) {
+      cancelAnimation(splitProgress)
+      cancelAnimation(topFlip)
+      cancelAnimation(bottomFlip)
+      topFlip.set(0)
+      bottomFlip.set(0)
+      emergingSide.set(incoming.mirrored ? -1 : 1)
+      setClipSide(incoming.mirrored ? 'top' : 'bottom')
+      splitProgress.set(0)
+      commit(incoming)
+      splitProgress.set(
+        withDelay(
+          delay,
+          withTiming(1, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
+            'worklet'
+            if (finished) runOnJS(setClipSide)('none')
+          })
+        )
+      )
+      return
+    }
+
+    // Case 2: Split → Single (S2 / S3 / S4 → S1)
+    // Keep the departing split mounted while the leaving half tucks cleanly back behind primary.
+    if (prev.isSplit && !incoming.isSplit) {
+      cancelAnimation(splitProgress)
+      cancelAnimation(topFlip)
+      cancelAnimation(bottomFlip)
+      topFlip.set(0)
+      bottomFlip.set(0)
+      emergingSide.set(prev.mirrored ? -1 : 1)
+      setClipSide(prev.mirrored ? 'top' : 'bottom')
+      splitProgress.set(1)
+      splitProgress.set(
+        withDelay(
+          delay,
+          withTiming(0, {duration: dur, easing: MOTION_EASING.standard}, (finished) => {
+            'worklet'
+            if (finished) {
+              runOnJS(setClipSide)('none')
+              runOnJS(commit)(incoming)
+            }
+          })
+        )
+      )
+      return
+    }
+
+    // Case 3: Split → Split (S2 ↔ S4, S3 ↔ S4, or language change while split)
+    // Keep any unchanged half 100% still; flip ONLY the half(ves) whose text/orientation changed!
+    if (prev.isSplit && incoming.isSplit) {
+      const prevH = halvesOf(prev)
+      const nextH = halvesOf(incoming)
+      const topChanged =
+        prevH.topText !== nextH.topText ||
+        prevH.topLang !== nextH.topLang ||
+        prev.mirrored !== incoming.mirrored
+      const bottomChanged =
+        prevH.bottomText !== nextH.bottomText || prevH.bottomLang !== nextH.bottomLang
+
+      if (!topChanged && !bottomChanged) {
+        commit(incoming)
+        return
+      }
+
       const half = Math.round(dur / 2)
       const swap = () => {
-        setOverrideMirrored(null)
-        tabletopFlip.set(-1)
-        tabletopFlip.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
+        commit(incoming)
+        if (topChanged) {
+          topFlip.set(-1)
+          topFlip.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
+        }
+        if (bottomChanged) {
+          bottomFlip.set(-1)
+          bottomFlip.set(withTiming(0, {duration: half, easing: MOTION_EASING.enter}))
+        }
       }
-      const raf = requestAnimationFrame(() => setOverrideMirrored(wasMirrored))
-      tabletopFlip.set(0)
-      tabletopFlip.set(
-        withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
-          'worklet'
-          if (finished) runOnJS(swap)()
-        })
-      )
-      return () => cancelAnimationFrame(raf)
+
+      cancelAnimation(topFlip)
+      cancelAnimation(bottomFlip)
+      if (topChanged) {
+        topFlip.set(0)
+        topFlip.set(
+          withDelay(
+            delay,
+            withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+              'worklet'
+              if (finished) runOnJS(swap)()
+            })
+          )
+        )
+      }
+      if (bottomChanged) {
+        bottomFlip.set(0)
+        bottomFlip.set(
+          withDelay(
+            delay,
+            withTiming(1, {duration: half, easing: MOTION_EASING.exit}, (finished) => {
+              'worklet'
+              // Only drive `swap` from bottomFlip when topFlip isn't already driving it.
+              if (finished && !topChanged) runOnJS(swap)()
+            })
+          )
+        )
+      }
+      return
     }
-    return undefined
-  }, [isSplit, mirrored, reduceMotion, splitProgress, tabletopFlip])
+
+    // Case 4: Single → Single (primary language changed while in 1-language view)
+    commit(incoming)
+  }, [incoming, reduceMotion, splitProgress, emergingSide, topFlip, bottomFlip])
 
   const halfHeight = Math.max(0, (box.height - MIRROR_GAP) / 2)
   const halfBox = {width: box.width, height: halfHeight}
 
-  // Primary glides subtly from center into its split half; emerging half slides out from behind it.
-  const slideOffset = Math.min(90, halfHeight * 0.5)
-  const topEmergingStyle = useAnimatedStyle(() => {
+  // Anchor half settles gently without crossing the seam; emerging/departing half travels
+  // the full halfHeight so even multi-line Questions tuck 100% cleanly behind the seam with
+  // zero overlap or peeking lines.
+  const slideOffset = halfHeight
+  const anchorSettle = Math.min(14, halfHeight * 0.1)
+
+  const topHalfStyle = useAnimatedStyle(() => {
     const p = splitProgress.get()
-    const flip = tabletopFlip.get()
+    const flip = topFlip.get()
+    // If top is emerging (emergingSide < 0, Tabletop), slide up from +slideOffset;
+    // otherwise top is the upright primary anchor and settles gently from +anchorSettle.
+    const startY = emergingSide.get() < 0 ? slideOffset : anchorSettle
     return {
       transform: [
         {perspective: 800},
-        {translateY: interpolate(p, [0, 1], [slideOffset, 0], 'clamp')},
+        {translateY: interpolate(p, [0, 1], [startY, 0], 'clamp')},
         {rotateX: `${flip * 90}deg`},
       ],
     }
   })
 
-  const bottomEmergingStyle = useAnimatedStyle(() => {
+  const bottomHalfStyle = useAnimatedStyle(() => {
     const p = splitProgress.get()
+    const flip = bottomFlip.get()
+    // If bottom is emerging (emergingSide > 0, 2-lang upright), slide down from -slideOffset;
+    // otherwise bottom is the upright primary anchor and settles gently from -anchorSettle.
+    const startY = emergingSide.get() > 0 ? -slideOffset : -anchorSettle
     return {
-      transform: [{translateY: interpolate(p, [0, 1], [-slideOffset, 0], 'clamp')}],
+      transform: [
+        {perspective: 800},
+        {translateY: interpolate(p, [0, 1], [startY, 0], 'clamp')},
+        {rotateX: `${flip * 90}deg`},
+      ],
     }
   })
 
-  if (!isSplit) {
+  if (!activeSnap.isSplit) {
     return (
       <View
         onLayout={
@@ -444,8 +644,8 @@ export const QuestionText = ({
         }
       >
         <QuestionFace
-          text={text}
-          language={language}
+          text={activeSnap.text}
+          language={activeSnap.language}
           box={box}
           themedText={themedText}
           morphColor={morphColor}
@@ -454,21 +654,7 @@ export const QuestionText = ({
     )
   }
 
-  // Unified 50/50 split geometry:
-  // - Top half sits flush above the divider (`justifyContent: 'flex-end'`).
-  // - Bottom half sits flush below the divider (`justifyContent: 'flex-start'`).
-  // - `SplitDivider` (`height: MIRROR_GAP`) centers the 4px violet bar dead between them,
-  //   so both blocks always sit at the exact same symmetric distance from the line.
-  //
-  // Language assignment:
-  // - Tabletop (`displayedMirrored`): far/top rotated 180° is secondary (or mirrored primary),
-  //   near/bottom upright is primary (issue #366).
-  // - Upright 2 languages: primary on top, secondary on bottom.
-  const topText = displayedMirrored ? (secondaryEntry?.text ?? text) : text
-  const topLang = displayedMirrored ? (secondaryEntry?.language ?? language) : language
-  const bottomText = displayedMirrored ? text : (secondaryEntry?.text ?? text)
-  const bottomLang = displayedMirrored ? language : (secondaryEntry?.language ?? language)
-  const topIsDuplicate = displayedMirrored && !secondaryEntry
+  const {topText, topLang, bottomText, bottomLang, topIsDuplicate} = halvesOf(activeSnap)
 
   return (
     <View
@@ -479,10 +665,14 @@ export const QuestionText = ({
       <View
         accessibilityElementsHidden={topIsDuplicate}
         importantForAccessibility={topIsDuplicate ? 'no-hide-descendants' : 'auto'}
-        style={{height: halfHeight, justifyContent: 'flex-end', overflow: 'hidden'}}
+        style={{
+          height: halfHeight,
+          justifyContent: 'flex-end',
+          overflow: clipSide === 'top' ? 'hidden' : 'visible',
+        }}
       >
-        <Animated.View style={topEmergingStyle}>
-          <View style={displayedMirrored ? {transform: [{rotate: '180deg'}]} : undefined}>
+        <Animated.View style={topHalfStyle}>
+          <View style={activeSnap.mirrored ? {transform: [{rotate: '180deg'}]} : undefined}>
             <QuestionFace
               text={topText}
               language={topLang}
@@ -495,8 +685,14 @@ export const QuestionText = ({
         </Animated.View>
       </View>
       <SplitDivider reveal={splitProgress} flipMid={flipMid} />
-      <View style={{height: halfHeight, justifyContent: 'flex-start', overflow: 'hidden'}}>
-        <Animated.View style={bottomEmergingStyle}>
+      <View
+        style={{
+          height: halfHeight,
+          justifyContent: 'flex-start',
+          overflow: clipSide === 'bottom' ? 'hidden' : 'visible',
+        }}
+      >
+        <Animated.View style={bottomHalfStyle}>
           <QuestionFace
             text={bottomText}
             language={bottomLang}

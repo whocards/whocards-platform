@@ -51,9 +51,11 @@ import {notePromptShown} from '@/lib/notification-store'
 import {parsePlayLink} from '@/lib/play-link'
 import {
   consumePendingPlayEntrance,
+  getActivePlayTransition,
   notifyReturnedHome,
-  setMeasuredPlayerBarHeight,
+  reportPlayTargetMetrics,
   startExitTransition,
+  subscribePlayTransition,
 } from '@/lib/play-transition'
 import {buildShareCardUrl, buildShareUrl} from '@/lib/share-url'
 import {getStoredTabletopMode} from '@/lib/tabletop-store'
@@ -85,7 +87,13 @@ const texture = require('../../assets/images/background.png')
  * The card back, styled after the printed WhoCards deck: the brand squiggle
  * texture over the darkest base and the one-line WHO?CARDS wordmark bottom-right.
  */
-export const CardBack = ({hideWordmark = false}: {hideWordmark?: boolean} = {}) => (
+export const CardBack = ({
+  hideWordmark = false,
+  onWordmarkLayout,
+}: {
+  hideWordmark?: boolean
+  onWordmarkLayout?: (size: {width: number; height: number}) => void
+} = {}) => (
   <View className="bg-darkest absolute inset-0 overflow-hidden rounded-[20px] border border-white/10">
     <Image
       source={texture}
@@ -93,15 +101,26 @@ export const CardBack = ({hideWordmark = false}: {hideWordmark?: boolean} = {}) 
       fadeDuration={0}
       style={[StyleSheet.absoluteFill, {width: '100%', height: '100%'}]}
     />
-    {hideWordmark ? null : (
-      <Text
-        style={{position: 'absolute', bottom: 20, right: 20, fontSize: 26}}
-        className="font-title text-yellow-400"
-      >
-        WHO<Text className="text-primary-dark">?</Text>
-        <Text className="text-white">CARDS</Text>
-      </Text>
-    )}
+    {/* Always mounted so onLayout measures exact native wordmark bounds on frame 0;
+        hide via opacity during Home↔Deck transition for an atomic 0px handoff. */}
+    <Text
+      onLayout={
+        onWordmarkLayout
+          ? (event) => {
+              const {width, height} = event.nativeEvent.layout
+              if (width > 0 && height > 0) onWordmarkLayout({width, height})
+            }
+          : undefined
+      }
+      style={[
+        {position: 'absolute', bottom: 20, right: 20, fontSize: 26},
+        hideWordmark ? {opacity: 0} : undefined,
+      ]}
+      className="font-title text-yellow-400"
+    >
+      WHO<Text className="text-primary-dark">?</Text>
+      <Text className="text-white">CARDS</Text>
+    </Text>
   </View>
 )
 
@@ -426,10 +445,6 @@ export const UnifiedPlayer = ({
   const {chromeShown, revealChrome, bottomBarH, onBottomBarLayout, bottomChromeStyle} =
     usePlayerChrome()
 
-  useEffect(() => {
-    setMeasuredPlayerBarHeight(bottomBarH)
-  }, [bottomBarH])
-
   // --- layout geometry: shared between Classic and Pick a Card ---
   const [box, setBox] = useState<{width: number; height: number} | null>(null)
   const onBoxLayout = useCallback((event: LayoutChangeEvent) => {
@@ -451,6 +466,21 @@ export const UnifiedPlayer = ({
   )
   const cardLeft = (winWidth - cardWidth) / 2
   const cardTop = insets.top + (measured.height - cardHeight - HINT_SPACE - HINT_GAP) / 2
+
+  const [wordmarkSize, setWordmarkSize] = useState<{width: number; height: number} | null>(null)
+  const [qMarkSize, setQMarkSize] = useState<{width: number; height: number} | null>(null)
+  const onWordmarkLayout = useCallback((size: {width: number; height: number}) => {
+    setWordmarkSize((prev) =>
+      prev && prev.width === size.width && prev.height === size.height ? prev : size
+    )
+  }, [])
+  const onQMarkLayout = useCallback((event: LayoutChangeEvent) => {
+    const {width, height} = event.nativeEvent.layout
+    if (width <= 0 || height <= 0) return
+    setQMarkSize((prev) =>
+      prev && prev.width === width && prev.height === height ? prev : {width, height}
+    )
+  }, [])
 
   // Proportional scale locks identical line breaks between Classic and Card so ONE
   // single QuestionText stays on screen through the Game switch with zero fade.
@@ -474,23 +504,29 @@ export const UnifiedPlayer = ({
   }, [text, cardInner.width, cardInner.height])
 
   // 5B Home ↔ Play vertical rise/drop (1 = below bottom edge, 0 = settled in place).
+  // Atomic handoff: `transitionActive` tracks PlayTransitionOverlay directly so the
+  // overlay unmounts and UnifiedPlayer's "?" / CardBack wordmark reveals in the exact same commit.
   const [fromHome] = useState(() => consumePendingPlayEntrance())
   const homeRise = useSharedValue(fromHome && !reduceMotion ? 1 : 0)
-  const [homeEntering, setHomeEntering] = useState(fromHome && !reduceMotion)
+  const [transitionActive, setTransitionActive] = useState(() => getActivePlayTransition() !== null)
+  const transitionActiveSV = useSharedValue(getActivePlayTransition() !== null ? 1 : 0)
   const [homeExiting, setHomeExiting] = useState(false)
   const exitingHomeRef = useRef(false)
   const exitNavTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    const sync = (active: boolean) => {
+      setTransitionActive(active)
+      transitionActiveSV.set(active ? 1 : 0)
+    }
+    sync(getActivePlayTransition() !== null)
+    return subscribePlayTransition((event) => sync(event !== null))
+  }, [transitionActiveSV])
+
   useEffect(() => {
     if (!fromHome || reduceMotion) return
-    // Play mounts at 0.44 × dur; finish homeRise at 0.54 × dur so CardBack/corner "?" hands
-    // off right as PlayTransitionOverlay lands at 1.0 × dur (zero 2-frame gap!).
-    const dur = Math.round(motionDuration(MOTION_DURATION.homeToPlay, false) * 0.54)
-    homeRise.set(
-      withTiming(0, {duration: dur, easing: MOTION_EASING.enter}, () => {
-        'worklet'
-        runOnJS(setHomeEntering)(false)
-      })
-    )
+    const dur = Math.round(motionDuration(MOTION_DURATION.homeToPlay, false) * 0.56)
+    homeRise.set(withTiming(0, {duration: dur, easing: MOTION_EASING.enter}))
   }, [fromHome, reduceMotion, homeRise])
 
   const homeRiseStyle = useAnimatedStyle(() => ({
@@ -855,6 +891,34 @@ export const UnifiedPlayer = ({
   const classicQRight = CLASSIC_Q_RIGHT
   const classicQBottom = bottomBarH + CLASSIC_Q_BOTTOM
 
+  const measuredDeckWordmark = useMemo(
+    () =>
+      wordmarkSize
+        ? {
+            x: cardLeft + cardWidth - 1 - 20 - wordmarkSize.width,
+            y: cardTop + cardHeight - 1 - 20 - wordmarkSize.height,
+            width: wordmarkSize.width,
+            height: wordmarkSize.height,
+          }
+        : undefined,
+    [cardLeft, cardWidth, cardTop, cardHeight, wordmarkSize]
+  )
+
+  useEffect(() => {
+    reportPlayTargetMetrics({
+      bottomBarH,
+      classicQ: {
+        right: classicQRight,
+        bottom: classicQBottom,
+        opacity: 0.28,
+        scale: 1.08,
+        width: qMarkSize?.width,
+        height: qMarkSize?.height,
+      },
+      deckWordmark: measuredDeckWordmark,
+    })
+  }, [bottomBarH, classicQRight, classicQBottom, qMarkSize, measuredDeckWordmark])
+
   // Ensure Home's parting state & overlay always reset if Play unmounts via edge swipe / hardware back.
   useEffect(
     () => () => {
@@ -885,8 +949,22 @@ export const UnifiedPlayer = ({
     const logoWidth = 280
     const logoHeight = Math.round((logoWidth * 226) / 1200)
     const playQAnchor = isPick
-      ? {right: cardQRight, bottom: cardQBottom, opacity: 1, scale: 1}
-      : {right: classicQRight, bottom: classicQBottom, opacity: 0.28, scale: 1.08}
+      ? {
+          right: cardQRight,
+          bottom: cardQBottom,
+          opacity: 1,
+          scale: 1,
+          width: qMarkSize?.width,
+          height: qMarkSize?.height,
+        }
+      : {
+          right: classicQRight,
+          bottom: classicQBottom,
+          opacity: 0.28,
+          scale: 1.08,
+          width: qMarkSize?.width,
+          height: qMarkSize?.height,
+        }
     startExitTransition({
       kind,
       fallbackLogoRect: {
@@ -896,6 +974,7 @@ export const UnifiedPlayer = ({
         height: logoHeight,
       },
       playQAnchor,
+      deckWordmark: measuredDeckWordmark,
       bottomBarH,
     })
     homeRise.set(withTiming(1, {duration: Math.round(dur * 0.48), easing: MOTION_EASING.exit}))
@@ -916,6 +995,8 @@ export const UnifiedPlayer = ({
     cardQBottom,
     classicQRight,
     classicQBottom,
+    qMarkSize,
+    measuredDeckWordmark,
     winWidth,
     winHeight,
     bottomBarH,
@@ -1194,11 +1275,13 @@ export const UnifiedPlayer = ({
   }))
 
   // ONE continuous "?" gliding between Classic bottom-right and Card bottom-right.
-  // Anchored by exact right/bottom edges so handoff to Card "?" and PlayTransitionOverlay has 0px jump.
+  // Anchored by exact right/bottom edges and hidden via transitionActiveSV during Home↔Play
+  // so PlayTransitionOverlay hands off atomically at 0.0px offset.
   const sharedQMarkStyle = useAnimatedStyle(() => {
     const p = morph.get()
+    const hidden = transitionActiveSV.get() > 0.5
     return {
-      opacity: interpolate(p, [0, 1], [0.28, 1], 'clamp'),
+      opacity: hidden ? 0 : interpolate(p, [0, 1], [0.28, 1], 'clamp'),
       transform: [
         {translateX: interpolate(p, [0, 1], [cardQRight - classicQRight, 0], 'clamp')},
         {translateY: interpolate(p, [0, 1], [cardQBottom - classicQBottom, 0], 'clamp')},
@@ -1398,6 +1481,7 @@ export const UnifiedPlayer = ({
                 >
                   <QuestionText
                     themedText
+                    questionKey={questionId}
                     morphColor={morph}
                     flipMid={isSplit ? flipMid : undefined}
                     text={text}
@@ -1427,6 +1511,7 @@ export const UnifiedPlayer = ({
                 >
                   <QuestionText
                     themedText
+                    questionKey={peerQuestionId}
                     flipMid={isSplit ? flipMid : undefined}
                     text={textOf(peerQuestionId)}
                     language={language}
@@ -1438,26 +1523,27 @@ export const UnifiedPlayer = ({
                 </Animated.View>
               ) : null}
 
-              {/* ONE continuous "?" mark gliding between Classic corner and Card corner. */}
-              {!homeEntering && !homeExiting ? (
-                <Animated.Text
-                  pointerEvents="none"
-                  className="text-primary-dark font-title"
-                  style={[
-                    {
-                      position: 'absolute',
-                      right: cardQRight,
-                      bottom: cardQBottom,
-                      fontSize: QUESTION_MARK_SIZE,
-                      lineHeight: QUESTION_MARK_LINE_HEIGHT,
-                      zIndex: 520,
-                    },
-                    sharedQMarkStyle,
-                  ]}
-                >
-                  ?
-                </Animated.Text>
-              ) : null}
+              {/* ONE continuous "?" mark gliding between Classic corner and Card corner.
+                  Always mounted so onLayout measures exact native bounds on frame 0;
+                  sharedQMarkStyle sets opacity: 0 while PlayTransitionOverlay is active. */}
+              <Animated.Text
+                pointerEvents="none"
+                onLayout={onQMarkLayout}
+                className="text-primary-dark font-title"
+                style={[
+                  {
+                    position: 'absolute',
+                    right: cardQRight,
+                    bottom: cardQBottom,
+                    fontSize: QUESTION_MARK_SIZE,
+                    lineHeight: QUESTION_MARK_LINE_HEIGHT,
+                    zIndex: 520,
+                  },
+                  sharedQMarkStyle,
+                ]}
+              >
+                ?
+              </Animated.Text>
             </View>
           </GestureDetector>
         ) : (
@@ -1519,6 +1605,7 @@ export const UnifiedPlayer = ({
                                 }}
                               >
                                 <QuestionText
+                                  questionKey={nextQuestionId}
                                   text={textOf(nextQuestionId)}
                                   language={language}
                                   box={cardInner}
@@ -1575,6 +1662,7 @@ export const UnifiedPlayer = ({
                               }}
                             >
                               <QuestionText
+                                questionKey={questionId}
                                 text={text}
                                 language={language}
                                 box={cardInner}
@@ -1621,6 +1709,7 @@ export const UnifiedPlayer = ({
                               }}
                             >
                               <QuestionText
+                                questionKey={slidingBackCardId}
                                 text={textOf(slidingBackCardId)}
                                 language={language}
                                 box={cardInner}
@@ -1650,7 +1739,10 @@ export const UnifiedPlayer = ({
                         accessibilityLabel="Pick a card"
                         className="absolute inset-0"
                       >
-                        <CardBack hideWordmark={homeEntering || homeExiting} />
+                        <CardBack
+                          hideWordmark={transitionActive || homeExiting}
+                          onWordmarkLayout={onWordmarkLayout}
+                        />
                       </PressableScale>
                     </View>
                     <Pressable

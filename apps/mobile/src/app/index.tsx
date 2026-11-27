@@ -9,7 +9,6 @@ import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-nati
 import Animated, {
   cancelAnimation,
   interpolate,
-  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -31,7 +30,11 @@ import {getStoredGame} from '@/lib/game-store'
 import {impact} from '@/lib/haptics'
 import {MOTION_DURATION, MOTION_EASING, motionDuration} from '@/lib/motion'
 import type {HomeReturnEvent} from '@/lib/play-transition'
-import {startPlayTransition, subscribeReturnedHome} from '@/lib/play-transition'
+import {
+  startPlayTransition,
+  subscribePlayTransition,
+  subscribeReturnedHome,
+} from '@/lib/play-transition'
 import {trpc} from '@/lib/trpc'
 
 // We launch with the original WhoCards deck; its content ships in-app for offline play.
@@ -89,11 +92,13 @@ export default function LandingScreen() {
   const exitProgress = useSharedValue(0)
   const exitTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const launchingRef = useRef(false)
+  const returningRef = useRef(false)
 
   const resetExitState = useCallback(() => {
     for (const id of exitTimersRef.current) clearTimeout(id)
     exitTimersRef.current = []
     launchingRef.current = false
+    returningRef.current = false
     cancelAnimation(exitProgress)
     exitProgress.set(0)
     setExitingTo(null)
@@ -106,30 +111,36 @@ export default function LandingScreen() {
       launchingRef.current = false
       cancelAnimation(exitProgress)
       if (!animated || reduceMotion) {
+        returningRef.current = false
         exitProgress.set(0)
         setExitingTo(null)
         return
       }
       // Symmetric reverse of 5B: WHO & CARDS close back around the arriving "?"
       // (or full logo lands from CardBack) while subtitle & buttons rise up cleanly.
+      returningRef.current = true
       setExitingTo(animated.kind === 'deck' ? 'pick' : 'wh')
       exitProgress.set(1)
-      exitProgress.set(
-        withTiming(0, {duration: animated.duration, easing: MOTION_EASING.enter}, (finished) => {
-          'worklet'
-          if (finished) runOnJS(setExitingTo)(null)
-        })
-      )
-      const safetyTimer = setTimeout(resetExitState, animated.duration + 90)
+      exitProgress.set(withTiming(0, {duration: animated.duration, easing: MOTION_EASING.enter}))
+      const safetyTimer = setTimeout(resetExitState, animated.duration + 160)
       exitTimersRef.current.push(safetyTimer)
     },
     [exitProgress, reduceMotion, resetExitState]
   )
 
   useEffect(() => {
-    const unsubscribe = subscribeReturnedHome(handleReturnedHome)
+    const unsubscribeReturn = subscribeReturnedHome(handleReturnedHome)
+    // Atomic handoff: clear `exitingTo` in the EXACT same React commit that PlayTransitionOverlay
+    // finishes and unmounts so intact logo.png swaps in with 0-frame gap and 0 double-draw.
+    const unsubscribeOverlay = subscribePlayTransition((event) => {
+      if (event === null && returningRef.current) {
+        returningRef.current = false
+        setExitingTo(null)
+      }
+    })
     return () => {
-      unsubscribe()
+      unsubscribeReturn()
+      unsubscribeOverlay()
       for (const id of exitTimersRef.current) clearTimeout(id)
     }
   }, [handleReturnedHome])
