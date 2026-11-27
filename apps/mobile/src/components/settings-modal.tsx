@@ -59,9 +59,6 @@ const CARD_ANIMATION_OPTIONS = [
 
 const GAME_OPTIONS = GAME_CATALOG.map((game) => ({value: game.id, label: game.title}))
 
-// The Second language picker's "None".
-const NO_LANGUAGE = ''
-
 // Caps the rows at this fraction of the window; they only scroll under max Dynamic Type or in landscape.
 const SHEET_MAX_HEIGHT_RATIO = 0.8
 
@@ -158,6 +155,10 @@ export const SettingsModal = ({
   const [game, setGame] = useState<GameId>(DEFAULT_GAME)
   const [language, setLanguage] = useState(languages[0])
   const [secondary, setSecondary] = useState<string[]>([])
+  const lastSecondary = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (secondary[0]) lastSecondary.current = secondary[0]
+  }, [secondary])
   const [tabletop, setTabletop] = useState(false)
   const [cardAnimation, setCardAnimation] = useState<CardAnimation>('slide')
   const [daily, setDaily] = useState<DailySetting>({enabled: true, hour: DAILY_HOUR, minute: 0})
@@ -231,6 +232,11 @@ export const SettingsModal = ({
 
   const languageOptions = languages.map((code) => ({value: code, label: languageName(code)}))
   const hasLanguageChoice = languages.length > 1
+  const secondaryOptions = languageOptions.filter((option) => option.value !== language)
+  // Switching the second language back on brings back the last one picked.
+  const restoredSecondary =
+    secondaryOptions.find((option) => option.value === lastSecondary.current)?.value ??
+    secondaryOptions[0]?.value
   const time = new Date(2000, 0, 1, daily.hour, daily.minute)
 
   return (
@@ -280,19 +286,30 @@ export const SettingsModal = ({
                 isDark={isDark}
               />
             </Row>
-            <Row label="Second language">
-              <Choice
-                label="Second language"
-                options={[
-                  {value: NO_LANGUAGE, label: 'None'},
-                  ...languageOptions.filter((option) => option.value !== language),
-                ]}
-                current={secondary[0] ?? NO_LANGUAGE}
-                onSelect={(next) => setSecondaryLanguages(next === NO_LANGUAGE ? [] : [next])}
-                enabled={hasLanguageChoice}
-                isDark={isDark}
-              />
-            </Row>
+            {hasLanguageChoice ? (
+              <Row label="Second language" last={secondary[0] !== undefined}>
+                <Toggle
+                  label="Second language"
+                  value={secondary[0] !== undefined}
+                  onChange={(on) =>
+                    setSecondaryLanguages(on && restoredSecondary ? [restoredSecondary] : [])
+                  }
+                  isDark={isDark}
+                />
+              </Row>
+            ) : null}
+            {secondary[0] ? (
+              // Its own row, so every picker shares one right edge.
+              <Row label="">
+                <Choice
+                  label="Second language"
+                  options={secondaryOptions}
+                  current={secondary[0]}
+                  onSelect={(next) => setSecondaryLanguages([next])}
+                  isDark={isDark}
+                />
+              </Row>
+            ) : null}
             <Row label="Card animation">
               <SegmentedControl
                 label="Card animation"

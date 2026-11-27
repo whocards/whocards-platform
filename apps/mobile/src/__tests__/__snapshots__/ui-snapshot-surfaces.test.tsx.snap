@@ -346,13 +346,7 @@ exports[`Settings sheet renders the menu 1`] = `
                 | fontSize: 15.75
                 | lineHeight: 24.5
                 "Second language"
-            <View>
-              <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false,"selected":true}>
-                <Text>
-                  "None"
-              <View accessibilityRole="button" accessibilityLabel="Second language: Hebrew" accessibilityState={"disabled":false,"selected":false}>
-                <Text>
-                  "Hebrew"
+            <View accessibilityRole="switch" accessibilityLabel="Second language" accessibilityState={"checked":false}>
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"
@@ -657,13 +651,7 @@ exports[`Settings sheet renders the menu in the Dark Theme Display setting 1`] =
                 | fontSize: 15.75
                 | lineHeight: 24.5
                 "Second language"
-            <View>
-              <View accessibilityRole="button" accessibilityLabel="Second language: None" accessibilityState={"disabled":false,"selected":true}>
-                <Text>
-                  "None"
-              <View accessibilityRole="button" accessibilityLabel="Second language: Hebrew" accessibilityState={"disabled":false,"selected":false}>
-                <Text>
-                  "Hebrew"
+            <View accessibilityRole="switch" accessibilityLabel="Second language" accessibilityState={"checked":false}>
           <View>
             | alignItems: "center"
             | borderBottomStyle: "solid"

@@ -101,7 +101,7 @@ describe('SettingsModal — one screen, every control inline', () => {
     await screen.findByText('Settings')
     expect(screen.getByLabelText('Game: Classic')).toBeTruthy()
     expect(screen.getByLabelText('Language: English')).toBeTruthy()
-    expect(screen.getByLabelText('Second language: None')).toBeTruthy()
+    expect(screen.getByLabelText('Second language').props.accessibilityState.checked).toBe(false)
     expect(screen.getByLabelText('Card animation: Slide')).toBeTruthy()
     expect(screen.getByLabelText('Tabletop mode')).toBeTruthy()
     expect(screen.getByLabelText('Theme: System')).toBeTruthy()
@@ -120,13 +120,11 @@ describe('SettingsModal — one screen, every control inline', () => {
     expect(selected('Second language: English')).toBe(true)
   })
 
-  it('disables both language pickers for a single-language deck', async () => {
+  it('disables the language picker and drops the second language for a single-language deck', async () => {
     await renderModal({languages: ['en']})
     const language = await screen.findByLabelText('Language: English')
     expect(language.props.accessibilityState.disabled).toBe(true)
-    expect(screen.getByLabelText('Second language: None').props.accessibilityState.disabled).toBe(
-      true
-    )
+    expect(screen.queryByLabelText('Second language')).toBeNull()
   })
 
   it('closes from the X and from the sheet itself', async () => {
@@ -191,7 +189,8 @@ describe('SettingsModal — languages, one picker each', () => {
 
   it('applies + persists a second language and tracks SECONDARY_LANGUAGES_CHANGED', async () => {
     await renderModal()
-    await fireEvent.press(await screen.findByLabelText('Second language: Hebrew'))
+    await screen.findByText('Settings')
+    await toggle('Second language')
     expect(mockedTrack).toHaveBeenCalledWith({
       name: 'secondary_languages_changed',
       props: {deck_id: 'library', secondary: ['he']},
@@ -199,15 +198,20 @@ describe('SettingsModal — languages, one picker each', () => {
     expect(selected('Second language: Hebrew')).toBe(true)
   })
 
-  it('clears the second language when it becomes the primary, and None clears it too', async () => {
+  it('clears the second language when it becomes the primary, and the switch clears and restores it', async () => {
     await renderModal({languages: ['en', 'he', 'es']})
-    await fireEvent.press(await screen.findByLabelText('Second language: Hebrew'))
+    await screen.findByText('Settings')
+    await toggle('Second language')
+    expect(selected('Second language: Hebrew')).toBe(true)
     await fireEvent.press(screen.getByLabelText('Language: Hebrew'))
-    expect(selected('Second language: None')).toBe(true)
-    expect(screen.queryByLabelText('Second language: Hebrew')).toBeNull()
+    expect(screen.getByLabelText('Second language').props.accessibilityState.checked).toBe(false)
+    await fireEvent.press(screen.getByLabelText('Language: English'))
+    await toggle('Second language')
     await fireEvent.press(screen.getByLabelText('Second language: Spanish'))
-    await fireEvent.press(screen.getByLabelText('Second language: None'))
-    expect(selected('Second language: None')).toBe(true)
+    await toggle('Second language')
+    expect(screen.queryByLabelText('Second language: Spanish')).toBeNull()
+    await toggle('Second language')
+    expect(selected('Second language: Spanish')).toBe(true)
   })
 
   it("shows a shared link's language over the stored one and reports a pick of the stored one", async () => {

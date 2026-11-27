@@ -95,13 +95,16 @@ const CardEdge = () => (
 export const CardBack = ({
   hideWordmark = false,
   onWordmarkLayout,
+  onTextureLoad,
 }: {
   hideWordmark?: boolean
   onWordmarkLayout?: (size: {width: number; height: number}) => void
+  onTextureLoad?: () => void
 } = {}) => (
   <View className="bg-darkest absolute inset-0 overflow-hidden rounded-[20px] border border-white/10">
     <Image
       source={texture}
+      onLoad={onTextureLoad}
       resizeMode="cover"
       fadeDuration={0}
       style={[StyleSheet.absoluteFill, {width: '100%', height: '100%'}]}
@@ -520,6 +523,9 @@ export const UnifiedPlayer = ({
   // Atomic handoff: `transitionActive` tracks PlayTransitionOverlay directly so the
   // overlay unmounts and UnifiedPlayer's "?" / CardBack wordmark reveals in the exact same commit.
   const [fromHome] = useState(() => consumePendingPlayEntrance())
+  // Rising in from Home, the first Deck decodes its texture a frame late, so it waits instead of flashing flat.
+  const [deckTextureReady, setDeckTextureReady] = useState(() => !fromHome || reduceMotion)
+  const onDeckTextureLoad = useCallback(() => setDeckTextureReady(true), [])
   const homeRise = useSharedValue(fromHome && !reduceMotion ? 1 : 0)
   const [transitionActive, setTransitionActive] = useState(() => getActivePlayTransition() !== null)
   const transitionActiveSV = useSharedValue(getActivePlayTransition() !== null ? 1 : 0)
@@ -536,11 +542,19 @@ export const UnifiedPlayer = ({
     return subscribePlayTransition((event) => sync(event !== null))
   }, [transitionActiveSV])
 
+  // A face-down Deck rises once it can show its texture, still landing when the flying wordmark does.
+  const riseWaitsForDeck = isPick && phase === 'pick' && !deckTextureReady
+  const [mountedAt] = useState(() => Date.now())
   useEffect(() => {
-    if (!fromHome || reduceMotion) return
+    if (!fromHome || reduceMotion || riseWaitsForDeck) return
     const dur = Math.round(motionDuration(MOTION_DURATION.homeToPlay, false) * 0.56)
-    homeRise.set(withTiming(0, {duration: dur, easing: MOTION_EASING.enter}))
-  }, [fromHome, reduceMotion, homeRise])
+    homeRise.set(
+      withTiming(0, {
+        duration: Math.max(0, dur - (Date.now() - mountedAt)),
+        easing: MOTION_EASING.enter,
+      })
+    )
+  }, [fromHome, reduceMotion, homeRise, riseWaitsForDeck, mountedAt])
 
   const homeRiseStyle = useAnimatedStyle(() => ({
     transform: [{translateY: interpolate(homeRise.get(), [0, 1], [0, winHeight * 0.62], 'clamp')}],
@@ -1798,7 +1812,13 @@ export const UnifiedPlayer = ({
                   </Animated.View>
                 ) : (
                   <Animated.View className="items-center" style={homeRiseStyle}>
-                    <View style={{width: cardWidth, height: cardHeight}}>
+                    <View
+                      style={{
+                        width: cardWidth,
+                        height: cardHeight,
+                        opacity: deckTextureReady ? undefined : 0,
+                      }}
+                    >
                       {DECK_LAYERS.map(({rotate, translateY}) => (
                         <View
                           key={rotate}
@@ -1815,6 +1835,7 @@ export const UnifiedPlayer = ({
                         <CardBack
                           hideWordmark={transitionActive || homeExiting}
                           onWordmarkLayout={onWordmarkLayout}
+                          onTextureLoad={onDeckTextureLoad}
                         />
                       </PressableScale>
                     </View>
