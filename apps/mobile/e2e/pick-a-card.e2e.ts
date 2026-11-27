@@ -1,13 +1,13 @@
 import {test} from '@e2e-dev/mobile'
 import {expect} from 'e2e'
 
-import {button, launchClean, pickSetting, startPlay} from './support'
+import {button, launchClean, startPlay, turnOnPickACard} from './support'
 
 // Pick a Card shuffles, so the flow follows the deal buttons, not question text.
 test('Pick a Card deals a card, puts it down, and Back re-reads it', async (fixtures) => {
   const {screen} = fixtures
   await launchClean(fixtures)
-  await pickSetting(screen, 'Game', 'Pick a Card')
+  await turnOnPickACard(screen)
   await startPlay(screen)
 
   const pick = button(screen, 'Pick a card')

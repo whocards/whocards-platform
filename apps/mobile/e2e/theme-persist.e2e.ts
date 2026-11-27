@@ -7,7 +7,7 @@ import {button, launchClean, openSettings, pickTheme, relaunch} from './support'
 test('Dark, Light and System each survive a relaunch', async (fixtures) => {
   const {app, screen} = fixtures
   await launchClean(fixtures)
-  for (const theme of ['Dark', 'Light', 'System']) {
+  for (const theme of ['Dark', 'Light', 'System'] as const) {
     await pickTheme(screen, theme)
     await app.screenshot(`theme-${theme.toLowerCase()}`)
     await relaunch(fixtures)

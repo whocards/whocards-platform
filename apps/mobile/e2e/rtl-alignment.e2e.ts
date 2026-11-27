@@ -8,6 +8,7 @@ import {
   play,
   revealControls,
   startPlay,
+  t,
   tapUntil,
 } from './support'
 
@@ -20,8 +21,8 @@ test('A card reads left-aligned in English and right-aligned in Hebrew', async (
   await revealControls(screen)
   await app.screenshot('en-ltr')
 
-  await tapUntil(button(screen, 'exit deck'), play(screen))
-  await pickLanguage(screen, 'Hebrew')
+  await tapUntil(button(screen, t('a11y.exitDeck')), play(screen))
+  await pickLanguage(screen, 'he')
   await startPlay(screen)
   await revealControls(screen)
   await app.screenshot('he-rtl')

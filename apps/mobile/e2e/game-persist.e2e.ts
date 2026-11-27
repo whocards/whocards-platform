@@ -6,15 +6,15 @@ import {
   closeSettings,
   launchClean,
   openSettings,
-  pickSetting,
   relaunch,
   startPlay,
+  turnOnPickACard,
 } from './support'
 
 test('The chosen Game survives a relaunch, in Settings and in the player', async (fixtures) => {
   const {screen} = fixtures
   await launchClean(fixtures)
-  await pickSetting(screen, 'Game', 'Pick a Card')
+  await turnOnPickACard(screen)
 
   await relaunch(fixtures)
   await openSettings(screen)

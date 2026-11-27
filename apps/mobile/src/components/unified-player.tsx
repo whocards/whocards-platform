@@ -17,7 +17,14 @@ import Animated, {
 } from 'react-native-reanimated'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import type {GameId, NavAction, NavState, PickPhase, QuestionSet} from '@whocards/decks'
-import {DEFAULT_GAME, getInitialNav, getInitialPick, navReducer, pickReducer} from '@whocards/decks'
+import {
+  DEFAULT_GAME,
+  getInitialNav,
+  getInitialPick,
+  navReducer,
+  pickReducer,
+  shuffle,
+} from '@whocards/decks'
 import {trackEvent} from '@whocards/observability'
 import {createViewTracker, EVENTS, eventsFor, GAMES, track} from '@whocards/observability/events'
 import type {ShareEventName} from '@whocards/observability/events'
@@ -370,8 +377,13 @@ export const UnifiedPlayer = ({
   const activeSecondaries = useMemo(() => secondariesOf(questionId), [secondariesOf, questionId])
   const isSplit = tabletop || activeSecondaries.some((entry) => entry.text)
 
+  // On the last Question, `next` appends a fresh shuffle; drawing it now lets the incoming Card show its first Question.
+  const upcomingCycle = useMemo(
+    () => (idx >= ids.length - 1 ? shuffle(questionIds) : undefined),
+    [idx, ids.length, questionIds]
+  )
   // Peek neighbor ids for live flip & slide transitions (only mounted when transitioning).
-  const nextQuestionId = ids[idx + 1]
+  const nextQuestionId = ids[idx + 1] ?? upcomingCycle?.[0]
   const prevQuestionId = idx > 0 ? ids[idx - 1] : undefined
 
   // --- observability ---
@@ -699,14 +711,15 @@ export const UnifiedPlayer = ({
   // --- Classic navigation (continuous 0°→180° flip OR full-travel slide) ---
   const commitClassicNav = useCallback(
     (dir: 1 | -1) => {
-      const action: NavAction = dir === 1 ? {type: 'next'} : {type: 'previous'}
+      const action: NavAction =
+        dir === 1 ? {type: 'next', cycle: upcomingCycle} : {type: 'previous'}
       lastNavActionRef.current = action
       viewTracker.endView(dir === 1 ? 'advanced' : 'previous')
       setClassicPeerDir(0)
       classicBusyRef.current = false
       dispatch({type: 'classic_nav', action})
     },
-    [viewTracker]
+    [viewTracker, upcomingCycle]
   )
 
   const animateClassicStep = useCallback(
@@ -1261,8 +1274,12 @@ export const UnifiedPlayer = ({
           runOnJS(swipeAwayPick)()
           return
         }
-        if (swiped && back && !isAtFirstSV.get()) runOnJS(goPrevious)()
-        if (!(swiped && back && !isAtFirstSV.get())) cardFlip.set(withTiming(1, {duration: 150}))
+        if (swiped && back && !isAtFirstSV.get()) {
+          runOnJS(goPrevious)()
+          return
+        }
+        cardFlip.set(withTiming(1, {duration: 150}))
+        dragX.set(withTiming(0, {duration: 150}))
       })
     return Gesture.Race(tap, pan)
   }, [
@@ -1702,6 +1719,8 @@ export const UnifiedPlayer = ({
                           {/* Real colorful CardBack (or next already-seen Card face!) directly underneath when sliding. */}
                           <Animated.View
                             pointerEvents="none"
+                            accessibilityElementsHidden
+                            importantForAccessibility="no-hide-descendants"
                             style={[StyleSheet.absoluteFill, pickUnderCardStyle]}
                           >
                             {hasSeenNext && nextQuestionId ? (

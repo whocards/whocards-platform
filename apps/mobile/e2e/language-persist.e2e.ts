@@ -6,7 +6,7 @@ import {launchClean, openQuestion, pickLanguage, Q1, Q1_HE} from './support'
 test('A chosen language survives a relaunch', async (fixtures) => {
   const {screen} = fixtures
   await launchClean(fixtures)
-  await pickLanguage(screen, 'Hebrew')
+  await pickLanguage(screen, 'he')
 
   await openQuestion(fixtures, 1)
   await expect(screen.getByText(Q1_HE)).toBeVisible({timeout: 30_000})

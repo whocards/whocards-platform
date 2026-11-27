@@ -6,15 +6,14 @@ import {expect} from 'e2e'
 import {screenshot} from '../scripts/devices.mjs'
 import {
   button,
-  closeSettings,
   launchClean,
   openQuestion,
-  openSettings,
-  picker,
+  pickLanguage,
   play,
   Q1,
   Q1_HE,
   revealControls,
+  t,
   tapUntil,
 } from './support'
 
@@ -41,16 +40,13 @@ test('Store listing frames', {tags: ['screenshots']}, async (fixtures) => {
   await revealControls(screen)
   await tapUntil(button(screen, 'exit deck'), play(screen))
   await expect(play(screen)).toBeVisible()
-  await openSettings(screen)
-  await tapUntil(picker(screen, 'Language'), screen.getByText('Hebrew'))
-  // The menu is still opening when its options first show.
-  await new Promise((resolve) => setTimeout(resolve, 1_000))
-  shoot('03-language-picker')
-
-  await screen.getByText('Hebrew').tap()
-  await closeSettings(screen)
+  await pickLanguage(screen, 'he', async () => {
+    // The menu is still opening when its options first show.
+    await new Promise((resolve) => setTimeout(resolve, 1_000))
+    shoot('03-language-picker')
+  })
   await openQuestion(fixtures, 1)
   await expect(screen.getByText(Q1_HE)).toBeVisible({timeout: 30_000})
-  await expect(button(screen, 'next question')).toBeHidden({timeout: 10_000})
+  await expect(button(screen, t('a11y.nextQuestion'))).toBeHidden({timeout: 10_000})
   shoot('04-card-he')
 })

@@ -3,7 +3,24 @@ import type {Device} from '@e2e-dev/mobile'
 import type {Locator, Screen, TestFixtures} from 'e2e'
 import {expect} from 'e2e'
 
+import en from '../src/i18n/en.json'
+import he from '../src/i18n/he.json'
+import jp from '../src/i18n/jp.json'
+import zh from '../src/i18n/zh.json'
+import {NATIVE_LANGUAGE_NAMES} from '../src/lib/language-names'
+
 export type Fixtures = TestFixtures & {device: Device}
+
+const CATALOGS: Record<string, Partial<Record<keyof typeof en, string>>> = {en, he, jp, zh}
+export type Language = 'en' | 'he' | 'jp' | 'zh'
+// The app follows the device (English in the simulators) until a flow picks a Language.
+let uiLanguage: Language = 'en'
+
+/** The app's words for `key` in the Language the flow last picked. */
+export const t = (key: keyof typeof en) => CATALOGS[uiLanguage]?.[key] ?? en[key]
+
+/** A Language as its picker lists it, in its own words. */
+export const languageName = (language: Language) => NATIVE_LANGUAGE_NAMES[language] ?? language
 
 // Deep links pin the Pool's natural order, so q=N is always the same question.
 export const Q1 = /most interesting thing you have learned recently/
@@ -12,10 +29,10 @@ export const Q2 = /something that makes you feel small/
 export const Q5 = /What do you fear most at the moment/
 
 // iOS reads Play as a link, Android as a plain group; both carry its label.
-export const play = (screen: Screen) => screen.getByLabel('Play', {exact: true})
+export const play = (screen: Screen) => screen.getByLabel(t('home.play'), {exact: true})
 export const button = (screen: Screen, name: string | RegExp) => screen.getByRole('button', name)
 // The sheet's X is a Pressable with no role, so only its label finds it.
-export const closeSheet = (screen: Screen) => screen.getByLabel('close', {exact: true})
+export const closeSheet = (screen: Screen) => screen.getByLabel(t('a11y.close'), {exact: true})
 
 const settled = (step: Promise<unknown>) =>
   step.then(
@@ -42,6 +59,7 @@ export async function launchClean({app, device, platform, screen}: Fixtures) {
   // A deep-link prompt a failed flow left up holds every launch after it.
   if (platform === 'ios') await settled(device.alert('dismiss'))
   await app.clearState()
+  uiLanguage = 'en'
   await expect(play(screen)).toBeVisible({timeout: 60_000})
 }
 
@@ -54,7 +72,7 @@ export async function relaunch({app, screen}: Fixtures) {
 
 /** Answers "Not now" to "Get a daily question?", which the app asks 2 s into its second open. */
 async function declineDailyQuestion(screen: Screen) {
-  const notNow = button(screen, /^not now$/i)
+  const notNow = button(screen, t('prompt.notNow'))
   if (await settled(notNow.waitFor({timeout: 5_000}))) await tapUntil(notNow, notNow, 'hidden')
 }
 
@@ -106,7 +124,7 @@ export async function swipeCard(screen: Screen, direction: 'left' | 'right') {
 
 /** Opens the Settings sheet from the landing. */
 export const openSettings = (screen: Screen) =>
-  tapUntil(button(screen, 'Settings'), closeSheet(screen))
+  tapUntil(button(screen, t('home.settings')), closeSheet(screen))
 
 /** Closes the Settings sheet. */
 export const closeSettings = (screen: Screen) =>
@@ -116,21 +134,30 @@ export const closeSettings = (screen: Screen) =>
 export const picker = (screen: Screen, label: string) =>
   button(screen, new RegExp(`^${label}(: .*)?$`))
 
-/** Opens Settings from the landing, picks `option` in the popup menu of the `label` picker, and closes it. */
-export async function pickSetting(screen: Screen, label: string, option: string) {
+/** Opens Settings from the landing, picks the Language `to`, and closes it; the app's words follow it. */
+export async function pickLanguage(screen: Screen, to: Language, onMenuOpen?: () => Promise<void>) {
+  const option = screen.getByText(languageName(to))
   await openSettings(screen)
-  await tapUntil(picker(screen, label), screen.getByText(option))
+  await tapUntil(picker(screen, t('settings.language')), option)
+  await onMenuOpen?.()
   // The pick sets the value and closes the menu on its own.
-  await screen.getByText(option).tap()
+  await option.tap()
+  uiLanguage = to
   await closeSettings(screen)
 }
 
-/** Opens Settings from the landing, picks the Language `to`, and closes it. */
-export const pickLanguage = (screen: Screen, to: string) => pickSetting(screen, 'Language', to)
+/** Opens Settings from the landing, turns on Pick a Card on the Gameplay page, and closes it. */
+export async function turnOnPickACard(screen: Screen) {
+  const pickACard = screen.getByLabel(t('settings.pickACard'), {exact: true})
+  await openSettings(screen)
+  await tapUntil(button(screen, t('settings.gameplay')), pickACard)
+  await pickACard.tap()
+  await closeSettings(screen)
+}
 
 /** Opens Settings from the landing, taps a Theme segment, and closes it. */
-export async function pickTheme(screen: Screen, theme: string) {
+export async function pickTheme(screen: Screen, theme: 'System' | 'Light' | 'Dark') {
   await openSettings(screen)
-  await button(screen, `Theme: ${theme}`).tap()
+  await button(screen, `${t('settings.theme')}: ${t(`settings.theme${theme}`)}`).tap()
   await closeSettings(screen)
 }
