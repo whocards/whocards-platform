@@ -1170,8 +1170,12 @@ export const UnifiedPlayer = ({
   }, [revealChromeStable, onCard, slidesPickSV, hasSeenNextSV, dragX, cardFlip, swipeAwayPick])
 
   // --- Animated Styles (100% GPU transforms + opacity, zero layout thrash) ---
+  // Smoothly cross-blend Dark mode's mid-tone table (#332b4a) over the darkest canvas (#08001a)
+  // across both Classic ↔ Pick a Card (`morph`) and Home ↔ Pick a Card (`homeRise`).
   const tableBgStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(morph.get(), [0, 0.06], [0, 1], 'clamp'),
+    opacity:
+      interpolate(morph.get(), [0, 0.85], [0, 1], 'clamp') *
+      interpolate(homeRise.get(), [0, 0.85], [1, 0], 'clamp'),
   }))
 
   const cardShellStyle = useAnimatedStyle(() => {
