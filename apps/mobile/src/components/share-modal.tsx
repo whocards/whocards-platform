@@ -3,7 +3,7 @@ import {BottomSheet, RNHostView} from '@expo/ui'
 import {logWarn} from '@whocards/observability'
 import {EVENTS} from '@whocards/observability/events'
 import type {ShareEventName, ShareFormat} from '@whocards/observability/events'
-import {useCallback, useState} from 'react'
+import {useCallback, useEffect, useRef, useState} from 'react'
 import {
   ActivityIndicator,
   AppState,
@@ -135,6 +135,12 @@ export const ShareModal = ({
     [onClose]
   )
 
+  // Bumped on every open, so a download from an earlier session can't close or reset this one.
+  const sessionRef = useRef(0)
+  useEffect(() => {
+    if (visible) sessionRef.current += 1
+  }, [visible])
+
   // Clear stale state whenever the sheet is (re)opened for a (possibly new) card.
   const [wasVisible, setWasVisible] = useState(visible)
   if (visible !== wasVisible) {
@@ -170,8 +176,10 @@ export const ShareModal = ({
     (format: Exclude<ShareFormat, 'link' | 'ask'>, url: string) => {
       setError(null)
       setPending(format)
+      const session = sessionRef.current
       downloadAndShareImage(url)
         .then(() => {
+          if (session !== sessionRef.current) return
           setPending(null)
           // expo-sharing resolves on any dismissal, so an image share never reports completion (issue #200).
           onShareEvent(EVENTS.SHARE_SHEET_OPENED, format)
@@ -179,6 +187,7 @@ export const ShareModal = ({
         })
         .catch((err: unknown) => {
           logWarn(`[share-modal] ${format} image share failed`, err)
+          if (session !== sessionRef.current) return
           setPending(null)
           setError(t('share.imageError'))
         })

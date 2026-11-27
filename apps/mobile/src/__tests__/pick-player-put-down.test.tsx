@@ -68,6 +68,7 @@ const revealCard = async () => {
 /** The animated style of the face the question sits on. */
 const faceStyle = () => {
   for (let node = screen.getByText(QUESTION).parent; node; node = node.parent) {
+    if (node.props.testID === 'language-swap') continue
     const style = StyleSheet.flatten(node.props.style)
     if (style && ('opacity' in style || 'backfaceVisibility' in style)) return style
   }

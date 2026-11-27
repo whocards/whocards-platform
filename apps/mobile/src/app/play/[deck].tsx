@@ -8,7 +8,7 @@ import {DEFAULT_GAME, getDeck, isPoolBacked} from '@whocards/decks'
 import {ScreenBackground} from '@/components/screen-background'
 import {UnifiedPlayer} from '@/components/unified-player'
 import {getStoredGame} from '@/lib/game-store'
-import {translate} from '@/lib/i18n'
+import {useT} from '@/lib/i18n'
 import {peekPendingTargetGame} from '@/lib/play-transition'
 
 // react-native-css's safe-area adapter re-exports the platform SafeAreaView,
@@ -20,6 +20,7 @@ const missingDeckContainerStyle = StyleSheet.create({
 export default function PlayScreen() {
   const {deck: slug, q, lang} = useLocalSearchParams<{deck: string; q?: string; lang?: string}>()
   const deck = getDeck(slug)
+  const t = useT()
 
   // Deep links (`?q=`) always open Classic so shared links & screenshots stay reproducible.
   const isDeepLink = typeof q === 'string'
@@ -36,9 +37,7 @@ export default function PlayScreen() {
     return (
       <ScreenBackground>
         <SafeAreaView style={missingDeckContainerStyle}>
-          <Text className="text-darker dark:text-white font-sans">
-            {translate('deck.notFound')}
-          </Text>
+          <Text className="text-darker dark:text-white font-sans">{t('deck.notFound')}</Text>
         </SafeAreaView>
       </ScreenBackground>
     )

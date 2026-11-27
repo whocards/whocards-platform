@@ -307,6 +307,8 @@ export const UnifiedPlayer = ({
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   const {theme, select: selectTheme} = useThemeSetting()
 
+  // Bumped when a warm link sets the Language, so a stored-language read already in flight can't undo it.
+  const linkLanguageEpochRef = useRef(0)
   const pickedLanguageRef = useRef<string | undefined>(undefined)
   const pickedGameRef = useRef<GameId | undefined>(undefined)
   const sheetCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -319,10 +321,16 @@ export const UnifiedPlayer = ({
   )
 
   const readSettings = useCallback(
-    (keepLanguage: boolean) =>
-      Promise.all([
+    (keepLanguage: boolean) => {
+      const epoch = linkLanguageEpochRef.current
+      return Promise.all([
         getStoredLanguage(deckSlug).then((stored) => {
-          if (stored && languages.includes(stored) && !keepLanguage) {
+          if (
+            stored &&
+            languages.includes(stored) &&
+            !keepLanguage &&
+            epoch === linkLanguageEpochRef.current
+          ) {
             setLanguage(stored)
           }
         }),
@@ -331,7 +339,8 @@ export const UnifiedPlayer = ({
         ),
         getStoredTabletopMode().then(setTabletop),
         getStoredCardAnimation().then(setCardAnimation),
-      ]),
+      ])
+    },
     [deckSlug, languages]
   )
 
@@ -345,8 +354,12 @@ export const UnifiedPlayer = ({
     const sub = Linking.addEventListener('url', ({url}) => {
       const link = parsePlayLink(url)
       if (!link || link.deck !== deckSlug) return
-      if (link.lang && languages.includes(link.lang)) setLanguage(link.lang)
-      if (link.q && questionIds.includes(link.q)) {
+      if (link.lang && languages.includes(link.lang)) {
+        linkLanguageEpochRef.current += 1
+        setLanguage(link.lang)
+      }
+      // Like a cold link: any `q` opens Classic, a removed one on a fresh shuffle.
+      if (link.q) {
         lastNavActionRef.current = {type: 'reset', startId: link.q}
         setGame(DEFAULT_GAME)
         morph.set(0)
@@ -430,7 +443,7 @@ export const UnifiedPlayer = ({
 
   const recordedKeyRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!onCard || !questionId) return undefined
+    if (!languageReady || !onCard || !questionId) return undefined
     const key = `${questionId}:${language}`
     if (recordedKeyRef.current === key) return undefined
     recordedKeyRef.current = key
@@ -447,7 +460,7 @@ export const UnifiedPlayer = ({
     return () => {
       cancelled = true
     }
-  }, [onCard, questionId, deckSlug, language])
+  }, [languageReady, onCard, questionId, deckSlug, language])
 
   useEffect(() => {
     const prev = prevNavRef.current
@@ -469,7 +482,7 @@ export const UnifiedPlayer = ({
   }, [idx, ids])
 
   useEffect(() => {
-    if (!onCard || !questionId) return
+    if (!languageReady || !onCard || !questionId) return
     track({
       name: EVENTS.QUESTION_SHOWN,
       props: {
@@ -482,7 +495,7 @@ export const UnifiedPlayer = ({
     if (!isPick) notePromptShown({deck_id: deckSlug, question_id: questionId, language})
     viewTracker.startView({deck_id: deckSlug, question_id: questionId, language})
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onCard, questionId])
+  }, [languageReady, onCard, questionId])
 
   const {chromeShown, revealChrome, bottomBarH, onBottomBarLayout, bottomChromeStyle} =
     usePlayerChrome()

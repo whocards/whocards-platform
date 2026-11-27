@@ -115,7 +115,9 @@ const allQuestions: Question[] = getAllDecks().flatMap((deck) =>
 const worstStack = allQuestions
   .filter((q) => q.others.length >= 1)
   .toSorted(
-    (a, b) => b.text.length + b.others[0].text.length - a.text.length - a.others[0].text.length
+    (a, b) =>
+      Math.max(b.text.length, b.others[0].text.length) -
+      Math.max(a.text.length, a.others[0].text.length)
   )[0]
 const worstSecondaries = worstStack.others.slice(0, 1)
 

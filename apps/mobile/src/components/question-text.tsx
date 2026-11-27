@@ -862,11 +862,14 @@ export const QuestionText = ({
     [slideOffset]
   )
 
-  // Single-language primary-language swap style (0 at rest, no-op in snapshots!).
+  // Single-language primary-language swap style.
   const singleSwapStyle = useAnimatedStyle(() => {
     const flip = singleSwapFlip.get()
     const slide = singleSwapSlide.get()
-    if (Math.abs(flip) < 0.001 && Math.abs(slide) < 0.001) return {}
+    // Reanimated keeps a dropped key's last frame, so rest writes the neutral values.
+    if (Math.abs(flip) < 0.001 && Math.abs(slide) < 0.001) {
+      return {opacity: 1, transform: [{translateX: 0}]}
+    }
     if (Math.abs(slide) >= 0.001) {
       return {
         opacity: 1 - Math.abs(slide) * 0.85,
@@ -874,6 +877,7 @@ export const QuestionText = ({
       }
     }
     return {
+      opacity: 1,
       transform: [{perspective: 800}, {rotateY: `${flip * 90}deg`}],
     }
   })
@@ -881,6 +885,7 @@ export const QuestionText = ({
   if (!activeSnap.isSplit) {
     return (
       <Animated.View
+        testID="language-swap"
         style={singleSwapStyle}
         onLayout={(event) => onContentHeight?.(event.nativeEvent.layout.height)}
       >

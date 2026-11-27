@@ -37,8 +37,9 @@ export const useThemeSetting = () => {
   const select = useCallback(
     (next: ThemeSetting) => {
       const fade = crossfadeWindow(motionDuration(MOTION_DURATION.theme, reduceMotion))
-      if (fade) void fade.finally(() => setColorScheme(next))
-      else setColorScheme(next)
+      const apply = () => setColorScheme(next)
+      if (fade) void fade.then(apply, apply)
+      else apply()
       void setStoredTheme(next)
       track({name: EVENTS.THEME_CHANGED, props: {theme: next}})
     },

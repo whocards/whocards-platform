@@ -215,6 +215,7 @@ const renderUi = async (ui: React.ReactElement) => await render(ui, {wrapper: Ro
 /** The transform of the nearest animated view above `text`. */
 const rotation = (text: string) => {
   for (let node = screen.getByText(text).parent; node; node = node.parent) {
+    if (node.props.testID === 'language-swap') continue
     const transform = flattenStyle(node.props.style)?.transform
     if (Array.isArray(transform)) return transform
   }

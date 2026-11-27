@@ -205,6 +205,23 @@ describe('ShareModal', () => {
     expect(screen.queryByText(/couldn't load the image/i)).toBeNull()
   })
 
+  it('ignores an image download that finishes after the sheet was closed and reopened', async () => {
+    const download = Promise.withResolvers<void>()
+    mockDownloadAndShareImage.mockReturnValue(download.promise)
+    const onClose = jest.fn()
+    const props = {...PROPS, onShareEvent: () => {}, onClose}
+    const {rerender} = await render(<ShareModal visible {...props} />)
+    await act(async () => {
+      await fireEvent.press(screen.getByText('Story image'))
+    })
+    await rerender(<ShareModal visible={false} {...props} />)
+    await rerender(<ShareModal visible {...props} />)
+
+    await act(async () => download.resolve())
+
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('shows a graceful inline message on an image failure and keeps the sheet usable', async () => {
     mockDownloadAndShareImage.mockRejectedValue(new Error('network request failed'))
     const onShareEvent = jest.fn()

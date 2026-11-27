@@ -307,6 +307,11 @@ export const SettingsModal = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckSlug, visible, currentLanguage])
 
+  // A warm link can switch the Game while the sheet is open.
+  useEffect(() => {
+    if (currentGame) setGame(currentGame)
+  }, [currentGame])
+
   // Coming back from the OS setting with the sheet still open: show the new permission and schedule.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
@@ -359,6 +364,8 @@ export const SettingsModal = ({
   const languageOptions = languages.map((code) => ({value: code, label: languageName(code)}))
   const hasLanguageChoice = languages.length > 1
   const secondaryOptions = languageOptions.filter((option) => option.value !== language)
+  // A link can open a Card in the saved second language; it then shows as off, still saved.
+  const activeSecondary = secondary.find((code) => code !== language)
   // Switching the second language back on brings back the last one picked.
   const restoredSecondary =
     secondaryOptions.find((option) => option.value === lastSecondary.current)?.value ??
@@ -530,7 +537,7 @@ export const SettingsModal = ({
                       <Row label={t('settings.secondLanguage')} last trailing="switch">
                         <Toggle
                           label={t('settings.secondLanguage')}
-                          value={secondary[0] !== undefined}
+                          value={activeSecondary !== undefined}
                           onChange={(on) =>
                             setSecondaryLanguages(
                               on && restoredSecondary ? [restoredSecondary] : []
@@ -541,13 +548,13 @@ export const SettingsModal = ({
                       </Row>
                       {/* Always shown, dimmed while off, so the sheet never changes height. */}
                       <Row label="" trailing="picker">
-                        <View style={{opacity: secondary[0] ? 1 : 0.35}}>
+                        <View style={{opacity: activeSecondary ? 1 : 0.35}}>
                           <Choice
                             label={t('settings.secondLanguage')}
                             options={secondaryOptions}
-                            current={secondary[0] ?? restoredSecondary ?? ''}
+                            current={activeSecondary ?? restoredSecondary ?? ''}
                             onSelect={(next) => setSecondaryLanguages([next])}
-                            enabled={secondary[0] !== undefined}
+                            enabled={activeSecondary !== undefined}
                             isDark={isDark}
                           />
                         </View>

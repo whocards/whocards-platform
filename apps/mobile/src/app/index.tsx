@@ -136,6 +136,9 @@ export default function LandingScreen() {
     // finishes and unmounts so intact logo.png swaps in with 0-frame gap and 0 double-draw.
     const unsubscribeOverlay = subscribePlayTransition((event) => {
       if (event === null && returningRef.current) {
+        // Only the return's safety timer can be pending here; left alone it would cancel a quick next Play.
+        for (const id of exitTimersRef.current) clearTimeout(id)
+        exitTimersRef.current = []
         returningRef.current = false
         setExitingTo(null)
       }
