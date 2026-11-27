@@ -45,7 +45,7 @@ import type {CardAnimation} from '@/lib/card-animation-store'
 import {useIsDark} from '@/lib/color-scheme'
 import {getDeviceId} from '@/lib/device-id'
 import {impact, selection} from '@/lib/haptics'
-import {getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
+import {deviceLanguage, getStoredLanguage, getStoredSecondaryLanguages} from '@/lib/language-store'
 import {MOTION_DURATION, MOTION_EASING, motionDuration} from '@/lib/motion'
 import {notePromptShown} from '@/lib/notification-store'
 import {parsePlayLink} from '@/lib/play-link'
@@ -284,7 +284,7 @@ export const UnifiedPlayer = ({
   const hasSeenNext = isPick && phase === 'card' && idx < highestDealtIdx
 
   const lastNavActionRef = useRef<NavAction | null>(null)
-  const defaultLanguage = languages[0]
+  const defaultLanguage = useMemo(() => deviceLanguage(languages), [languages])
   const linkLanguage =
     startLanguage && languages.includes(startLanguage) ? startLanguage : undefined
 

@@ -35,6 +35,7 @@ jest.mock('@/lib/tabletop-store', () => ({
   getStoredTabletopMode: jest.fn().mockResolvedValue(false),
 }))
 jest.mock('@/lib/language-store', () => ({
+  deviceLanguage: (languages: string[]) => languages[0],
   getStoredLanguage: jest.fn().mockResolvedValue(undefined),
   getStoredSecondaryLanguages: jest.fn().mockResolvedValue([]),
 }))

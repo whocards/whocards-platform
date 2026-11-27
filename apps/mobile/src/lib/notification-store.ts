@@ -4,6 +4,7 @@ import {Alert, Linking, Platform} from 'react-native'
 import {
   DEFAULT_DECK_SLUG,
   DEFAULT_LANGUAGE,
+  getDeck,
   isLanguageCode,
   pool,
   questionOfTheDay,
@@ -15,7 +16,7 @@ import type {
   PromptScheduledProps,
 } from '@whocards/observability/events'
 
-import {getStoredLanguage} from './language-store'
+import {deviceLanguage, getStoredLanguage} from './language-store'
 import {parsePlayLink} from './play-link'
 
 const KEY_OPEN_COUNT = 'whocards-notifications:open-count'
@@ -96,7 +97,10 @@ const refill = async (now = new Date()): Promise<void> => {
   if (!(await notificationsAllowed())) return
 
   const stored = await getStoredLanguage(DEFAULT_DECK_SLUG)
-  const language = stored && isLanguageCode(stored) ? stored : DEFAULT_LANGUAGE
+  const language =
+    stored && isLanguageCode(stored)
+      ? stored
+      : deviceLanguage(getDeck(DEFAULT_DECK_SLUG)?.languages ?? [])
   // Android below 13 grants without a prompt, so the channel may not exist yet.
   await createChannel()
   await Notifications.cancelAllScheduledNotificationsAsync()

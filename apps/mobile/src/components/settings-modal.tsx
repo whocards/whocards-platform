@@ -26,6 +26,7 @@ import {getStoredGame, setStoredGame} from '@/lib/game-store'
 import {selection} from '@/lib/haptics'
 import {GAME_CATALOG} from '@/lib/games'
 import {
+  deviceLanguage,
   getStoredLanguage,
   getStoredSecondaryLanguages,
   setStoredLanguage,
@@ -210,7 +211,7 @@ export const SettingsModal = ({
     : DEFAULT_INSET
 
   const [game, setGame] = useState<GameId>(DEFAULT_GAME)
-  const [language, setLanguage] = useState(languages[0])
+  const [language, setLanguage] = useState(() => deviceLanguage(languages))
   const [secondary, setSecondary] = useState<string[]>([])
   const lastSecondary = useRef<string | undefined>(undefined)
   useEffect(() => {
@@ -282,7 +283,10 @@ export const SettingsModal = ({
       track({name: EVENTS.LANGUAGE_CHANGED, props: {deck_id: deckSlug, from: language, to: next}})
     }
     setLanguage(next)
+    // The daily Question already queued follows the new Language too.
     void setStoredLanguage(deckSlug, next)
+      .then(() => refillDailyQuestions())
+      .catch(() => {})
     onSelectLanguage?.(next)
     if (secondary.includes(next)) setSecondaryLanguages([])
   }

@@ -170,10 +170,18 @@ export default function LandingScreen() {
       .catch(() => undefined)
   }, [])
 
-  const runEntrance = useCallback(() => {
-    if (startedRef.current) return
-    startedRef.current = true
-    // reveal our view (logo already sitting where the splash logo was), then animate
+  // Pins the logo where the splash drew it, measured on an untransformed box so the pin never measures itself.
+  const logoBoxRef = useRef<HostInstance>(null)
+  const pinLogo = useCallback(
+    (then?: () => void) =>
+      logoBoxRef.current?.measureInWindow((_x, y, _w, h) => {
+        if (h) logoShift.set(winHeight / 2 - (y + h / 2))
+        then?.()
+      }),
+    [winHeight, logoShift]
+  )
+
+  const reveal = useCallback(() => {
     void SplashScreen.hideAsync()
     if (reduceMotion) {
       logoShift.set(0)
@@ -188,22 +196,38 @@ export default function LandingScreen() {
     contentOpacity.set(withDelay(LOGO_MS, withTiming(1, {duration: FADE_MS})))
   }, [reduceMotion, logoShift, contentOpacity, bgOpacity])
 
-  // Keep the logo pinned to screen-centre (matching the splash) using the LATEST layout.
-  // Re-measure on every onLayout until the entrance runs, so a late safe-area inset / font
-  // metric / reflow can't strand the lift and snap the logo when the animation starts.
-  const onLogoLayout = useCallback(() => {
+  const runEntrance = useCallback(() => {
     if (startedRef.current) return
-    logoRef.current?.measureInWindow((_x, y, _w, h) => {
-      if (!startedRef.current && h) logoShift.set(winHeight / 2 - (y + h / 2))
-    })
-  }, [winHeight, logoShift])
+    startedRef.current = true
+    let revealed = false
+    const revealOnce = () => {
+      if (revealed) return
+      revealed = true
+      reveal()
+    }
+    // Re-pin from the final layout and hide the splash two frames later, once the UI thread has the pin.
+    pinLogo(() => requestAnimationFrame(() => requestAnimationFrame(revealOnce)))
+    // A measurement that never answers must not keep the splash up.
+    setTimeout(revealOnce, 250)
+  }, [pinLogo, reveal])
 
-  // Run the entrance once, after a beat for layout + insets to settle (the splash covers
-  // this; if measurement never resolved, the content still reveals — logo just won't fly).
+  const onLogoLayout = useCallback(() => {
+    if (!startedRef.current) pinLogo()
+  }, [pinLogo])
+
+  // The splash hides once layout has settled and the logo has painted (else one frame shows no logo).
+  const [logoShown, setLogoShown] = useState(false)
+  const onLogoDisplay = useCallback(() => setLogoShown(true), [])
   useEffect(() => {
-    const t = setTimeout(runEntrance, 120)
-    return () => clearTimeout(t)
-  }, [runEntrance])
+    const settle = setTimeout(() => {
+      if (logoShown) runEntrance()
+    }, 120)
+    const fallback = setTimeout(runEntrance, 1000)
+    return () => {
+      clearTimeout(settle)
+      clearTimeout(fallback)
+    }
+  }, [runEntrance, logoShown])
 
   const logoStyle = useAnimatedStyle(() => ({transform: [{translateY: logoShift.get()}]}))
   // Keep translateY always attached on the same animated style so Fabric never strands
@@ -289,76 +313,79 @@ export default function LandingScreen() {
               Pressable swallowing it into an unlabeled button — this marker is
               deliberately not meant to be discoverable at all, screen reader or not. */}
           <Pressable onLongPress={toggleInternalMarker} accessible={false}>
-            <Animated.View ref={logoRef} onLayout={onLogoLayout} style={logoStyle}>
-              {/* Every logo image stays mounted and swaps by opacity: a fresh expo-image decodes a frame late. */}
-              <Image
-                source={logo}
-                contentFit="contain"
-                accessibilityLabel="WhoCards"
-                // explicit width AND height — native sizes a required image to its
-                // intrinsic pixels otherwise (aspectRatio alone only works on web)
-                style={{
-                  width: LOGO_WIDTH,
-                  height: LOGO_HEIGHT,
-                  opacity: exitingTo === null ? 1 : 0,
-                }}
-              />
-              {/* Classic: the clipped halves part around the flying "?"; Pick a Card: the overlay carries it all. */}
-              <View
-                pointerEvents="none"
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-                style={{
-                  position: 'absolute',
-                  width: LOGO_WIDTH,
-                  height: LOGO_HEIGHT,
-                  opacity: exitingTo === 'wh' ? 1 : 0,
-                }}
-              >
-                <Animated.View
-                  style={[
-                    {
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      width: WHO_CLIP_WIDTH,
-                      height: LOGO_HEIGHT,
-                      overflow: 'hidden',
-                    },
-                    whoPartStyle,
-                  ]}
+            <View ref={logoBoxRef} onLayout={onLogoLayout}>
+              <Animated.View ref={logoRef} style={logoStyle}>
+                {/* Every logo image stays mounted and swaps by opacity: a fresh expo-image decodes a frame late. */}
+                <Image
+                  source={logo}
+                  contentFit="contain"
+                  onDisplay={onLogoDisplay}
+                  accessibilityLabel="WhoCards"
+                  // explicit width AND height — native sizes a required image to its
+                  // intrinsic pixels otherwise (aspectRatio alone only works on web)
+                  style={{
+                    width: LOGO_WIDTH,
+                    height: LOGO_HEIGHT,
+                    opacity: exitingTo === null ? 1 : 0,
+                  }}
+                />
+                {/* Classic: the clipped halves part around the flying "?"; Pick a Card: the overlay carries it all. */}
+                <View
+                  pointerEvents="none"
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                  style={{
+                    position: 'absolute',
+                    width: LOGO_WIDTH,
+                    height: LOGO_HEIGHT,
+                    opacity: exitingTo === 'wh' ? 1 : 0,
+                  }}
                 >
-                  <Image
-                    source={logo}
-                    contentFit="contain"
-                    style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
-                  />
-                </Animated.View>
-                <Animated.View
-                  style={[
-                    {
-                      position: 'absolute',
-                      left: CARDS_CLIP_LEFT,
-                      top: 0,
-                      width: CARDS_CLIP_WIDTH,
-                      height: LOGO_HEIGHT,
-                      overflow: 'hidden',
-                    },
-                    cardsPartStyle,
-                  ]}
-                >
-                  <Image
-                    source={logo}
-                    contentFit="contain"
-                    style={{
-                      width: LOGO_WIDTH,
-                      height: LOGO_HEIGHT,
-                      marginLeft: -CARDS_CLIP_LEFT,
-                    }}
-                  />
-                </Animated.View>
-              </View>
-            </Animated.View>
+                  <Animated.View
+                    style={[
+                      {
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        width: WHO_CLIP_WIDTH,
+                        height: LOGO_HEIGHT,
+                        overflow: 'hidden',
+                      },
+                      whoPartStyle,
+                    ]}
+                  >
+                    <Image
+                      source={logo}
+                      contentFit="contain"
+                      style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
+                    />
+                  </Animated.View>
+                  <Animated.View
+                    style={[
+                      {
+                        position: 'absolute',
+                        left: CARDS_CLIP_LEFT,
+                        top: 0,
+                        width: CARDS_CLIP_WIDTH,
+                        height: LOGO_HEIGHT,
+                        overflow: 'hidden',
+                      },
+                      cardsPartStyle,
+                    ]}
+                  >
+                    <Image
+                      source={logo}
+                      contentFit="contain"
+                      style={{
+                        width: LOGO_WIDTH,
+                        height: LOGO_HEIGHT,
+                        marginLeft: -CARDS_CLIP_LEFT,
+                      }}
+                    />
+                  </Animated.View>
+                </View>
+              </Animated.View>
+            </View>
           </Pressable>
           <Animated.Text
             style={contentStyle}

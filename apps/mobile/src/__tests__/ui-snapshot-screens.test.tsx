@@ -148,6 +148,7 @@ jest.mock('@/lib/tabletop-store', () => ({
 }))
 
 jest.mock('@/lib/language-store', () => ({
+  deviceLanguage: (languages: string[]) => languages[0],
   getStoredLanguage: jest.fn().mockResolvedValue(undefined),
   getStoredSecondaryLanguages: jest.fn().mockResolvedValue([]),
   setStoredLanguage: jest.fn().mockResolvedValue(undefined),
@@ -272,12 +273,19 @@ afterEach(() => {
   jest.restoreAllMocks()
 })
 
+/** The Library's entrance waits for its logo to display, which jest never reports; this outlasts the fallback. */
+const settleLibrary = async () => {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+  })
+}
+
 describe('Library screen', () => {
   it('renders the Library screen', async () => {
     await renderUi(<LandingScreen />)
     await screen.findByLabelText('Play')
     expect(librarySafeAreaStyle()).toEqual(libraryContainerStyle)
-    await settle()
+    await settleLibrary()
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 
@@ -285,7 +293,7 @@ describe('Library screen', () => {
     jest.mocked(getStoredTheme).mockResolvedValueOnce('dark')
     await renderUi(<LandingScreen />)
     await screen.findByLabelText('Play')
-    await settle()
+    await settleLibrary()
     expect(uiSnapshot(screen)).toMatchSnapshot()
   })
 })
