@@ -244,9 +244,13 @@ const settleSheetClose = async () => {
 }
 
 /** Picks a Game in the in-play Settings sheet and lets it apply. */
-const switchTo = async (game: string) => {
+/** Flips the Pick a Card switch on the in-play Settings sheet's Gameplay page and lets it apply. */
+const togglePickACard = async () => {
   await fireEvent.press(screen.getByLabelText('open settings'))
-  await fireEvent.press(await screen.findByLabelText(`Game: ${game}`))
+  await fireEvent.press(await screen.findByLabelText('Gameplay'))
+  await fireEvent(screen.getByLabelText('Pick a Card'), 'accessibilityAction', {
+    nativeEvent: {actionName: 'activate'},
+  })
   await fireEvent.press(screen.getByLabelText('close'))
   await settleSheetClose()
 }
@@ -394,12 +398,12 @@ describe('Play screen', () => {
     const question = getDeck('library')?.questions['1']?.en ?? ''
     await renderUi(<PlayScreen />)
     await settle()
-    await switchTo('Pick a Card')
+    await togglePickACard()
     // The Question is now a dealt Card: Next puts it down to the draw.
     expect(screen.getByText(question)).toBeTruthy()
     await fireEvent.press(screen.getByLabelText('next question'))
     expect(screen.getByLabelText('Pick a card')).toBeTruthy()
-    await switchTo('Classic')
+    await togglePickACard()
     expect(screen.getByText(question)).toBeTruthy()
     expect(screen.queryByLabelText('Pick a card')).toBeNull()
   })

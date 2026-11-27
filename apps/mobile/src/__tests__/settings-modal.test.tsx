@@ -96,18 +96,32 @@ const toggle = (label: string) =>
     nativeEvent: {actionName: 'activate'},
   })
 
-describe('SettingsModal — one screen, every control inline', () => {
-  it('shows every setting, each with its control', async () => {
+/** Pushes the Gameplay page, where the Game and the Card's Display settings live. */
+const openGameplay = async () => {
+  await fireEvent.press(await screen.findByLabelText('Gameplay'))
+}
+
+const checked = (label: string) => screen.getByLabelText(label).props.accessibilityState.checked
+
+describe('SettingsModal — Settings and its Gameplay page', () => {
+  it('shows Language, Gameplay, Theme and Daily question, and the rest under Gameplay', async () => {
     await renderModal()
     await screen.findByText('Settings')
-    expect(screen.getByLabelText('Game: Classic')).toBeTruthy()
     expect(screen.getByLabelText('Language: English')).toBeTruthy()
-    expect(screen.getByLabelText('Second language').props.accessibilityState.checked).toBe(false)
-    expect(screen.getByLabelText('Card animation: Slide')).toBeTruthy()
-    expect(screen.getByLabelText('Tabletop mode')).toBeTruthy()
+    expect(screen.getByLabelText('Gameplay')).toBeTruthy()
     expect(screen.getByLabelText('Theme: System')).toBeTruthy()
     expect(screen.getByLabelText('Daily question')).toBeTruthy()
     expect(screen.getByLabelText('Send feedback')).toBeTruthy()
+    expect(screen.queryByLabelText('Tabletop mode')).toBeNull()
+    await openGameplay()
+    expect(screen.getByText('Gameplay')).toBeTruthy()
+    expect(checked('Pick a Card')).toBe(false)
+    expect(checked('Second language')).toBe(false)
+    expect(screen.getByLabelText('Tabletop mode')).toBeTruthy()
+    expect(screen.getByLabelText('Card animation: Slide')).toBeTruthy()
+    expect(screen.queryByLabelText('Theme: System')).toBeNull()
+    await fireEvent.press(screen.getByLabelText('Back to Settings'))
+    expect(screen.getByLabelText('Theme: System')).toBeTruthy()
   })
 
   it('reflects the loaded Game, Theme and languages', async () => {
@@ -115,9 +129,10 @@ describe('SettingsModal — one screen, every control inline', () => {
     mockedGetStoredLanguage.mockResolvedValue('he')
     mockedGetStoredSecondaryLanguages.mockResolvedValue(['en'])
     await renderModal({theme: 'dark'})
-    await waitFor(() => expect(selected('Game: Pick a Card')).toBe(true))
+    await waitFor(() => expect(selected('Language: Hebrew')).toBe(true))
     expect(selected('Theme: Dark')).toBe(true)
-    expect(selected('Language: Hebrew')).toBe(true)
+    await openGameplay()
+    expect(checked('Pick a Card')).toBe(true)
     expect(selected('Second language: English')).toBe(true)
   })
 
@@ -148,12 +163,9 @@ describe('SettingsModal — one screen, every control inline', () => {
       onSelectTheme: () => {},
     }
     await rerender(<SettingsModal visible {...props} />)
-    await waitFor(() =>
-      expect(screen.getByLabelText('Tabletop mode').props.accessibilityState).toEqual({
-        checked: true,
-      })
-    )
-    expect(selected('Language: Hebrew')).toBe(true)
+    await waitFor(() => expect(selected('Language: Hebrew')).toBe(true))
+    await openGameplay()
+    expect(checked('Tabletop mode')).toBe(true)
   })
 })
 
@@ -161,16 +173,21 @@ describe('SettingsModal — Game', () => {
   it('stores a pick and reports it, in play too', async () => {
     const onSelectGame = jest.fn()
     await renderModal({onSelectGame})
-    await fireEvent.press(await screen.findByLabelText('Game: Pick a Card'))
+    await openGameplay()
+    await toggle('Pick a Card')
     expect(mockedSetStoredGame).toHaveBeenCalledWith('pick')
     expect(onSelectGame).toHaveBeenCalledWith('pick')
-    expect(selected('Game: Pick a Card')).toBe(true)
+    expect(checked('Pick a Card')).toBe(true)
+    await toggle('Pick a Card')
+    expect(onSelectGame).toHaveBeenLastCalledWith('wh')
   })
 
   it('shows the Game on screen over the stored one (a deep link always opens Classic)', async () => {
     mockedGetStoredGame.mockResolvedValue('pick')
     await renderModal({currentGame: 'wh'})
-    await waitFor(() => expect(selected('Game: Classic')).toBe(true))
+    expect(await screen.findByText('Classic')).toBeTruthy()
+    await openGameplay()
+    expect(checked('Pick a Card')).toBe(false)
   })
 })
 
@@ -190,7 +207,7 @@ describe('SettingsModal — languages, one picker each', () => {
 
   it('applies + persists a second language and tracks SECONDARY_LANGUAGES_CHANGED', async () => {
     await renderModal()
-    await screen.findByText('Settings')
+    await openGameplay()
     await toggle('Second language')
     expect(mockedTrack).toHaveBeenCalledWith({
       name: 'secondary_languages_changed',
@@ -201,16 +218,23 @@ describe('SettingsModal — languages, one picker each', () => {
 
   it('clears the second language when it becomes the primary, and the switch clears and restores it', async () => {
     await renderModal({languages: ['en', 'he', 'es']})
-    await screen.findByText('Settings')
+    await openGameplay()
     await toggle('Second language')
     expect(selected('Second language: Hebrew')).toBe(true)
+    await fireEvent.press(screen.getByLabelText('Back to Settings'))
     await fireEvent.press(screen.getByLabelText('Language: Hebrew'))
-    expect(screen.getByLabelText('Second language').props.accessibilityState.checked).toBe(false)
+    await openGameplay()
+    expect(checked('Second language')).toBe(false)
+    await fireEvent.press(screen.getByLabelText('Back to Settings'))
     await fireEvent.press(screen.getByLabelText('Language: English'))
+    await openGameplay()
     await toggle('Second language')
     await fireEvent.press(screen.getByLabelText('Second language: Spanish'))
     await toggle('Second language')
-    expect(screen.queryByLabelText('Second language: Spanish')).toBeNull()
+    // Off keeps the picker in place, disabled, showing the language that comes back.
+    expect(
+      screen.getByLabelText('Second language: Spanish').props.accessibilityState.disabled
+    ).toBe(true)
     await toggle('Second language')
     expect(selected('Second language: Spanish')).toBe(true)
   })
@@ -236,6 +260,7 @@ describe('SettingsModal — inline controls', () => {
 
   it('picks Slide or Flip and stores the choice', async () => {
     await renderModal()
+    await openGameplay()
     await fireEvent.press(await screen.findByLabelText('Card animation: Flip'))
     expect(setStoredCardAnimation).toHaveBeenLastCalledWith('flip')
     expect(selected('Card animation: Flip')).toBe(true)
@@ -245,7 +270,7 @@ describe('SettingsModal — inline controls', () => {
 
   it('flips Tabletop mode, persists it, and tracks it with no deck_id (global setting)', async () => {
     await renderModal()
-    await screen.findByLabelText('Tabletop mode')
+    await openGameplay()
     await toggle('Tabletop mode')
     expect(mockedSetStoredTabletopMode).toHaveBeenCalledWith(true)
     expect(mockedTrack).toHaveBeenCalledWith({
