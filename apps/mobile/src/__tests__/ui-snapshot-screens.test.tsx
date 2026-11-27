@@ -380,6 +380,18 @@ describe('Play screen', () => {
     expect(rotation(questions?.['2']?.en ?? '')).toContainEqual({rotateY: '0deg'})
   })
 
+  it('disables Back on the first Card and enables it once there is one behind', async () => {
+    mockParams = {deck: 'library'}
+    await renderUi(<PlayScreen />)
+    await settle()
+    expect(screen.getByLabelText('previous question').props.accessibilityState).toEqual({
+      disabled: true,
+    })
+    await fireEvent.press(screen.getByLabelText('next question'))
+    await settle()
+    expect(screen.getByLabelText('previous question').props.accessibilityState).toBeUndefined()
+  })
+
   it('moves on with a tap anywhere on the Question', async () => {
     mockParams = {deck: 'library', q: '1'}
     await setStoredCardAnimation('slide')

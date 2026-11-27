@@ -53,6 +53,8 @@ const BarButton = ({
 type PlayerBarProps = {
   /** Share is disabled while there is no card to share (e.g. the pick screen before a deal). */
   shareDisabled?: boolean
+  /** Back is disabled on the first Card, where nothing comes before it. */
+  previousDisabled?: boolean
   onPrevious: () => void
   onNext: () => void
   onShare: () => void
@@ -80,6 +82,7 @@ type PlayerBarProps = {
  */
 export const PlayerBar = ({
   shareDisabled = false,
+  previousDisabled = false,
   onPrevious,
   onNext,
   onShare,
@@ -99,6 +102,7 @@ export const PlayerBar = ({
         onPress={onPrevious}
         accessibilityLabel={t('a11y.previousQuestion')}
         iconColor={iconColor}
+        disabled={previousDisabled}
       />
       <BarButton
         icon="close-outline"

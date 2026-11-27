@@ -380,12 +380,13 @@ exports[`Play screen renders a Question 1`] = `
               | flexDirection: "row"
               | paddingHorizontal: 12
               | paddingVertical: 8
-              <View accessibilityRole="button" accessibilityLabel="previous question">
+              <View accessibilityRole="button" accessibilityLabel="previous question" accessibilityState={"disabled":true}>
                 | alignItems: "center"
                 | flexBasis: "0%"
                 | flexGrow: 1
                 | flexShrink: 1
                 | gap: 3.5
+                | opacity: 0.4
                 | paddingBlock: 3.5
                 | transform: [{"scale":1}]
                 <Text>
@@ -591,12 +592,13 @@ exports[`Play screen renders a Question in the Dark Theme Display setting 1`] = 
               | flexDirection: "row"
               | paddingHorizontal: 12
               | paddingVertical: 8
-              <View accessibilityRole="button" accessibilityLabel="previous question">
+              <View accessibilityRole="button" accessibilityLabel="previous question" accessibilityState={"disabled":true}>
                 | alignItems: "center"
                 | flexBasis: "0%"
                 | flexGrow: 1
                 | flexShrink: 1
                 | gap: 3.5
+                | opacity: 0.4
                 | paddingBlock: 3.5
                 | transform: [{"scale":1}]
                 <Text>
@@ -1130,12 +1132,13 @@ exports[`Play screen renders the Pick a Card deck before a deal 1`] = `
               | flexDirection: "row"
               | paddingHorizontal: 12
               | paddingVertical: 8
-              <View accessibilityRole="button" accessibilityLabel="previous question">
+              <View accessibilityRole="button" accessibilityLabel="previous question" accessibilityState={"disabled":true}>
                 | alignItems: "center"
                 | flexBasis: "0%"
                 | flexGrow: 1
                 | flexShrink: 1
                 | gap: 3.5
+                | opacity: 0.4
                 | paddingBlock: 3.5
                 | transform: [{"scale":1}]
                 <Text>
