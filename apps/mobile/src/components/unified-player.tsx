@@ -91,6 +91,7 @@ const CLASSIC_Q_RIGHT = 28
 const CLASSIC_Q_BOTTOM = 20
 
 const texture = require('../../assets/images/background.png')
+const DECK_TEXTURE_WAIT_MS = 150
 // Face-up Cards are printed on linen stock; tiled at device pixels so each thread is one pixel.
 const linen = require('../../assets/images/linen.png')
 
@@ -580,6 +581,13 @@ export const UnifiedPlayer = ({
     sync(getActivePlayTransition() !== null)
     return subscribePlayTransition((event) => sync(event !== null))
   }, [transitionActiveSV])
+
+  // A slow texture (a dev build fetches it from Metro) must not hold the Deck off the table.
+  useEffect(() => {
+    if (deckTextureReady) return undefined
+    const timer = setTimeout(() => setDeckTextureReady(true), DECK_TEXTURE_WAIT_MS)
+    return () => clearTimeout(timer)
+  }, [deckTextureReady])
 
   // A face-down Deck rises once it can show its texture, still landing when the flying wordmark does.
   const riseWaitsForDeck = isPick && phase === 'pick' && !deckTextureReady
@@ -1843,57 +1851,55 @@ export const UnifiedPlayer = ({
                     </Animated.View>
                   </View>
                 )}
-                {!languageReady ? null : (
-                  <View
-                    className="absolute inset-0 items-center justify-center"
-                    pointerEvents={phase === 'pick' ? 'box-none' : 'none'}
-                    accessibilityElementsHidden={phase !== 'pick'}
-                    importantForAccessibility={phase === 'pick' ? 'auto' : 'no-hide-descendants'}
-                    style={{opacity: phase === 'pick' ? 1 : 0}}
-                  >
-                    <Animated.View className="items-center" style={homeRiseStyle}>
-                      <View
-                        style={{
-                          width: cardWidth,
-                          height: cardHeight,
-                          opacity: deckTextureReady ? undefined : 0,
-                        }}
-                      >
-                        {DECK_LAYERS.map(({rotate, translateY}) => (
-                          <View
-                            key={rotate}
-                            style={{transform: [{rotate}, {translateY}]}}
-                            className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
-                          />
-                        ))}
-                        <PressableScale
-                          onPress={handlePickCard}
-                          accessibilityRole="button"
-                          accessibilityLabel={copy('a11y.pickACard')}
-                          className="absolute inset-0"
-                        >
-                          <CardBack
-                            hideWordmark={transitionActive || homeExiting}
-                            onWordmarkLayout={onWordmarkLayout}
-                            onTextureLoad={onDeckTextureLoad}
-                          />
-                        </PressableScale>
-                      </View>
-                      <Pressable
+                <View
+                  className="absolute inset-0 items-center justify-center"
+                  pointerEvents={phase === 'pick' ? 'box-none' : 'none'}
+                  accessibilityElementsHidden={phase !== 'pick'}
+                  importantForAccessibility={phase === 'pick' ? 'auto' : 'no-hide-descendants'}
+                  style={{opacity: phase === 'pick' ? 1 : 0}}
+                >
+                  <Animated.View className="items-center" style={homeRiseStyle}>
+                    <View
+                      style={{
+                        width: cardWidth,
+                        height: cardHeight,
+                        opacity: deckTextureReady ? undefined : 0,
+                      }}
+                    >
+                      {DECK_LAYERS.map(({rotate, translateY}) => (
+                        <View
+                          key={rotate}
+                          style={{transform: [{rotate}, {translateY}]}}
+                          className="bg-dark/80 absolute inset-0 rounded-[20px] border border-white/10"
+                        />
+                      ))}
+                      <PressableScale
                         onPress={handlePickCard}
-                        hitSlop={12}
                         accessibilityRole="button"
-                        accessibilityLabel={copy('pick.tapToPick')}
-                        style={{height: HINT_SPACE, marginTop: HINT_GAP}}
-                        className="justify-center"
+                        accessibilityLabel={copy('a11y.pickACard')}
+                        className="absolute inset-0"
                       >
-                        <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-                          {copy('pick.tapToPick')}
-                        </Text>
-                      </Pressable>
-                    </Animated.View>
-                  </View>
-                )}
+                        <CardBack
+                          hideWordmark={transitionActive || homeExiting}
+                          onWordmarkLayout={onWordmarkLayout}
+                          onTextureLoad={onDeckTextureLoad}
+                        />
+                      </PressableScale>
+                    </View>
+                    <Pressable
+                      onPress={handlePickCard}
+                      hitSlop={12}
+                      accessibilityRole="button"
+                      accessibilityLabel={copy('pick.tapToPick')}
+                      style={{height: HINT_SPACE, marginTop: HINT_GAP}}
+                      className="justify-center"
+                    >
+                      <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
+                        {copy('pick.tapToPick')}
+                      </Text>
+                    </Pressable>
+                  </Animated.View>
+                </View>
               </View>
             </View>
           </GestureDetector>

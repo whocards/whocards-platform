@@ -5,7 +5,14 @@ import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {useCallback, useEffect, useRef, useState} from 'react'
 import type {HostInstance} from 'react-native'
-import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
+import {
+  Image as NativeImage,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import Animated, {
   cancelAnimation,
   interpolate,
@@ -72,6 +79,11 @@ export const libraryContainerStyle = StyleSheet.create({
   },
 }).root
 
+const PLAY_TEXTURES = [
+  require('../../assets/images/background.png'),
+  require('../../assets/images/background-mid.png'),
+]
+
 export default function LandingScreen() {
   const router = useRouter()
   const [serverMeta, setServerMeta] = useState<{cards: number; languages: number} | null>(null)
@@ -129,6 +141,14 @@ export default function LandingScreen() {
     },
     [exitProgress, reduceMotion, resetExitState]
   )
+
+  // Play's Deck and table textures, fetched now so they are on the device before Play mounts (a dev build loads them from Metro).
+  useEffect(() => {
+    for (const asset of PLAY_TEXTURES) {
+      const uri = NativeImage.resolveAssetSource(asset)?.uri
+      if (uri) NativeImage.prefetch(uri).catch(() => undefined)
+    }
+  }, [])
 
   useEffect(() => {
     const unsubscribeReturn = subscribeReturnedHome(handleReturnedHome)
