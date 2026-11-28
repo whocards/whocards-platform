@@ -2,7 +2,7 @@ import {requireOptionalNativeModule} from 'expo'
 
 type ThemeCrossfadeModule = {crossfade(durationMs: number): Promise<void>}
 
-// iOS only; null on Android, in jest and in dev clients built before the module existed.
+// Null in jest and in dev clients built before the module existed.
 const native = requireOptionalNativeModule<ThemeCrossfadeModule>('ThemeCrossfade')
 
 /** Snapshots the window to fade over the next Theme change; undefined when there is nothing to wait for. */
