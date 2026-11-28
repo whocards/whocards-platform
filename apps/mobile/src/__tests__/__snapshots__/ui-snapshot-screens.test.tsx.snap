@@ -1129,6 +1129,7 @@ exports[`Play screen renders the Pick a Card deck before a deal 1`] = `
                   | fontFamily: "golos-text"
                   | fontSize: 12.25
                   | lineHeight: 17.5
+                  | opacity: 1
                   "Tap to pick a card"
       <View>
         | bottom: 0

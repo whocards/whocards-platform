@@ -9,10 +9,20 @@ let mockReduceMotion = false
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
 }))
-jest.mock('react-native-reanimated', () => ({
-  ...require('@/test-utils/reanimated-mock').reanimatedMock(),
-  useReducedMotion: () => mockReduceMotion,
-}))
+// While set, animations stop mid-way: they jump to their end value but hold their landing callback here.
+let mockHeld: (() => void)[] | null = null
+jest.mock('react-native-reanimated', () => {
+  const base = require('@/test-utils/reanimated-mock').reanimatedMock()
+  return {
+    ...base,
+    useReducedMotion: () => mockReduceMotion,
+    withTiming: <T,>(to: T, config?: unknown, done?: (finished: boolean) => void): T => {
+      if (!mockHeld) return base.withTiming(to, config, done)
+      if (done) mockHeld.push(() => done(true))
+      return to
+    },
+  }
+})
 jest.mock('expo-router', () => ({useRouter: () => ({back: jest.fn(), push: jest.fn()})}))
 jest.mock('@/hooks/use-review-prompt', () => ({useReviewPrompt: () => jest.fn()}))
 jest.mock('@/lib/app-review', () => ({
@@ -44,6 +54,7 @@ jest.mock('@whocards/observability/events', () => {
 })
 
 import {PickPlayer} from '../components/pick-player'
+import {resolvedStyle} from '@/test-utils/resolved-style'
 
 const TEXTS = [
   'Who taught you to ride a bike?',
@@ -68,6 +79,8 @@ const renderPlayer = () =>
 
 /** The Question on the face-up Card, or undefined on the Deck. */
 const shown = () => TEXTS.find((text) => screen.queryByText(text))
+
+const hintOpacity = () => resolvedStyle(screen.getByText('Tap to pick a card')).opacity
 
 // Each step moves the Card a frame after its Question commits.
 const settle = () => act(() => new Promise((resolve) => requestAnimationFrame(resolve)))
@@ -128,6 +141,22 @@ describe.each(['slide', 'flip'])('PickPlayer Back with Card animation %s', (anim
     await swipe(-120)
     expect(shown()).toBeUndefined()
     await swipe(120)
+    expect(shown()).toBe(first)
+  })
+
+  it('hides the Deck hint while the put-down Card comes back', async () => {
+    await renderPlayer()
+    await deal()
+    const first = shown()
+    await swipe(-120)
+    expect(hintOpacity()).toBe(1)
+    mockHeld = []
+    await fireEvent.press(screen.getByLabelText('previous question'))
+    expect(hintOpacity()).toBe(0)
+    const land = mockHeld
+    mockHeld = null
+    await act(() => land.forEach((done) => done()))
+    await settle()
     expect(shown()).toBe(first)
   })
 

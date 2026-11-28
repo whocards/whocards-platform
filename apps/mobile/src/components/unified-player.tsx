@@ -848,14 +848,14 @@ export const UnifiedPlayer = ({
     pickBusy.set(false)
   }, [pickBusy])
 
-  // A Question and a Card move never land in the same frame: the Question commits, the Card moves a frame later, then held faces let go.
+  // A Question and a Card move never land in the same frame: the Question (or phase) commits, the Card moves a frame later, then held faces let go.
   const pickAfterCommit = useRef<(() => void) | null>(null)
   useLayoutEffect(() => {
     const move = pickAfterCommit.current
     if (!move) return
     pickAfterCommit.current = null
     requestAnimationFrame(move)
-  }, [questionId])
+  }, [questionId, phase])
 
   const pickTurnUpAfterCommit = useCallback(
     (duration: number) => {
@@ -995,7 +995,8 @@ export const UnifiedPlayer = ({
   )
 
   const commitPickBackFromDeck = useCallback(() => {
-    deckPeekSV.set(false)
+    // The Deck hint stays faded until the Deck is hidden.
+    pickAfterCommit.current = () => deckPeekSV.set(false)
     setDeckPeek(false)
     pickBusy.set(false)
     dispatch({type: 'pick_previous'})
@@ -1621,6 +1622,13 @@ export const UnifiedPlayer = ({
     }
   })
 
+  // The Deck's "Tap to pick" hint fades out as its put-down Card comes back over the Deck.
+  const deckHintStyle = useAnimatedStyle(() => {
+    if (!deckPeekSV.get()) return {opacity: 1}
+    const back = slidesPickSV.get() ? 1 + dragX.get() / pickOffscreen : cardFlip.get()
+    return {opacity: 1 - Math.min(1, Math.max(0, back))}
+  })
+
   const pickUnderCardStyle = useAnimatedStyle(() => {
     const absDrag = Math.abs(dragX.get())
     const s = interpolate(absDrag, [0, winWidth * 0.7], [0.96, 1], 'clamp')
@@ -2053,9 +2061,12 @@ export const UnifiedPlayer = ({
                       style={{height: HINT_SPACE, marginTop: HINT_GAP}}
                       className="justify-center"
                     >
-                      <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
+                      <Animated.Text
+                        className="text-mutedOnLight dark:text-gray-dark font-sans text-sm"
+                        style={deckHintStyle}
+                      >
                         {copy('pick.tapToPick')}
-                      </Text>
+                      </Animated.Text>
                     </Pressable>
                   </Animated.View>
                 </View>
