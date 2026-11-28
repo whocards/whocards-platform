@@ -33,6 +33,11 @@ fi
 
 # Always prebuild: a stale ios/ from before a native change builds the old app.
 CI=1 pnpm with-env expo prebuild -p ios --pnpm
+# Precompiled Expo modules link the prebuilt React.framework; a from-source React pod builds an app that crashes on launch.
+if ! grep -q "React-Core-prebuilt" ios/Podfile.lock; then
+  echo "Pods resolved React Native from source. Run: CI=1 pnpm with-env expo prebuild -p ios --pnpm --clean" >&2
+  exit 1
+fi
 
 build() {
   pnpm with-env xcodebuild -workspace ios/WhoCards.xcworkspace -scheme WhoCards \
