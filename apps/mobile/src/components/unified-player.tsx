@@ -1622,11 +1622,18 @@ export const UnifiedPlayer = ({
     }
   })
 
+  // The hint fades in once a Card is put down, rather than popping in the frame the Deck returns.
+  const deckHintIn = useSharedValue(phase === 'pick' ? 1 : 0)
+  useLayoutEffect(() => {
+    if (phase !== 'pick') deckHintIn.set(0)
+    else deckHintIn.set(withTiming(1, {duration: MOTION_DURATION.fade}))
+  }, [phase, deckHintIn])
+
   // The Deck's "Tap to pick" hint fades out as its put-down Card comes back over the Deck.
   const deckHintStyle = useAnimatedStyle(() => {
-    if (!deckPeekSV.get()) return {opacity: 1}
+    if (!deckPeekSV.get()) return {opacity: deckHintIn.get()}
     const back = slidesPickSV.get() ? 1 + dragX.get() / pickOffscreen : cardFlip.get()
-    return {opacity: 1 - Math.min(1, Math.max(0, back))}
+    return {opacity: deckHintIn.get() * (1 - Math.min(1, Math.max(0, back)))}
   })
 
   const pickUnderCardStyle = useAnimatedStyle(() => {
