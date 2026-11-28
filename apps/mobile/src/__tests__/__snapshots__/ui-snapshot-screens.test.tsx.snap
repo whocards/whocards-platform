@@ -332,7 +332,6 @@ exports[`Play screen renders a Question 1`] = `
         | flexShrink: 1
         <View>
           | height: 865
-          | justifyContent: "center"
           | left: 60
           | opacity: 1
           | position: "absolute"
@@ -341,23 +340,29 @@ exports[`Play screen renders a Question 1`] = `
           | width: 630
           | zIndex: 500
           <View>
-            | opacity: 1
-            | transform: [{"translateX":0}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "golos-text"
-              | fontSize: 69
-              | lineHeight: 79.35
-              | textAlign: "left"
-              | writingDirection: "ltr"
-              "What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)"
+            | height: 865
+            <View>
+              | flexGrow: 1
+            <View>
+              | opacity: 1
+              | transform: [{"translateX":0}]
+              <Text>
+                | color: "#111516"
+                | fontFamily: "golos-text"
+                | fontSize: 69
+                | lineHeight: 79.35
+                | textAlign: "left"
+                | writingDirection: "ltr"
+                "What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)"
+            <View>
+              | flexGrow: 1
         <Text>
           | bottom: 236.5
           | color: "#c058d2"
           | fontFamily: "aptly"
           | fontSize: 60
           | lineHeight: 69
-          | opacity: 0.28
+          | opacity: 1
           | position: "absolute"
           | right: 50
           | transform: [{"translateX":22},{"translateY":216.5},{"scale":1.08}]
@@ -544,7 +549,6 @@ exports[`Play screen renders a Question in the Dark Theme Display setting 1`] = 
         | flexShrink: 1
         <View>
           | height: 865
-          | justifyContent: "center"
           | left: 60
           | opacity: 1
           | position: "absolute"
@@ -553,23 +557,29 @@ exports[`Play screen renders a Question in the Dark Theme Display setting 1`] = 
           | width: 630
           | zIndex: 500
           <View>
-            | opacity: 1
-            | transform: [{"translateX":0}]
-            <Text>
-              | color: "#f5f5f5"
-              | fontFamily: "golos-text"
-              | fontSize: 69
-              | lineHeight: 79.35
-              | textAlign: "left"
-              | writingDirection: "ltr"
-              "What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)"
+            | height: 865
+            <View>
+              | flexGrow: 1
+            <View>
+              | opacity: 1
+              | transform: [{"translateX":0}]
+              <Text>
+                | color: "#f5f5f5"
+                | fontFamily: "golos-text"
+                | fontSize: 69
+                | lineHeight: 79.35
+                | textAlign: "left"
+                | writingDirection: "ltr"
+                "What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)"
+            <View>
+              | flexGrow: 1
         <Text>
           | bottom: 236.5
           | color: "#c058d2"
           | fontFamily: "aptly"
           | fontSize: 60
           | lineHeight: 69
-          | opacity: 0.28
+          | opacity: 1
           | position: "absolute"
           | right: 50
           | transform: [{"translateX":22},{"translateY":216.5},{"scale":1.08}]
@@ -833,25 +843,30 @@ exports[`Play screen renders the Pick a Card deck before a deal 1`] = `
             | top: 0
         <View>
           | height: 865
-          | justifyContent: "center"
           | left: 60
           | opacity: 1
           | position: "absolute"
           | top: 200.5
-          | transform: [{"perspective":1000},{"translateX":0},{"translateY":-232.4},{"rotateY":"0deg"},{"scale":1}]
+          | transform: [{"perspective":1000},{"translateX":0},{"translateY":0},{"rotateY":"0deg"},{"scale":1}]
           | width: 630
           | zIndex: 500
           <View>
-            | opacity: 1
-            | transform: [{"translateX":0}]
-            <Text>
-              | color: "#f5f5f5"
-              | fontFamily: "golos-text"
-              | fontSize: 58
-              | lineHeight: 66.7
-              | textAlign: "left"
-              | writingDirection: "ltr"
-              "What is a trait you inherited from one of your parents/caregivers that you really like or dislike?"
+            | height: 865
+            <View>
+              | flexGrow: 0
+            <View>
+              | opacity: 1
+              | transform: [{"translateX":0}]
+              <Text>
+                | color: "#f5f5f5"
+                | fontFamily: "golos-text"
+                | fontSize: 58
+                | lineHeight: 66.7
+                | textAlign: "left"
+                | writingDirection: "ltr"
+                "What is a trait you inherited from one of your parents/caregivers that you really like or dislike?"
+            <View>
+              | flexGrow: 1
         <Text>
           | bottom: 236.5
           | color: "#c058d2"

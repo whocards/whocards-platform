@@ -31,12 +31,7 @@ import type {ShareEventName} from '@whocards/observability/events'
 
 import {PlayerBar} from '@/components/player-bar'
 import {PressableScale} from '@/components/pressable-scale'
-import {
-  estimateBlockHeight,
-  fitStack,
-  LINE_HEIGHT_RATIO,
-  QuestionText,
-} from '@/components/question-text'
+import {LINE_HEIGHT_RATIO, QuestionText} from '@/components/question-text'
 import {ScreenBackground} from '@/components/screen-background'
 import {SettingsModal, SHEET_CLOSE_MS} from '@/components/settings-modal'
 import type {ShareFormat} from '@/components/share-modal'
@@ -546,17 +541,6 @@ export const UnifiedPlayer = ({
 
   const [currContentH, setCurrContentH] = useState(0)
   const [peerContentH, setPeerContentH] = useState(0)
-  // Height estimate until onLayout fires; only the Game switch's top-aligned Card pose reads it.
-  const estimatedContentH = useMemo(() => {
-    if (!text) return cardInner.height * 0.45
-    const {fontSize} = fitStack({
-      text,
-      secondaries: [],
-      width: cardInner.width,
-      height: cardInner.height,
-    })
-    return estimateBlockHeight(text, fontSize, cardInner.width)
-  }, [text, cardInner.width, cardInner.height])
 
   // 5B Home ↔ Play vertical rise/drop (1 = below bottom edge, 0 = settled in place).
   // Atomic handoff: `transitionActive` tracks PlayTransitionOverlay directly so the
@@ -614,6 +598,8 @@ export const UnifiedPlayer = ({
   // morph: 0 = Classic full screen, 1 = Pick a Card
   const morph = useSharedValue(initialGame === 'pick' ? 1 : 0)
   const [isMorphing, setIsMorphing] = useState(false)
+  // The morphing Question rides the Game switch from Classic's centered pose to the Card's top-aligned one.
+  const classicCentering = useDerivedValue(() => 1 - morph.get())
 
   // Classic flip: 0 = rest, +1 = turned 180° to Next, -1 = turned -180° to Previous.
   const classicFlip = useSharedValue(0)
@@ -1108,7 +1094,6 @@ export const UnifiedPlayer = ({
       classicQ: {
         right: classicQRight,
         bottom: classicQBottom,
-        opacity: 0.28,
         scale: 1.08,
         width: qMarkSize?.width,
         height: qMarkSize?.height,
@@ -1150,7 +1135,6 @@ export const UnifiedPlayer = ({
       ? {
           right: cardQRight,
           bottom: cardQBottom,
-          opacity: 1,
           scale: 1,
           width: qMarkSize?.width,
           height: qMarkSize?.height,
@@ -1158,7 +1142,6 @@ export const UnifiedPlayer = ({
       : {
           right: classicQRight,
           bottom: classicQBottom,
-          opacity: 0.28,
           scale: 1.08,
           width: qMarkSize?.width,
           height: qMarkSize?.height,
@@ -1434,8 +1417,6 @@ export const UnifiedPlayer = ({
   // Yoga centers the text in a card-inner box, so Classic's translateY never depends on its height.
   const classicCenterY = insets.top + measured.height / 2
   const classicDy = classicCenterY - (cardTop + CARD_PADDING_Y + cardInner.height / 2)
-  // Card pose is top-aligned, so only the Game switch needs the (stable) content height.
-  const cardDy = isSplit ? 0 : -(cardInner.height - (currContentH || estimatedContentH)) / 2
   const peerQuestionId = classicPeerDir === 1 ? nextQuestionId : prevQuestionId
 
   const primaryTextTransformStyle = useAnimatedStyle(() => {
@@ -1443,7 +1424,7 @@ export const UnifiedPlayer = ({
     const t = classicFlip.get()
     const sx = classicSlideX.get()
     const rise = interpolate(homeRise.get(), [0, 1], [0, winHeight * 0.62], 'clamp')
-    const morphTy = interpolate(p, [0, 1], [classicDy, cardDy], 'clamp') + rise
+    const morphTy = interpolate(p, [0, 1], [classicDy, 0], 'clamp') + rise
     const morphScale = interpolate(p, [0, 1], [classicScale, 1], 'clamp')
 
     if (reduceMotion) {
@@ -1519,7 +1500,7 @@ export const UnifiedPlayer = ({
     const p = morph.get()
     const hidden = transitionActiveSV.get() > 0.5
     return {
-      opacity: hidden ? 0 : interpolate(p, [0, 1], [0.28, 1], 'clamp'),
+      opacity: hidden ? 0 : 1,
       transform: [
         {translateX: interpolate(p, [0, 1], [cardQRight - classicQRight, 0], 'clamp')},
         {translateY: interpolate(p, [0, 1], [cardQBottom - classicQBottom, 0], 'clamp')},
@@ -1706,7 +1687,6 @@ export const UnifiedPlayer = ({
                     top: cardTop + CARD_PADDING_Y,
                     width: cardInner.width,
                     height: cardInner.height,
-                    justifyContent: 'center',
                     zIndex: 500,
                   },
                   primaryTextTransformStyle,
@@ -1714,7 +1694,7 @@ export const UnifiedPlayer = ({
               >
                 <QuestionText
                   themedText
-                  verticalCenter
+                  verticalCenter={classicCentering}
                   questionKey={questionId}
                   cardAnimation={cardAnimation}
                   morphColor={morph}

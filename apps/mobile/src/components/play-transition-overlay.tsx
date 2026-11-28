@@ -40,7 +40,7 @@ const CARDBACK_WORDMARK_FONT = 26
 /**
  * Root-level overlay for the bidirectional 5B Home ↔ Play transition:
  * - `kind: 'qmark'` (Classic or open Card): the "?" glides between WHO?CARDS and
- *   the corner "?" while morphing color (#de9c93 ↔ #c058d2), opacity, and scale.
+ *   the corner "?" while morphing color (#de9c93 ↔ #c058d2) and scale.
  * - `kind: 'deck'` (face-down Pick a Card Deck): the entire WHO?CARDS logo glides,
  *   scales, and cross-morphs between logo.png's gradient and CardBack's exact 26pt
  *   wordmark so the handoff at scale = 1.000 has 0.0px jump.
@@ -127,7 +127,6 @@ const Flight = ({event, metrics}: {event: PlayTransitionEvent; metrics: PlayTarg
   }
   const layoutQ = qBox(takeoff.q)
   const liveQ = qBox(qAnchor)
-  const playQOpacity = qAnchor?.opacity ?? 0.28
   const playQScale = qAnchor?.scale ?? 1.08
 
   // Home "?" center vs Play "?" center.
@@ -138,7 +137,6 @@ const Flight = ({event, metrics}: {event: PlayTransitionEvent; metrics: PlayTarg
     const t = progress.get()
     return {
       color: interpolateColor(t, [0, 0.75], [LOGO_QMARK_COLOR, colors.primary.dark]),
-      opacity: interpolate(t, [0, 1], [1, playQOpacity], 'clamp'),
       transform: [
         {
           translateX: interpolate(

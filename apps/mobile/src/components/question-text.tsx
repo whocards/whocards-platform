@@ -218,10 +218,11 @@ type QuestionTextProps = {
   /** Reports the rendered Single-language content height (Classic flip spine, Game switch pose). */
   onContentHeight?: (height: number) => void
   /**
-   * True when Single-language text is vertically centered inside `box` (Classic play);
-   * false when Single-language text is top-aligned inside `box` (Pick a Card).
+   * 1 = Single-language text vertically centered inside a `box`-tall face (Classic play),
+   * 0 = top-aligned (Pick a Card); the Game switch moves it between the two. Omitted: the
+   * face is only as tall as its text and the caller aligns it.
    */
-  verticalCenter?: boolean
+  verticalCenter?: SharedValue<number>
 }
 
 /** One language's text block with the right script font, bidi direction, and alignment. */
@@ -428,7 +429,7 @@ export const QuestionText = ({
   morphColor,
   flipMid,
   onContentHeight,
-  verticalCenter = false,
+  verticalCenter,
 }: QuestionTextProps) => {
   const reduceMotion = useReducedMotion()
   const shown = secondaries.filter((entry) => entry.text)
@@ -795,10 +796,12 @@ export const QuestionText = ({
 
   // Primary above the seam (upright): text bottom on the seam at p = 1, Single pose at p = 0.
   const seamTravel = halfHeight + MIRROR_GAP
-  const topLeadStyle = useAnimatedStyle(
-    () => ({flexGrow: verticalCenter ? 1 : resizeProgress.get()}),
-    [verticalCenter]
-  )
+  // Lead flexGrow c against a trail of 1 puts the Single pose c / (1 + c) of the way down: centered at 1, top at 0.
+  const singleLeadStyle = useAnimatedStyle(() => ({flexGrow: verticalCenter?.get() ?? 0}))
+  const topLeadStyle = useAnimatedStyle(() => {
+    const c = verticalCenter?.get() ?? 0
+    return {flexGrow: c + (1 - c) * resizeProgress.get()}
+  })
   const topTrailStyle = useAnimatedStyle(() => {
     const p = resizeProgress.get()
     return {height: p * seamTravel, flexGrow: 1 - p}
@@ -806,8 +809,8 @@ export const QuestionText = ({
   // Primary below the seam (Tabletop): text top on the seam at p = 1.
   const bottomLeadStyle = useAnimatedStyle(() => {
     const p = resizeProgress.get()
-    return {height: p * seamTravel, flexGrow: verticalCenter ? 1 - p : 0}
-  }, [seamTravel, verticalCenter])
+    return {height: p * seamTravel, flexGrow: (verticalCenter?.get() ?? 0) * (1 - p)}
+  }, [seamTravel])
 
   const slideOffset = halfHeight
   // One style per role: a worklet branching on `mirrored` runs its stale branch on the toggle frame.
@@ -883,7 +886,7 @@ export const QuestionText = ({
   })
 
   if (!activeSnap.isSplit) {
-    return (
+    const face = (
       <Animated.View
         testID="language-swap"
         style={singleSwapStyle}
@@ -897,6 +900,14 @@ export const QuestionText = ({
           morphColor={morphColor}
         />
       </Animated.View>
+    )
+    if (!verticalCenter) return face
+    return (
+      <View style={{height: box.height}}>
+        <Animated.View style={singleLeadStyle} />
+        {face}
+        <View style={{flexGrow: 1}} />
+      </View>
     )
   }
 

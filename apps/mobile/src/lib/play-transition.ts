@@ -7,8 +7,6 @@ export type PlayQAnchor = {
   right: number
   /** Distance from bottom edge of window to the "?" bottom edge (matches UnifiedPlayer). */
   bottom: number
-  /** Resting opacity on Play (0.28 in Classic, 1 on open Card). */
-  opacity: number
   /** Resting scale on Play (1.08 in Classic, 1 on open Card). */
   scale: number
   /** Measured glyph box width/height of "?" at fontSize 60 when known. */
