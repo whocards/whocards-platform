@@ -17,6 +17,7 @@ import type {GameId} from '@whocards/decks'
 import {DEFAULT_GAME, getLanguageName} from '@whocards/decks'
 import {EVENTS, track} from '@whocards/observability/events'
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -51,7 +52,7 @@ import type {CardAnimation} from '@/lib/card-animation-store'
 import {NATIVE_LANGUAGE_NAMES, setUiLanguage, useT} from '@/lib/i18n'
 import type {MessageKey} from '@/lib/i18n'
 import {MOTION_DURATION, motionDuration} from '@/lib/motion'
-import {sheetTheme} from '@/lib/sheet-theme'
+import {SHEET_PADDING, sheetTheme} from '@/lib/sheet-theme'
 import {getStoredTabletopMode, setStoredTabletopMode} from '@/lib/tabletop-store'
 import type {ThemeSetting} from '@/lib/theme-store'
 
@@ -174,7 +175,10 @@ const Header = ({title, onBack, onClose, isDark}: HeaderProps) => {
   const edges = useEdges('close')
   const t = useT()
   return (
-    <View className="flex-row items-center justify-between pb-2 pt-6" style={edges.row}>
+    <View
+      className={`flex-row items-center justify-between pb-2 ${SHEET_PADDING.top}`}
+      style={edges.row}
+    >
       {onBack ? (
         <Pressable
           onPress={onBack}
@@ -251,16 +255,28 @@ export const SettingsModal = ({
   const {height: windowHeight, width: windowWidth} = useWindowDimensions()
   // The sheet is one page, or the Gameplay page pushed over it the way iOS Settings does.
   const [page, setPage] = useState<0 | 1>(0)
+  // A page takes touches only once it has slid in, or a quick second tap on Gameplay flips the switch sliding in under it.
+  const [settledPage, setSettledPage] = useState<0 | 1 | null>(0)
   const [pageWidth, setPageWidth] = useState(windowWidth)
   const pageX = useSharedValue(0)
   const goTo = (next: 0 | 1) => {
     selection()
     setPage(next)
-    pageX.set(withTiming(next, {duration: motionDuration(MOTION_DURATION.slide, reduceMotion)}))
+    setSettledPage(null)
+    pageX.set(
+      withTiming(
+        next,
+        {duration: motionDuration(MOTION_DURATION.slide, reduceMotion)},
+        (finished) => {
+          if (finished) runOnJS(setSettledPage)(next)
+        }
+      )
+    )
   }
   useEffect(() => {
     if (!visible) return
     setPage(0)
+    setSettledPage(0)
     pageX.set(0)
   }, [visible, pageX])
   const pagerStyle = useAnimatedStyle(() => ({
@@ -383,7 +399,7 @@ export const SettingsModal = ({
       {/* The sheet is SwiftUI / Compose: its React Native rows take its width and report their height. */}
       <RNHostView matchContents={{vertical: true}}>
         <View
-          className="overflow-hidden"
+          className={`overflow-hidden ${SHEET_PADDING.bottom}`}
           onLayout={(event) => setPageWidth(event.nativeEvent.layout.width)}
         >
           <RowInset.Provider value={inset}>
@@ -395,7 +411,7 @@ export const SettingsModal = ({
             />
             <ScrollView style={{maxHeight: windowHeight * SHEET_MAX_HEIGHT_RATIO}} bounces={false}>
               <Animated.View className="flex-row" style={[{width: pageWidth * 2}, pagerStyle]}>
-                <Page active={page === 0} width={pageWidth}>
+                <Page active={settledPage === 0} width={pageWidth}>
                   <Row label={t('settings.language')} trailing="picker">
                     <Choice
                       label={t('settings.language')}
@@ -512,7 +528,7 @@ export const SettingsModal = ({
                     </Pressable>
                   </View>
                 </Page>
-                <Page active={page === 1} width={pageWidth}>
+                <Page active={settledPage === 1} width={pageWidth}>
                   <Row
                     label={t('settings.pickACard')}
                     hint={t('settings.pickACardHint')}

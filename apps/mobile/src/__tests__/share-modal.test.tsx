@@ -8,6 +8,7 @@ jest.mock('@/lib/share-image', () => ({
   downloadAndShareImage: (...args: unknown[]) => mockDownloadAndShareImage(...args),
 }))
 
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import {ShareModal} from '../components/share-modal'
 
 const PROPS = {
@@ -24,7 +25,8 @@ describe('ShareModal', () => {
   let shareSpy: jest.SpyInstance
   const originalOS = Platform.OS
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await AsyncStorage.clear()
     setPlatform('ios')
     mockDownloadAndShareImage.mockReset()
     shareSpy = jest
@@ -58,6 +60,37 @@ describe('ShareModal', () => {
     expect(message).toContain(PROPS.questionText)
     expect(message).toContain(`${PROPS.shareUrl}&ask=1&from=Avi`)
     expect(onShareEvent.mock.calls).toEqual([[EVENTS.ASK_SENT, 'ask']])
+  })
+
+  it('offers the last name sent with an ask the next time the sheet opens', async () => {
+    const props = {...PROPS, onShareEvent: () => {}, onClose: () => {}}
+    const {rerender} = await render(<ShareModal visible {...props} />)
+    await fireEvent.press(screen.getByText('Ask someone'))
+    await fireEvent.changeText(screen.getByLabelText('Your name (optional)'), ' Avi ')
+    await act(async () => {
+      await fireEvent.press(screen.getByLabelText('Send ask'))
+    })
+
+    await rerender(<ShareModal visible={false} {...props} />)
+    await act(async () => {
+      await rerender(<ShareModal visible {...props} />)
+    })
+    await fireEvent.press(screen.getByText('Ask someone'))
+    expect(screen.getByLabelText('Your name (optional)').props.value).toBe('Avi')
+  })
+
+  it('puts the ask row back to a plain row when an image share starts', async () => {
+    mockDownloadAndShareImage.mockReturnValue(new Promise(() => {}))
+    await render(<ShareModal visible {...PROPS} onShareEvent={() => {}} onClose={() => {}} />)
+    await fireEvent.press(screen.getByText('Ask someone'))
+    expect(screen.getByLabelText('Send ask')).toBeTruthy()
+
+    await act(async () => {
+      await fireEvent.press(screen.getByText('Story image'))
+    })
+
+    expect(screen.queryByLabelText('Send ask')).toBeNull()
+    expect(screen.getByText('Ask someone')).toBeTruthy()
   })
 
   it('does not count an ask the player cancels on iOS', async () => {

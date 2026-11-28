@@ -6,6 +6,9 @@
 import 'react-native-gesture-handler/jestSetup'
 
 jest.mock('react-native-reanimated', () => require('@/test-utils/reanimated-mock').reanimatedMock())
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+)
 
 import {readFileSync} from 'node:fs'
 import {act} from '@testing-library/react-native'

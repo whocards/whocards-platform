@@ -18,11 +18,12 @@ import {
 } from 'react-native'
 import {colors} from '@whocards/tokens'
 
+import {getStoredAskerName, setStoredAskerName} from '@/lib/asker-name-store'
 import {useIsDark} from '@/lib/color-scheme'
 import {useT} from '@/lib/i18n'
 import {downloadAndShareImage} from '@/lib/share-image'
 import {ASKER_NAME_MAX, buildAskMessage, buildAskUrl} from '@/lib/share-url'
-import {sheetTheme} from '@/lib/sheet-theme'
+import {SHEET_PADDING, sheetTheme} from '@/lib/sheet-theme'
 
 // Caps the rows at this fraction of the window; they only scroll under max Dynamic Type or in landscape.
 const SHEET_MAX_HEIGHT_RATIO = 0.8
@@ -138,7 +139,9 @@ export const ShareModal = ({
   // Bumped on every open, so a download from an earlier session can't close or reset this one.
   const sessionRef = useRef(0)
   useEffect(() => {
-    if (visible) sessionRef.current += 1
+    if (!visible) return
+    sessionRef.current += 1
+    void getStoredAskerName().then(setAskerName)
   }, [visible])
 
   // Clear stale state whenever the sheet is (re)opened for a (possibly new) card.
@@ -149,7 +152,6 @@ export const ShareModal = ({
       setPending(null)
       setError(null)
       setAskOpen(false)
-      setAskerName('')
     }
   }
 
@@ -197,6 +199,7 @@ export const ShareModal = ({
 
   const sendAsk = useCallback(() => {
     if (pending) return
+    void setStoredAskerName(askerName).catch(() => {})
     const message = buildAskMessage(
       questionText,
       buildAskUrl(shareUrl, askerName),
@@ -217,12 +220,14 @@ export const ShareModal = ({
   const handlePress = useCallback(
     (row: Row) => {
       if (pending) return
-      if (row.format === 'link') {
-        shareLink()
-        return
-      }
       if (row.format === 'ask') {
         setAskOpen(true)
+        return
+      }
+      // Another action takes over: the ask row goes back to a plain row.
+      setAskOpen(false)
+      if (row.format === 'link') {
+        shareLink()
         return
       }
       // Every non-link row in `rows` is only ever built with its `url` set (see
@@ -250,7 +255,7 @@ export const ShareModal = ({
           bounces={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-row items-center justify-between px-5 pb-2 pt-6">
+          <View className={`flex-row items-center justify-between px-5 pb-2 ${SHEET_PADDING.top}`}>
             <Text className="text-darker dark:text-white font-title text-2xl">
               {t('share.title')}
             </Text>
@@ -324,6 +329,7 @@ export const ShareModal = ({
               </Text>
             </View>
           ) : null}
+          {SHEET_PADDING.bottom ? <View className={SHEET_PADDING.bottom} /> : null}
         </ScrollView>
       </RNHostView>
     </BottomSheet>

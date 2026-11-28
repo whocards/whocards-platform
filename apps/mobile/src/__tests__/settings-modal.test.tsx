@@ -1,6 +1,7 @@
 import React from 'react'
 import {Linking, Platform} from 'react-native'
-import {fireEvent, render, screen, waitFor} from '@testing-library/react-native'
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react-native'
+import * as Reanimated from 'react-native-reanimated'
 
 jest.setTimeout(20_000)
 
@@ -101,6 +102,13 @@ const toggle = (label: string) =>
 /** Pushes the Gameplay page, where the Game and the Card's Display settings live. */
 const openGameplay = async () => {
   await fireEvent.press(await screen.findByLabelText('Gameplay'))
+}
+
+/** The pointerEvents of the page holding a row: 'none' while that page can't take touches. */
+const pageTouches = (label: string) => {
+  let node = screen.getByLabelText(label, {includeHiddenElements: true}).parent
+  while (node && node.props.pointerEvents === undefined) node = node.parent
+  return node?.props.pointerEvents
 }
 
 const checked = (label: string) => screen.getByLabelText(label).props.accessibilityState.checked
@@ -276,6 +284,23 @@ describe('SettingsModal — inline controls', () => {
     expect(selected('Card animation: Flip')).toBe(true)
     await fireEvent.press(screen.getByLabelText('Card animation: Slide'))
     expect(setStoredCardAnimation).toHaveBeenLastCalledWith('slide')
+  })
+
+  it('lets the Gameplay page take touches only once it has slid in, so a quick second tap flips nothing', async () => {
+    const slides: ((finished: boolean) => void)[] = []
+    const withTiming = jest
+      .spyOn(Reanimated, 'withTiming')
+      .mockImplementation((toValue, _config, callback) => {
+        if (callback) slides.push(callback)
+        return toValue
+      })
+    await renderModal()
+    await openGameplay()
+    expect(pageTouches('Tabletop mode')).toBe('none')
+    await act(() => slides.at(-1)?.(true))
+    expect(pageTouches('Tabletop mode')).toBe('auto')
+    expect(mockedSetStoredTabletopMode).not.toHaveBeenCalled()
+    withTiming.mockRestore()
   })
 
   it('flips Tabletop mode, persists it, and tracks it with no deck_id (global setting)', async () => {
