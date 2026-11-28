@@ -32,7 +32,7 @@ exports[`Library screen renders the Library screen 1`] = `
         <View accessibilityState={}>
           <View>
             <View>
-              | transform: [{"translateY":0}]
+              | transform: [{"translateY":0},{"scale":1}]
               <ViewManagerAdapter_ExpoImage accessibilityLabel="WhoCards">
                 | height: 53
                 | opacity: 1
@@ -170,7 +170,7 @@ exports[`Library screen renders the Library screen in the Dark Theme Display set
         <View accessibilityState={}>
           <View>
             <View>
-              | transform: [{"translateY":0}]
+              | transform: [{"translateY":0},{"scale":1}]
               <ViewManagerAdapter_ExpoImage accessibilityLabel="WhoCards">
                 | height: 53
                 | opacity: 1

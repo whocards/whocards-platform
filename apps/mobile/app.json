@@ -66,8 +66,7 @@
           "imageWidth": 280,
           "resizeMode": "contain",
           "android": {
-            "image": "./assets/images/splash-logo-android.png",
-            "imageWidth": 280
+            "imageWidth": 180
           }
         }
       ],

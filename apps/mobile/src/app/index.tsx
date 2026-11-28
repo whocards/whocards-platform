@@ -43,15 +43,16 @@ import {
   subscribePlayTransition,
   subscribeReturnedHome,
 } from '@/lib/play-transition'
+import {splashLogoWidth} from '@/lib/splash-logo'
 import {trpc} from '@/lib/trpc'
 
 // We launch with the original WhoCards deck; its content ships in-app for offline play.
 const deck = resolveDeck(libraryDeck)
 const logo = require('../../assets/images/logo.png')
 
-// Logo dimensions — kept in sync with the splash `imageWidth` (app.json) so the mark
-// is the same size in the splash and on the landing, and the handoff is seamless.
+// The landing logo's size; it starts at the native splash's size (smaller on Android) and grows into this.
 const LOGO_WIDTH = 280
+const SPLASH_SCALE = splashLogoWidth / LOGO_WIDTH
 const LOGO_HEIGHT = Math.round((LOGO_WIDTH * 226) / 1200)
 // Exact glyph gap ratios in logo.png (1200×226): WHO ends at 0.352, "?" is 0.380..0.461, CARDS starts at 0.485.
 const WHO_CLIP_WIDTH = Math.round(LOGO_WIDTH * 0.365)
@@ -179,6 +180,7 @@ export default function LandingScreen() {
   // that same centre, hide the splash, then animate it up into its landing position
   // (logoShift 0) while the tagline / Play block and the background texture fade in.
   const logoShift = useSharedValue(0) // vertical px offset from the final landing spot
+  const logoScale = useSharedValue(SPLASH_SCALE)
   const contentOpacity = useSharedValue(0) // tagline + bottom block
   const bgOpacity = useSharedValue(0) // background texture
   const logoRef = useRef<HostInstance>(null)
@@ -210,6 +212,7 @@ export default function LandingScreen() {
     void SplashScreen.hideAsync()
     if (reduceMotion) {
       logoShift.set(0)
+      logoScale.set(1)
       contentOpacity.set(1)
       bgOpacity.set(1)
       return
@@ -217,9 +220,10 @@ export default function LandingScreen() {
     // logo glides up + background fades in together; tagline/Play wait until the logo
     // has settled so they never overlap the moving mark
     logoShift.set(withTiming(0, {duration: LOGO_MS}))
+    logoScale.set(withTiming(1, {duration: LOGO_MS}))
     bgOpacity.set(withTiming(1, {duration: LOGO_MS}))
     contentOpacity.set(withDelay(LOGO_MS, withTiming(1, {duration: FADE_MS})))
-  }, [reduceMotion, logoShift, contentOpacity, bgOpacity])
+  }, [reduceMotion, logoShift, logoScale, contentOpacity, bgOpacity])
 
   const runEntrance = useCallback(() => {
     if (startedRef.current) return
@@ -254,7 +258,9 @@ export default function LandingScreen() {
     }
   }, [runEntrance, logoShown])
 
-  const logoStyle = useAnimatedStyle(() => ({transform: [{translateY: logoShift.get()}]}))
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [{translateY: logoShift.get()}, {scale: logoScale.get()}],
+  }))
   // Keep translateY always attached on the same animated style so Fabric never strands
   // the native view off-screen when exitProgress resets back to 0.
   const contentStyle = useAnimatedStyle(() => ({
