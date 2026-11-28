@@ -21,6 +21,8 @@ export const MOTION_DURATION = {
   flip: 450,
   /** Full-travel slide off / slide back in both Classic and Pick a Card. */
   slide: 300,
+  /** Pick a Card Back: the previous Card slides or turns back in, slower than Next so it reads as a return. */
+  pickBack: 560,
   /** Adding/removing a second language or toggling Tabletop mode. */
   layoutSplit: 360,
   /** Reduce Motion instant/fade fallback. */

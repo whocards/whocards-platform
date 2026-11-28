@@ -614,10 +614,17 @@ export const UnifiedPlayer = ({
   // Pick a Card: flip (0 = CardBack, 1 = Question face), dragX (slide offset).
   const cardFlip = useSharedValue(initialGame === 'pick' && !startId ? 0 : 1)
   const dragX = useSharedValue(0)
-  // Incoming previous card sliding back onto an already-open Card (4B).
   const pickBusy = useSharedValue(false)
   // Which way the Pick a Card flip turns: 1 toward Next (left), -1 toward Back (right).
   const flipSign = useSharedValue(1)
+  // The previous Card sliding in over the open one: 0 = off to the left, 1 = covering it.
+  const backIn = useSharedValue(0)
+  // The face-down Deck hands over to the Card stage while its put-down Card comes back.
+  const deckPeekSV = useSharedValue(false)
+  const [deckPeek, setDeckPeek] = useState(false)
+  // Faces held on their old Question while a Card moves over them (undefined = not held, null = CardBack).
+  const [heldUnder, setHeldUnder] = useState<string | null | undefined>(undefined)
+  const [heldPrev, setHeldPrev] = useState<string | undefined>(undefined)
 
   const turnsClassic = reduceMotion || cardAnimation === 'flip'
   const slidesPick = !reduceMotion && cardAnimation === 'slide'
@@ -804,7 +811,13 @@ export const UnifiedPlayer = ({
     animateClassicStep(dir)
   }, [idx, animateClassicStep])
 
-  // --- Pick a Card navigation (realistic deck + full slide + 4B slide-back) ---
+  // --- Pick a Card navigation ---
+  const pickOffscreen = winWidth + 60
+  const pickDuration = useCallback(
+    (ms: number) => (reduceMotion ? MOTION_DURATION.fade : motionDuration(ms, false)),
+    [reduceMotion]
+  )
+
   const handlePickCard = useCallback(() => {
     if (pickBusy.get()) return
     impact('medium')
@@ -814,64 +827,86 @@ export const UnifiedPlayer = ({
     flipSign.set(1)
     dragX.set(0)
     cardFlip.set(0)
+    deckPeekSV.set(false)
+    setDeckPeek(false)
     dispatch({type: 'pick_deal'})
-    const dur = reduceMotion ? MOTION_DURATION.fade : motionDuration(MOTION_DURATION.flip, false)
     cardFlip.set(
-      withTiming(1, {duration: dur, easing: MOTION_EASING.standard}, () => {
-        'worklet'
-        pickBusy.set(false)
-      })
+      withTiming(
+        1,
+        {duration: pickDuration(MOTION_DURATION.flip), easing: MOTION_EASING.standard},
+        () => {
+          'worklet'
+          pickBusy.set(false)
+        }
+      )
     )
-  }, [deckSlug, revealChrome, dragX, cardFlip, reduceMotion, pickBusy, flipSign])
+  }, [deckSlug, revealChrome, dragX, cardFlip, pickDuration, pickBusy, flipSign, deckPeekSV])
 
-  const releasePickBusy = useCallback(() => {
+  const releasePick = useCallback(() => {
+    setHeldUnder(undefined)
+    setHeldPrev(undefined)
     pickBusy.set(false)
   }, [pickBusy])
 
-  // Move the Card only once its new Question commits, or the old one flashes in the new spot.
-  const pickResetOnCommit = useRef(false)
-  const pickSlideInOnCommit = useRef(false)
+  // A Question and a Card move never land in the same frame: the Question commits, the Card moves a frame later, then held faces let go.
+  const pickAfterCommit = useRef<(() => void) | null>(null)
   useLayoutEffect(() => {
-    if (pickResetOnCommit.current) {
-      pickResetOnCommit.current = false
-      dragX.set(0)
-      cardFlip.set(1)
-    }
-    if (pickSlideInOnCommit.current) {
-      // Back: the previous Card itself slides in from the left over the one it replaces.
-      pickSlideInOnCommit.current = false
-      cardFlip.set(1)
-      dragX.set(-(winWidth + 60))
-      dragX.set(
-        withTiming(
-          0,
-          {
-            duration: motionDuration(MOTION_DURATION.slide, reduceMotion),
-            easing: MOTION_EASING.enter,
-          },
-          () => {
+    const move = pickAfterCommit.current
+    if (!move) return
+    pickAfterCommit.current = null
+    requestAnimationFrame(move)
+  }, [questionId])
+
+  const pickTurnUpAfterCommit = useCallback(
+    (duration: number) => {
+      pickAfterCommit.current = () =>
+        cardFlip.set(
+          withTiming(1, {duration, easing: MOTION_EASING.enter}, () => {
             'worklet'
-            runOnJS(releasePickBusy)()
-          }
+            runOnJS(releasePick)()
+          })
         )
-      )
-    }
-  }, [questionId, dragX, cardFlip, winWidth, reduceMotion, releasePickBusy])
+    },
+    [cardFlip, releasePick]
+  )
 
   const commitPickNext = useCallback(
     (advanceSeen: boolean) => {
-      pickBusy.set(false)
       viewTracker.endView('advanced')
-      if (advanceSeen) {
-        lastNavActionRef.current = {type: 'next'}
-        pickResetOnCommit.current = true
-        dispatch({type: 'pick_advance_seen'})
-      } else {
+      if (!advanceSeen) {
         // The Card stays off-screen until the Deck replaces it; the next deal re-centres it.
+        pickBusy.set(false)
         dispatch({type: 'pick_put_down'})
+        return
       }
+      lastNavActionRef.current = {type: 'next'}
+      setHeldUnder(nextQuestionId ?? null)
+      if (slidesPick) {
+        pickAfterCommit.current = () => {
+          cardFlip.set(1)
+          dragX.set(
+            withTiming(0, {duration: 0}, () => {
+              'worklet'
+              runOnJS(releasePick)()
+            })
+          )
+        }
+      } else {
+        pickTurnUpAfterCommit(Math.round(pickDuration(MOTION_DURATION.flip) / 2))
+      }
+      dispatch({type: 'pick_advance_seen'})
     },
-    [viewTracker, pickBusy]
+    [
+      viewTracker,
+      pickBusy,
+      nextQuestionId,
+      slidesPick,
+      cardFlip,
+      dragX,
+      releasePick,
+      pickTurnUpAfterCommit,
+      pickDuration,
+    ]
   )
 
   const pickPutDown = useCallback(() => {
@@ -886,55 +921,30 @@ export const UnifiedPlayer = ({
     }
     if (slidesPick) {
       const fullDur = motionDuration(MOTION_DURATION.slide, reduceMotion)
-      const remaining = Math.max(0.25, 1 - Math.abs(dragX.get()) / (winWidth + 60))
+      const remaining = Math.max(0.25, 1 - Math.abs(dragX.get()) / pickOffscreen)
       dragX.set(
         withTiming(
-          -(winWidth + 60),
-          {
-            duration: Math.round(fullDur * remaining),
-            easing: MOTION_EASING.standard,
-          },
+          -pickOffscreen,
+          {duration: Math.round(fullDur * remaining), easing: MOTION_EASING.standard},
           done
         )
       )
     } else if (advanceSeen) {
       // Flip mode moving forward through already-seen Cards: turn edge-on, swap, turn face-up.
-      const half = Math.round(
-        (reduceMotion ? MOTION_DURATION.fade : motionDuration(MOTION_DURATION.flip, false)) / 2
-      )
-      const remainingFirstHalf = Math.max(0.25, (cardFlip.get() - 0.5) / 0.5)
-      const swapToNextSeen = () => {
-        pickBusy.set(false)
-        viewTracker.endView('advanced')
-        lastNavActionRef.current = {type: 'next'}
-        dispatch({type: 'pick_advance_seen'})
-        pickBusy.set(true)
-        cardFlip.set(
-          withTiming(1, {duration: half, easing: MOTION_EASING.enter}, () => {
-            'worklet'
-            pickBusy.set(false)
-          })
-        )
-      }
+      const half = Math.round(pickDuration(MOTION_DURATION.flip) / 2)
+      const remaining = Math.max(0.25, (cardFlip.get() - 0.5) / 0.5)
       cardFlip.set(
-        withTiming(
-          0.5,
-          {duration: Math.round(half * remainingFirstHalf), easing: MOTION_EASING.exit},
-          () => {
-            'worklet'
-            runOnJS(swapToNextSeen)()
-          }
-        )
+        withTiming(0.5, {duration: Math.round(half * remaining), easing: MOTION_EASING.exit}, done)
       )
     } else {
-      const fullDur = reduceMotion
-        ? MOTION_DURATION.fade
-        : motionDuration(MOTION_DURATION.flip, false)
       const remaining = Math.max(0.25, cardFlip.get())
       cardFlip.set(
         withTiming(
           0,
-          {duration: Math.round(fullDur * remaining), easing: MOTION_EASING.standard},
+          {
+            duration: Math.round(pickDuration(MOTION_DURATION.flip) * remaining),
+            easing: MOTION_EASING.standard,
+          },
           done
         )
       )
@@ -943,92 +953,127 @@ export const UnifiedPlayer = ({
     hasSeenNext,
     slidesPick,
     dragX,
-    winWidth,
+    pickOffscreen,
     reduceMotion,
     cardFlip,
     commitPickNext,
-    viewTracker,
+    pickDuration,
     pickBusy,
     flipSign,
   ])
 
-  const commitPickPreviousFromCard = useCallback(() => {
+  const commitPickPrevious = useCallback(
+    (slid: boolean) => {
+      lastNavActionRef.current = {type: 'previous'}
+      viewTracker.endView('previous')
+      // The faces on screen keep their Questions until the Card has moved over or off them.
+      setHeldUnder(hasSeenNext ? (nextQuestionId ?? null) : null)
+      setHeldPrev(prevQuestionId)
+      if (slid) {
+        pickAfterCommit.current = () =>
+          backIn.set(
+            withTiming(0, {duration: 0}, () => {
+              'worklet'
+              runOnJS(releasePick)()
+            })
+          )
+      } else {
+        pickTurnUpAfterCommit(Math.round(pickDuration(MOTION_DURATION.pickBack) / 2))
+      }
+      dispatch({type: 'pick_previous'})
+    },
+    [
+      viewTracker,
+      hasSeenNext,
+      nextQuestionId,
+      prevQuestionId,
+      backIn,
+      releasePick,
+      pickTurnUpAfterCommit,
+      pickDuration,
+    ]
+  )
+
+  const commitPickBackFromDeck = useCallback(() => {
+    deckPeekSV.set(false)
+    setDeckPeek(false)
     pickBusy.set(false)
-    lastNavActionRef.current = {type: 'previous'}
-    viewTracker.endView('previous')
     dispatch({type: 'pick_previous'})
-    dragX.set(0)
-    cardFlip.set(1)
-  }, [viewTracker, dragX, cardFlip, pickBusy])
+  }, [deckPeekSV, pickBusy])
 
   const pickGoPrevious = useCallback(() => {
     revealChrome()
     if (pickBusy.get()) return
+    const backDur = pickDuration(MOTION_DURATION.pickBack)
     if (phase === 'pick') {
+      // Back on the Deck turns or slides the put-down Card back up; a drag has already started it.
       if (!dealt) return
       selection()
       pickBusy.set(true)
       flipSign.set(-1)
-      dispatch({type: 'pick_previous'})
-      const release = () => {
+      const fromDrag = deckPeekSV.get()
+      deckPeekSV.set(true)
+      setDeckPeek(true)
+      const land = () => {
         'worklet'
-        pickBusy.set(false)
+        runOnJS(commitPickBackFromDeck)()
       }
       if (slidesPick) {
-        cardFlip.set(1)
-        dragX.set(-(winWidth + 60))
+        if (!fromDrag) {
+          cardFlip.set(1)
+          dragX.set(-pickOffscreen)
+        }
+        const remaining = Math.max(0.25, Math.abs(dragX.get()) / pickOffscreen)
         dragX.set(
           withTiming(
             0,
-            {
-              duration: motionDuration(MOTION_DURATION.slide, reduceMotion),
-              easing: MOTION_EASING.enter,
-            },
-            release
+            {duration: Math.round(backDur * remaining), easing: MOTION_EASING.enter},
+            land
           )
         )
       } else {
-        dragX.set(0)
-        cardFlip.set(0)
-        const dur = reduceMotion
-          ? MOTION_DURATION.fade
-          : motionDuration(MOTION_DURATION.flip, false)
-        cardFlip.set(withTiming(1, {duration: dur, easing: MOTION_EASING.standard}, release))
+        if (!fromDrag) {
+          dragX.set(0)
+          cardFlip.set(0)
+        }
+        const remaining = Math.max(0.25, 1 - cardFlip.get())
+        cardFlip.set(
+          withTiming(
+            1,
+            {duration: Math.round(backDur * remaining), easing: MOTION_EASING.standard},
+            land
+          )
+        )
       }
       return
     }
     if (isAtFirst || !prevQuestionId) return
     selection()
+    pickBusy.set(true)
     flipSign.set(-1)
     if (slidesPick) {
-      // 4B: the previous Card slides in from the left; the one it replaces waits underneath.
-      pickBusy.set(true)
-      pickSlideInOnCommit.current = true
-      lastNavActionRef.current = {type: 'previous'}
-      viewTracker.endView('previous')
-      dispatch({type: 'pick_previous'})
+      // The previous Card slides in from the left over the one it replaces.
+      const duration = Math.round(backDur * Math.max(0.25, 1 - backIn.get()))
+      dragX.set(withTiming(0, {duration, easing: MOTION_EASING.enter}))
+      backIn.set(
+        withTiming(1, {duration, easing: MOTION_EASING.enter}, () => {
+          'worklet'
+          runOnJS(commitPickPrevious)(true)
+        })
+      )
     } else {
       // Flip mode going back between already-seen Cards: turn edge-on, swap, turn face-up.
-      pickBusy.set(true)
-      const half = Math.round(
-        (reduceMotion ? MOTION_DURATION.fade : motionDuration(MOTION_DURATION.flip, false)) / 2
-      )
-      const swapToPrev = () => {
-        commitPickPreviousFromCard()
-        pickBusy.set(true)
-        cardFlip.set(0.5)
-        cardFlip.set(
-          withTiming(1, {duration: half, easing: MOTION_EASING.enter}, () => {
-            'worklet'
-            pickBusy.set(false)
-          })
-        )
-      }
+      const half = Math.round(backDur / 2)
+      const remaining = Math.max(0.25, (cardFlip.get() - 0.5) / 0.5)
       cardFlip.set(
-        withTiming(0.5, {duration: half, easing: MOTION_EASING.exit}, () => {
-          'worklet'
-          runOnJS(swapToPrev)()
-        })
+        withTiming(
+          0.5,
+          {duration: Math.round(half * remaining), easing: MOTION_EASING.exit},
+          () => {
+            'worklet'
+            runOnJS(commitPickPrevious)(false)
+          }
+        )
       )
     }
   }, [
@@ -1037,15 +1082,17 @@ export const UnifiedPlayer = ({
     dealt,
     slidesPick,
     dragX,
-    winWidth,
-    reduceMotion,
+    pickOffscreen,
+    pickDuration,
     cardFlip,
     isAtFirst,
     prevQuestionId,
-    commitPickPreviousFromCard,
-    viewTracker,
+    commitPickPrevious,
+    commitPickBackFromDeck,
+    backIn,
     pickBusy,
     flipSign,
+    deckPeekSV,
   ])
 
   const goNext = useCallback(() => {
@@ -1219,8 +1266,11 @@ export const UnifiedPlayer = ({
   const slidesPickSV = useSharedValue(slidesPick)
   useEffect(() => {
     slidesPickSV.set(slidesPick)
-    if (!slidesPick) dragX.set(0)
-  }, [slidesPick, slidesPickSV, dragX])
+    if (slidesPick) return
+    dragX.set(0)
+    // A Flip-mode Deck keeps its put-down Card face-down, ready to turn back up.
+    if (phase === 'pick') cardFlip.set(0)
+  }, [slidesPick, slidesPickSV, dragX, phase, cardFlip])
 
   const hasSeenNextSV = useSharedValue(hasSeenNext)
   useEffect(() => {
@@ -1331,15 +1381,33 @@ export const UnifiedPlayer = ({
       .withTestId('card-pan')
       .onUpdate((event) => {
         'worklet'
-        if (!onCard || pickBusy.get()) return
+        if (pickBusy.get()) return
+        const slides = slidesPickSV.get()
+        if (!onCard) {
+          // Face-down Deck: a right drag brings the put-down Card back with the finger.
+          const back = Math.max(0, event.translationX)
+          if (!dealt || (back === 0 && !deckPeekSV.get())) return
+          if (!deckPeekSV.get()) {
+            deckPeekSV.set(true)
+            flipSign.set(-1)
+            if (slides) cardFlip.set(1)
+            else dragX.set(0)
+            runOnJS(setDeckPeek)(true)
+          }
+          if (slides) dragX.set(Math.min(0, back - pickOffscreen))
+          else cardFlip.set(Math.min(1, back / FLIP_DRAG))
+          return
+        }
         // Nothing comes before the first Card, so a Back drag there doesn't move it.
         const tx = event.translationX > 0 && isAtFirstSV.get() ? 0 : event.translationX
-        if (slidesPickSV.get()) {
-          // Right means Back, which brings the previous Card over this one, so this one only gives a little.
+        if (slides) {
+          // Back brings the previous Card over this one, so this one only gives a little.
           dragX.set(tx > 0 ? tx * 0.25 : tx)
+          backIn.set(Math.min(1, Math.max(0, tx) / pickOffscreen))
         } else {
           if (tx !== 0) flipSign.set(tx < 0 ? 1 : -1)
-          const minFlip = hasSeenNextSV.get() ? 0.5 : 0
+          // Back and Next to a seen Card turn only to edge-on; the Question swaps there on release.
+          const minFlip = tx > 0 || hasSeenNextSV.get() ? 0.5 : 0
           cardFlip.set(Math.max(minFlip, 1 - Math.min(Math.abs(tx) / FLIP_DRAG, 1)))
         }
       })
@@ -1348,12 +1416,24 @@ export const UnifiedPlayer = ({
         if (pickBusy.get()) return
         const tx = event.translationX
         const swiped = Math.abs(tx) >= SWIPE_THRESHOLD || Math.abs(event.velocityX) > 500
+        const back = (tx || event.velocityX) > 0
         // Face-down Deck: a swipe does what the bar's Next / Back do.
         if (!onCard) {
-          if (swiped) runOnJS((tx || event.velocityX) < 0 ? goNext : goPrevious)()
+          if (swiped) {
+            runOnJS(back ? goPrevious : goNext)()
+          } else if (deckPeekSV.get()) {
+            pickBusy.set(true)
+            const endPeek = () => {
+              'worklet'
+              deckPeekSV.set(false)
+              pickBusy.set(false)
+              runOnJS(setDeckPeek)(false)
+            }
+            if (slidesPickSV.get()) dragX.set(withTiming(-pickOffscreen, {duration: 150}, endPeek))
+            else cardFlip.set(withTiming(0, {duration: 150}, endPeek))
+          }
           return
         }
-        const back = (tx || event.velocityX) > 0
         if (swiped && !back) {
           runOnJS(swipeAwayPick)()
           return
@@ -1364,11 +1444,16 @@ export const UnifiedPlayer = ({
         }
         cardFlip.set(withTiming(1, {duration: 150}))
         dragX.set(withTiming(0, {duration: 150}))
+        backIn.set(withTiming(0, {duration: 150}))
       })
     return Gesture.Race(tap, pan)
   }, [
     revealChromeStable,
     onCard,
+    dealt,
+    pickOffscreen,
+    backIn,
+    deckPeekSV,
     slidesPickSV,
     hasSeenNextSV,
     dragX,
@@ -1526,6 +1611,16 @@ export const UnifiedPlayer = ({
     }
   })
 
+  const pickPrevCardStyle = useAnimatedStyle(() => {
+    const tx = -pickOffscreen * (1 - backIn.get())
+    return {
+      transform: [
+        {translateX: tx},
+        {rotate: `${interpolate(tx, [-winWidth, 0], [-11, 0], 'clamp')}deg`},
+      ],
+    }
+  })
+
   const pickUnderCardStyle = useAnimatedStyle(() => {
     const absDrag = Math.abs(dragX.get())
     const s = interpolate(absDrag, [0, winWidth * 0.7], [0.96, 1], 'clamp')
@@ -1559,6 +1654,44 @@ export const UnifiedPlayer = ({
           backfaceVisibility: 'hidden' as const,
         }
   )
+
+  // A face-up Card already seen, under the open one or sliding back over it.
+  const seenFace = (id: string) => (
+    <View className="bg-darker absolute inset-0 overflow-hidden rounded-[20px]">
+      <CardFaceLinen />
+      <Text
+        className="text-primary-dark font-title"
+        style={{
+          position: 'absolute',
+          bottom: CARD_Q_BOTTOM,
+          right: CARD_Q_RIGHT,
+          fontSize: QUESTION_MARK_SIZE,
+          lineHeight: QUESTION_MARK_LINE_HEIGHT,
+        }}
+      >
+        ?
+      </Text>
+      <View
+        className="flex-1 justify-start"
+        style={{
+          paddingHorizontal: CARD_PADDING_X,
+          paddingVertical: CARD_PADDING_Y,
+        }}
+      >
+        <QuestionText
+          questionKey={id}
+          text={textOf(id)}
+          language={language}
+          box={cardInner}
+          secondaries={secondariesOf(id)}
+          mirrored={tabletop}
+        />
+      </View>
+      <CardEdge />
+    </View>
+  )
+  const underFaceId = heldUnder !== undefined ? heldUnder : hasSeenNext ? nextQuestionId : null
+  const prevFaceId = phase === 'card' ? (heldPrev ?? prevQuestionId) : undefined
 
   // Both stages stay mounted in Pick a Card and swap visibility, so neither's Card texture decodes on screen.
   const morphHidden = isPick && !isMorphing
@@ -1787,7 +1920,7 @@ export const UnifiedPlayer = ({
                     pointerEvents={phase === 'card' ? 'box-none' : 'none'}
                     accessibilityElementsHidden={phase !== 'card'}
                     importantForAccessibility={phase === 'card' ? 'auto' : 'no-hide-descendants'}
-                    style={{opacity: phase === 'card' ? 1 : 0}}
+                    style={{opacity: phase === 'card' || deckPeek ? 1 : 0}}
                   >
                     <Animated.View className="items-center" style={homeRiseStyle}>
                       <GestureDetector gesture={pickCardTap}>
@@ -1810,42 +1943,7 @@ export const UnifiedPlayer = ({
                             importantForAccessibility="no-hide-descendants"
                             style={[StyleSheet.absoluteFill, pickUnderCardStyle]}
                           >
-                            {hasSeenNext && nextQuestionId ? (
-                              <View className="bg-darker absolute inset-0 overflow-hidden rounded-[20px]">
-                                <CardFaceLinen />
-                                <Text
-                                  className="text-primary-dark font-title"
-                                  style={{
-                                    position: 'absolute',
-                                    bottom: CARD_Q_BOTTOM,
-                                    right: CARD_Q_RIGHT,
-                                    fontSize: QUESTION_MARK_SIZE,
-                                    lineHeight: QUESTION_MARK_LINE_HEIGHT,
-                                  }}
-                                >
-                                  ?
-                                </Text>
-                                <View
-                                  className="flex-1 justify-start"
-                                  style={{
-                                    paddingHorizontal: CARD_PADDING_X,
-                                    paddingVertical: CARD_PADDING_Y,
-                                  }}
-                                >
-                                  <QuestionText
-                                    questionKey={nextQuestionId}
-                                    text={textOf(nextQuestionId)}
-                                    language={language}
-                                    box={cardInner}
-                                    secondaries={secondariesOf(nextQuestionId)}
-                                    mirrored={tabletop}
-                                  />
-                                </View>
-                                <CardEdge />
-                              </View>
-                            ) : (
-                              <CardBack />
-                            )}
+                            {underFaceId ? seenFace(underFaceId) : <CardBack />}
                           </Animated.View>
 
                           {/* Active revealed Card — elevated zIndex prevents 3D flip from intersecting the Deck beneath. */}
@@ -1895,6 +1993,17 @@ export const UnifiedPlayer = ({
                               <CardEdge />
                             </Animated.View>
                           </Animated.View>
+
+                          {prevFaceId ? (
+                            <Animated.View
+                              pointerEvents="none"
+                              accessibilityElementsHidden
+                              importantForAccessibility="no-hide-descendants"
+                              style={[StyleSheet.absoluteFill, {zIndex: 301}, pickPrevCardStyle]}
+                            >
+                              {seenFace(prevFaceId)}
+                            </Animated.View>
+                          ) : null}
                         </View>
                       </GestureDetector>
                       <View style={{height: HINT_SPACE, marginTop: HINT_GAP}} />
@@ -1913,7 +2022,7 @@ export const UnifiedPlayer = ({
                       style={{
                         width: cardWidth,
                         height: cardHeight,
-                        opacity: deckTextureReady ? undefined : 0,
+                        opacity: deckTextureReady && !deckPeek ? undefined : 0,
                       }}
                     >
                       {DECK_LAYERS.map(({rotate, translateY}) => (
