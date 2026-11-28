@@ -17,7 +17,7 @@ let cache: boolean | undefined
 export const getStoredTabletopMode = async (): Promise<boolean> => {
   if (cache !== undefined) return cache
 
-  const stored = await AsyncStorage.getItem(STORAGE_KEY)
+  const stored = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null)
   cache = stored === 'true'
   return cache
 }

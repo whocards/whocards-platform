@@ -13,12 +13,9 @@ exports[`Library screen renders the Library screen 1`] = `
       | position: "absolute"
       | right: 0
       | top: 0
-      <ViewManagerAdapter_ExpoImage>
-        | bottom: 0
-        | left: 0
-        | position: "absolute"
-        | right: 0
-        | top: 0
+      <Image>
+        | height: "100%"
+        | width: "100%"
     <View>
       | alignItems: "center"
       | flex: 1
@@ -34,10 +31,40 @@ exports[`Library screen renders the Library screen 1`] = `
         | justifyContent: "center"
         <View accessibilityState={}>
           <View>
-            | transform: [{"translateY":0}]
-            <ViewManagerAdapter_ExpoImage accessibilityLabel="WhoCards">
-              | height: 53
-              | width: 280
+            <View>
+              | transform: [{"translateY":0},{"scale":1}]
+              <ViewManagerAdapter_ExpoImage accessibilityLabel="WhoCards">
+                | height: 53
+                | opacity: 1
+                | width: 280
+              <View>
+                | height: 53
+                | opacity: 0
+                | position: "absolute"
+                | width: 280
+                <View>
+                  | height: 53
+                  | left: 0
+                  | overflow: "hidden"
+                  | position: "absolute"
+                  | top: 0
+                  | transform: [{"translateX":0}]
+                  | width: 102
+                  <ViewManagerAdapter_ExpoImage>
+                    | height: 53
+                    | width: 280
+                <View>
+                  | height: 53
+                  | left: 132
+                  | overflow: "hidden"
+                  | position: "absolute"
+                  | top: 0
+                  | transform: [{"translateX":0}]
+                  | width: 148
+                  <ViewManagerAdapter_ExpoImage>
+                    | height: 53
+                    | marginLeft: -132
+                    | width: 280
         <Text>
           | color: "#111516cc"
           | fontFamily: "golos-text"
@@ -47,23 +74,20 @@ exports[`Library screen renders the Library screen 1`] = `
           | marginTop: 24.5
           | opacity: 1
           | textAlign: "center"
-          "Change your world,"
-          "\\n"
-          "one conversation at a time."
+          | transform: [{"translateY":0}]
+          "Change your world,\\none conversation at a time."
       <View>
         | alignItems: "center"
         | gap: 17.5
         | opacity: 1
+        | transform: [{"translateY":0}]
         | width: "100%"
         <Text>
           | color: "#6b6d82"
           | fontFamily: "golos-text"
           | fontSize: 12.25
           | lineHeight: 17.5
-          "66"
-          " cards · "
-          "14"
-          " languages"
+          "66 cards · 14 languages"
         <View accessibilityRole="button" accessibilityLabel="Play" accessibilityState={}>
           | alignItems: "center"
           | backgroundColor: "#f9d75f"
@@ -127,12 +151,9 @@ exports[`Library screen renders the Library screen in the Dark Theme Display set
       | position: "absolute"
       | right: 0
       | top: 0
-      <ViewManagerAdapter_ExpoImage>
-        | bottom: 0
-        | left: 0
-        | position: "absolute"
-        | right: 0
-        | top: 0
+      <Image>
+        | height: "100%"
+        | width: "100%"
     <View>
       | alignItems: "center"
       | flex: 1
@@ -148,10 +169,40 @@ exports[`Library screen renders the Library screen in the Dark Theme Display set
         | justifyContent: "center"
         <View accessibilityState={}>
           <View>
-            | transform: [{"translateY":0}]
-            <ViewManagerAdapter_ExpoImage accessibilityLabel="WhoCards">
-              | height: 53
-              | width: 280
+            <View>
+              | transform: [{"translateY":0},{"scale":1}]
+              <ViewManagerAdapter_ExpoImage accessibilityLabel="WhoCards">
+                | height: 53
+                | opacity: 1
+                | width: 280
+              <View>
+                | height: 53
+                | opacity: 0
+                | position: "absolute"
+                | width: 280
+                <View>
+                  | height: 53
+                  | left: 0
+                  | overflow: "hidden"
+                  | position: "absolute"
+                  | top: 0
+                  | transform: [{"translateX":0}]
+                  | width: 102
+                  <ViewManagerAdapter_ExpoImage>
+                    | height: 53
+                    | width: 280
+                <View>
+                  | height: 53
+                  | left: 132
+                  | overflow: "hidden"
+                  | position: "absolute"
+                  | top: 0
+                  | transform: [{"translateX":0}]
+                  | width: 148
+                  <ViewManagerAdapter_ExpoImage>
+                    | height: 53
+                    | marginLeft: -132
+                    | width: 280
         <Text>
           | color: "#f5f5f5cc"
           | fontFamily: "golos-text"
@@ -161,23 +212,20 @@ exports[`Library screen renders the Library screen in the Dark Theme Display set
           | marginTop: 24.5
           | opacity: 1
           | textAlign: "center"
-          "Change your world,"
-          "\\n"
-          "one conversation at a time."
+          | transform: [{"translateY":0}]
+          "Change your world,\\none conversation at a time."
       <View>
         | alignItems: "center"
         | gap: 17.5
         | opacity: 1
+        | transform: [{"translateY":0}]
         | width: "100%"
         <Text>
           | color: "#9698af"
           | fontFamily: "golos-text"
           | fontSize: 12.25
           | lineHeight: 17.5
-          "66"
-          " cards · "
-          "14"
-          " languages"
+          "66 cards · 14 languages"
         <View accessibilityRole="button" accessibilityLabel="Play" accessibilityState={}>
           | alignItems: "center"
           | backgroundColor: "#f9d75f"
@@ -241,159 +289,208 @@ exports[`Play screen renders a Question 1`] = `
       | position: "absolute"
       | right: 0
       | top: 0
-      <ViewManagerAdapter_ExpoImage>
-        | bottom: 0
-        | left: 0
-        | position: "absolute"
-        | right: 0
-        | top: 0
+      <Image>
+        | height: "100%"
+        | width: "100%"
     <View>
       | flexBasis: "0%"
       | flexGrow: 1
       | flexShrink: 1
       <View>
-        | flexBasis: "0%"
-        | flexGrow: 1
-        | flexShrink: 1
+        | bottom: 0
+        | left: 0
+        | opacity: 0
+        | position: "absolute"
+        | right: 0
+        | top: 0
+        <View>
+          | backgroundColor: "#efe7f7"
+          | flex: 1
+          <View>
+            | bottom: 0
+            | left: 0
+            | opacity: 1
+            | position: "absolute"
+            | right: 0
+            | top: 0
+            <Image>
+              | height: "100%"
+              | width: "100%"
+      <View>
+        | inset: 0
         | paddingBottom: 0
         | paddingInline: 28
         | paddingTop: 0
+        | position: "absolute"
         <View>
           | flexBasis: "0%"
           | flexGrow: 1
           | flexShrink: 1
-          | justifyContent: "center"
+      <View>
+        | flexBasis: "0%"
+        | flexGrow: 1
+        | flexShrink: 1
+        <View>
+          | height: 865
+          | left: 60
+          | opacity: 1
+          | position: "absolute"
+          | top: 200.5
+          | transform: [{"perspective":1000},{"translateX":0},{"translateY":34},{"rotateY":"0deg"},{"scale":1.0889}]
+          | width: 630
+          | zIndex: 500
           <View>
-            | opacity: 1
-            | transform: [{"perspective":1000},{"translateX":0},{"rotateY":"0deg"}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "golos-text"
-              | fontSize: 81
-              | lineHeight: 93.15
-              | textAlign: "left"
-              | writingDirection: "ltr"
-              "What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)"
+            | height: 865
+            <View>
+              | flexGrow: 1
+            <View>
+              | opacity: 1
+              | transform: [{"translateX":0}]
+              <Text>
+                | color: "#111516"
+                | fontFamily: "golos-text"
+                | fontSize: 69
+                | lineHeight: 79.35
+                | textAlign: "left"
+                | writingDirection: "ltr"
+                "What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)"
+            <View>
+              | flexGrow: 1
+        <Text>
+          | bottom: 236.5
+          | color: "#c058d2"
+          | fontFamily: "aptly"
+          | fontSize: 60
+          | lineHeight: 69
+          | opacity: 1
+          | position: "absolute"
+          | right: 50
+          | transform: [{"translateX":22},{"translateY":216.5},{"scale":1.08}]
+          | zIndex: 520
+          "?"
       <View>
         | bottom: 0
         | insetInline: 0
         | position: "absolute"
         | transform: [{"translateY":0}]
+        | zIndex: 600
         <View>
-          | alignItems: "stretch"
-          | backgroundColor: "#f5f5f5e5"
-          | borderColor: "#1115161a"
-          | borderTopStyle: "solid"
-          | borderTopWidth: 1
-          | flexDirection: "row"
-          | paddingBottom: 10
-          | paddingInline: 14
-          | paddingTop: 7
-          <View accessibilityRole="button" accessibilityLabel="previous question">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#6b6d82"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Back"
-          <View accessibilityRole="button" accessibilityLabel="exit deck">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#6b6d82"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Exit"
-          <View accessibilityRole="button" accessibilityLabel="open settings">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#6b6d82"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Settings"
-          <View accessibilityRole="button" accessibilityLabel="share question">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#6b6d82"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Share"
-          <View accessibilityRole="button" accessibilityLabel="next question">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#6b6d82"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Next"
+          | transform: [{"translateY":0}]
+          <View>
+            | paddingBottom: 10
+            | paddingInline: 14
+            | paddingTop: 7
+            <ViewManagerAdapter_ExpoGlassEffect>
+              | borderRadius: 999
+              | flexDirection: "row"
+              | paddingHorizontal: 12
+              | paddingVertical: 8
+              <View accessibilityRole="button" accessibilityLabel="previous question" accessibilityState={"disabled":true}>
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | opacity: 0.4
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Back"
+              <View accessibilityRole="button" accessibilityLabel="exit deck">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Exit"
+              <View accessibilityRole="button" accessibilityLabel="open settings">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Settings"
+              <View accessibilityRole="button" accessibilityLabel="share question">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Share"
+              <View accessibilityRole="button" accessibilityLabel="next question">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Next"
 `;
 
 exports[`Play screen renders a Question in the Dark Theme Display setting 1`] = `
@@ -409,159 +506,208 @@ exports[`Play screen renders a Question in the Dark Theme Display setting 1`] = 
       | position: "absolute"
       | right: 0
       | top: 0
-      <ViewManagerAdapter_ExpoImage>
-        | bottom: 0
-        | left: 0
-        | position: "absolute"
-        | right: 0
-        | top: 0
+      <Image>
+        | height: "100%"
+        | width: "100%"
     <View>
       | flexBasis: "0%"
       | flexGrow: 1
       | flexShrink: 1
       <View>
-        | flexBasis: "0%"
-        | flexGrow: 1
-        | flexShrink: 1
+        | bottom: 0
+        | left: 0
+        | opacity: 0
+        | position: "absolute"
+        | right: 0
+        | top: 0
+        <View>
+          | backgroundColor: "#332b4a"
+          | flex: 1
+          <View>
+            | bottom: 0
+            | left: 0
+            | opacity: 1
+            | position: "absolute"
+            | right: 0
+            | top: 0
+            <Image>
+              | height: "100%"
+              | width: "100%"
+      <View>
+        | inset: 0
         | paddingBottom: 0
         | paddingInline: 28
         | paddingTop: 0
+        | position: "absolute"
         <View>
           | flexBasis: "0%"
           | flexGrow: 1
           | flexShrink: 1
-          | justifyContent: "center"
+      <View>
+        | flexBasis: "0%"
+        | flexGrow: 1
+        | flexShrink: 1
+        <View>
+          | height: 865
+          | left: 60
+          | opacity: 1
+          | position: "absolute"
+          | top: 200.5
+          | transform: [{"perspective":1000},{"translateX":0},{"translateY":34},{"rotateY":"0deg"},{"scale":1.0889}]
+          | width: 630
+          | zIndex: 500
           <View>
-            | opacity: 1
-            | transform: [{"perspective":1000},{"translateX":0},{"rotateY":"0deg"}]
-            <Text>
-              | color: "#f5f5f5"
-              | fontFamily: "golos-text"
-              | fontSize: 81
-              | lineHeight: 93.15
-              | textAlign: "left"
-              | writingDirection: "ltr"
-              "What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)"
+            | height: 865
+            <View>
+              | flexGrow: 1
+            <View>
+              | opacity: 1
+              | transform: [{"translateX":0}]
+              <Text>
+                | color: "#f5f5f5"
+                | fontFamily: "golos-text"
+                | fontSize: 69
+                | lineHeight: 79.35
+                | textAlign: "left"
+                | writingDirection: "ltr"
+                "What is the most interesting thing you have learned recently?\\n\\n(about yourself or in general)"
+            <View>
+              | flexGrow: 1
+        <Text>
+          | bottom: 236.5
+          | color: "#c058d2"
+          | fontFamily: "aptly"
+          | fontSize: 60
+          | lineHeight: 69
+          | opacity: 1
+          | position: "absolute"
+          | right: 50
+          | transform: [{"translateX":22},{"translateY":216.5},{"scale":1.08}]
+          | zIndex: 520
+          "?"
       <View>
         | bottom: 0
         | insetInline: 0
         | position: "absolute"
         | transform: [{"translateY":0}]
+        | zIndex: 600
         <View>
-          | alignItems: "stretch"
-          | backgroundColor: "#111516cc"
-          | borderColor: "#f5f5f51a"
-          | borderTopStyle: "solid"
-          | borderTopWidth: 1
-          | flexDirection: "row"
-          | paddingBottom: 10
-          | paddingInline: 14
-          | paddingTop: 7
-          <View accessibilityRole="button" accessibilityLabel="previous question">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#f5f5f5"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#9698af"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Back"
-          <View accessibilityRole="button" accessibilityLabel="exit deck">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#f5f5f5"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#9698af"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Exit"
-          <View accessibilityRole="button" accessibilityLabel="open settings">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#f5f5f5"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#9698af"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Settings"
-          <View accessibilityRole="button" accessibilityLabel="share question">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#f5f5f5"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#9698af"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Share"
-          <View accessibilityRole="button" accessibilityLabel="next question">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#f5f5f5"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#9698af"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Next"
+          | transform: [{"translateY":0}]
+          <View>
+            | paddingBottom: 10
+            | paddingInline: 14
+            | paddingTop: 7
+            <ViewManagerAdapter_ExpoGlassEffect>
+              | borderRadius: 999
+              | flexDirection: "row"
+              | paddingHorizontal: 12
+              | paddingVertical: 8
+              <View accessibilityRole="button" accessibilityLabel="previous question" accessibilityState={"disabled":true}>
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | opacity: 0.4
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#f5f5f5"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#9698af"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Back"
+              <View accessibilityRole="button" accessibilityLabel="exit deck">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#f5f5f5"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#9698af"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Exit"
+              <View accessibilityRole="button" accessibilityLabel="open settings">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#f5f5f5"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#9698af"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Settings"
+              <View accessibilityRole="button" accessibilityLabel="share question">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#f5f5f5"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#9698af"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Share"
+              <View accessibilityRole="button" accessibilityLabel="next question">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#f5f5f5"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#9698af"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Next"
 `;
 
 exports[`Play screen renders the Pick a Card deck before a deal 1`] = `
@@ -577,194 +723,538 @@ exports[`Play screen renders the Pick a Card deck before a deal 1`] = `
       | position: "absolute"
       | right: 0
       | top: 0
-      <ViewManagerAdapter_ExpoImage>
-        | bottom: 0
-        | left: 0
-        | position: "absolute"
-        | right: 0
-        | top: 0
+      <Image>
+        | height: "100%"
+        | width: "100%"
     <View>
       | flexBasis: "0%"
       | flexGrow: 1
       | flexShrink: 1
       <View>
-        | flexBasis: "0%"
-        | flexGrow: 1
-        | flexShrink: 1
+        | bottom: 0
+        | left: 0
+        | opacity: 1
+        | position: "absolute"
+        | right: 0
+        | top: 0
+        <View>
+          | backgroundColor: "#efe7f7"
+          | flex: 1
+          <View>
+            | bottom: 0
+            | left: 0
+            | opacity: 1
+            | position: "absolute"
+            | right: 0
+            | top: 0
+            <Image>
+              | height: "100%"
+              | width: "100%"
+      <View>
+        | inset: 0
         | paddingBottom: 0
         | paddingInline: 28
         | paddingTop: 0
+        | position: "absolute"
         <View>
-          | alignItems: "center"
           | flexBasis: "0%"
           | flexGrow: 1
           | flexShrink: 1
-          | justifyContent: "center"
+      <View>
+        | flexBasis: "0%"
+        | flexGrow: 1
+        | flexShrink: 1
+        | opacity: 0
+        <View>
+          | height: 953
+          | left: 32
+          | opacity: 1
+          | position: "absolute"
+          | top: 156.5
+          | width: 686
+          <View>
+            | backgroundColor: "#262432cc"
+            | borderColor: "#f5f5f51a"
+            | borderRadius: 20
+            | borderStyle: "solid"
+            | borderWidth: 1
+            | inset: 0
+            | position: "absolute"
+            | transform: [{"rotate":"-3deg"},{"translateY":10}]
+          <View>
+            | backgroundColor: "#262432cc"
+            | borderColor: "#f5f5f51a"
+            | borderRadius: 20
+            | borderStyle: "solid"
+            | borderWidth: 1
+            | inset: 0
+            | position: "absolute"
+            | transform: [{"rotate":"2deg"},{"translateY":5}]
+        <View>
+          | borderRadius: 20
+          | height: 953
+          | left: 32
+          | overflow: "hidden"
+          | position: "absolute"
+          | top: 156.5
+          | transform: [{"translateY":0},{"scaleX":1},{"scaleY":1}]
+          | width: 686
+          <View>
+            | backgroundColor: "#111516"
+            | inset: 0
+            | position: "absolute"
+            <Image>
+              | bottom: 0
+              | height: "100%"
+              | left: 0
+              | position: "absolute"
+              | right: 0
+              | top: 0
+              | width: "100%"
+          <View>
+            | bottom: 0
+            | left: 0
+            | opacity: 0
+            | position: "absolute"
+            | right: 0
+            | top: 0
+            <View>
+              | backgroundColor: "#efe7f7"
+              | flex: 1
+              <View>
+                | bottom: 0
+                | left: 0
+                | opacity: 1
+                | position: "absolute"
+                | right: 0
+                | top: 0
+                <Image>
+                  | height: "100%"
+                  | width: "100%"
+          <View>
+            | borderColor: "rgba(255,255,255,0.1)"
+            | borderRadius: 20
+            | borderWidth: 1
+            | bottom: 0
+            | left: 0
+            | opacity: 1
+            | position: "absolute"
+            | right: 0
+            | top: 0
+        <View>
+          | height: 865
+          | left: 60
+          | opacity: 1
+          | position: "absolute"
+          | top: 200.5
+          | transform: [{"perspective":1000},{"translateX":0},{"translateY":0},{"rotateY":"0deg"},{"scale":1}]
+          | width: 630
+          | zIndex: 500
+          <View>
+            | height: 865
+            <View>
+              | flexGrow: 0
+            <View>
+              | opacity: 1
+              | transform: [{"translateX":0}]
+              <Text>
+                | color: "#f5f5f5"
+                | fontFamily: "golos-text"
+                | fontSize: 58
+                | lineHeight: 66.7
+                | textAlign: "left"
+                | writingDirection: "ltr"
+                "What is a trait you inherited from one of your parents/caregivers that you really like or dislike?"
+            <View>
+              | flexGrow: 1
+        <Text>
+          | bottom: 236.5
+          | color: "#c058d2"
+          | fontFamily: "aptly"
+          | fontSize: 60
+          | lineHeight: 69
+          | opacity: 1
+          | position: "absolute"
+          | right: 50
+          | transform: [{"translateX":0},{"translateY":0},{"scale":1}]
+          | zIndex: 520
+          "?"
+      <View>
+        | inset: 0
+        | opacity: 1
+        | paddingBottom: 0
+        | paddingInline: 28
+        | paddingTop: 0
+        | position: "absolute"
+        <View>
+          | flexBasis: "0%"
+          | flexGrow: 1
+          | flexShrink: 1
           <View>
             | alignItems: "center"
+            | inset: 0
+            | justifyContent: "center"
+            | opacity: 0
+            | position: "absolute"
             <View>
-              | height: 953
-              | width: 686
+              | alignItems: "center"
+              | transform: [{"translateY":0}]
               <View>
-                | backgroundColor: "#262432cc"
-                | borderColor: "#f5f5f51a"
-                | borderRadius: 20
-                | borderStyle: "solid"
-                | borderWidth: 1
-                | inset: 0
-                | position: "absolute"
-                | transform: [{"rotate":"-3deg"},{"translateY":10}]
-              <View>
-                | backgroundColor: "#262432cc"
-                | borderColor: "#f5f5f51a"
-                | borderRadius: 20
-                | borderStyle: "solid"
-                | borderWidth: 1
-                | inset: 0
-                | position: "absolute"
-                | transform: [{"rotate":"2deg"},{"translateY":5}]
-              <View accessibilityRole="button" accessibilityLabel="Pick a card">
-                | inset: 0
-                | position: "absolute"
-                | transform: [{"scale":1}]
+                | height: 953
+                | width: 686
                 <View>
-                  | backgroundColor: "#08001a"
+                  | inset: 0
+                  | position: "absolute"
+                  <View>
+                    | backgroundColor: "#262432cc"
+                    | borderColor: "#f5f5f51a"
+                    | borderRadius: 20
+                    | borderStyle: "solid"
+                    | borderWidth: 1
+                    | inset: 0
+                    | position: "absolute"
+                    | transform: [{"rotate":"-3deg"},{"translateY":10}]
+                  <View>
+                    | backgroundColor: "#262432cc"
+                    | borderColor: "#f5f5f51a"
+                    | borderRadius: 20
+                    | borderStyle: "solid"
+                    | borderWidth: 1
+                    | inset: 0
+                    | position: "absolute"
+                    | transform: [{"rotate":"2deg"},{"translateY":5}]
+                <View>
+                  | bottom: 0
+                  | left: 0
+                  | position: "absolute"
+                  | right: 0
+                  | top: 0
+                  | transform: [{"scale":0.96}]
+                  <View>
+                    | backgroundColor: "#08001a"
+                    | borderColor: "#f5f5f51a"
+                    | borderRadius: 20
+                    | borderStyle: "solid"
+                    | borderWidth: 1
+                    | inset: 0
+                    | overflow: "hidden"
+                    | position: "absolute"
+                    <Image>
+                      | bottom: 0
+                      | height: "100%"
+                      | left: 0
+                      | position: "absolute"
+                      | right: 0
+                      | top: 0
+                      | width: "100%"
+                    <Text>
+                      | bottom: 20
+                      | color: "#f9d75f"
+                      | fontFamily: "aptly"
+                      | fontSize: 26
+                      | position: "absolute"
+                      | right: 20
+                      "WHO"
+                      <Text>
+                        | color: "#c058d2"
+                        "?"
+                      <Text>
+                        | color: "#f5f5f5"
+                        "CARDS"
+                <View>
+                  | inset: 0
+                  | position: "absolute"
+                  | transform: [{"translateX":0},{"rotate":"0deg"},{"translateY":0},{"scale":1}]
+                  | zIndex: 300
+                  <View>
+                    | backfaceVisibility: "hidden"
+                    | inset: 0
+                    | position: "absolute"
+                    | transform: [{"perspective":1000},{"rotateY":"0deg"}]
+                    <View>
+                      | backgroundColor: "#08001a"
+                      | borderColor: "#f5f5f51a"
+                      | borderRadius: 20
+                      | borderStyle: "solid"
+                      | borderWidth: 1
+                      | inset: 0
+                      | overflow: "hidden"
+                      | position: "absolute"
+                      <Image>
+                        | bottom: 0
+                        | height: "100%"
+                        | left: 0
+                        | position: "absolute"
+                        | right: 0
+                        | top: 0
+                        | width: "100%"
+                      <Text>
+                        | bottom: 20
+                        | color: "#f9d75f"
+                        | fontFamily: "aptly"
+                        | fontSize: 26
+                        | position: "absolute"
+                        | right: 20
+                        "WHO"
+                        <Text>
+                          | color: "#c058d2"
+                          "?"
+                        <Text>
+                          | color: "#f5f5f5"
+                          "CARDS"
+                  <View>
+                    | backfaceVisibility: "hidden"
+                    | backgroundColor: "#111516"
+                    | borderRadius: 20
+                    | inset: 0
+                    | overflow: "hidden"
+                    | position: "absolute"
+                    | transform: [{"perspective":1000},{"rotateY":"180deg"}]
+                    <Image>
+                      | bottom: 0
+                      | height: "100%"
+                      | left: 0
+                      | position: "absolute"
+                      | right: 0
+                      | top: 0
+                      | width: "100%"
+                    <Text>
+                      | bottom: 12
+                      | color: "#c058d2"
+                      | fontFamily: "aptly"
+                      | fontSize: 60
+                      | lineHeight: 69
+                      | position: "absolute"
+                      | right: 18
+                      "?"
+                    <View>
+                      | flexBasis: "0%"
+                      | flexGrow: 1
+                      | flexShrink: 1
+                      | justifyContent: "flex-start"
+                      | paddingHorizontal: 28
+                      | paddingVertical: 44
+                      <View>
+                        | opacity: 1
+                        | transform: [{"translateX":0}]
+                        <Text>
+                          | color: "#f5f5f5"
+                          | fontFamily: "golos-text"
+                          | fontSize: 58
+                          | lineHeight: 66.7
+                          | textAlign: "left"
+                          | writingDirection: "ltr"
+                          "What is a trait you inherited from one of your parents/caregivers that you really like or dislike?"
+                    <View>
+                      | borderColor: "#f5f5f51a"
+                      | borderRadius: 20
+                      | borderStyle: "solid"
+                      | borderWidth: 1
+                      | inset: 0
+                      | position: "absolute"
+              <View>
+                | height: 40
+                | marginTop: 28
+          <View>
+            | alignItems: "center"
+            | inset: 0
+            | justifyContent: "center"
+            | opacity: 1
+            | position: "absolute"
+            <View>
+              | alignItems: "center"
+              | transform: [{"translateY":0}]
+              <View>
+                | height: 953
+                | width: 686
+                <View>
+                  | backgroundColor: "#262432cc"
                   | borderColor: "#f5f5f51a"
                   | borderRadius: 20
                   | borderStyle: "solid"
                   | borderWidth: 1
                   | inset: 0
-                  | overflow: "hidden"
                   | position: "absolute"
-                  <ViewManagerAdapter_ExpoImage>
-                    | bottom: 0
-                    | left: 0
+                  | transform: [{"rotate":"-3deg"},{"translateY":10}]
+                <View>
+                  | backgroundColor: "#262432cc"
+                  | borderColor: "#f5f5f51a"
+                  | borderRadius: 20
+                  | borderStyle: "solid"
+                  | borderWidth: 1
+                  | inset: 0
+                  | position: "absolute"
+                  | transform: [{"rotate":"2deg"},{"translateY":5}]
+                <View accessibilityRole="button" accessibilityLabel="Pick a card">
+                  | inset: 0
+                  | position: "absolute"
+                  | transform: [{"scale":1}]
+                  <View>
+                    | backgroundColor: "#08001a"
+                    | borderColor: "#f5f5f51a"
+                    | borderRadius: 20
+                    | borderStyle: "solid"
+                    | borderWidth: 1
+                    | inset: 0
+                    | overflow: "hidden"
                     | position: "absolute"
-                    | right: 0
-                    | top: 0
-                  <Text>
-                    | bottom: 17.5
-                    | color: "#f9d75f"
-                    | fontFamily: "aptly"
-                    | fontSize: 26
-                    | position: "absolute"
-                    | right: 17.5
-                    "WHO"
+                    <Image>
+                      | bottom: 0
+                      | height: "100%"
+                      | left: 0
+                      | position: "absolute"
+                      | right: 0
+                      | top: 0
+                      | width: "100%"
                     <Text>
-                      | color: "#c058d2"
-                      "?"
-                    <Text>
-                      | color: "#f5f5f5"
-                      "CARDS"
-            <View accessibilityRole="button" accessibilityLabel="Tap to pick a card" accessibilityState={}>
-              | height: 40
-              | justifyContent: "center"
-              | marginTop: 28
-              <Text>
-                | color: "#6b6d82"
-                | fontFamily: "golos-text"
-                | fontSize: 12.25
-                | lineHeight: 17.5
-                "Tap to pick a card"
+                      | bottom: 20
+                      | color: "#f9d75f"
+                      | fontFamily: "aptly"
+                      | fontSize: 26
+                      | position: "absolute"
+                      | right: 20
+                      "WHO"
+                      <Text>
+                        | color: "#c058d2"
+                        "?"
+                      <Text>
+                        | color: "#f5f5f5"
+                        "CARDS"
+              <View accessibilityRole="button" accessibilityLabel="Tap to pick a card" accessibilityState={}>
+                | height: 40
+                | justifyContent: "center"
+                | marginTop: 28
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 12.25
+                  | lineHeight: 17.5
+                  | opacity: 1
+                  "Tap to pick a card"
       <View>
         | bottom: 0
         | insetInline: 0
         | position: "absolute"
         | transform: [{"translateY":0}]
+        | zIndex: 600
         <View>
-          | alignItems: "stretch"
-          | backgroundColor: "#f5f5f5e5"
-          | borderColor: "#1115161a"
-          | borderTopStyle: "solid"
-          | borderTopWidth: 1
-          | flexDirection: "row"
-          | paddingBottom: 10
-          | paddingInline: 14
-          | paddingTop: 7
-          <View accessibilityRole="button" accessibilityLabel="previous question">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#6b6d82"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Back"
-          <View accessibilityRole="button" accessibilityLabel="exit deck">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#6b6d82"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Exit"
-          <View accessibilityRole="button" accessibilityLabel="open settings">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#6b6d82"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Settings"
-          <View accessibilityRole="button" accessibilityLabel="next question">
-            | alignItems: "center"
-            | flexBasis: "0%"
-            | flexGrow: 1
-            | flexShrink: 1
-            | gap: 3.5
-            | paddingBlock: 3.5
-            | transform: [{"scale":1}]
-            <Text>
-              | color: "#111516"
-              | fontFamily: "ionicons"
-              | fontSize: 24
-              | fontStyle: "normal"
-              | fontWeight: "normal"
-              ""
-            <Text>
-              | color: "#6b6d82"
-              | fontFamily: "golos-text"
-              | fontSize: 10.5
-              | lineHeight: 14
-              "Next"
+          | transform: [{"translateY":0}]
+          <View>
+            | paddingBottom: 10
+            | paddingInline: 14
+            | paddingTop: 7
+            <ViewManagerAdapter_ExpoGlassEffect>
+              | borderRadius: 999
+              | flexDirection: "row"
+              | paddingHorizontal: 12
+              | paddingVertical: 8
+              <View accessibilityRole="button" accessibilityLabel="previous question" accessibilityState={"disabled":true}>
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | opacity: 0.4
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Back"
+              <View accessibilityRole="button" accessibilityLabel="exit deck">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Exit"
+              <View accessibilityRole="button" accessibilityLabel="open settings">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Settings"
+              <View accessibilityRole="button" accessibilityLabel="share question" accessibilityState={"disabled":true}>
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | opacity: 0.4
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Share"
+              <View accessibilityRole="button" accessibilityLabel="next question">
+                | alignItems: "center"
+                | flexBasis: "0%"
+                | flexGrow: 1
+                | flexShrink: 1
+                | gap: 3.5
+                | paddingBlock: 3.5
+                | transform: [{"scale":1}]
+                <Text>
+                  | color: "#111516"
+                  | fontFamily: "ionicons"
+                  | fontSize: 24
+                  | fontStyle: "normal"
+                  | fontWeight: "normal"
+                  ""
+                <Text>
+                  | color: "#6b6d82"
+                  | fontFamily: "golos-text"
+                  | fontSize: 10.5
+                  | lineHeight: 14
+                  "Next"
 `;
 
 exports[`Play screen renders the unknown-Deck message 1`] = `
@@ -780,12 +1270,9 @@ exports[`Play screen renders the unknown-Deck message 1`] = `
       | position: "absolute"
       | right: 0
       | top: 0
-      <ViewManagerAdapter_ExpoImage>
-        | bottom: 0
-        | left: 0
-        | position: "absolute"
-        | right: 0
-        | top: 0
+      <Image>
+        | height: "100%"
+        | width: "100%"
     <View>
       | alignItems: "center"
       | flex: 1

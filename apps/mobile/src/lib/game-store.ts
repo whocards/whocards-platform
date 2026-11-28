@@ -19,7 +19,7 @@ let cache: GameId | undefined
 export const getStoredGame = async (): Promise<GameId> => {
   if (cache) return cache
 
-  const stored = await AsyncStorage.getItem(STORAGE_KEY)
+  const stored = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null)
   if (stored && isGameId(stored)) {
     cache = stored
     return stored

@@ -1,5 +1,5 @@
 import React from 'react'
-import {fireEvent, render, screen} from '@testing-library/react-native'
+import {fireEvent, render, screen, within} from '@testing-library/react-native'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
 
 jest.setTimeout(20_000)
@@ -16,12 +16,16 @@ jest.mock('@/lib/app-review', () => ({
 }))
 jest.mock('@/lib/device-id', () => ({getDeviceId: jest.fn().mockResolvedValue('device')}))
 jest.mock('@/lib/answer-queue', () => ({enqueue: jest.fn(), flush: jest.fn()}))
+jest.mock('@/lib/notification-store', () => ({notePromptShown: jest.fn()}))
 // The in-play Settings sheet and Theme hook (issue #197) read storage this test doesn't cover.
 jest.mock('@/components/settings-modal', () => ({SettingsModal: () => null}))
 jest.mock('@/hooks/use-theme-setting', () => ({
   useThemeSetting: () => ({theme: 'system', select: jest.fn()}),
 }))
 jest.mock('@/lib/tabletop-store', () => ({getStoredTabletopMode: jest.fn()}))
+jest.mock('@/lib/card-animation-store', () => ({
+  getStoredCardAnimation: jest.fn().mockResolvedValue('slide'),
+}))
 jest.mock('@/lib/language-store', () => ({
   getStoredLanguage: jest.fn().mockResolvedValue(undefined),
   getStoredSecondaryLanguages: jest.fn().mockResolvedValue([]),
@@ -47,6 +51,8 @@ const revealCard = async (tabletop: boolean) => {
         questions={{q1: {en: QUESTION}}}
         languages={['en']}
         poolBacked={false}
+        carryRef={{current: undefined}}
+        onChangeGame={() => {}}
       />
     </GestureHandlerRootView>
   )
@@ -65,12 +71,16 @@ const hiddenFromA11y = (node: Node) => {
 describe('PickPlayer — Tabletop mode (issue #170)', () => {
   it('renders the revealed question once when Tabletop is off', async () => {
     await revealCard(false)
-    expect(screen.getAllByText(QUESTION, {includeHiddenElements: true})).toHaveLength(1)
+    const stage = within(screen.getByTestId('pick-stage'))
+    expect(stage.getAllByText(QUESTION, {includeHiddenElements: true})).toHaveLength(1)
   })
 
   it('mirrors the revealed question with the rotated copy hidden from screen readers', async () => {
     await revealCard(true)
-    const copies = screen.getAllByText(QUESTION, {includeHiddenElements: true})
+    // Only the Pick a Card stage: the Classic stage stays mounted, hidden, for the Game switch.
+    const copies = within(screen.getByTestId('pick-stage')).getAllByText(QUESTION, {
+      includeHiddenElements: true,
+    })
     expect(copies).toHaveLength(2)
     expect(copies.filter((node) => hiddenFromA11y(node))).toHaveLength(1)
     expect(screen.getAllByText(QUESTION)).toHaveLength(1)

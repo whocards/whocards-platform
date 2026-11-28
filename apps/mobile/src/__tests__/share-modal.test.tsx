@@ -1,81 +1,14 @@
-/**
- * Component tests for src/components/share-modal.tsx
- *
- * Covers the acceptance criteria from issue #154:
- * - three rows render (link / story / post) when storyImageUrl/postImageUrl
- *   are supplied — the caller (play/[deck].tsx, pick-player.tsx) only supplies
- *   them for a Pool-backed deck (`isPoolBacked`); an inline-source deck (e.g.
- *   ai-at-work, hajnalig) omits them, since the Share Card endpoint resolves
- *   ids against the global Pool only — an inline deck's ids either 404 or
- *   (worse) collide with an unrelated Pool id and silently serve the wrong
- *   image (PR #159 review finding)
- * - the link row hands the unchanged message+url payload to the OS share sheet
- *   and never touches the network, for every deck
- * - an image row downloads-then-shares and reports only that its sheet opened
- * - an image download failure shows an inline message and leaves the sheet
- *   open and usable — the link row still works afterwards
- *
- * And, from issue #162 (compact bottom sheet):
- * - tapping the dimmed backdrop dismisses the sheet
- * - tapping the sheet's own content (its no-op tap-swallow wrapper) does not
- *   — otherwise the whitespace around the rows would double as a backdrop tap
- * Swipe-down-to-dismiss (the GestureDetector pan on the drag handle) isn't
- * exercised here — gesture-handler's native recognizers aren't driven by
- * `fireEvent`, same as the existing swipe gestures elsewhere in this app
- * (e.g. pick-player.tsx's card swipe, also untested at this level); it needs
- * on-device/e2e verification instead.
- *
- * And, from issue #192 (Android: dismissing the system share sheet left the
- * app unresponsive; owner follow-up decision, 2026-07-03: the sheet must
- * never auto-close on a share, on either platform):
- * - neither the link row nor the image rows call `onClose` when their native
- *   share signal resolves, on iOS or Android — the sheet only closes on an
- *   explicit user action (X, swipe-down, backdrop tap)
- * - the link row still skips its completion analytics on an explicit iOS
- *   cancel (`dismissedAction`) — but that no longer affects `onClose`, since
- *   nothing here calls it anymore
- * - a share, successful or cancelled, leaves the sheet immediately usable —
- *   sharing again or picking a different row works without reopening it
- *
- * And, from issue #200: every row reports `share_sheet_opened`; only a confirmed iOS link share reports `share_completed`.
- */
+/** ShareModal: its rows, what each share reports, and when the sheet closes (the native sheet is stood in by test-utils/expo-ui-mock). */
 import React from 'react'
-import {Platform, Share} from 'react-native'
+import {AppState, Platform, Share} from 'react-native'
 import {EVENTS} from '@whocards/observability/events'
 import {act, fireEvent, render, screen} from '@testing-library/react-native'
-import {StatusBar} from 'expo-status-bar'
-import {setColorScheme} from '@/lib/color-scheme'
-
-jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
-}))
-
-// `<StatusBar>` is a side-effect component: it renders `null`, so it never
-// appears in the host-element tree. @testing-library/react-native 14 removed
-// the composite `UNSAFE_getByType` query that used to reach it
-// (https://github.com/callstack/react-native-testing-library/releases/tag/v14.0.0),
-// so spy on the props it's rendered with instead.
-jest.mock('expo-status-bar', () => ({StatusBar: jest.fn(() => null)}))
-
-/**
- * The `style` the `<StatusBar>` under test was rendered with.
- *
- * The mock is module-level, so its calls accumulate across every test in this
- * file — the describe below clears them per test, and this throws rather than
- * return `undefined`, so a `ShareModal` that stopped rendering a `<StatusBar>`
- * fails here instead of silently reading some earlier test's call.
- */
-const lastStatusBarStyle = () => {
-  const {calls} = jest.mocked(StatusBar).mock
-  if (calls.length === 0) throw new Error('<StatusBar> was never rendered')
-  return calls.at(-1)?.[0].style
-}
-
 const mockDownloadAndShareImage = jest.fn()
 jest.mock('@/lib/share-image', () => ({
   downloadAndShareImage: (...args: unknown[]) => mockDownloadAndShareImage(...args),
 }))
 
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import {ShareModal} from '../components/share-modal'
 
 const PROPS = {
@@ -92,7 +25,8 @@ describe('ShareModal', () => {
   let shareSpy: jest.SpyInstance
   const originalOS = Platform.OS
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await AsyncStorage.clear()
     setPlatform('ios')
     mockDownloadAndShareImage.mockReset()
     shareSpy = jest
@@ -126,6 +60,37 @@ describe('ShareModal', () => {
     expect(message).toContain(PROPS.questionText)
     expect(message).toContain(`${PROPS.shareUrl}&ask=1&from=Avi`)
     expect(onShareEvent.mock.calls).toEqual([[EVENTS.ASK_SENT, 'ask']])
+  })
+
+  it('offers the last name sent with an ask the next time the sheet opens', async () => {
+    const props = {...PROPS, onShareEvent: () => {}, onClose: () => {}}
+    const {rerender} = await render(<ShareModal visible {...props} />)
+    await fireEvent.press(screen.getByText('Ask someone'))
+    await fireEvent.changeText(screen.getByLabelText('Your name (optional)'), ' Avi ')
+    await act(async () => {
+      await fireEvent.press(screen.getByLabelText('Send ask'))
+    })
+
+    await rerender(<ShareModal visible={false} {...props} />)
+    await act(async () => {
+      await rerender(<ShareModal visible {...props} />)
+    })
+    await fireEvent.press(screen.getByText('Ask someone'))
+    expect(screen.getByLabelText('Your name (optional)').props.value).toBe('Avi')
+  })
+
+  it('puts the ask row back to a plain row when an image share starts', async () => {
+    mockDownloadAndShareImage.mockReturnValue(new Promise(() => {}))
+    await render(<ShareModal visible {...PROPS} onShareEvent={() => {}} onClose={() => {}} />)
+    await fireEvent.press(screen.getByText('Ask someone'))
+    expect(screen.getByLabelText('Send ask')).toBeTruthy()
+
+    await act(async () => {
+      await fireEvent.press(screen.getByText('Story image'))
+    })
+
+    expect(screen.queryByLabelText('Send ask')).toBeNull()
+    expect(screen.getByText('Ask someone')).toBeTruthy()
   })
 
   it('does not count an ask the player cancels on iOS', async () => {
@@ -170,7 +135,7 @@ describe('ShareModal', () => {
     expect(screen.queryByText('Post image')).toBeNull()
   })
 
-  it('shares the unchanged link payload, reports open then completion (iOS), and leaves the sheet open', async () => {
+  it('shares the unchanged link payload, reports open then completion (iOS), and closes', async () => {
     const onShareEvent = jest.fn()
     const onClose = jest.fn()
     await render(<ShareModal visible {...PROPS} onShareEvent={onShareEvent} onClose={onClose} />)
@@ -188,11 +153,7 @@ describe('ShareModal', () => {
       [EVENTS.SHARE_SHEET_OPENED, 'link'],
       [EVENTS.SHARE_COMPLETED, 'link'],
     ])
-    // Owner decision, 2026-07-03 (issue #192): a share never auto-closes this
-    // sheet, on either platform — see the file doc. The row stays usable too,
-    // so a second share (same row or a different one) works immediately.
-    expect(onClose).not.toHaveBeenCalled()
-    expect(screen.getByText('Share link')).toBeTruthy()
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('reports only the opened sheet when the link share sheet is explicitly cancelled (iOS)', async () => {
@@ -206,20 +167,30 @@ describe('ShareModal', () => {
     })
 
     expect(onShareEvent.mock.calls).toEqual([[EVENTS.SHARE_SHEET_OPENED, 'link']])
-    expect(onClose).not.toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   // Android's Share.share resolves `sharedAction` the instant the chooser opens.
-  it('reports only the opened chooser for an Android link share, never completion', async () => {
+  it('reports only the opened chooser for an Android link share, never completion, and closes once the app is back', async () => {
     setPlatform('android')
     const onShareEvent = jest.fn()
-    await render(<ShareModal visible {...PROPS} onShareEvent={onShareEvent} onClose={() => {}} />)
+    const onClose = jest.fn()
+    const appState = jest.spyOn(AppState, 'addEventListener')
+    await render(<ShareModal visible {...PROPS} onShareEvent={onShareEvent} onClose={onClose} />)
 
     await act(async () => {
       await fireEvent.press(screen.getByText('Share link'))
     })
 
     expect(onShareEvent.mock.calls).toEqual([[EVENTS.SHARE_SHEET_OPENED, 'link']])
+    // Share.share resolved as the chooser opened: closing now is the stuck-touch race (issue #192).
+    expect(onClose).not.toHaveBeenCalled()
+    const onChange = appState.mock.calls.at(-1)?.[1]
+    await act(() => onChange?.('background'))
+    expect(onClose).not.toHaveBeenCalled()
+    await act(() => onChange?.('active'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    appState.mockRestore()
   })
 
   it.each(['ios', 'android'] as const)(
@@ -238,7 +209,7 @@ describe('ShareModal', () => {
     }
   )
 
-  it('downloads and shares the story image, reports the opened sheet, and leaves the sheet open', async () => {
+  it('downloads and shares the story image, reports the opened sheet, and closes', async () => {
     mockDownloadAndShareImage.mockResolvedValue(undefined)
     const onShareEvent = jest.fn()
     const onClose = jest.fn()
@@ -248,22 +219,9 @@ describe('ShareModal', () => {
       await fireEvent.press(screen.getByText('Story image'))
     })
 
-    expect(mockDownloadAndShareImage).toHaveBeenCalledWith(
-      PROPS.storyImageUrl,
-      expect.any(Function)
-    )
+    expect(mockDownloadAndShareImage).toHaveBeenCalledWith(PROPS.storyImageUrl)
     expect(onShareEvent).toHaveBeenCalledWith(EVENTS.SHARE_SHEET_OPENED, 'story')
-    expect(onClose).not.toHaveBeenCalled()
-
-    // immediately usable again — no stuck spinner, no reopen needed, a
-    // different row works right away (issue #192 acceptance criteria)
-    mockDownloadAndShareImage.mockResolvedValue(undefined)
-    await act(async () => {
-      await fireEvent.press(screen.getByText('Post image'))
-    })
-    expect(mockDownloadAndShareImage).toHaveBeenCalledWith(PROPS.postImageUrl, expect.any(Function))
-    expect(onShareEvent).toHaveBeenCalledWith(EVENTS.SHARE_SHEET_OPENED, 'post')
-    expect(onClose).not.toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('clears a stale error when the sheet is closed and reopened (issue #236)', async () => {
@@ -278,6 +236,23 @@ describe('ShareModal', () => {
     await rerender(<ShareModal visible={false} {...props} />)
     await rerender(<ShareModal visible {...props} />)
     expect(screen.queryByText(/couldn't load the image/i)).toBeNull()
+  })
+
+  it('ignores an image download that finishes after the sheet was closed and reopened', async () => {
+    const download = Promise.withResolvers<void>()
+    mockDownloadAndShareImage.mockReturnValue(download.promise)
+    const onClose = jest.fn()
+    const props = {...PROPS, onShareEvent: () => {}, onClose}
+    const {rerender} = await render(<ShareModal visible {...props} />)
+    await act(async () => {
+      await fireEvent.press(screen.getByText('Story image'))
+    })
+    await rerender(<ShareModal visible={false} {...props} />)
+    await rerender(<ShareModal visible {...props} />)
+
+    await act(async () => download.resolve())
+
+    expect(onClose).not.toHaveBeenCalled()
   })
 
   it('shows a graceful inline message on an image failure and keeps the sheet usable', async () => {
@@ -322,40 +297,6 @@ describe('ShareModal', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('ignores a close while the iOS share sheet is up, then closes normally once it is gone', async () => {
-    let resolveShare!: (result: {action: string}) => void
-    shareSpy.mockReturnValue(new Promise((resolve) => (resolveShare = resolve)))
-    const onClose = jest.fn()
-    await render(<ShareModal visible {...PROPS} onShareEvent={() => {}} onClose={onClose} />)
-
-    await fireEvent.press(screen.getByText('Share link'))
-    await fireEvent.press(screen.getByLabelText('dismiss'))
-    await fireEvent.press(screen.getByLabelText('close'))
-    expect(onClose).not.toHaveBeenCalled()
-
-    await act(async () => resolveShare({action: Share.dismissedAction}))
-    await fireEvent.press(screen.getByLabelText('dismiss'))
-    expect(onClose).toHaveBeenCalledTimes(1)
-  })
-
-  it('ignores a close only once the image share sheet opens, not during the download (iOS)', async () => {
-    let openSheet!: () => void
-    mockDownloadAndShareImage.mockImplementation(
-      (_url: string, onSheetOpening: () => void) =>
-        new Promise<void>(() => (openSheet = onSheetOpening))
-    )
-    const onClose = jest.fn()
-    await render(<ShareModal visible {...PROPS} onShareEvent={() => {}} onClose={onClose} />)
-
-    await fireEvent.press(screen.getByText('Story image'))
-    await fireEvent.press(screen.getByLabelText('dismiss'))
-    expect(onClose).toHaveBeenCalledTimes(1)
-
-    await act(async () => openSheet())
-    await fireEvent.press(screen.getByLabelText('dismiss'))
-    expect(onClose).toHaveBeenCalledTimes(1)
-  })
-
   it('still closes while the Android chooser is up', async () => {
     setPlatform('android')
     shareSpy.mockReturnValue(new Promise(() => {}))
@@ -374,31 +315,5 @@ describe('ShareModal', () => {
     await fireEvent.press(screen.getByLabelText('close'))
 
     expect(onClose).toHaveBeenCalled()
-  })
-})
-
-// Issue #173: ShareModal used to have no local <StatusBar> override, on the
-// assumption its openers (Play/Pick a Card) were always dark. That assumption
-// broke once those screens theme too — this sheet now needs the same isDark
-// flip as every other themed sheet (see settings-modal.test.tsx's own
-// StatusBar-override coverage).
-describe('ShareModal — StatusBar override (issue #173)', () => {
-  // Earlier tests in this file also render `<ShareModal>`, and nothing in
-  // jest.config.js/jest.setup.ts clears mocks between tests, so without this
-  // `lastStatusBarStyle()` would be reading a pile of accumulated calls.
-  beforeEach(() => {
-    jest.mocked(StatusBar).mockClear()
-  })
-
-  it('shows light (white) status-bar icons when the resolved scheme is dark', async () => {
-    await act(() => setColorScheme('dark'))
-    await render(<ShareModal visible {...PROPS} onShareEvent={() => {}} onClose={() => {}} />)
-    expect(lastStatusBarStyle()).toBe('light')
-  })
-
-  it('shows dark status-bar icons when the resolved scheme is light', async () => {
-    await act(() => setColorScheme('light'))
-    await render(<ShareModal visible {...PROPS} onShareEvent={() => {}} onClose={() => {}} />)
-    expect(lastStatusBarStyle()).toBe('dark')
   })
 })

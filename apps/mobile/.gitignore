@@ -44,6 +44,7 @@ example
 # generated native folders
 /ios
 /android
+/modules/*/android/build
 
 # e2e run reports, screenshots and artifacts
 .e2e/

@@ -2,7 +2,11 @@ import type {QuestionId} from '../types'
 import {shuffle} from './shuffle'
 
 export type NavState = {ids: QuestionId[]; idx: number}
-export type NavAction = {type: 'next'} | {type: 'previous'} | {type: 'reset'; startId?: string}
+// `cycle` on next: the shuffle to append at the end, when the caller already drew it to preview the next card.
+export type NavAction =
+  | {type: 'next'; cycle?: QuestionId[]}
+  | {type: 'previous'}
+  | {type: 'reset'; startId?: string}
 
 /**
  * The play navigation reducer. `next` walks forward, appending a fresh shuffle of
@@ -19,7 +23,9 @@ export const navReducer =
         return state.idx === 0 ? state : {...state, idx: state.idx - 1}
       case 'next': {
         const ids =
-          state.idx >= state.ids.length - 1 ? [...state.ids, ...shuffle(questionIds)] : state.ids
+          state.idx >= state.ids.length - 1
+            ? [...state.ids, ...(action.cycle ?? shuffle(questionIds))]
+            : state.ids
         return {ids, idx: state.idx + 1}
       }
       case 'reset':

@@ -1,12 +1,21 @@
 import {Ionicons} from '@expo/vector-icons'
 import {Image} from 'expo-image'
-import {Link} from 'expo-router'
+import {useRouter} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
 import {useCallback, useEffect, useRef, useState} from 'react'
 import type {HostInstance} from 'react-native'
-import {Pressable, StyleSheet, Text, useWindowDimensions, View} from 'react-native'
+import {
+  Image as NativeImage,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import Animated, {
+  cancelAnimation,
+  interpolate,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -14,6 +23,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import {SafeAreaView} from 'react-native-safe-area-context'
+import type {GameId} from '@whocards/decks'
 import {DEFAULT_DECK_SLUG, libraryDeck, resolveDeck} from '@whocards/decks'
 import {colors} from '@whocards/tokens'
 
@@ -23,17 +33,31 @@ import {SecondaryButton} from '@/components/secondary-button'
 import {SettingsModal} from '@/components/settings-modal'
 import {useInternalMarker} from '@/hooks/use-internal-marker'
 import {useThemeSetting} from '@/hooks/use-theme-setting'
+import {getStoredGame} from '@/lib/game-store'
 import {impact} from '@/lib/haptics'
+import {useT} from '@/lib/i18n'
+import {MOTION_DURATION, MOTION_EASING, motionDuration} from '@/lib/motion'
+import type {HomeReturnEvent} from '@/lib/play-transition'
+import {
+  startPlayTransition,
+  subscribePlayTransition,
+  subscribeReturnedHome,
+} from '@/lib/play-transition'
+import {splashLogoWidth} from '@/lib/splash-logo'
 import {trpc} from '@/lib/trpc'
 
 // We launch with the original WhoCards deck; its content ships in-app for offline play.
 const deck = resolveDeck(libraryDeck)
 const logo = require('../../assets/images/logo.png')
 
-// Logo dimensions — kept in sync with the splash `imageWidth` (app.json) so the mark
-// is the same size in the splash and on the landing, and the handoff is seamless.
+// The landing logo's size; it starts at the native splash's size (smaller on Android) and grows into this.
 const LOGO_WIDTH = 280
+const SPLASH_SCALE = splashLogoWidth / LOGO_WIDTH
 const LOGO_HEIGHT = Math.round((LOGO_WIDTH * 226) / 1200)
+// Exact glyph gap ratios in logo.png (1200×226): WHO ends at 0.352, "?" is 0.380..0.461, CARDS starts at 0.485.
+const WHO_CLIP_WIDTH = Math.round(LOGO_WIDTH * 0.365)
+const CARDS_CLIP_LEFT = Math.round(LOGO_WIDTH * 0.473)
+const CARDS_CLIP_WIDTH = LOGO_WIDTH - CARDS_CLIP_LEFT
 // Entrance: the logo glides into place first (LOGO_MS), then the tagline/Play fade
 // in (FADE_MS) so nothing crosses the moving logo. The background fades with the logo.
 const LOGO_MS = 450
@@ -56,9 +80,15 @@ export const libraryContainerStyle = StyleSheet.create({
   },
 }).root
 
+const PLAY_TEXTURES = [
+  require('../../assets/images/background.png'),
+  require('../../assets/images/background-mid.png'),
+]
+
 export default function LandingScreen() {
+  const router = useRouter()
   const [serverMeta, setServerMeta] = useState<{cards: number; languages: number} | null>(null)
-  const {height: winHeight} = useWindowDimensions()
+  const {width: winWidth, height: winHeight} = useWindowDimensions()
   const reduceMotion = useReducedMotion()
 
   // the Theme Display setting (issue #163) — System-follow by default, with a
@@ -69,8 +99,77 @@ export default function LandingScreen() {
   // expressed as a `dark:` class.
   const {theme, resolvedScheme, select: selectTheme} = useThemeSetting()
   const isDark = resolvedScheme !== 'light'
+  const t = useT()
 
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+  // 5B Home → Play parting exit state: null at rest.
+  const [exitingTo, setExitingTo] = useState<GameId | null>(null)
+  const exitProgress = useSharedValue(0)
+  const exitTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const launchingRef = useRef(false)
+  const returningRef = useRef(false)
+
+  const resetExitState = useCallback(() => {
+    for (const id of exitTimersRef.current) clearTimeout(id)
+    exitTimersRef.current = []
+    launchingRef.current = false
+    returningRef.current = false
+    cancelAnimation(exitProgress)
+    exitProgress.set(0)
+    setExitingTo(null)
+  }, [exitProgress])
+
+  const handleReturnedHome = useCallback(
+    (animated?: HomeReturnEvent) => {
+      for (const id of exitTimersRef.current) clearTimeout(id)
+      exitTimersRef.current = []
+      launchingRef.current = false
+      cancelAnimation(exitProgress)
+      if (!animated || reduceMotion) {
+        returningRef.current = false
+        exitProgress.set(0)
+        setExitingTo(null)
+        return
+      }
+      // Symmetric reverse of 5B: WHO & CARDS close back around the arriving "?"
+      // (or full logo lands from CardBack) while subtitle & buttons rise up cleanly.
+      returningRef.current = true
+      setExitingTo(animated.kind === 'deck' ? 'pick' : 'wh')
+      exitProgress.set(1)
+      exitProgress.set(withTiming(0, {duration: animated.duration, easing: MOTION_EASING.enter}))
+      const safetyTimer = setTimeout(resetExitState, animated.duration + 160)
+      exitTimersRef.current.push(safetyTimer)
+    },
+    [exitProgress, reduceMotion, resetExitState]
+  )
+
+  // Play's Deck and table textures, fetched now so they are on the device before Play mounts (a dev build loads them from Metro).
+  useEffect(() => {
+    for (const asset of PLAY_TEXTURES) {
+      const uri = NativeImage.resolveAssetSource(asset)?.uri
+      if (uri) NativeImage.prefetch(uri).catch(() => undefined)
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsubscribeReturn = subscribeReturnedHome(handleReturnedHome)
+    // Atomic handoff: clear `exitingTo` in the EXACT same React commit that PlayTransitionOverlay
+    // finishes and unmounts so intact logo.png swaps in with 0-frame gap and 0 double-draw.
+    const unsubscribeOverlay = subscribePlayTransition((event) => {
+      if (event === null && returningRef.current) {
+        // Only the return's safety timer can be pending here; left alone it would cancel a quick next Play.
+        for (const id of exitTimersRef.current) clearTimeout(id)
+        exitTimersRef.current = []
+        returningRef.current = false
+        setExitingTo(null)
+      }
+    })
+    return () => {
+      unsubscribeReturn()
+      unsubscribeOverlay()
+      for (const id of exitTimersRef.current) clearTimeout(id)
+    }
+  }, [handleReturnedHome])
 
   // The hidden dev marker (issue #178) — a long-press on the wordmark below
   // toggles it. See use-internal-marker.ts.
@@ -81,6 +180,7 @@ export default function LandingScreen() {
   // that same centre, hide the splash, then animate it up into its landing position
   // (logoShift 0) while the tagline / Play block and the background texture fade in.
   const logoShift = useSharedValue(0) // vertical px offset from the final landing spot
+  const logoScale = useSharedValue(SPLASH_SCALE)
   const contentOpacity = useSharedValue(0) // tagline + bottom block
   const bgOpacity = useSharedValue(0) // background texture
   const logoRef = useRef<HostInstance>(null)
@@ -97,13 +197,22 @@ export default function LandingScreen() {
       .catch(() => undefined)
   }, [])
 
-  const runEntrance = useCallback(() => {
-    if (startedRef.current) return
-    startedRef.current = true
-    // reveal our view (logo already sitting where the splash logo was), then animate
+  // Pins the logo where the splash drew it, measured on an untransformed box so the pin never measures itself.
+  const logoBoxRef = useRef<HostInstance>(null)
+  const pinLogo = useCallback(
+    (then?: () => void) =>
+      logoBoxRef.current?.measureInWindow((_x, y, _w, h) => {
+        if (h) logoShift.set(winHeight / 2 - (y + h / 2))
+        then?.()
+      }),
+    [winHeight, logoShift]
+  )
+
+  const reveal = useCallback(() => {
     void SplashScreen.hideAsync()
     if (reduceMotion) {
       logoShift.set(0)
+      logoScale.set(1)
       contentOpacity.set(1)
       bgOpacity.set(1)
       return
@@ -111,29 +220,108 @@ export default function LandingScreen() {
     // logo glides up + background fades in together; tagline/Play wait until the logo
     // has settled so they never overlap the moving mark
     logoShift.set(withTiming(0, {duration: LOGO_MS}))
+    logoScale.set(withTiming(1, {duration: LOGO_MS}))
     bgOpacity.set(withTiming(1, {duration: LOGO_MS}))
     contentOpacity.set(withDelay(LOGO_MS, withTiming(1, {duration: FADE_MS})))
-  }, [reduceMotion, logoShift, contentOpacity, bgOpacity])
+  }, [reduceMotion, logoShift, logoScale, contentOpacity, bgOpacity])
 
-  // Keep the logo pinned to screen-centre (matching the splash) using the LATEST layout.
-  // Re-measure on every onLayout until the entrance runs, so a late safe-area inset / font
-  // metric / reflow can't strand the lift and snap the logo when the animation starts.
-  const onLogoLayout = useCallback(() => {
+  const runEntrance = useCallback(() => {
     if (startedRef.current) return
-    logoRef.current?.measureInWindow((_x, y, _w, h) => {
-      if (!startedRef.current && h) logoShift.set(winHeight / 2 - (y + h / 2))
-    })
-  }, [winHeight, logoShift])
+    startedRef.current = true
+    let revealed = false
+    const revealOnce = () => {
+      if (revealed) return
+      revealed = true
+      reveal()
+    }
+    // Re-pin from the final layout and hide the splash two frames later, once the UI thread has the pin.
+    pinLogo(() => requestAnimationFrame(() => requestAnimationFrame(revealOnce)))
+    // A measurement that never answers must not keep the splash up.
+    setTimeout(revealOnce, 250)
+  }, [pinLogo, reveal])
 
-  // Run the entrance once, after a beat for layout + insets to settle (the splash covers
-  // this; if measurement never resolved, the content still reveals — logo just won't fly).
+  const onLogoLayout = useCallback(() => {
+    if (!startedRef.current) pinLogo()
+  }, [pinLogo])
+
+  // The splash hides once layout has settled and the logo has painted (else one frame shows no logo).
+  const [logoShown, setLogoShown] = useState(false)
+  const onLogoDisplay = useCallback(() => setLogoShown(true), [])
   useEffect(() => {
-    const t = setTimeout(runEntrance, 120)
-    return () => clearTimeout(t)
-  }, [runEntrance])
+    const settle = setTimeout(() => {
+      if (logoShown) runEntrance()
+    }, 120)
+    const fallback = setTimeout(runEntrance, 1000)
+    return () => {
+      clearTimeout(settle)
+      clearTimeout(fallback)
+    }
+  }, [runEntrance, logoShown])
 
-  const logoStyle = useAnimatedStyle(() => ({transform: [{translateY: logoShift.get()}]}))
-  const contentStyle = useAnimatedStyle(() => ({opacity: contentOpacity.get()}))
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [{translateY: logoShift.get()}, {scale: logoScale.get()}],
+  }))
+  // Keep translateY always attached on the same animated style so Fabric never strands
+  // the native view off-screen when exitProgress resets back to 0.
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacity.get(),
+    transform: [{translateY: interpolate(exitProgress.get(), [0, 1], [0, winHeight * 0.48])}],
+  }))
+  const whoPartStyle = useAnimatedStyle(() => ({
+    transform: [{translateX: interpolate(exitProgress.get(), [0, 1], [0, -winWidth * 0.75])}],
+  }))
+  const cardsPartStyle = useAnimatedStyle(() => ({
+    transform: [{translateX: interpolate(exitProgress.get(), [0, 1], [0, winWidth * 0.75])}],
+  }))
+
+  // 5B Home → Play: WHO parts left, CARDS parts right (or full WHO?CARDS flies to CardBack),
+  // subtitle + buttons drop off the bottom while Play rises cleanly through the opening.
+  const handlePlay = useCallback(() => {
+    impact('light')
+    const playHref = `/play/${DEFAULT_DECK_SLUG}` as const
+    const dur = motionDuration(MOTION_DURATION.homeToPlay, reduceMotion)
+    if (dur === 0) {
+      router.push(playHref)
+      return
+    }
+    if (launchingRef.current || exitingTo !== null) return
+    launchingRef.current = true
+    void getStoredGame().then((targetGame) => {
+      const launch = (rect: {x: number; y: number; width: number; height: number}) => {
+        setExitingTo(targetGame)
+        cancelAnimation(exitProgress)
+        exitProgress.set(0)
+        startPlayTransition(targetGame, rect)
+        exitProgress.set(
+          withTiming(1, {duration: Math.round(dur * 0.48), easing: MOTION_EASING.exit})
+        )
+        const pushTimer = setTimeout(() => router.push(playHref), Math.round(dur * 0.44))
+        const resetTimer = setTimeout(resetExitState, dur + 80)
+        exitTimersRef.current.push(pushTimer, resetTimer)
+      }
+      if (logoRef.current?.measureInWindow) {
+        logoRef.current.measureInWindow((x, y, width, height) => {
+          launch(
+            width && height
+              ? {x, y, width, height}
+              : {
+                  x: (winWidth - LOGO_WIDTH) / 2,
+                  y: winHeight * 0.36,
+                  width: LOGO_WIDTH,
+                  height: LOGO_HEIGHT,
+                }
+          )
+        })
+      } else {
+        launch({
+          x: (winWidth - LOGO_WIDTH) / 2,
+          y: winHeight * 0.36,
+          width: LOGO_WIDTH,
+          height: LOGO_HEIGHT,
+        })
+      }
+    })
+  }, [exitingTo, exitProgress, reduceMotion, resetExitState, router, winHeight, winWidth])
 
   const cards = serverMeta?.cards ?? deck.questionIds.length
   const languages = serverMeta?.languages ?? deck.languages.length
@@ -156,48 +344,109 @@ export default function LandingScreen() {
               Pressable swallowing it into an unlabeled button — this marker is
               deliberately not meant to be discoverable at all, screen reader or not. */}
           <Pressable onLongPress={toggleInternalMarker} accessible={false}>
-            <Animated.View ref={logoRef} onLayout={onLogoLayout} style={logoStyle}>
-              <Image
-                source={logo}
-                contentFit="contain"
-                accessibilityLabel="WhoCards"
-                // explicit width AND height — native sizes a required image to its
-                // intrinsic pixels otherwise (aspectRatio alone only works on web)
-                style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
-              />
-            </Animated.View>
+            <View ref={logoBoxRef} onLayout={onLogoLayout}>
+              <Animated.View ref={logoRef} style={logoStyle}>
+                {/* Every logo image stays mounted and swaps by opacity: a fresh expo-image decodes a frame late. */}
+                <Image
+                  source={logo}
+                  contentFit="contain"
+                  onDisplay={onLogoDisplay}
+                  accessibilityLabel="WhoCards"
+                  // explicit width AND height — native sizes a required image to its
+                  // intrinsic pixels otherwise (aspectRatio alone only works on web)
+                  style={{
+                    width: LOGO_WIDTH,
+                    height: LOGO_HEIGHT,
+                    opacity: exitingTo === null ? 1 : 0,
+                  }}
+                />
+                {/* Classic: the clipped halves part around the flying "?"; Pick a Card: the overlay carries it all. */}
+                <View
+                  pointerEvents="none"
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                  style={{
+                    position: 'absolute',
+                    width: LOGO_WIDTH,
+                    height: LOGO_HEIGHT,
+                    opacity: exitingTo === 'wh' ? 1 : 0,
+                  }}
+                >
+                  <Animated.View
+                    style={[
+                      {
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        width: WHO_CLIP_WIDTH,
+                        height: LOGO_HEIGHT,
+                        overflow: 'hidden',
+                      },
+                      whoPartStyle,
+                    ]}
+                  >
+                    <Image
+                      source={logo}
+                      contentFit="contain"
+                      style={{width: LOGO_WIDTH, height: LOGO_HEIGHT}}
+                    />
+                  </Animated.View>
+                  <Animated.View
+                    style={[
+                      {
+                        position: 'absolute',
+                        left: CARDS_CLIP_LEFT,
+                        top: 0,
+                        width: CARDS_CLIP_WIDTH,
+                        height: LOGO_HEIGHT,
+                        overflow: 'hidden',
+                      },
+                      cardsPartStyle,
+                    ]}
+                  >
+                    <Image
+                      source={logo}
+                      contentFit="contain"
+                      style={{
+                        width: LOGO_WIDTH,
+                        height: LOGO_HEIGHT,
+                        marginLeft: -CARDS_CLIP_LEFT,
+                      }}
+                    />
+                  </Animated.View>
+                </View>
+              </Animated.View>
+            </View>
           </Pressable>
           <Animated.Text
             style={contentStyle}
             // 26.25px line height, kept since the NativeWind 5 migration; rc reads leading-* as 0.25rem steps.
             className="text-darker/80 dark:text-white/80 mt-7 text-center font-sans text-xl font-semibold leading-7.5"
           >
-            Change your world,{'\n'}one conversation at a time.
+            {t('home.tagline')}
           </Animated.Text>
         </View>
 
         <Animated.View style={contentStyle} className="w-full items-center gap-5">
           <Text className="text-mutedOnLight dark:text-gray-dark font-sans text-sm">
-            {cards} cards · {languages} languages
+            {t('home.count', {cards, languages})}
           </Text>
-          <Link href={`/play/${DEFAULT_DECK_SLUG}`} asChild>
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel="Play"
-              onPress={() => impact('light')}
-              className="active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
-            >
-              <Ionicons name="play" size={18} color={colors.darker} style={{marginRight: 8}} />
-              <Text className="text-darker font-sans text-base font-bold">Play</Text>
-            </PressableScale>
-          </Link>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={t('home.play')}
+            onPress={handlePlay}
+            className="active:bg-yellow-500 w-full flex-row items-center justify-center rounded-full bg-yellow-400 py-4"
+          >
+            <Ionicons name="play" size={18} color={colors.darker} style={{marginRight: 8}} />
+            <Text className="text-darker font-sans text-base font-bold">{t('home.play')}</Text>
+          </PressableScale>
           {/* the single Settings entry point (issue #176) — the app's first
               secondary-button, ported from the website's `.btn-secondary`
               (see secondary-button.tsx). Everything that used to be two
               outline chips here (Game, Theme) plus the play-screen language
               sheet (Language, Tabletop mode) now lives behind this one menu. */}
           <SecondaryButton
-            label="Settings"
+            label={t('home.settings')}
             icon={<Ionicons name="settings-outline" size={18} color={colors.white} />}
             onPress={() => setSettingsModalOpen(true)}
           />

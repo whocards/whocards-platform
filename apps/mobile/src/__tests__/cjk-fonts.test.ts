@@ -1,12 +1,14 @@
 /**
- * The bundled Noto CJK faces are subset to the decks' glyphs (issue #1), so a deck
- * change that adds a character must re-run `pnpm -F mobile fonts:cjk` or ship tofu.
+ * The bundled Noto CJK faces are subset to the decks' and the app's own words (issue #1), so a
+ * deck or catalog change that adds a character must re-run `pnpm -F mobile fonts:cjk` or ship tofu.
+ * The UI's `font-sans` follows the same faces (app/_layout.tsx), since iOS falls back elsewhere.
  */
 import {readFileSync} from 'node:fs'
 import path from 'node:path'
 import {getAllDecks} from '@whocards/decks'
 
 import {SCRIPT_FONTS} from '@/components/question-text'
+import {NATIVE_LANGUAGE_NAMES} from '@/lib/language-names'
 
 /** Every codepoint a TrueType font maps to a glyph, read from its cmap's format 4 and 12 subtables. */
 const mappedCodepoints = (file: string) => {
@@ -55,19 +57,27 @@ const mappedCodepoints = (file: string) => {
   return mapped
 }
 
-describe.each(['zh', 'jp'])('the %s question face', (language) => {
-  const family = SCRIPT_FONTS[language]
+describe.each(Object.keys(SCRIPT_FONTS))('the %s face', (language) => {
+  const mapped = mappedCodepoints(
+    path.join(__dirname, `../../assets/fonts/${SCRIPT_FONTS[language]}.ttf`)
+  )
+  const missing = (text: string) =>
+    [...new Set(text.replace(/\s/g, ''))]
+      .filter((char) => !mapped.has(char.codePointAt(0) ?? 0))
+      .join('')
 
   it('has a glyph for every character the decks show in it', () => {
-    const mapped = mappedCodepoints(path.join(__dirname, `../../assets/fonts/${family}.ttf`))
-    const shown = new Set<string>()
-    for (const deck of getAllDecks()) {
-      for (const question of Object.values(deck.questions)) {
-        for (const char of question[language] ?? '') if (/\S/.test(char)) shown.add(char)
-      }
-    }
-    expect(shown.size).toBeGreaterThan(0)
-    const missing = [...shown].filter((char) => !mapped.has(char.codePointAt(0) ?? 0))
-    expect(missing.join('')).toBe('')
+    const shown = getAllDecks()
+      .flatMap((deck) => Object.values(deck.questions).map((question) => question[language] ?? ''))
+      .join('')
+    expect(shown.length).toBeGreaterThan(0)
+    expect(missing(shown)).toBe('')
+  })
+
+  it('has a glyph for every character of the app in that language', () => {
+    const catalog: Record<string, string> = JSON.parse(
+      readFileSync(path.join(__dirname, `../i18n/${language}.json`), 'utf8')
+    )
+    expect(missing(Object.values(catalog).join('') + NATIVE_LANGUAGE_NAMES[language])).toBe('')
   })
 })

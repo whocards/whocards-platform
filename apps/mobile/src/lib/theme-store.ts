@@ -30,7 +30,7 @@ const isThemeSetting = (value: string): value is ThemeSetting =>
 export const getStoredTheme = async (): Promise<ThemeSetting> => {
   if (cache) return cache
 
-  const stored = await AsyncStorage.getItem(STORAGE_KEY)
+  const stored = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null)
   if (stored && isThemeSetting(stored)) {
     cache = stored
     return stored

@@ -1,6 +1,5 @@
-import {Image} from 'expo-image'
 import type {ReactNode} from 'react'
-import {StyleSheet, View} from 'react-native'
+import {Image, StyleSheet, View} from 'react-native'
 import type {SharedValue} from 'react-native-reanimated'
 import Animated, {useAnimatedStyle} from 'react-native-reanimated'
 import {colors} from '@whocards/tokens'
@@ -25,6 +24,8 @@ type ScreenBackgroundProps = {
    * jarring against dark chrome).
    */
   table?: boolean
+  /** Fires once the texture is on screen: it lands a frame or two after mount. */
+  onDisplay?: () => void
 }
 
 /**
@@ -39,7 +40,12 @@ type ScreenBackgroundProps = {
  * dark regardless of theme paint their own small dark panel behind it instead
  * of forcing this whole canvas dark (see `app/play/[deck].tsx`).
  */
-export const ScreenBackground = ({children, textureOpacity, table}: ScreenBackgroundProps) => {
+export const ScreenBackground = ({
+  children,
+  textureOpacity,
+  table,
+  onDisplay,
+}: ScreenBackgroundProps) => {
   const isDark = useIsDark()
   const midTable = table && isDark
 
@@ -57,11 +63,20 @@ export const ScreenBackground = ({children, textureOpacity, table}: ScreenBackgr
       <Animated.View style={[StyleSheet.absoluteFill, textureStyle]} pointerEvents="none">
         <Image
           source={midTable ? textureMid : isDark ? textureDark : textureLight}
-          contentFit="cover"
-          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+          fadeDuration={0}
+          style={styles.texture}
+          onLoad={onDisplay}
         />
       </Animated.View>
       {children}
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  texture: {
+    width: '100%',
+    height: '100%',
+  },
+})

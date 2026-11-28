@@ -22,11 +22,12 @@ const CHROME_HIDE_MS = 3000
  * entirely, so the top-bar half of this hook went with it — re-add it here if
  * a player ever needs a real top bar again.
  */
-export const usePlayerChrome = () => {
+export const usePlayerChrome = (initialBarH = 0) => {
   const reduceMotion = useReducedMotion()
   const chromeProgress = useSharedValue(1)
   const [chromeShown, setChromeShown] = useState(true)
-  const [bottomBarH, setBottomBarH] = useState(0)
+  // Seeded on a Game switch, so the incoming player lays out once, where the outgoing one stood.
+  const [bottomBarH, setBottomBarH] = useState(initialBarH)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const setChromeVisible = useCallback(

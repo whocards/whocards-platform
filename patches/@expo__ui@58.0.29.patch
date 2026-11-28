@@ -1,0 +1,99 @@
+diff --git a/android/src/main/java/expo/modules/ui/ModalBottomSheetView.kt b/android/src/main/java/expo/modules/ui/ModalBottomSheetView.kt
+index 9ca09321e7068ced9a490fdd06dac7a2d8ec3949..faf258e4ef6ec1a69b6895fa60db62f65cce4077 100644
+--- a/android/src/main/java/expo/modules/ui/ModalBottomSheetView.kt
++++ b/android/src/main/java/expo/modules/ui/ModalBottomSheetView.kt
+@@ -1,4 +1,4 @@
+-@file:OptIn(ExperimentalMaterial3Api::class)
++@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+ 
+ package expo.modules.ui
+ 
+@@ -9,7 +9,13 @@ import android.graphics.Color
+ import android.view.KeyEvent
+ import android.view.inputmethod.InputMethodManager
+ import androidx.compose.material3.BottomSheetDefaults
++import androidx.compose.animation.core.FiniteAnimationSpec
++import androidx.compose.animation.core.Spring
++import androidx.compose.animation.core.spring
+ import androidx.compose.material3.ExperimentalMaterial3Api
++import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
++import androidx.compose.material3.MaterialExpressiveTheme
++import androidx.compose.material3.MotionScheme
+ import androidx.compose.material3.MaterialTheme
+ import androidx.compose.material3.ModalBottomSheet
+ import androidx.compose.material3.ModalBottomSheetProperties
+@@ -18,6 +24,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
+ import androidx.compose.runtime.Composable
+ import androidx.compose.runtime.DisposableEffect
+ import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.remember
+ import androidx.compose.runtime.rememberCoroutineScope
+ import androidx.compose.ui.graphics.Color as ComposeColor
+ import androidx.compose.ui.graphics.luminance
+@@ -154,30 +161,43 @@ fun FunctionalComposableScope.ModalBottomSheetContent(
+   val resolvedScrimColor = props.scrimColor.composeOrNull ?: BottomSheetDefaults.ScrimColor
+   val dragHandleSlotView = findChildSlotView(view, "dragHandle")
+ 
+-  ModalBottomSheet(
+-    sheetState = sheetState,
+-    onDismissRequest = onDismissRequest,
+-    containerColor = resolvedContainerColor,
+-    contentColor = resolvedContentColor,
+-    scrimColor = resolvedScrimColor,
+-    sheetGesturesEnabled = props.sheetGesturesEnabled,
+-    dragHandle = when {
+-      dragHandleSlotView != null -> {
+-        { with(UIComposableScope()) { with(dragHandleSlotView) { Content() } } }
+-      }
+-      props.showDragHandle -> {
+-        { BottomSheetDefaults.DragHandle() }
++  // Material hides the sheet on its fast-effects spring (~120ms), a snap next to its open; hide it the way it opens.
++  val contentMotionScheme = MaterialTheme.motionScheme
++  val sheetMotionScheme = remember(contentMotionScheme) {
++    object : MotionScheme by contentMotionScheme {
++      override fun <T> fastEffectsSpec(): FiniteAnimationSpec<T> =
++        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
++    }
++  }
++
++  MaterialExpressiveTheme(motionScheme = sheetMotionScheme) {
++    ModalBottomSheet(
++      sheetState = sheetState,
++      onDismissRequest = onDismissRequest,
++      containerColor = resolvedContainerColor,
++      contentColor = resolvedContentColor,
++      scrimColor = resolvedScrimColor,
++      sheetGesturesEnabled = props.sheetGesturesEnabled,
++      dragHandle = when {
++        dragHandleSlotView != null -> {
++          { with(UIComposableScope()) { with(dragHandleSlotView) { Content() } } }
++        }
++        props.showDragHandle -> {
++          { BottomSheetDefaults.DragHandle() }
++        }
++        else -> null
++      },
++      properties = ModalBottomSheetProperties(
++        shouldDismissOnBackPress = props.properties.shouldDismissOnBackPress,
++        shouldDismissOnClickOutside = props.properties.shouldDismissOnClickOutside
++      ),
++      modifier = ModifierRegistry.applyModifiers(props.modifiers, appContext, composableScope, globalEventDispatcher)
++    ) {
++      MaterialExpressiveTheme(motionScheme = contentMotionScheme) {
++        ForwardKeyEventsToActivity(appContext.currentActivity)
++        Children(UIComposableScope(), filter = { !isSlotView(it) })
+       }
+-      else -> null
+-    },
+-    properties = ModalBottomSheetProperties(
+-      shouldDismissOnBackPress = props.properties.shouldDismissOnBackPress,
+-      shouldDismissOnClickOutside = props.properties.shouldDismissOnClickOutside
+-    ),
+-    modifier = ModifierRegistry.applyModifiers(props.modifiers, appContext, composableScope, globalEventDispatcher)
+-  ) {
+-    ForwardKeyEventsToActivity(appContext.currentActivity)
+-    Children(UIComposableScope(), filter = { !isSlotView(it) })
++    }
+   }
+ 
+   LaunchedEffect(Unit) {

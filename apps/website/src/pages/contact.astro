@@ -90,12 +90,36 @@ if (Astro.request.method === 'POST') {
   description='Get in touch with the WhoCards team. We are here to help with app support, general questions, and anything else you need.'
   class='pt-28 lg:pt-32'
 >
-  <div class='grid w-full grid-flow-row items-start justify-between px-5 md:grid-flow-col md:grid-cols-2 md:px-[2vw] lg:max-w-7xl xl:px-0'>
-    <div class='flex flex-col items-center justify-center gap-4 pb-14 text-center text-lg text-gray-dark md:items-start md:justify-start md:gap-5 md:text-start lg:text-xl'>
+  {/* Phones read top to bottom: title, form, then the other ways to reach us. From md the form is the right column. */}
+  <div class='grid w-full grid-cols-1 items-start px-5 md:grid-cols-2 md:grid-rows-[auto_1fr] md:px-[2vw] lg:max-w-7xl xl:px-0'>
+    <div class='flex flex-col items-center gap-4 pb-8 text-center text-gray-dark md:items-start md:gap-5 md:pb-5 md:text-start'>
       <h1 class='font-title text-3xl leading-tight font-bold tracking-tight text-white md:pb-2 lg:text-5xl'>
         Contact Us
       </h1>
       <Icon name='chat' class='h-16 w-16' />
+    </div>
+
+    <div class='md:col-start-2 md:row-span-2 md:row-start-1'>
+      {confirmed ? (
+        <FormSuccess
+          class='h-full'
+          type='message'
+          href='/contact'
+          title='Message sent!'
+          message="Thanks for reaching out. We'll get back to you soon."
+          buttonLabel='Send another message'
+        />
+      ) : (
+        <ContactForm
+          formData={formData}
+          errors={errors}
+          serverError={serverError}
+          siteKey={siteKey}
+        />
+      )}
+    </div>
+
+    <div class='flex flex-col items-center gap-4 pb-14 text-center text-lg text-gray-dark md:items-start md:gap-5 md:text-start lg:text-xl'>
       <p class='font-semibold md:text-lg'>We would love to hear from you.</p>
       <p class='text-base'>
         Reach out for app support, general questions, or anything else — we read every message.
@@ -124,24 +148,6 @@ if (Astro.request.method === 'POST') {
         </a>
       </p>
     </div>
-
-    {confirmed ? (
-      <FormSuccess
-        class='h-full'
-        type='message'
-        href='/contact'
-        title='Message sent!'
-        message="Thanks for reaching out. We'll get back to you soon."
-        buttonLabel='Send another message'
-      />
-    ) : (
-      <ContactForm
-        formData={formData}
-        errors={errors}
-        serverError={serverError}
-        siteKey={siteKey}
-      />
-    )}
   </div>
 </Layout>
 

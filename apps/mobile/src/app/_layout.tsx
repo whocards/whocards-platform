@@ -1,17 +1,23 @@
 import {Stack} from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import {StatusBar} from 'expo-status-bar'
+import {VariableContextProvider} from 'nativewind'
 import {PostHogProvider} from 'posthog-react-native'
 import {useEffect} from 'react'
 import {Platform} from 'react-native'
 import {GestureHandlerRootView} from 'react-native-gesture-handler'
+import {DEFAULT_DECK_SLUG} from '@whocards/decks'
 import {identify} from '@whocards/observability'
 import {colors} from '@whocards/tokens'
 
 import {ErrorBoundary} from '@/components/error-boundary'
+import {questionFontFamily} from '@/components/question-text'
+import {PlayTransitionOverlay} from '@/components/play-transition-overlay'
 import {VersionGate} from '@/components/version-gate'
 import {setColorScheme, useColorScheme} from '@/lib/color-scheme'
 import {getDeviceId} from '@/lib/device-id'
+import {setUiLanguage, useUiLanguage} from '@/lib/i18n'
+import {getStoredLanguage} from '@/lib/language-store'
 import {askAfterLaunch, listenForPromptTaps, refillDailyQuestions} from '@/lib/notification-store'
 import {initObservability, posthog} from '@/lib/observability'
 import {getStoredTheme} from '@/lib/theme-store'
@@ -30,6 +36,8 @@ void getDeviceId().then((id) => identify(id))
 // override; calling `setColorScheme('system')` for the (common) unset/default
 // case is a no-op in effect, just an explicit one.
 void getStoredTheme().then((stored) => setColorScheme(stored))
+// The app's words follow the stored Language; until one is picked they follow the phone.
+void getStoredLanguage(DEFAULT_DECK_SLUG).then((stored) => stored && setUiLanguage(stored))
 
 import '../global.css'
 
@@ -60,17 +68,22 @@ export default function RootLayout() {
   // themed those screens' chrome too, so every screen now themes and this gap color
   // just follows suit, live, via `@/lib/color-scheme`.
   const isDark = useColorScheme() === 'dark'
+  // golos-text has no Hebrew or CJK glyphs, and iOS's fallback for them is not the Noto face the Questions use.
+  const fontSans = questionFontFamily(useUiLanguage())
   const navigator = (
-    <VersionGate>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: {backgroundColor: isDark ? colors.darkest : colors.canvasLight},
-          // iOS asks the native-stack screen for its bar style, whose default follows the device, not the Theme.
-          statusBarStyle: Platform.OS === 'ios' ? (isDark ? 'light' : 'dark') : undefined,
-        }}
-      />
-    </VersionGate>
+    <VariableContextProvider value={{'--font-sans': fontSans}}>
+      <VersionGate>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: {backgroundColor: isDark ? colors.darkest : colors.canvasLight},
+            // iOS asks the native-stack screen for its bar style, whose default follows the device, not the Theme.
+            statusBarStyle: Platform.OS === 'ios' ? (isDark ? 'light' : 'dark') : undefined,
+            animation: 'none',
+          }}
+        />
+      </VersionGate>
+    </VariableContextProvider>
   )
 
   return (
@@ -101,6 +114,7 @@ export default function RootLayout() {
         ) : (
           navigator
         )}
+        <PlayTransitionOverlay />
       </ErrorBoundary>
     </GestureHandlerRootView>
   )

@@ -56,6 +56,12 @@ describe('game-store', () => {
     expect(await store.getStoredGame()).toBe('wh')
   })
 
+  it('falls back to the default when storage fails, so Play still starts', async () => {
+    const {store, storage} = load()
+    jest.mocked(storage.getItem).mockRejectedValueOnce(new Error('disk'))
+    expect(await store.getStoredGame()).toBe('wh')
+  })
+
   it('caches the value: no getItem on repeated reads after a set', async () => {
     const {store, storage} = load()
     await store.setStoredGame('pick')

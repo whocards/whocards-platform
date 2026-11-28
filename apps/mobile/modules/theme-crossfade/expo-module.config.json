@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["ThemeCrossfadeModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.themecrossfade.ThemeCrossfadeModule"]
+  }
+}

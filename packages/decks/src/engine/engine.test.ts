@@ -44,6 +44,11 @@ describe('navReducer', () => {
     expect(next.ids.slice(ids.length).toSorted()).toEqual(ids.toSorted())
   })
 
+  it('appends the cycle the caller already drew, so a previewed next card is the one it lands on', () => {
+    const next = reducer({ids, idx: ids.length - 1}, {type: 'next', cycle: ['c', 'a', 'b']})
+    expect(next).toEqual({ids: [...ids, 'c', 'a', 'b'], idx: ids.length})
+  })
+
   it('reset jumps to a startId in natural order (deep link into the open deck)', () => {
     // from anywhere in the deck, a reset to 'c' re-seeds natural order at that card
     expect(reducer({ids: shuffle(ids), idx: 2}, {type: 'reset', startId: 'c'})).toEqual({

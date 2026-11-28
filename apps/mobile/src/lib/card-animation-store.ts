@@ -13,7 +13,7 @@ let cache: CardAnimation | undefined
 export const getStoredCardAnimation = async (): Promise<CardAnimation> => {
   if (cache !== undefined) return cache
 
-  const stored = await AsyncStorage.getItem(STORAGE_KEY)
+  const stored = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null)
   cache = stored === 'flip' ? 'flip' : 'slide'
   return cache
 }

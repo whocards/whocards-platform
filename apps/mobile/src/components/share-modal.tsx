@@ -1,13 +1,12 @@
 import {Ionicons} from '@expo/vector-icons'
-import {StatusBar} from 'expo-status-bar'
+import {BottomSheet, RNHostView} from '@expo/ui'
 import {logWarn} from '@whocards/observability'
 import {EVENTS} from '@whocards/observability/events'
 import type {ShareEventName, ShareFormat} from '@whocards/observability/events'
-import {useCallback, useMemo, useState} from 'react'
+import {useCallback, useEffect, useRef, useState} from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
+  AppState,
   Platform,
   Pressable,
   ScrollView,
@@ -17,30 +16,16 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
-import {Gesture, GestureDetector, GestureHandlerRootView} from 'react-native-gesture-handler'
-import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {colors} from '@whocards/tokens'
 
+import {getStoredAskerName, setStoredAskerName} from '@/lib/asker-name-store'
 import {useIsDark} from '@/lib/color-scheme'
+import {useT} from '@/lib/i18n'
 import {downloadAndShareImage} from '@/lib/share-image'
 import {ASKER_NAME_MAX, buildAskMessage, buildAskUrl} from '@/lib/share-url'
+import {SHEET_PADDING, sheetTheme} from '@/lib/sheet-theme'
 
-// A downward drag past this many px, or a fling faster than this velocity
-// (px/s), counts as "swipe down" and dismisses the sheet — mirrors the
-// SWIPE_THRESHOLD-and-velocity pattern used for the card swipe in pick-player.tsx.
-const SWIPE_DISMISS_DISTANCE = 80
-const SWIPE_DISMISS_VELOCITY = 800
-
-// The drag handle's own layout is small (a decorative pill); extend its
-// gesture-recognized touch area to roughly the 44pt-square recommended
-// minimum tap target via RNGH's own hitSlop (the wrapped View's RN `hitSlop`
-// prop isn't read by gesture-handler's native recognizers).
-const HANDLE_HIT_SLOP = {top: 12, bottom: 12, left: 60, right: 60}
-
-// Cap the sheet's height so extreme Dynamic Type / a compact device in
-// landscape can't push rows off-screen — the content still sizes normally
-// (title + up to three rows is always well under this) and only engages
-// scrolling in that edge case.
+// Caps the rows at this fraction of the window; they only scroll under max Dynamic Type or in landscape.
 const SHEET_MAX_HEIGHT_RATIO = 0.8
 
 export type {ShareFormat}
@@ -74,65 +59,15 @@ type Row = {
 }
 
 /**
- * Native Share picker — a compact bottom sheet sized to its content (title +
- * up to three rows), anchored to the bottom edge with the screen behind it
- * dimmed (issue #162). Unlike the language/game modals (`presentationStyle=
- * "pageSheet"`, a native full-height card sheet — appropriate there since a
- * language list can run long), this sheet's content is always small and
- * fixed-size, so a full-height native sheet wasted most of the screen. That's
- * an intentional divergence, not an oversight — the language/game modals are
- * unaffected by this change.
+ * The Share picker: the same native bottom sheet as Settings (settings-modal.tsx), sized to its
+ * rows. It offers the web link (works offline), an ask, and the two on-demand Share Card images
+ * when the deck supports them; a link-only sheet is a normal state. An image row downloads the PNG
+ * and hands the file to the OS share sheet; a failed download shows an inline message and leaves
+ * the sheet usable.
  *
- * Built on a transparent, `overFullScreen` `Modal` (RN's own suggestion for a
- * custom-height sheet — there's no first-class "compact detent" API) rather
- * than a bottom-sheet library: the content is simple enough that a dimmed
- * backdrop + a bottom-anchored, content-sized `View` gets the native
- * partial-height feel without a new native dependency. Tapping the backdrop,
- * or swiping down on the sheet, both call `onClose`; a `GestureDetector` pan
- * (`react-native-gesture-handler`, already a dependency — see pick-player.tsx's
- * card swipe) drives the swipe, wrapped in its own `GestureHandlerRootView`
- * since gestures inside an RN `Modal` need a fresh root (the Modal renders
- * into a separate native surface).
- *
- * Offers the web deep-link (unchanged payload, works offline) alongside the
- * two on-demand Share Card images (issue #154) — when the current deck
- * supports them (see `storyImageUrl`/`postImageUrl` above). A link-only sheet
- * (one row) is a normal, intentional state, not a degraded one.
- *
- * The link row never touches the network. The image rows download the PNG to a
- * local cache file (`@/lib/share-image`) and hand it to the OS share sheet as a
- * file, which is what makes Instagram/TikTok/WhatsApp status show up as targets.
- * A download failure (offline, endpoint error) shows a brief inline message and
- * leaves the sheet open and usable — it never blocks the link row.
- *
- * Never auto-closes on a share (owner decision, 2026-07-03, issue #192): no
- * row closes this sheet as a *side effect* of the native share flow, on
- * either platform — only an explicit user action does (X, swipe-down,
- * backdrop tap). This mattered most on Android, which has no trustworthy "the
- * user actually shared" signal to close on in the first place: `Share.share`
- * (`ShareModule.kt`) resolves `sharedAction` unconditionally the instant the
- * chooser *opens*, and `Sharing.shareAsync` (`SharingModule.kt`'s
- * `OnActivityResult`) resolves on *any* chooser dismissal, completed or
- * cancelled alike. The sheet used to auto-close on both of those, tearing
- * down this Modal (and its nested GestureHandlerRootView — RNGH needs a
- * fresh root inside a Modal, see below) right as a competing Activity launch
- * was changing window focus — a race matching known upstream bug classes
- * where that leaves gesture/touch dispatch stuck (see `shareLink`'s comment),
- * and a much better fit for the originally reported "app left unresponsive
- * after dismissing the share sheet" symptom than a genuine hang. Staying open
- * on iOS too (even though its link row *does* get a trustworthy cancel
- * signal) is a deliberate, matching choice: it lets someone share the same
- * card to a second target right away instead of reopening the sheet.
- *
- * Themed (issue #163, amendment 1): a dark surface in dark mode, the
- * pre-existing light sheet surface in light mode — see
- * docs/design/163-light-mode/proposal.md. Also sets its own `<StatusBar>`
- * override (issue #173): this sheet used to rely on always being opened from
- * an always-dark Play/Pick a Card screen (whose own root default was a fixed
- * `style="light"`), but now that those screens theme too, this sheet needs the
- * same `isDark` flip as every other themed sheet (settings-modal.tsx and its
- * settings-sheet-header.tsx) rather than inheriting whatever its opener
- * happened to set.
+ * Closes once the player is back from the OS share sheet (owner, on-device 2026-11-26), shared or
+ * cancelled. It closes on the way back, never while the OS sheet is opening: tearing a sheet
+ * down under an opening Android chooser left touch dispatch stuck (issue #192).
  */
 export const ShareModal = ({
   visible,
@@ -143,7 +78,6 @@ export const ShareModal = ({
   onShareEvent,
   onClose,
 }: ShareModalProps) => {
-  const insets = useSafeAreaInsets()
   // The row currently downloading its image — drives the spinner + disables the
   // other rows so a slow download can't be started twice from a double-tap.
   const [pending, setPending] = useState<ShareFormat | null>(null)
@@ -154,6 +88,7 @@ export const ShareModal = ({
   // Themed (issue #163, amendment 1): a dark surface in dark mode, the
   // pre-existing light sheet surface in light mode.
   const isDark = useIsDark()
+  const t = useT()
   const iconColor = isDark ? colors.white : colors.darker
   const spinnerColor = isDark ? colors.gray.dark : colors.mutedOnLight
 
@@ -161,30 +96,53 @@ export const ShareModal = ({
   // current deck is Pool-backed — see the prop docs above). A link-only sheet
   // is a normal, intentional state.
   const rows: Row[] = [
-    {format: 'link', icon: 'link-outline', label: 'Share link'},
-    {format: 'ask', icon: 'chatbubbles-outline', label: 'Ask someone'},
+    {format: 'link', icon: 'link-outline', label: t('share.link')},
+    {format: 'ask', icon: 'chatbubbles-outline', label: t('share.ask')},
     ...(storyImageUrl
       ? [
           {
             format: 'story',
             icon: 'phone-portrait-outline',
-            label: 'Story image',
+            label: t('share.story'),
             url: storyImageUrl,
           } as const,
         ]
       : []),
     ...(postImageUrl
-      ? [{format: 'post', icon: 'image-outline', label: 'Post image', url: postImageUrl} as const]
+      ? [
+          {
+            format: 'post',
+            icon: 'image-outline',
+            label: t('share.post'),
+            url: postImageUrl,
+          } as const,
+        ]
       : []),
   ]
 
-  // iOS passes taps outside the OS share sheet through to our backdrop; closing this Modal under that sheet strands an empty, touch-eating screen.
-  const [osSheetOpen, setOsSheetOpen] = useState(false)
-  const close = useCallback(() => {
-    if (!osSheetOpen) onClose()
-  }, [osSheetOpen, onClose])
-  const openingOsSheet = useCallback(() => setOsSheetOpen(Platform.OS === 'ios'), [])
-  const osSheetClosed = useCallback(() => setOsSheetOpen(false), [])
+  // Android's Share.share resolves as its chooser opens, so there the close waits for the app to return.
+  const closeAfterShare = useCallback(
+    (resolvedOnOpen = false) => {
+      if (!(resolvedOnOpen && Platform.OS === 'android')) {
+        onClose()
+        return
+      }
+      const sub = AppState.addEventListener('change', (state) => {
+        if (state !== 'active') return
+        sub.remove()
+        onClose()
+      })
+    },
+    [onClose]
+  )
+
+  // Bumped on every open, so a download from an earlier session can't close or reset this one.
+  const sessionRef = useRef(0)
+  useEffect(() => {
+    if (!visible) return
+    sessionRef.current += 1
+    void getStoredAskerName().then(setAskerName)
+  }, [visible])
 
   // Clear stale state whenever the sheet is (re)opened for a (possibly new) card.
   const [wasVisible, setWasVisible] = useState(visible)
@@ -194,7 +152,6 @@ export const ShareModal = ({
       setPending(null)
       setError(null)
       setAskOpen(false)
-      setAskerName('')
     }
   }
 
@@ -203,7 +160,6 @@ export const ShareModal = ({
     // `url` is read by iOS share sheet; `message` carries the link on Android (which
     // ignores the `url` field) and provides a fallback for any platform. Offline-safe
     // — exactly today's payload, no network involved.
-    openingOsSheet()
     Share.share({message: `${questionText}\n\n${shareUrl}`, url: shareUrl})
       .then((result) => {
         onShareEvent(EVENTS.SHARE_SHEET_OPENED, 'link')
@@ -211,67 +167,47 @@ export const ShareModal = ({
         if (Platform.OS === 'ios' && result.action === Share.sharedAction) {
           onShareEvent(EVENTS.SHARE_COMPLETED, 'link')
         }
-        // Owner decision, 2026-07-03 (issue #192): this sheet no longer closes
-        // itself as a side effect of a share — on either platform. Two reasons.
-        // (1) Android has no trustworthy "the user actually shared" signal to
-        // close on in the first place (see above); auto-closing on that
-        // unconditional resolve used to tear down this sheet's Modal (and its
-        // nested GestureHandlerRootView — RNGH needs a fresh root inside a
-        // Modal, see the file doc above) right as the *incoming* system
-        // chooser's own window-focus transition was in flight — two competing
-        // window changes at once. That matches known upstream bug classes where
-        // a competing Activity launch mid-touch leaves gesture/touch dispatch
-        // stuck (facebook/react-native#17073,
-        // react-navigation/react-navigation#9757), and it explains the
-        // originally reported "unresponsive after dismissing the share sheet"
-        // symptom far better than a genuine hang would. (2) Staying open — on
-        // iOS too, where the signal genuinely is trustworthy — lets someone
-        // share the same card to a second target right away instead of
-        // reopening the sheet. The sheet only closes on an explicit user
-        // action: the X, swipe-down, or a backdrop tap.
+        closeAfterShare(true)
       })
       .catch((err: unknown) => {
         logWarn('[share-modal] link share failed', err)
       })
-      .finally(osSheetClosed)
-  }, [questionText, shareUrl, onShareEvent, openingOsSheet, osSheetClosed])
+  }, [questionText, shareUrl, onShareEvent, closeAfterShare])
 
   const shareImage = useCallback(
     (format: Exclude<ShareFormat, 'link' | 'ask'>, url: string) => {
       setError(null)
       setPending(format)
-      downloadAndShareImage(url, openingOsSheet)
+      const session = sessionRef.current
+      downloadAndShareImage(url)
         .then(() => {
+          if (session !== sessionRef.current) return
           setPending(null)
           // expo-sharing resolves on any dismissal, so an image share never reports completion (issue #200).
           onShareEvent(EVENTS.SHARE_SHEET_OPENED, format)
-          // Owner decision, 2026-07-03 (issue #192): stays open here too — see
-          // shareLink's comment. `Sharing.shareAsync`'s promise resolves once the
-          // OS chooser is dismissed *for any reason* (completed, backed out,
-          // tapped outside — expo-sharing doesn't distinguish them on either
-          // platform, see SharingModule.kt's OnActivityResult / the iOS module's
-          // completionWithItemsHandler, both unconditional), so it was never a
-          // trustworthy "close now" signal to begin with. Leaving the sheet open
-          // means a cancelled or completed share lands back on a live sheet —
-          // sharing again or picking a different row works immediately, no
-          // reopen needed.
+          closeAfterShare()
         })
         .catch((err: unknown) => {
           logWarn(`[share-modal] ${format} image share failed`, err)
+          if (session !== sessionRef.current) return
           setPending(null)
-          setError("Couldn't load the image — check your connection and try again.")
+          setError(t('share.imageError'))
         })
-        .finally(osSheetClosed)
     },
-    [onShareEvent, openingOsSheet, osSheetClosed]
+    [onShareEvent, closeAfterShare, t]
   )
 
   const sendAsk = useCallback(() => {
     if (pending) return
-    const message = buildAskMessage(questionText, buildAskUrl(shareUrl, askerName))
-    openingOsSheet()
+    void setStoredAskerName(askerName).catch(() => {})
+    const message = buildAskMessage(
+      questionText,
+      buildAskUrl(shareUrl, askerName),
+      t('share.askIntro')
+    )
     Share.share({message})
       .then((result) => {
+        closeAfterShare(true)
         // iOS reports a cancel; Android resolves as its chooser opens, so it counts there (issue #200).
         if (Platform.OS === 'ios' && result.action !== Share.sharedAction) return
         onShareEvent(EVENTS.ASK_SENT, 'ask')
@@ -279,18 +215,19 @@ export const ShareModal = ({
       .catch((err: unknown) => {
         logWarn('[share-modal] ask share failed', err)
       })
-      .finally(osSheetClosed)
-  }, [pending, questionText, shareUrl, askerName, onShareEvent, openingOsSheet, osSheetClosed])
+  }, [pending, questionText, shareUrl, askerName, onShareEvent, closeAfterShare, t])
 
   const handlePress = useCallback(
     (row: Row) => {
       if (pending) return
-      if (row.format === 'link') {
-        shareLink()
-        return
-      }
       if (row.format === 'ask') {
         setAskOpen(true)
+        return
+      }
+      // Another action takes over: the ask row goes back to a plain row.
+      setAskOpen(false)
+      if (row.format === 'link') {
+        shareLink()
         return
       }
       // Every non-link row in `rows` is only ever built with its `url` set (see
@@ -302,161 +239,99 @@ export const ShareModal = ({
     [pending, shareLink, shareImage]
   )
 
-  // Swipe-down-to-dismiss: scoped to the drag handle only (not the whole sheet)
-  // so it can't fight the row Pressables for the touch. `onEnd` rather than a
-  // live `onUpdate` — the sheet doesn't track the finger, it just dismisses
-  // past a distance/velocity threshold, keeping this in step with the Modal's
-  // own `animationType="slide"` rather than driving a second animation.
-  // `.runOnJS(true)` runs the callback directly on the JS thread — plain
-  // `onClose`, no 'worklet' pragma or reanimated runtime needed.
-  const swipeDown = useMemo(
-    () =>
-      Gesture.Pan()
-        .runOnJS(true)
-        .hitSlop(HANDLE_HIT_SLOP)
-        .onEnd((event) => {
-          if (
-            event.translationY > SWIPE_DISMISS_DISTANCE ||
-            event.velocityY > SWIPE_DISMISS_VELOCITY
-          ) {
-            close()
-          }
-        }),
-    [close]
-  )
-
   const {height: windowHeight} = useWindowDimensions()
   const sheetMaxHeight = windowHeight * SHEET_MAX_HEIGHT_RATIO
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={close}
-      // Android only: without this, the status-bar strip isn't part of the
-      // Modal's surface, so the backdrop dims everything below it but leaves
-      // the status-bar area undimmed.
-      statusBarTranslucent
+    <BottomSheet
+      isPresented={visible}
+      onDismiss={onClose}
+      contentPadding={0}
+      {...sheetTheme(isDark)}
     >
-      {/* Gestures inside an RN Modal need their own root — the Modal renders
-          into a separate native surface that isn't a descendant of the app's
-          top-level GestureHandlerRootView (see _layout.tsx). */}
-      <GestureHandlerRootView style={{flex: 1}}>
-        {/* Dark sheet → light status-bar icons; light sheet → dark icons — same
-            pattern as every other themed sheet (issue #173). */}
-        <StatusBar style={isDark ? 'light' : 'dark'} />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          className="flex-1 justify-end"
+      <RNHostView matchContents={{vertical: true}}>
+        <ScrollView
+          style={{maxHeight: sheetMaxHeight}}
+          bounces={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Transparent backdrop (owner on-device, 2026-07-03 — no dim, same
-              as the settings sheet). Tapping it dismisses; the sheet below
-              swallows its own taps (see the no-op onPress) so tapping the
-              sheet itself doesn't also close it. */}
-          <Pressable className="absolute inset-0" onPress={close} accessibilityLabel="dismiss" />
-          <View
-            className="bg-white dark:bg-dark rounded-t-3xl"
-            style={{paddingBottom: Math.max(insets.bottom, 24)}}
-          >
-            <GestureDetector gesture={swipeDown}>
-              <View className="items-center pb-1 pt-3">
-                <View className="bg-gray-lighter dark:bg-white/20 h-1 w-10 rounded-full" />
-              </View>
-            </GestureDetector>
+          <View className={`flex-row items-center justify-between px-5 pb-2 ${SHEET_PADDING.top}`}>
+            <Text className="text-darker dark:text-white font-title text-2xl">
+              {t('share.title')}
+            </Text>
+            <Pressable onPress={onClose} accessibilityLabel={t('a11y.close')} hitSlop={12}>
+              <Ionicons name="close" size={24} color={iconColor} />
+            </Pressable>
+          </View>
 
-            {/* Caps the sheet at SHEET_MAX_HEIGHT_RATIO of the window so a
-                long error message plus max Dynamic Type, or a compact device
-                in landscape, can't push rows off-screen — content still sizes
-                naturally (well under this cap) in the normal case, and only
-                this section scrolls; the handle above stays put. */}
-            <ScrollView
-              style={{maxHeight: sheetMaxHeight}}
-              bounces={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* No-op tap target: swallows taps landing on the sheet's own
-                  whitespace so they don't fall through to the backdrop above
-                  and close the sheet. `accessible={false}` keeps this out of
-                  the accessibility tree so it doesn't swallow the rows' own
-                  labels (a Pressable is `accessible` by default, which would
-                  otherwise group everything below into a single unlabeled
-                  element). */}
-              <Pressable onPress={() => {}} accessible={false}>
-                <View className="flex-row items-center justify-between px-5 pb-2 pt-2">
-                  <Text className="text-darker dark:text-white font-title text-2xl">Share</Text>
-                  <Pressable onPress={close} accessibilityLabel="close" hitSlop={12}>
-                    <Ionicons name="close" size={24} color={iconColor} />
+          {rows.map((row, index) => {
+            const isPending = pending === row.format
+            const disabled = pending !== null && !isPending
+            // The Settings sheet's dividers: a line under every row but the last.
+            const divider = `border-gray-lighter dark:border-white/10 min-h-14 ${index < rows.length - 1 ? 'border-b' : ''}`
+            if (row.format === 'ask' && askOpen) {
+              return (
+                <View
+                  key={row.format}
+                  className={`flex-row items-center gap-3 px-5 py-2 ${divider}`}
+                >
+                  <Ionicons name={row.icon} size={22} color={iconColor} />
+                  <TextInput
+                    value={askerName}
+                    onChangeText={setAskerName}
+                    onSubmitEditing={sendAsk}
+                    placeholder={t('share.namePlaceholder')}
+                    placeholderTextColor={spinnerColor}
+                    maxLength={ASKER_NAME_MAX}
+                    returnKeyType="send"
+                    accessibilityLabel={t('share.namePlaceholder')}
+                    className="text-darker dark:text-white font-sans text-lg flex-1 py-2"
+                  />
+                  <Pressable
+                    onPress={sendAsk}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('share.sendAsk')}
+                    hitSlop={8}
+                    className="active:bg-yellow-500 rounded-full bg-yellow-400 px-4 py-2"
+                  >
+                    <Text className="text-darker font-sans text-base">{t('share.send')}</Text>
                   </Pressable>
                 </View>
-
-                {rows.map((row) => {
-                  const isPending = pending === row.format
-                  const disabled = pending !== null && !isPending
-                  if (row.format === 'ask' && askOpen) {
-                    return (
-                      <View key={row.format} className="flex-row items-center gap-3 px-5 py-2">
-                        <Ionicons name={row.icon} size={22} color={iconColor} />
-                        <TextInput
-                          value={askerName}
-                          onChangeText={setAskerName}
-                          onSubmitEditing={sendAsk}
-                          placeholder="Your name (optional)"
-                          placeholderTextColor={spinnerColor}
-                          maxLength={ASKER_NAME_MAX}
-                          returnKeyType="send"
-                          accessibilityLabel="Your name (optional)"
-                          className="text-darker dark:text-white font-sans text-lg flex-1 py-2"
-                        />
-                        <Pressable
-                          onPress={sendAsk}
-                          accessibilityRole="button"
-                          accessibilityLabel="Send ask"
-                          hitSlop={8}
-                          className="active:bg-yellow-500 rounded-full bg-yellow-400 px-4 py-2"
-                        >
-                          <Text className="text-darker font-sans text-base">Send</Text>
-                        </Pressable>
-                      </View>
-                    )
-                  }
-                  return (
-                    <Pressable
-                      key={row.format}
-                      onPress={() => handlePress(row)}
-                      disabled={disabled}
-                      accessibilityRole="button"
-                      accessibilityLabel={row.label}
-                      accessibilityState={{disabled, busy: isPending}}
-                      className={`flex-row items-center gap-3 px-5 py-4 ${disabled ? 'opacity-40' : ''}`}
-                    >
-                      <Ionicons name={row.icon} size={22} color={iconColor} />
-                      <Text className="text-darker dark:text-white font-sans text-lg">
-                        {row.label}
-                      </Text>
-                      {isPending ? (
-                        <ActivityIndicator
-                          size="small"
-                          color={spinnerColor}
-                          style={{marginLeft: 'auto'}}
-                        />
-                      ) : null}
-                    </Pressable>
-                  )
-                })}
-
-                {error ? (
-                  <View className="px-5 pt-2">
-                    <Text className="text-errorOnLight dark:text-errorOnDark font-sans text-sm">
-                      {error}
-                    </Text>
-                  </View>
+              )
+            }
+            return (
+              <Pressable
+                key={row.format}
+                onPress={() => handlePress(row)}
+                disabled={disabled}
+                accessibilityRole="button"
+                accessibilityLabel={row.label}
+                accessibilityState={{disabled, busy: isPending}}
+                className={`flex-row items-center gap-3 px-5 py-2 ${divider} ${disabled ? 'opacity-40' : ''}`}
+              >
+                <Ionicons name={row.icon} size={22} color={iconColor} />
+                <Text className="text-darker dark:text-white font-sans text-lg">{row.label}</Text>
+                {isPending ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={spinnerColor}
+                    style={{marginLeft: 'auto'}}
+                  />
                 ) : null}
               </Pressable>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </GestureHandlerRootView>
-    </Modal>
+            )
+          })}
+
+          {error ? (
+            <View className="px-5 pt-2">
+              <Text className="text-errorOnLight dark:text-errorOnDark font-sans text-sm">
+                {error}
+              </Text>
+            </View>
+          ) : null}
+          {SHEET_PADDING.bottom ? <View className={SHEET_PADDING.bottom} /> : null}
+        </ScrollView>
+      </RNHostView>
+    </BottomSheet>
   )
 }

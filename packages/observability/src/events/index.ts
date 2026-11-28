@@ -26,6 +26,9 @@ export const EVENTS = {
   SECONDARY_LANGUAGES_CHANGED: 'secondary_languages_changed',
   TABLETOP_MODE_CHANGED: 'tabletop_mode_changed',
   THEME_CHANGED: 'theme_changed',
+  GAME_CHANGED: 'game_changed',
+  CARD_ANIMATION_CHANGED: 'card_animation_changed',
+  DAILY_QUESTION_CHANGED: 'daily_question_changed',
   APP_REVIEW_ELIGIBLE: 'app_review_eligible',
   APP_REVIEW_REQUESTED: 'app_review_requested',
   SHARE_SHEET_OPENED: 'share_sheet_opened',
@@ -98,6 +101,12 @@ export type TabletopModeChangedProps = {deck_id?: string; enabled: boolean}
  * mirroring `SecondaryLanguagesChangedProps`.
  */
 export type ThemeChangedProps = {theme: 'system' | 'light' | 'dark'}
+/** The stored Game changed in Settings (it applies on the next Play, or once the in-play sheet closes). */
+export type GameChangedProps = {from: string; to: string}
+/** How a Card moves on (a Display setting). */
+export type CardAnimationChangedProps = {animation: 'slide' | 'flip'}
+/** The daily Question notification switched on/off or moved; `hour`/`minute` are local time. */
+export type DailyQuestionChangedProps = {enabled: boolean; hour: number; minute: number}
 export type AppReviewEligibleProps = {
   app_version: string
   card_count: number
