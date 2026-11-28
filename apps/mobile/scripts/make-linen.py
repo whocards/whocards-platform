@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regenerates assets/images/linen@3x.png, the face-up Card's linen weave.
 
-usage: python3 scripts/make-linen.py assets/images/linen@3x.png 576 16.7 8
+usage: python3 scripts/make-linen.py assets/images/linen@3x.png 576 16.7 28
 (<out.png> <size> <target_mean> <spread> [seed]): tileable linen weave encoded per pixel as
 black- or white-with-alpha so that, over the charcoal base (#111516), its brightness averages target_mean."""
 import random, sys
