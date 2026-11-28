@@ -440,7 +440,7 @@ describe('Play screen', () => {
     expect(screen.getByText(linkedQuestion)).toBeTruthy()
   })
 
-  it("applies a pick of the stored language over a link's language (issue #197)", async () => {
+  it("applies a pick of the stored language over a link's language while the sheet is open (issue #197)", async () => {
     const deck = getDeck('library')
     const [stored = '', linked = ''] = deck?.languages ?? []
     mockParams = {deck: 'library', q: '1', lang: linked}
@@ -451,6 +451,8 @@ describe('Play screen', () => {
     await fireEvent.press(
       await screen.findByLabelText(`Language: ${NATIVE_LANGUAGE_NAMES[stored] ?? stored}`)
     )
+    await settle()
+    expect(screen.getByText(deck?.questions['1']?.[stored] ?? '')).toBeTruthy()
     await fireEvent.press(screen.getByLabelText('close'))
     await settleSheetClose()
     expect(screen.getByText(deck?.questions['1']?.[stored] ?? '')).toBeTruthy()

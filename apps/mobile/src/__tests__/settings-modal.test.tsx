@@ -262,6 +262,28 @@ describe('SettingsModal — languages, one picker each', () => {
     await fireEvent.press(screen.getByLabelText('Language: English'))
     expect(onSelectLanguage).toHaveBeenCalledWith('en')
   })
+
+  it('keeps a Game pick while the play screen applies a Language pick live', async () => {
+    const props = {currentGame: 'wh', currentLanguage: 'en'} as const
+    const view = await renderModal(props)
+    await openGameplay()
+    await toggle('Pick a Card')
+    await view.rerender(
+      <SettingsModal
+        visible
+        onClose={() => {}}
+        deckSlug="library"
+        languages={['en', 'he']}
+        theme="system"
+        onSelectTheme={() => {}}
+        {...props}
+        currentLanguage="he"
+      />
+    )
+    expect(checked('Pick a Card')).toBe(true)
+    await fireEvent.press(screen.getByLabelText('Back to Settings'))
+    expect(selected('Language: עברית')).toBe(true)
+  })
 })
 
 describe('SettingsModal — inline controls', () => {

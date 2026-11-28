@@ -93,7 +93,7 @@ type SettingsModalProps = {
   onSelectGame?: (game: GameId) => void
   /** The language on screen, when it can differ from the stored one (a shared link's). */
   currentLanguage?: string
-  /** Every Language pick, even one equal to the stored value. */
+  /** Every Language pick, even one equal to the stored value; the play screen applies it live. */
   onSelectLanguage?: (language: string) => void
   /** Window x of the edges the rows line up with (the Card's, in Card view); the sheet's own otherwise. */
   alignTo?: {left: number; right: number}
@@ -303,7 +303,6 @@ export const SettingsModal = ({
 
   // Reload on every open: another screen's sheet may have changed them since.
   useEffect(() => {
-    if (currentLanguage) setLanguage(currentLanguage)
     if (mounted.current && !visible) return
     mounted.current = true
     if (currentGame) setGame(currentGame)
@@ -321,7 +320,12 @@ export const SettingsModal = ({
       setSecondary(stored.filter((code) => languages.includes(code)))
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deckSlug, visible, currentLanguage])
+  }, [deckSlug, visible])
+
+  // The play screen applies a pick live, and a warm link can switch the Language while the sheet is open.
+  useEffect(() => {
+    if (currentLanguage) setLanguage(currentLanguage)
+  }, [currentLanguage])
 
   // A warm link can switch the Game while the sheet is open.
   useEffect(() => {

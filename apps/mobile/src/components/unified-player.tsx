@@ -302,9 +302,8 @@ export const UnifiedPlayer = ({
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   const {theme, select: selectTheme} = useThemeSetting()
 
-  // Bumped when a warm link sets the Language, so a stored-language read already in flight can't undo it.
+  // Bumped when a warm link or a pick sets the Language, so a stored-language read already in flight can't undo it.
   const linkLanguageEpochRef = useRef(0)
-  const pickedLanguageRef = useRef<string | undefined>(undefined)
   const pickedGameRef = useRef<GameId | undefined>(undefined)
   const sheetCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -436,15 +435,22 @@ export const UnifiedPlayer = ({
     return () => sub.remove()
   }, [viewTracker, maybeRequestReview])
 
-  const recordedKeyRef = useRef<string | null>(null)
+  // The Languages already recorded for the Question on screen: a pick and a pick back records once.
+  const recordedRef = useRef<{questionId?: string; languages: Set<string>}>({languages: new Set()})
   useEffect(() => {
     if (!languageReady || !onCard || !questionId) return undefined
-    const key = `${questionId}:${language}`
-    if (recordedKeyRef.current === key) return undefined
-    recordedKeyRef.current = key
+    if (recordedRef.current.questionId !== questionId) {
+      recordedRef.current = {questionId, languages: new Set()}
+    }
+    const recorded = recordedRef.current.languages
+    if (recorded.has(language)) return undefined
+    recorded.add(language)
     let cancelled = false
     void getDeviceId().then((deviceId) => {
-      if (cancelled) return
+      if (cancelled) {
+        recorded.delete(language)
+        return
+      }
       void enqueue({deviceId, deckSlug, questionId, language}, send)
     })
     void incrementCardCount()
@@ -692,19 +698,15 @@ export const UnifiedPlayer = ({
     [game, onChangeGame, cardFlip, dragX, morph, reduceMotion, dealt, phase]
   )
 
-  // Single choreography rule: every stage-affecting Settings change (Game, Language,
-  // Second language, Tabletop, Card animation) applies once the Settings sheet clears.
+  // Stage changes (Game, Second language, Tabletop, Card animation) apply once the sheet clears; the Language applies live.
   const handleSettingsClose = useCallback(
     (sheetGone = false) => {
       setSettingsModalOpen(false)
-      const nextLanguage = pickedLanguageRef.current
       const nextGame = pickedGameRef.current
-      pickedLanguageRef.current = undefined
       pickedGameRef.current = undefined
       if (sheetCloseTimerRef.current) clearTimeout(sheetCloseTimerRef.current)
       const apply = () => {
         sheetCloseTimerRef.current = null
-        if (nextLanguage) setLanguage(nextLanguage)
         void readSettings(true)
         if (nextGame && nextGame !== game) switchGameTo(nextGame)
       }
@@ -2123,7 +2125,8 @@ export const UnifiedPlayer = ({
           }}
           currentLanguage={language}
           onSelectLanguage={(next) => {
-            pickedLanguageRef.current = next
+            linkLanguageEpochRef.current += 1
+            setLanguage(next)
           }}
           theme={theme}
           onSelectTheme={selectTheme}
