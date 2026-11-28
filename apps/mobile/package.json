@@ -97,6 +97,13 @@
       "exclude": [
         "typescript"
       ]
+    },
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          "expo-ui"
+        ]
+      }
     }
   }
 }
