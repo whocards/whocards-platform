@@ -82,6 +82,8 @@ type SettingsModalProps = {
   visible: boolean
   /** `sheetGone` when iOS reports the sheet fully dismissed (a swipe-down); an X close gets no report. */
   onClose: (sheetGone?: boolean) => void
+  /** Android: the sheet has finished hiding, so stage changes waiting on it can start. */
+  onGone?: () => void
   /** The deck whose languages the Language rows edit: they are stored per deck. */
   deckSlug: string
   languages: string[]
@@ -227,6 +229,16 @@ const Toggle = ({label, value, onChange, isDark}: ToggleProps) => (
   </View>
 )
 
+// Android's BottomSheet unmounts its content once its hide animation ends.
+const OnUnmount = ({run}: {run?: () => void}) => {
+  const runRef = useRef(run)
+  useEffect(() => {
+    runRef.current = run
+  }, [run])
+  useEffect(() => () => runRef.current?.(), [])
+  return null
+}
+
 const accent = (isDark: boolean) => (isDark ? colors.accentOnDark : colors.accentOnLight)
 
 /**
@@ -238,6 +250,7 @@ const accent = (isDark: boolean) => (isDark ? colors.accentOnDark : colors.accen
 export const SettingsModal = ({
   visible,
   onClose,
+  onGone,
   deckSlug,
   languages,
   theme,
@@ -395,7 +408,7 @@ export const SettingsModal = ({
   return (
     <BottomSheet
       isPresented={visible}
-      // iOS reports this once the sheet is gone; Android's fires as a swipe starts dismissing.
+      // iOS reports this once the sheet is gone; Android reports that through onGone.
       onDismiss={() => onClose(Platform.OS === 'ios')}
       contentPadding={0}
       {...sheetTheme(isDark)}
@@ -406,6 +419,7 @@ export const SettingsModal = ({
           className={`overflow-hidden ${SHEET_PADDING.bottom}`}
           onLayout={(event) => setPageWidth(event.nativeEvent.layout.width)}
         >
+          {Platform.OS === 'android' ? <OnUnmount run={onGone} /> : null}
           <RowInset.Provider value={inset}>
             <Header
               title={page === 1 ? t('settings.gameplay') : t('settings.title')}

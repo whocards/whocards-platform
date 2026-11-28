@@ -161,6 +161,29 @@ describe('SettingsModal — Settings and its Gameplay page', () => {
     expect(onClose).toHaveBeenCalledTimes(2)
   })
 
+  it.each([
+    ['android', 1],
+    ['ios', 0],
+  ] as const)('on %s, reports the sheet gone once it has hidden: %i time(s)', async (os, calls) => {
+    const platform = jest.replaceProperty(Platform, 'OS', os)
+    const onGone = jest.fn()
+    const {rerender} = await renderModal({onGone})
+    expect(onGone).not.toHaveBeenCalled()
+    await rerender(
+      <SettingsModal
+        visible={false}
+        onClose={() => {}}
+        onGone={onGone}
+        deckSlug="library"
+        languages={['en', 'he']}
+        theme="system"
+        onSelectTheme={() => {}}
+      />
+    )
+    expect(onGone).toHaveBeenCalledTimes(calls)
+    platform.restore()
+  })
+
   it('re-reads stored settings on every open, so a change made in another sheet shows', async () => {
     const {rerender} = await renderModal({visible: false})
     mockedGetStoredTabletopMode.mockResolvedValue(true)

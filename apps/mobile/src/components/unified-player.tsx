@@ -306,6 +306,7 @@ export const UnifiedPlayer = ({
   const linkLanguageEpochRef = useRef(0)
   const pickedGameRef = useRef<GameId | undefined>(undefined)
   const sheetCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const sheetChangesRef = useRef<(() => void) | null>(null)
 
   useEffect(
     () => () => {
@@ -698,6 +699,14 @@ export const UnifiedPlayer = ({
     [game, onChangeGame, cardFlip, dragX, morph, reduceMotion, dealt, phase]
   )
 
+  const applySheetChanges = useCallback(() => {
+    if (sheetCloseTimerRef.current) clearTimeout(sheetCloseTimerRef.current)
+    sheetCloseTimerRef.current = null
+    const apply = sheetChangesRef.current
+    sheetChangesRef.current = null
+    apply?.()
+  }, [])
+
   // Stage changes (Game, Second language, Tabletop, Card animation) apply once the sheet clears; the Language applies live.
   const handleSettingsClose = useCallback(
     (sheetGone = false) => {
@@ -705,19 +714,15 @@ export const UnifiedPlayer = ({
       const nextGame = pickedGameRef.current
       pickedGameRef.current = undefined
       if (sheetCloseTimerRef.current) clearTimeout(sheetCloseTimerRef.current)
-      const apply = () => {
-        sheetCloseTimerRef.current = null
+      sheetChangesRef.current = () => {
         void readSettings(true)
         if (nextGame && nextGame !== game) switchGameTo(nextGame)
       }
       const wait = sheetGone ? 0 : motionDuration(SHEET_CLOSE_MS, reduceMotion)
-      if (wait === 0) {
-        apply()
-        return
-      }
-      sheetCloseTimerRef.current = setTimeout(apply, wait)
+      if (wait === 0) applySheetChanges()
+      else sheetCloseTimerRef.current = setTimeout(applySheetChanges, wait)
     },
-    [readSettings, game, switchGameTo, reduceMotion]
+    [readSettings, game, switchGameTo, reduceMotion, applySheetChanges]
   )
 
   // Reset Classic flip/slide offsets synchronously BEFORE native paint once React commits
@@ -2117,6 +2122,7 @@ export const UnifiedPlayer = ({
         <SettingsModal
           visible={settingsModalOpen}
           onClose={handleSettingsClose}
+          onGone={applySheetChanges}
           deckSlug={deckSlug}
           languages={languages}
           currentGame={game}
