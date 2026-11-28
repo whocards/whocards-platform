@@ -72,9 +72,12 @@ export const translate = (
     : template
 }
 
+/** The current UI language, re-rendering when it changes. */
+export const useUiLanguage = () => useSyncExternalStore(subscribe, getUiLanguage, getUiLanguage)
+
 /** `t(key, vars)` in the current UI language, re-rendering when it changes. */
 export const useT = () => {
-  const language = useSyncExternalStore(subscribe, getUiLanguage, getUiLanguage)
+  const language = useUiLanguage()
   return useCallback(
     (key: MessageKey, vars?: Record<string, string | number>) => translate(key, vars, language),
     [language]

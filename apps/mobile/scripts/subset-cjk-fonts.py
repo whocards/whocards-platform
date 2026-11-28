@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-# Re-subsets the bundled Noto CJK faces to every zh/jp character in packages/decks.
+# Re-subsets the bundled Noto CJK faces to every zh/jp character in packages/decks and the app's
+# own words (src/i18n and the language pickers' names), plus printable ASCII for the Latin and
+# digits UI text mixes in.
 # Needs fontTools and brotli (`pip install fonttools brotli`). Run: `pnpm -F mobile fonts:cjk`.
 import json
+import re
 from pathlib import Path
 
 from fontTools import subset
@@ -22,10 +25,15 @@ def strings(node, key=None):
         yield key, node
 
 
-text = {lang: set() for lang in FACES}
+text = {lang: set(map(chr, range(0x20, 0x7F))) for lang in FACES}
 for path in sorted((ROOT / 'packages/decks/src').rglob('*.json')):
     for lang, value in strings(json.loads(path.read_text(encoding='utf-8'))):
         text[lang].update(value)
+names = (ROOT / 'apps/mobile/src/lib/language-names.ts').read_text(encoding='utf-8')
+for lang in FACES:
+    text[lang].update(''.join(re.findall(r": '([^']+)'", names)))
+    catalog = json.loads((ROOT / f'apps/mobile/src/i18n/{lang}.json').read_text(encoding='utf-8'))
+    text[lang].update(''.join(catalog.values()))
 
 for lang, family in FACES.items():
     # recalcTimestamp off, so a re-run with unchanged decks leaves the files byte-identical
